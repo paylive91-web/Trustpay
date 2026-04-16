@@ -11,7 +11,7 @@ export default function BottomNav() {
     { href: "/orders", label: "Orders", icon: ListOrdered },
     { href: "/scan", label: "Scan", icon: QrCode, center: true },
     { href: "/transactions", label: "History", icon: ArrowRightLeft },
-    { href: "/support", label: "Me", icon: User },
+    { href: "/profile", label: "Me", icon: User },
   ];
 
   return (

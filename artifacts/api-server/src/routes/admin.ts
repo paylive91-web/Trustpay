@@ -9,7 +9,6 @@ import {
   AdminLoginBody,
   AdminApproveOrderBody,
   AdminUpdateOrderBody,
-  AdminUpdateSettingsBody,
   AdminCreateDepositTaskBody,
   AdminUpdateUserBalanceBody,
 } from "@workspace/api-zod";
@@ -206,43 +205,46 @@ router.put("/users/:id/balance", requireAdmin, async (req, res) => {
   res.json(formatUser(user));
 });
 
-router.get("/settings", requireAdmin, async (req, res) => {
-  const s = await getAllSettings();
-  res.json({
+function formatSettingsResponse(s: any) {
+  let multipleUpiIds = [];
+  try { multipleUpiIds = JSON.parse(s.multipleUpiIds || "[]"); } catch {}
+  return {
     upiId: s.upiId || "trustpay@upi",
     upiName: s.upiName || "TrustPay",
+    multipleUpiIds,
     popupMessage: s.popupMessage || "",
     popupImageUrl: s.popupImageUrl || "",
     telegramLink: s.telegramLink || "",
     bannerImages: JSON.parse(s.bannerImages || "[]"),
     appName: s.appName || "TrustPay",
-  });
+    buyRules: s.buyRules || "",
+    sellRules: s.sellRules || "",
+  };
+}
+
+router.get("/settings", requireAdmin, async (req, res) => {
+  const s = await getAllSettings();
+  res.json(formatSettingsResponse(s));
 });
 
 router.put("/settings", requireAdmin, async (req, res) => {
-  const parsed = AdminUpdateSettingsBody.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: "Invalid body" }); return; }
-  const { upiId, upiName, popupMessage, popupImageUrl, telegramLink, bannerImages, adminPassword } = parsed.data;
+  const body = req.body;
+  const { upiId, upiName, multipleUpiIds, popupMessage, popupImageUrl, telegramLink, bannerImages, adminPassword, buyRules, sellRules } = body;
   if (upiId != null) await setSetting("upiId", upiId);
   if (upiName != null) await setSetting("upiName", upiName);
+  if (multipleUpiIds != null) await setSetting("multipleUpiIds", JSON.stringify(multipleUpiIds));
   if (popupMessage != null) await setSetting("popupMessage", popupMessage);
   if (popupImageUrl != null) await setSetting("popupImageUrl", popupImageUrl);
   if (telegramLink != null) await setSetting("telegramLink", telegramLink);
   if (bannerImages != null) await setSetting("bannerImages", JSON.stringify(bannerImages));
+  if (buyRules != null) await setSetting("buyRules", buyRules);
+  if (sellRules != null) await setSetting("sellRules", sellRules);
   if (adminPassword != null) {
     const hash = await bcrypt.hash(adminPassword, 10);
     await setSetting("adminPasswordHash", hash);
   }
   const s = await getAllSettings();
-  res.json({
-    upiId: s.upiId || "trustpay@upi",
-    upiName: s.upiName || "TrustPay",
-    popupMessage: s.popupMessage || "",
-    popupImageUrl: s.popupImageUrl || "",
-    telegramLink: s.telegramLink || "",
-    bannerImages: JSON.parse(s.bannerImages || "[]"),
-    appName: s.appName || "TrustPay",
-  });
+  res.json(formatSettingsResponse(s));
 });
 
 router.get("/stats/daily", requireAdmin, async (req, res) => {

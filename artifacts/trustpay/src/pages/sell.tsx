@@ -61,7 +61,6 @@ export default function Sell() {
       toast({ title: "Insufficient balance", variant: "destructive" });
       return;
     }
-
     createOrder.mutate({
       data: {
         type: "withdrawal",
@@ -69,19 +68,18 @@ export default function Sell() {
       }
     }, {
       onSuccess: () => {
-        toast({ title: "Withdrawal request submitted" });
+        toast({ title: "Sell request submitted successfully" });
         queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
         setLocation("/orders");
       },
       onError: (err) => {
-        toast({ title: "Error", description: err.error || "Failed to request withdrawal", variant: "destructive" });
+        toast({ title: "Error", description: err.error || "Failed to submit sell request", variant: "destructive" });
       }
     });
   };
 
   const handlePayOrder = () => {
     if (!selectedOrderToPay) return;
-    
     payOrder.mutate({
       data: { orderId: selectedOrderToPay.id }
     }, {
@@ -97,27 +95,17 @@ export default function Sell() {
     });
   };
 
-  const calculateReward = (amount: number) => {
-    if (amount >= 100 && amount <= 1000) return { percent: 5, value: amount * 0.05 };
-    if (amount >= 1001 && amount <= 2000) return { percent: 4, value: amount * 0.04 };
-    if (amount >= 2001) return { percent: 3, value: amount * 0.03 };
-    return { percent: 0, value: 0 };
-  };
-
-  const watchAmount = form.watch("amount");
-  const reward = calculateReward(watchAmount || 0);
-
   return (
     <Layout>
       <div className="p-4 space-y-4">
-        <h1 className="text-xl font-bold">Withdraw / Sell</h1>
-        
+        <h1 className="text-xl font-bold">Sell</h1>
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="create">Withdraw Funds</TabsTrigger>
+            <TabsTrigger value="create">Sell Funds</TabsTrigger>
             <TabsTrigger value="pay">Fulfill Orders</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="create">
             <Card>
               <CardContent className="p-4 pt-6">
@@ -133,9 +121,9 @@ export default function Sell() {
                       name="amount"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Amount</FormLabel>
-                          <Select 
-                            onValueChange={(val) => field.onChange(Number(val))} 
+                          <FormLabel>Amount to Sell</FormLabel>
+                          <Select
+                            onValueChange={(val) => field.onChange(Number(val))}
                             defaultValue={field.value?.toString()}
                           >
                             <FormControl>
@@ -155,11 +143,6 @@ export default function Sell() {
                         </FormItem>
                       )}
                     />
-                    
-                    <div className="bg-muted p-3 rounded-lg mt-2 text-sm flex justify-between items-center">
-                      <span className="text-muted-foreground">Bonus Reward ({reward.percent}%):</span>
-                      <span className="font-semibold text-green-600">+ ₹{reward.value.toFixed(2)}</span>
-                    </div>
 
                     <FormField
                       control={form.control}
@@ -190,24 +173,17 @@ export default function Sell() {
                     />
 
                     <Button type="submit" className="w-full mt-6 h-12 text-lg rounded-xl" disabled={createOrder.isPending}>
-                      {createOrder.isPending ? "Submitting..." : "Submit Withdrawal"}
+                      {createOrder.isPending ? "Submitting..." : "Submit Sell Request"}
                     </Button>
                   </form>
                 </Form>
-
-                <div className="mt-8 text-xs text-muted-foreground space-y-2">
-                  <p className="font-semibold">Bonus Tiers:</p>
-                  <p>• 100 - 1,000 INR = +5% Bonus</p>
-                  <p>• 1,001 - 2,000 INR = +4% Bonus</p>
-                  <p>• 2,001 - 50,000 INR = +3% Bonus</p>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="pay">
-            <p className="text-sm text-muted-foreground mb-4">Pay other users' withdrawal requests to earn rewards.</p>
-            
+            <p className="text-sm text-muted-foreground mb-4">Pay other users' sell requests.</p>
+
             {ordersLoading ? (
               Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-xl mb-4" />)
             ) : openOrders && openOrders.length > 0 ? (
@@ -225,13 +201,12 @@ export default function Sell() {
                         </div>
                       </div>
                     </div>
-                    
                     <div className="flex justify-between items-center mt-1">
                       <div>
                         <div className="text-xs text-muted-foreground">Total Payout</div>
                         <div className="font-semibold text-foreground">₹ {order.totalAmount.toFixed(2)}</div>
                       </div>
-                      <Button 
+                      <Button
                         onClick={() => setSelectedOrderToPay(order)}
                         className="px-6 rounded-full shadow-md"
                         variant="secondary"
@@ -244,7 +219,7 @@ export default function Sell() {
               ))
             ) : (
               <div className="text-center p-8 text-muted-foreground bg-card rounded-xl border border-dashed">
-                No open withdrawal requests available right now. Check back later.
+                No open sell requests available right now.
               </div>
             )}
           </TabsContent>
@@ -256,13 +231,11 @@ export default function Sell() {
           <DialogHeader>
             <DialogTitle>Accept Order</DialogTitle>
             <DialogDescription>
-              You will need to pay ₹{selectedOrderToPay?.amount.toFixed(2)} to the user's UPI ID. Once they confirm, you will receive ₹{selectedOrderToPay?.totalAmount.toFixed(2)}.
+              Pay ₹{selectedOrderToPay?.amount.toFixed(2)} to the user's UPI ID. Once confirmed, you receive ₹{selectedOrderToPay?.totalAmount.toFixed(2)}.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setSelectedOrderToPay(null)} className="w-full">
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setSelectedOrderToPay(null)} className="w-full">Cancel</Button>
             <Button onClick={handlePayOrder} disabled={payOrder.isPending} className="w-full">
               {payOrder.isPending ? "Accepting..." : "Confirm Acceptance"}
             </Button>

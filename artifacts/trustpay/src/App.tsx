@@ -12,6 +12,7 @@ import Sell from "@/pages/sell";
 import Orders from "@/pages/orders";
 import Transactions from "@/pages/transactions";
 import Support from "@/pages/support";
+import Profile from "@/pages/profile";
 
 import AdminLogin from "@/pages/admin/login";
 import AdminDashboard from "@/pages/admin/dashboard";
@@ -33,6 +34,7 @@ function Router() {
       <Route path="/orders" component={Orders} />
       <Route path="/transactions" component={Transactions} />
       <Route path="/support" component={Support} />
+      <Route path="/profile" component={Profile} />
 
       {/* Admin Routes */}
       <Route path="/admin" component={AdminLogin} />

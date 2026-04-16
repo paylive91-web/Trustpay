@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useGetMe, useGetAppSettings } from "@workspace/api-client-react";
 import { useLocation, Link } from "wouter";
 import Layout from "@/components/layout";
@@ -9,6 +9,12 @@ import { Button } from "@/components/ui/button";
 import { ArrowDownCircle, ArrowUpCircle, BookOpen, HelpCircle, ShieldAlert, User as UserIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import useEmblaCarousel from "embla-carousel-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -16,11 +22,21 @@ export default function Home() {
   const { data: settings } = useGetAppSettings();
   const [emblaRef] = useEmblaCarousel({ loop: true });
 
+  const [showBuyRules, setShowBuyRules] = useState(false);
+  const [showSellRules, setShowSellRules] = useState(false);
+
   useEffect(() => {
     if (isError) {
       setLocation("/login");
     }
   }, [isError, setLocation]);
+
+  const handleHelpCenter = () => {
+    const link = (settings as any)?.telegramLink;
+    if (link) {
+      window.open(link, "_blank");
+    }
+  };
 
   if (isLoading) {
     return (
@@ -40,17 +56,19 @@ export default function Home() {
 
   if (!user) return null;
 
+  const displayName = user.phone || user.username;
+
   return (
     <Layout>
       <AppStartupPopup />
-      
+
       {/* Header */}
       <div className="flex items-center justify-between p-4 bg-primary text-primary-foreground">
         <div className="flex items-center gap-2">
           <img src={logoPath} alt="TrustPay" className="w-8 h-8 rounded bg-white p-1" />
           <span className="font-bold text-lg">TrustPay</span>
         </div>
-        <div className="text-sm font-medium">Hello, {user.username}</div>
+        <div className="text-sm font-medium">Hello, {displayName}</div>
       </div>
 
       {/* Banner Carousel */}
@@ -72,7 +90,7 @@ export default function Home() {
           <CardContent className="p-6">
             <div className="text-muted-foreground text-sm mb-1">My Total Assets</div>
             <div className="text-3xl font-bold">₹ {user.balance.toFixed(2)}</div>
-            
+
             <div className="grid grid-cols-2 gap-4 mt-6">
               <Link href="/buy" className="w-full">
                 <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12 text-lg rounded-xl shadow-md">
@@ -92,12 +110,22 @@ export default function Home() {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-4 gap-2 py-4">
-          <QuickAction icon={<BookOpen className="text-primary" />} label="Buy Rules" />
-          <QuickAction icon={<ShieldAlert className="text-secondary" />} label="Sell Rules" />
-          <Link href="/support">
-            <QuickAction icon={<HelpCircle className="text-primary" />} label="Help Center" />
-          </Link>
-          <Link href="/support">
+          <QuickAction
+            icon={<BookOpen className="text-primary" />}
+            label="Buy Rules"
+            onClick={() => setShowBuyRules(true)}
+          />
+          <QuickAction
+            icon={<ShieldAlert className="text-secondary" />}
+            label="Sell Rules"
+            onClick={() => setShowSellRules(true)}
+          />
+          <QuickAction
+            icon={<HelpCircle className="text-primary" />}
+            label="Help Center"
+            onClick={handleHelpCenter}
+          />
+          <Link href="/profile">
             <QuickAction icon={<UserIcon className="text-secondary" />} label="Profile" />
           </Link>
         </div>
@@ -115,11 +143,57 @@ export default function Home() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Buy Rules Dialog */}
+      <Dialog open={showBuyRules} onOpenChange={setShowBuyRules}>
+        <DialogContent className="max-w-[380px] rounded-xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-primary" />
+              Buy Rules
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            {(settings as any)?.buyRules ? (
+              <div className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                {(settings as any).buyRules}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No buy rules configured yet. Check back later.
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sell Rules Dialog */}
+      <Dialog open={showSellRules} onOpenChange={setShowSellRules}>
+        <DialogContent className="max-w-[380px] rounded-xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-secondary" />
+              Sell Rules
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            {(settings as any)?.sellRules ? (
+              <div className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                {(settings as any).sellRules}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No sell rules configured yet. Check back later.
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
 
-function QuickAction({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick?: () => void }) {
+function QuickAction({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick?: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center gap-2 cursor-pointer" onClick={onClick}>
       <div className="w-12 h-12 rounded-full bg-card shadow-sm border flex items-center justify-center">

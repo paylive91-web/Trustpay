@@ -1,84 +1,109 @@
-import React, { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
+import React, { useEffect, useState } from "react";
 import AdminLayout from "@/components/admin-layout";
-import { useAdminGetSettings, useAdminUpdateSettings } from "@workspace/api-client-react";
+import { useAdminGetSettings } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQueryClient } from "@tanstack/react-query";
 import { getAdminGetSettingsQueryKey } from "@workspace/api-client-react";
+import { Plus, Trash2 } from "lucide-react";
+import { clearAuthToken } from "@/lib/auth";
 
-const settingsSchema = z.object({
-  upiId: z.string().min(1, "UPI ID is required"),
-  upiName: z.string().min(1, "UPI Name is required"),
-  popupMessage: z.string().optional(),
-  popupImageUrl: z.string().optional(),
-  telegramLink: z.string().optional(),
-  bannerImages: z.string().optional(), // Comma separated
-  adminPassword: z.string().optional(),
-});
+const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
-type SettingsValues = z.infer<typeof settingsSchema>;
+interface UpiEntry {
+  upiId: string;
+  upiName: string;
+}
 
 export default function AdminSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: settings, isLoading } = useAdminGetSettings();
-  const updateSettingsMutation = useAdminUpdateSettings();
+  const [saving, setSaving] = useState(false);
 
-  const form = useForm<SettingsValues>({
-    resolver: zodResolver(settingsSchema),
-    defaultValues: {
-      upiId: "",
-      upiName: "",
-      popupMessage: "",
-      popupImageUrl: "",
-      telegramLink: "",
-      bannerImages: "",
-      adminPassword: "",
-    },
-  });
+  const [upiId, setUpiId] = useState("");
+  const [upiName, setUpiName] = useState("");
+  const [multipleUpiIds, setMultipleUpiIds] = useState<UpiEntry[]>([]);
+  const [popupMessage, setPopupMessage] = useState("");
+  const [popupImageUrl, setPopupImageUrl] = useState("");
+  const [telegramLink, setTelegramLink] = useState("");
+  const [bannerImages, setBannerImages] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [buyRules, setBuyRules] = useState("");
+  const [sellRules, setSellRules] = useState("");
 
   useEffect(() => {
     if (settings) {
-      form.reset({
-        upiId: settings.upiId || "",
-        upiName: settings.upiName || "",
-        popupMessage: settings.popupMessage || "",
-        popupImageUrl: settings.popupImageUrl || "",
-        telegramLink: settings.telegramLink || "",
-        bannerImages: settings.bannerImages ? settings.bannerImages.join(",") : "",
-        adminPassword: "",
+      setUpiId((settings as any).upiId || "");
+      setUpiName((settings as any).upiName || "");
+      setMultipleUpiIds((settings as any).multipleUpiIds || []);
+      setPopupMessage((settings as any).popupMessage || "");
+      setPopupImageUrl((settings as any).popupImageUrl || "");
+      setTelegramLink((settings as any).telegramLink || "");
+      setBannerImages((settings as any).bannerImages ? (settings as any).bannerImages.join(",") : "");
+      setBuyRules((settings as any).buyRules || "");
+      setSellRules((settings as any).sellRules || "");
+      setAdminPassword("");
+    }
+  }, [settings]);
+
+  const addUpiEntry = () => {
+    setMultipleUpiIds((prev) => [...prev, { upiId: "", upiName: "" }]);
+  };
+
+  const removeUpiEntry = (index: number) => {
+    setMultipleUpiIds((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const updateUpiEntry = (index: number, field: keyof UpiEntry, value: string) => {
+    setMultipleUpiIds((prev) =>
+      prev.map((entry, i) => (i === index ? { ...entry, [field]: value } : entry))
+    );
+  };
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      const payload: any = {
+        upiId,
+        upiName,
+        multipleUpiIds: multipleUpiIds.filter((u) => u.upiId.trim()),
+        popupMessage,
+        popupImageUrl,
+        telegramLink,
+        bannerImages: bannerImages.split(",").map((s) => s.trim()).filter(Boolean),
+        buyRules,
+        sellRules,
+      };
+      if (adminPassword) payload.adminPassword = adminPassword;
+
+      const res = await fetch(`${API_BASE}/admin/settings`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
       });
-    }
-  }, [settings, form]);
-
-  const onSubmit = (data: SettingsValues) => {
-    const payload: any = {
-      ...data,
-      bannerImages: data.bannerImages ? data.bannerImages.split(",").map(s => s.trim()).filter(Boolean) : [],
-    };
-    
-    if (!payload.adminPassword) {
-      delete payload.adminPassword;
-    }
-
-    updateSettingsMutation.mutate({ data: payload }, {
-      onSuccess: () => {
-        toast({ title: "Settings updated successfully" });
-        queryClient.invalidateQueries({ queryKey: getAdminGetSettingsQueryKey() });
-        form.setValue("adminPassword", "");
-      },
-      onError: (err) => {
-        toast({ title: "Error updating settings", description: err.error || "Unknown error", variant: "destructive" });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to save settings");
       }
-    });
+      toast({ title: "Settings updated successfully" });
+      queryClient.invalidateQueries({ queryKey: getAdminGetSettingsQueryKey() });
+      setAdminPassword("");
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -86,147 +111,187 @@ export default function AdminSettings() {
       <div className="space-y-4 max-w-4xl mx-auto">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">App Settings</h1>
-          <p className="text-muted-foreground">Configure payment details, announcements, and links.</p>
+          <p className="text-muted-foreground">Configure payment, rules, links, and announcements.</p>
         </div>
 
         {isLoading ? (
           <Skeleton className="h-[500px] w-full rounded-xl" />
         ) : (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Payment Configuration</CardTitle>
-                  <CardDescription>Main UPI account where users will deposit funds.</CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="upiId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Deposit UPI ID</FormLabel>
-                        <FormControl>
-                          <Input placeholder="admin@upi" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="upiName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>UPI Display Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="TrustPay Official" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
+          <form onSubmit={onSubmit} className="space-y-6">
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Announcement Popup</CardTitle>
-                  <CardDescription>Shown to users when they open the app.</CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-4">
-                  <FormField
-                    control={form.control}
-                    name="popupMessage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Message Content</FormLabel>
-                        <FormControl>
-                          <Textarea placeholder="Welcome to TrustPay..." className="min-h-[100px]" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="popupImageUrl"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Image URL (Optional)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="https://example.com/image.png" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
+            {/* Primary UPI */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Primary UPI Account</CardTitle>
+                <CardDescription>Default UPI shown to users for deposits.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>UPI ID</Label>
+                  <Input placeholder="admin@upi" value={upiId} onChange={(e) => setUpiId(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>UPI Display Name</Label>
+                  <Input placeholder="TrustPay Official" value={upiName} onChange={(e) => setUpiName(e.target.value)} />
+                </div>
+              </CardContent>
+            </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Links & Media</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-4">
-                  <FormField
-                    control={form.control}
-                    name="telegramLink"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Support Telegram Link</FormLabel>
-                        <FormControl>
-                          <Input placeholder="https://t.me/..." {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="bannerImages"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Home Banner Images (Comma separated URLs)</FormLabel>
-                        <FormControl>
-                          <Textarea placeholder="https://img1.jpg, https://img2.jpg" {...field} />
-                        </FormControl>
-                        <FormDescription>These images will appear in the top carousel on the home page.</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-
-              <Card className="border-red-200">
-                <CardHeader>
-                  <CardTitle className="text-red-600">Security</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <FormField
-                    control={form.control}
-                    name="adminPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Change Admin Password</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="Leave blank to keep current password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-
-              <div className="flex justify-end">
-                <Button type="submit" size="lg" disabled={updateSettingsMutation.isPending}>
-                  {updateSettingsMutation.isPending ? "Saving..." : "Save All Settings"}
+            {/* Multiple UPI IDs */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Multiple UPI IDs</CardTitle>
+                <CardDescription>
+                  Add multiple UPI IDs for payment. Users can choose which to pay to when buying.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {multipleUpiIds.map((entry, idx) => (
+                  <div key={idx} className="flex gap-2 items-start">
+                    <div className="flex-1 grid grid-cols-2 gap-2">
+                      <Input
+                        placeholder="UPI ID (e.g. example@paytm)"
+                        value={entry.upiId}
+                        onChange={(e) => updateUpiEntry(idx, "upiId", e.target.value)}
+                      />
+                      <Input
+                        placeholder="Display Name"
+                        value={entry.upiName}
+                        onChange={(e) => updateUpiEntry(idx, "upiName", e.target.value)}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive shrink-0"
+                      onClick={() => removeUpiEntry(idx)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" onClick={addUpiEntry} className="w-full">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add UPI ID
                 </Button>
-              </div>
-            </form>
-          </Form>
+              </CardContent>
+            </Card>
+
+            {/* Buy Rules */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Buy Rules</CardTitle>
+                <CardDescription>Rules displayed to users on the home screen under "Buy Rules".</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  placeholder="1. Minimum deposit is ₹100&#10;2. Deposits are processed within 10 minutes&#10;3. ..."
+                  value={buyRules}
+                  onChange={(e) => setBuyRules(e.target.value)}
+                  className="min-h-[120px]"
+                />
+              </CardContent>
+            </Card>
+
+            {/* Sell Rules */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Sell Rules</CardTitle>
+                <CardDescription>Rules displayed to users on the home screen under "Sell Rules".</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  placeholder="1. Minimum withdrawal is ₹100&#10;2. Withdrawals are processed within 24 hours&#10;3. ..."
+                  value={sellRules}
+                  onChange={(e) => setSellRules(e.target.value)}
+                  className="min-h-[120px]"
+                />
+              </CardContent>
+            </Card>
+
+            {/* Announcement Popup */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Announcement Popup</CardTitle>
+                <CardDescription>Shown to users when they open the app.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Message Content</Label>
+                  <Textarea
+                    placeholder="Welcome to TrustPay..."
+                    className="min-h-[100px]"
+                    value={popupMessage}
+                    onChange={(e) => setPopupMessage(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Image URL (Optional)</Label>
+                  <Input
+                    placeholder="https://example.com/image.png"
+                    value={popupImageUrl}
+                    onChange={(e) => setPopupImageUrl(e.target.value)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Links & Media */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Links & Media</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Help Center / Support Telegram Link</Label>
+                  <Input
+                    placeholder="https://t.me/..."
+                    value={telegramLink}
+                    onChange={(e) => setTelegramLink(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This link opens when users click "Help Center" on the home screen.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Home Banner Images (Comma separated URLs)</Label>
+                  <Textarea
+                    placeholder="https://img1.jpg, https://img2.jpg"
+                    value={bannerImages}
+                    onChange={(e) => setBannerImages(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    These images appear in the top carousel on the home page.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Security */}
+            <Card className="border-red-200">
+              <CardHeader>
+                <CardTitle className="text-red-600">Security</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Label>Change Admin Password</Label>
+                  <Input
+                    type="password"
+                    placeholder="Leave blank to keep current password"
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="flex justify-end">
+              <Button type="submit" size="lg" disabled={saving}>
+                {saving ? "Saving..." : "Save All Settings"}
+              </Button>
+            </div>
+          </form>
         )}
       </div>
     </AdminLayout>
