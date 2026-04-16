@@ -1,22 +1,32 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: TrustPay API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: users
+    description: User management
+  - name: orders
+    description: Deposit and withdrawal orders
+  - name: transactions
+    description: Transaction history
+  - name: admin
+    description: Admin operations
+  - name: settings
+    description: App settings
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +34,524 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterBody"
+      responses:
+        "200":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /orders:
+    get:
+      operationId: getOrders
+      tags: [orders]
+      summary: Get user orders
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [deposit, withdrawal]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, approved, rejected]
+      responses:
+        "200":
+          description: Orders list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Create order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderBody"
+      responses:
+        "200":
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /orders/deposit-tasks:
+    get:
+      operationId: getDepositTasks
+      tags: [orders]
+      summary: Get available deposit tasks
+      responses:
+        "200":
+          description: Deposit tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DepositTask"
+
+  /orders/withdrawal-orders:
+    get:
+      operationId: getWithdrawalOrders
+      tags: [orders]
+      summary: Get open withdrawal orders (for users to buy/pay)
+      responses:
+        "200":
+          description: Withdrawal orders available for purchase
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      summary: Get order details
+      responses:
+        "200":
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /orders/{id}/pay:
+    post:
+      operationId: payWithdrawalOrder
+      tags: [orders]
+      summary: Pay/fulfill a withdrawal order (buyer deposits to fulfill it)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Paid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /transactions:
+    get:
+      operationId: getTransactions
+      tags: [transactions]
+      summary: Get user transactions
+      responses:
+        "200":
+          description: Transactions list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Transaction"
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [users]
+      summary: Get dashboard summary for current user
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /settings/app:
+    get:
+      operationId: getAppSettings
+      tags: [settings]
+      summary: Get public app settings
+      responses:
+        "200":
+          description: App settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppSettings"
+
+  /admin/login:
+    post:
+      operationId: adminLogin
+      tags: [admin]
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginBody"
+      responses:
+        "200":
+          description: Admin logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/orders:
+    get:
+      operationId: adminGetOrders
+      tags: [admin]
+      summary: Get all orders (admin)
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [deposit, withdrawal]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, approved, rejected]
+      responses:
+        "200":
+          description: All orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OrderWithUser"
+
+  /admin/orders/{id}/approve:
+    post:
+      operationId: adminApproveOrder
+      tags: [admin]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      summary: Approve order
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminApproveOrderBody"
+      responses:
+        "200":
+          description: Approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /admin/orders/{id}/reject:
+    post:
+      operationId: adminRejectOrder
+      tags: [admin]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      summary: Reject order
+      responses:
+        "200":
+          description: Rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /admin/orders/{id}:
+    put:
+      operationId: adminUpdateOrder
+      tags: [admin]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      summary: Update order (admin can edit percentage, amount etc.)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUpdateOrderBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /admin/users:
+    get:
+      operationId: adminGetUsers
+      tags: [admin]
+      summary: Get all users
+      responses:
+        "200":
+          description: Users list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /admin/users/{id}/balance:
+    put:
+      operationId: adminUpdateUserBalance
+      tags: [admin]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      summary: Update user balance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBalanceBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /admin/settings:
+    get:
+      operationId: adminGetSettings
+      tags: [admin]
+      summary: Get all settings (admin)
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettings"
+    put:
+      operationId: adminUpdateSettings
+      tags: [admin]
+      summary: Update settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUpdateSettingsBody"
+      responses:
+        "200":
+          description: Settings updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettings"
+
+  /admin/stats/daily:
+    get:
+      operationId: adminGetDailyStats
+      tags: [admin]
+      summary: Get daily deposit/withdrawal stats
+      responses:
+        "200":
+          description: Daily stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyStats"
+
+  /admin/deposit-tasks:
+    get:
+      operationId: adminGetDepositTasks
+      tags: [admin]
+      summary: Get deposit tasks
+      responses:
+        "200":
+          description: Deposit tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DepositTask"
+    post:
+      operationId: adminCreateDepositTask
+      tags: [admin]
+      summary: Create deposit task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDepositTaskBody"
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DepositTask"
+
+  /admin/deposit-tasks/{id}:
+    put:
+      operationId: adminUpdateDepositTask
+      tags: [admin]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      summary: Update deposit task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDepositTaskBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DepositTask"
+    delete:
+      operationId: adminDeleteDepositTask
+      tags: [admin]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      summary: Delete deposit task
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +559,306 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+
+    RegisterBody:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        phone:
+          type: string
+      required: [username, password]
+
+    LoginBody:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required: [username, password]
+
+    AdminLoginBody:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required: [username, password]
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        token:
+          type: string
+      required: [user, token]
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        phone:
+          type: string
+        balance:
+          type: number
+        totalDeposits:
+          type: number
+        totalWithdrawals:
+          type: number
+        role:
+          type: string
+          enum: [user, admin]
+        createdAt:
+          type: string
+      required: [id, username, balance, totalDeposits, totalWithdrawals, role]
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        type:
+          type: string
+          enum: [deposit, withdrawal]
+        amount:
+          type: number
+        rewardPercent:
+          type: number
+        rewardAmount:
+          type: number
+        totalAmount:
+          type: number
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        upiId:
+          type: string
+        upiName:
+          type: string
+        userUpiId:
+          type: string
+        userUpiName:
+          type: string
+        userName:
+          type: string
+        notes:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, userId, type, amount, rewardPercent, rewardAmount, totalAmount, status]
+
+    OrderWithUser:
+      allOf:
+        - $ref: "#/components/schemas/Order"
+        - type: object
+          properties:
+            user:
+              $ref: "#/components/schemas/User"
+
+    CreateOrderBody:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [deposit, withdrawal]
+        amount:
+          type: number
+        depositTaskId:
+          type: integer
+        userUpiId:
+          type: string
+        userUpiName:
+          type: string
+        userName:
+          type: string
+      required: [type, amount]
+
+    AdminApproveOrderBody:
+      type: object
+      properties:
+        rewardPercent:
+          type: number
+        notes:
+          type: string
+
+    AdminUpdateOrderBody:
+      type: object
+      properties:
+        rewardPercent:
+          type: number
+        amount:
+          type: number
+        notes:
+          type: string
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        orderId:
+          type: integer
+        type:
+          type: string
+          enum: [credit, debit]
+        amount:
+          type: number
+        description:
+          type: string
+        createdAt:
+          type: string
+      required: [id, userId, type, amount, description]
+
+    DashboardSummary:
+      type: object
+      properties:
+        balance:
+          type: number
+        totalDeposits:
+          type: number
+        totalWithdrawals:
+          type: number
+        totalRewards:
+          type: number
+        pendingOrders:
+          type: integer
+        recentTransactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+      required: [balance, totalDeposits, totalWithdrawals, totalRewards, pendingOrders, recentTransactions]
+
+    AppSettings:
+      type: object
+      properties:
+        upiId:
+          type: string
+        upiName:
+          type: string
+        popupMessage:
+          type: string
+        popupImageUrl:
+          type: string
+        telegramLink:
+          type: string
+        bannerImages:
+          type: array
+          items:
+            type: string
+        appName:
+          type: string
+      required: [upiId, upiName, appName]
+
+    AdminSettings:
+      allOf:
+        - $ref: "#/components/schemas/AppSettings"
+        - type: object
+          properties:
+            adminPassword:
+              type: string
+
+    AdminUpdateSettingsBody:
+      type: object
+      properties:
+        upiId:
+          type: string
+        upiName:
+          type: string
+        popupMessage:
+          type: string
+        popupImageUrl:
+          type: string
+        telegramLink:
+          type: string
+        bannerImages:
+          type: array
+          items:
+            type: string
+        adminPassword:
+          type: string
+
+    DailyStats:
+      type: object
+      properties:
+        todayDeposits:
+          type: number
+        todayWithdrawals:
+          type: number
+        todayDepositCount:
+          type: integer
+        todayWithdrawalCount:
+          type: integer
+        totalUsers:
+          type: integer
+        pendingOrders:
+          type: integer
+      required: [todayDeposits, todayWithdrawals, todayDepositCount, todayWithdrawalCount, totalUsers, pendingOrders]
+
+    DepositTask:
+      type: object
+      properties:
+        id:
+          type: integer
+        amount:
+          type: number
+        rewardPercent:
+          type: number
+        rewardAmount:
+          type: number
+        totalAmount:
+          type: number
+        isActive:
+          type: boolean
+      required: [id, amount, rewardPercent, rewardAmount, totalAmount, isActive]
+
+    CreateDepositTaskBody:
+      type: object
+      properties:
+        amount:
+          type: number
+        rewardPercent:
+          type: number
+        isActive:
+          type: boolean
+      required: [amount, rewardPercent]
+
+    UpdateBalanceBody:
+      type: object
+      properties:
+        balance:
+          type: number
+        reason:
+          type: string
+      required: [balance]
