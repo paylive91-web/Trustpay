@@ -2,7 +2,7 @@
 
 ## Overview
 
-TrustPay is a P2P (peer-to-peer) UPI payment platform where users can deposit (buy) and withdraw (sell) funds, earning rewards on transactions. Admins can manage UPI settings, approve/reject orders, and configure the app.
+TrustPay is a P2P (peer-to-peer) UPI payment platform where users can deposit (buy) and withdraw (sell) funds, earning rewards on transactions. Admins can manage UPI settings, approve/reject orders, configure the app, and broadcast notifications.
 
 ## Stack
 
@@ -28,46 +28,37 @@ TrustPay is a P2P (peer-to-peer) UPI payment platform where users can deposit (b
 ## App Features
 
 ### User Side
-- Registration/Login (username + password)
-- Home Dashboard: balance display, BUY and SELL buttons, auto-scrolling banner
-- Buy (Deposit): task list with INR amounts and 4% rewards, UPI payment modal
-- Sell (Withdrawal): create withdrawal order, pay other users' withdrawals to earn rewards
-- Orders list, transaction history
+- Registration/Login (phone + OTP + password)
+- Optional referral code during registration
+- Home Dashboard: balance display, BUY and SELL buttons, auto-scrolling banner, buy/sell rules
+- Buy (Deposit): task list with shuffling (2x speed), full-screen payment page with UPI details + UTR + screenshot upload, active deposit blocker, approval polling with success popup
+- Sell (Withdrawal): create withdrawal order (custom amount in multiples of 100), pay other users' withdrawals
+- Orders list (Buy shows reward, Sell shows UPI details)
+- Transaction history
+- Profile: account stats, invite earnings (L1/L2), referral code display
+- Invite & Earn page: share referral code/link, commission breakdown, earnings summary
 - Support page with Telegram redirect (admin-configurable)
-- Startup popup with admin-configurable message and image
+- Startup popup: once-daily, multiple announcements + broadcast notifications from admin
 
 ### Admin Side (Default: admin / password)
 - Separate admin login at /admin
 - Dashboard: daily deposit/withdrawal stats
-- Orders management: approve/reject/edit orders, set reward %
-- Users management: view all users, update balances
-- Settings: UPI ID/Name, popup message/image, telegram link, banner images
+- Orders management: approve/reject/edit orders, view UTR + payment screenshot, set reward %
+- Users management: view all users, update balances, see invite earnings (L1/L2), referral codes
+- Settings: Multiple UPI IDs each with optional QR code, multiple daily announcements, legacy popup, telegram link, banner images, buy/sell rules, change admin password
 - Deposit Tasks CRUD: manage available deposit amounts and reward %
+- Broadcast Notification: send one-time popup message to all users
 
-## Reward System
+## Reward & Commission System
 - Deposit tasks: configurable % (default 4%)
 - Withdrawal tiers: 100-1000 INR = 5%, 1001-2000 INR = 4%, 2001-50000 INR = 3%
+- Referral commissions on deposit approval: L1 (direct invite) = 1%, L2 (invite's invite) = 0.1%
 
-## Database Schema
-- `users` — user accounts with balance tracking
-- `deposit_tasks` — available deposit tasks with amounts and reward %
-- `orders` — deposit and withdrawal orders
-- `transactions` — credit/debit transaction history
-- `settings` — key-value app configuration
+## DB Schema
 
-## Default Admin Credentials
-- Username: `admin`
-- Password: `password`
-
-## Project Structure
-
-```
-artifacts/
-  api-server/       — Express REST API
-  trustpay/         — React frontend
-lib/
-  api-spec/         — OpenAPI spec + Orval config
-  api-client-react/ — Generated React Query hooks
-  api-zod/          — Generated Zod schemas
-  db/               — Database schema (Drizzle)
-```
+- `users`: id, username, phone, password_hash, balance, total_deposits, total_withdrawals, invite_earnings, invite_earnings_l2, referral_code, referred_by, role, created_at
+- `orders`: id, user_id, type (deposit/withdrawal), amount, reward_percent, reward_amount, total_amount, status, upi_id, upi_name, user_upi_id, user_upi_name, user_name, utr_number, screenshot_url, notes, created_at, updated_at
+- `referrals`: id, referrer_id, referred_user_id, order_id, level, commission_amount, created_at
+- `deposit_tasks`: id, amount, reward_percent, is_active
+- `transactions`: id, user_id, order_id, type (credit/debit), amount, description, created_at
+- `settings`: key, value (key-value store for all app settings)

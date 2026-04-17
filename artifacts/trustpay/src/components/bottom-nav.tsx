@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { Home, ListOrdered, QrCode, ArrowRightLeft, User } from "lucide-react";
+import { Home, ListOrdered, Gift, ArrowRightLeft, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function BottomNav() {
@@ -9,7 +9,7 @@ export default function BottomNav() {
   const links = [
     { href: "/", label: "Home", icon: Home },
     { href: "/orders", label: "Orders", icon: ListOrdered },
-    { href: "/scan", label: "Scan", icon: QrCode, center: true },
+    { href: "/invite", label: "Invite", icon: Gift, center: true },
     { href: "/transactions", label: "History", icon: ArrowRightLeft },
     { href: "/profile", label: "Me", icon: User },
   ];
@@ -24,7 +24,10 @@ export default function BottomNav() {
           if (link.center) {
             return (
               <Link key={link.href} href={link.href} className="relative -top-6">
-                <div className="w-14 h-14 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg border-4 border-background">
+                <div className={cn(
+                  "w-14 h-14 rounded-full flex items-center justify-center shadow-lg border-4 border-background transition-colors",
+                  isActive ? "bg-primary/90 text-primary-foreground" : "bg-primary text-primary-foreground"
+                )}>
                   <Icon size={24} />
                 </div>
               </Link>

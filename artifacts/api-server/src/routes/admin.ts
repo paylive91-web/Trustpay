@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db } from "@workspace/db";
-import { usersTable, ordersTable, transactionsTable, depositTasksTable } from "@workspace/db";
+import { usersTable, ordersTable, transactionsTable, depositTasksTable, referralsTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { signToken, requireAdmin, formatUser } from "../lib/auth.js";
 import { getSetting, getAllSettings, setSetting } from "../lib/settings.js";
@@ -24,7 +24,6 @@ router.post("/login", async (req, res) => {
   const storedHash = await getSetting("adminPasswordHash");
 
   if (username !== storedUsername) {
-    // Try DB admin user
     const [adminUser] = await db.select().from(usersTable)
       .where(and(eq(usersTable.username, username), eq(usersTable.role, "admin"))).limit(1);
     if (!adminUser) { res.status(401).json({ error: "Invalid credentials" }); return; }
@@ -38,7 +37,6 @@ router.post("/login", async (req, res) => {
   const valid = await bcrypt.compare(password, storedHash);
   if (!valid) { res.status(401).json({ error: "Invalid credentials" }); return; }
 
-  // Create/find virtual admin user
   let adminUser = await db.select().from(usersTable).where(eq(usersTable.username, "admin")).limit(1);
   if (!adminUser[0]) {
     const [newAdmin] = await db.insert(usersTable).values({
@@ -71,6 +69,8 @@ function formatOrder(order: any, user?: any) {
     userUpiId: order.userUpiId,
     userUpiName: order.userUpiName,
     userName: order.userName,
+    utrNumber: order.utrNumber,
+    screenshotUrl: order.screenshotUrl,
     notes: order.notes,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
@@ -78,7 +78,7 @@ function formatOrder(order: any, user?: any) {
   if (user) {
     return {
       ...base,
-      user: { id: user.id, username: user.username, phone: user.phone, balance: parseFloat(user.balance), totalDeposits: parseFloat(user.totalDeposits), totalWithdrawals: parseFloat(user.totalWithdrawals), role: user.role },
+      user: { id: user.id, username: user.username, phone: user.phone, balance: parseFloat(user.balance), totalDeposits: parseFloat(user.totalDeposits), totalWithdrawals: parseFloat(user.totalWithdrawals), inviteEarnings: parseFloat(user.inviteEarnings || "0"), inviteEarningsL2: parseFloat(user.inviteEarningsL2 || "0"), role: user.role },
     };
   }
   return base;
@@ -106,6 +106,7 @@ router.post("/orders/:id/approve", requireAdmin, async (req, res) => {
   const parsed = AdminApproveOrderBody.safeParse(req.body || {});
   const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
   if (!order) { res.status(404).json({ error: "Not found" }); return; }
+  if (order.status !== "pending") { res.status(400).json({ error: "Order is not pending" }); return; }
 
   let rewardPercent = parseFloat(order.rewardPercent);
   if (parsed.success && parsed.data.rewardPercent != null) {
@@ -134,8 +135,61 @@ router.post("/orders/:id/approve", requireAdmin, async (req, res) => {
       orderId: id,
       type: "credit",
       amount: String(totalAmount),
-      description: `Deposit approved for order #${id} (+${rewardPercent}% reward)`,
+      description: `Buy approved for order #${id} (+${rewardPercent}% reward)`,
     });
+
+    // Handle referral commissions
+    const [depositor] = await db.select().from(usersTable).where(eq(usersTable.id, order.userId)).limit(1);
+    if (depositor && depositor.referredBy) {
+      // Level 1 commission: 1% to direct referrer
+      const l1Commission = parseFloat((amount * 0.01).toFixed(2));
+      if (l1Commission > 0) {
+        await db.update(usersTable).set({
+          balance: sql`${usersTable.balance} + ${l1Commission}`,
+          inviteEarnings: sql`${usersTable.inviteEarnings} + ${l1Commission}`,
+        }).where(eq(usersTable.id, depositor.referredBy));
+        await db.insert(referralsTable).values({
+          referrerId: depositor.referredBy,
+          referredUserId: depositor.id,
+          orderId: id,
+          level: 1,
+          commissionAmount: String(l1Commission),
+        });
+        await db.insert(transactionsTable).values({
+          userId: depositor.referredBy,
+          orderId: id,
+          type: "credit",
+          amount: String(l1Commission),
+          description: `Invite commission (L1 1%) from user #${depositor.id} deposit`,
+        });
+
+        // Level 2 commission: 0.1% to L1 referrer's referrer
+        const [l1Referrer] = await db.select().from(usersTable).where(eq(usersTable.id, depositor.referredBy)).limit(1);
+        if (l1Referrer && l1Referrer.referredBy) {
+          const l2Commission = parseFloat((amount * 0.001).toFixed(2));
+          if (l2Commission > 0) {
+            await db.update(usersTable).set({
+              balance: sql`${usersTable.balance} + ${l2Commission}`,
+              inviteEarningsL2: sql`${usersTable.inviteEarningsL2} + ${l2Commission}`,
+            }).where(eq(usersTable.id, l1Referrer.referredBy));
+            await db.insert(referralsTable).values({
+              referrerId: l1Referrer.referredBy,
+              referredUserId: depositor.id,
+              orderId: id,
+              level: 2,
+              commissionAmount: String(l2Commission),
+            });
+            await db.insert(transactionsTable).values({
+              userId: l1Referrer.referredBy,
+              orderId: id,
+              type: "credit",
+              amount: String(l2Commission),
+              description: `Invite commission (L2 0.1%) from user #${depositor.id} deposit`,
+            });
+          }
+        }
+      }
+    }
   }
 
   const [updated] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
@@ -148,7 +202,6 @@ router.post("/orders/:id/reject", requireAdmin, async (req, res) => {
   if (!order) { res.status(404).json({ error: "Not found" }); return; }
 
   if (order.type === "withdrawal" && order.status === "pending") {
-    // Refund balance
     await db.update(usersTable).set({
       balance: sql`${usersTable.balance} + ${parseFloat(order.amount)}`,
       totalWithdrawals: sql`${usersTable.totalWithdrawals} - ${parseFloat(order.amount)}`,
@@ -205,20 +258,35 @@ router.put("/users/:id/balance", requireAdmin, async (req, res) => {
   res.json(formatUser(user));
 });
 
+// Send broadcast notification to all users
+router.post("/notify-all", requireAdmin, async (req, res) => {
+  const { message, title } = req.body;
+  if (!message) { res.status(400).json({ error: "Message is required" }); return; }
+  const notification = { title: title || "TrustPay", message, sentAt: new Date().toISOString() };
+  await setSetting("broadcastNotification", JSON.stringify(notification));
+  res.json({ success: true, notification });
+});
+
 function formatSettingsResponse(s: any) {
   let multipleUpiIds = [];
   try { multipleUpiIds = JSON.parse(s.multipleUpiIds || "[]"); } catch {}
+  let announcements = [];
+  try { announcements = JSON.parse(s.announcements || "[]"); } catch {}
+  let broadcastNotification = null;
+  try { broadcastNotification = JSON.parse(s.broadcastNotification || "null"); } catch {}
   return {
     upiId: s.upiId || "trustpay@upi",
     upiName: s.upiName || "TrustPay",
     multipleUpiIds,
     popupMessage: s.popupMessage || "",
     popupImageUrl: s.popupImageUrl || "",
+    announcements,
     telegramLink: s.telegramLink || "",
     bannerImages: JSON.parse(s.bannerImages || "[]"),
     appName: s.appName || "TrustPay",
     buyRules: s.buyRules || "",
     sellRules: s.sellRules || "",
+    broadcastNotification,
   };
 }
 
@@ -229,12 +297,13 @@ router.get("/settings", requireAdmin, async (req, res) => {
 
 router.put("/settings", requireAdmin, async (req, res) => {
   const body = req.body;
-  const { upiId, upiName, multipleUpiIds, popupMessage, popupImageUrl, telegramLink, bannerImages, adminPassword, buyRules, sellRules } = body;
+  const { upiId, upiName, multipleUpiIds, popupMessage, popupImageUrl, announcements, telegramLink, bannerImages, adminPassword, buyRules, sellRules } = body;
   if (upiId != null) await setSetting("upiId", upiId);
   if (upiName != null) await setSetting("upiName", upiName);
   if (multipleUpiIds != null) await setSetting("multipleUpiIds", JSON.stringify(multipleUpiIds));
   if (popupMessage != null) await setSetting("popupMessage", popupMessage);
   if (popupImageUrl != null) await setSetting("popupImageUrl", popupImageUrl);
+  if (announcements != null) await setSetting("announcements", JSON.stringify(announcements));
   if (telegramLink != null) await setSetting("telegramLink", telegramLink);
   if (bannerImages != null) await setSetting("bannerImages", JSON.stringify(bannerImages));
   if (buyRules != null) await setSetting("buyRules", buyRules);

@@ -9,7 +9,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -25,10 +24,10 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetWithdrawalOrdersQueryKey, getGetMeQueryKey } from "@workspace/api-client-react";
 
-const WITHDRAWAL_AMOUNTS = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1500, 2000, 2500, 3000, 5000, 10000];
-
 const sellSchema = z.object({
-  amount: z.coerce.number().min(100, "Minimum withdrawal is 100"),
+  amount: z.coerce.number()
+    .min(1, "Amount required")
+    .refine((v) => v % 100 === 0, "Amount must be a multiple of 100"),
   userUpiId: z.string().min(5, "Valid UPI ID is required"),
   userUpiName: z.string().min(2, "Name is required"),
 });
@@ -121,24 +120,22 @@ export default function Sell() {
                       name="amount"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Amount to Sell</FormLabel>
-                          <Select
-                            onValueChange={(val) => field.onChange(Number(val))}
-                            defaultValue={field.value?.toString()}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select amount" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {WITHDRAWAL_AMOUNTS.map(amt => (
-                                <SelectItem key={amt} value={amt.toString()}>
-                                  ₹ {amt}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <FormLabel>Amount to Sell (multiples of 100)</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">₹</span>
+                              <Input
+                                type="number"
+                                step={100}
+                                min={100}
+                                placeholder="e.g. 500"
+                                className="pl-8"
+                                value={field.value || ""}
+                                onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : "")}
+                              />
+                            </div>
+                          </FormControl>
+                          <p className="text-xs text-muted-foreground">Enter amount in multiples of 100 (e.g. 100, 200, 500)</p>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -187,7 +184,7 @@ export default function Sell() {
             {ordersLoading ? (
               Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-xl mb-4" />)
             ) : openOrders && openOrders.length > 0 ? (
-              openOrders.map((order) => (
+              openOrders.map((order: any) => (
                 <Card key={order.id} className="overflow-hidden mb-4">
                   <CardContent className="p-4 flex flex-col gap-3">
                     <div className="flex justify-between items-center border-b pb-3">
@@ -195,15 +192,10 @@ export default function Sell() {
                         <IndianRupee className="w-5 h-5 mr-1" />
                         {order.amount.toFixed(2)}
                       </div>
-                      <div className="text-right">
-                        <div className="text-sm font-medium text-green-600">
-                          Earn: {order.rewardPercent}% (+₹{order.rewardAmount.toFixed(2)})
-                        </div>
-                      </div>
                     </div>
                     <div className="flex justify-between items-center mt-1">
                       <div>
-                        <div className="text-xs text-muted-foreground">Total Payout</div>
+                        <div className="text-xs text-muted-foreground">You Pay</div>
                         <div className="font-semibold text-foreground">₹ {order.totalAmount.toFixed(2)}</div>
                       </div>
                       <Button
@@ -231,7 +223,7 @@ export default function Sell() {
           <DialogHeader>
             <DialogTitle>Accept Order</DialogTitle>
             <DialogDescription>
-              Pay ₹{selectedOrderToPay?.amount.toFixed(2)} to the user's UPI ID. Once confirmed, you receive ₹{selectedOrderToPay?.totalAmount.toFixed(2)}.
+              Pay ₹{selectedOrderToPay?.amount.toFixed(2)} to the user's UPI ID. Once confirmed, you receive the reward amount.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-4">

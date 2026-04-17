@@ -30,7 +30,6 @@ export default function AdminUsers() {
 
   const handleSaveBalance = () => {
     if (!editUser) return;
-    
     updateBalanceMutation.mutate({
       id: editUser.id,
       data: {
@@ -53,7 +52,7 @@ export default function AdminUsers() {
     <AdminLayout>
       <div className="space-y-4">
         <h1 className="text-2xl font-bold tracking-tight">Manage Users</h1>
-        
+
         <Card>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -61,10 +60,12 @@ export default function AdminUsers() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>ID</TableHead>
-                    <TableHead>Username</TableHead>
+                    <TableHead>Username / Phone</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Balance</TableHead>
-                    <TableHead>Stats</TableHead>
+                    <TableHead>Deposits / Withdrawals</TableHead>
+                    <TableHead>Invite Earnings</TableHead>
+                    <TableHead>Code</TableHead>
                     <TableHead>Joined</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -72,7 +73,7 @@ export default function AdminUsers() {
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center">Loading...</TableCell>
+                      <TableCell colSpan={9} className="h-24 text-center">Loading...</TableCell>
                     </TableRow>
                   ) : users && users.length > 0 ? (
                     users.map((user: any) => (
@@ -83,7 +84,7 @@ export default function AdminUsers() {
                           {user.phone && <div className="text-xs text-muted-foreground">{user.phone}</div>}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={user.role === 'admin' ? "default" : "secondary"}>
+                          <Badge variant={user.role === "admin" ? "default" : "secondary"}>
                             {user.role}
                           </Badge>
                         </TableCell>
@@ -92,6 +93,11 @@ export default function AdminUsers() {
                           <div>Dep: ₹{user.totalDeposits.toFixed(2)}</div>
                           <div>With: ₹{user.totalWithdrawals.toFixed(2)}</div>
                         </TableCell>
+                        <TableCell className="text-xs space-y-1">
+                          <div className="text-purple-700 font-medium">L1: ₹{(user.inviteEarnings || 0).toFixed(2)}</div>
+                          <div className="text-blue-600">L2: ₹{(user.inviteEarningsL2 || 0).toFixed(2)}</div>
+                        </TableCell>
+                        <TableCell className="text-xs font-mono">{user.referralCode || "-"}</TableCell>
                         <TableCell className="text-sm">
                           {user.createdAt ? format(new Date(user.createdAt), "MMM dd, yyyy") : "-"}
                         </TableCell>
@@ -104,7 +110,7 @@ export default function AdminUsers() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">No users found.</TableCell>
+                      <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">No users found.</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
@@ -123,17 +129,17 @@ export default function AdminUsers() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">New Balance (₹)</label>
-              <Input 
-                type="number" 
-                value={newBalance} 
-                onChange={(e) => setNewBalance(e.target.value)} 
+              <Input
+                type="number"
+                value={newBalance}
+                onChange={(e) => setNewBalance(e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Reason for adjustment</label>
-              <Input 
-                value={reason} 
-                onChange={(e) => setReason(e.target.value)} 
+              <Input
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
                 placeholder="e.g. Manual correction"
               />
             </div>

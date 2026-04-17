@@ -20,6 +20,8 @@ export const ordersTable = pgTable("orders", {
   userUpiId: text("user_upi_id"),
   userUpiName: text("user_upi_name"),
   userName: text("user_name"),
+  utrNumber: text("utr_number"),
+  screenshotUrl: text("screenshot_url"),
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

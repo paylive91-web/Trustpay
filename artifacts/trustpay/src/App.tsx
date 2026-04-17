@@ -13,6 +13,7 @@ import Orders from "@/pages/orders";
 import Transactions from "@/pages/transactions";
 import Support from "@/pages/support";
 import Profile from "@/pages/profile";
+import Invite from "@/pages/invite";
 
 import AdminLogin from "@/pages/admin/login";
 import AdminDashboard from "@/pages/admin/dashboard";
@@ -35,6 +36,7 @@ function Router() {
       <Route path="/transactions" component={Transactions} />
       <Route path="/support" component={Support} />
       <Route path="/profile" component={Profile} />
+      <Route path="/invite" component={Invite} />
 
       {/* Admin Routes */}
       <Route path="/admin" component={AdminLogin} />
@@ -43,7 +45,7 @@ function Router() {
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/admin/settings" component={AdminSettings} />
       <Route path="/admin/deposit-tasks" component={AdminDepositTasks} />
-      
+
       <Route component={NotFound} />
     </Switch>
   );

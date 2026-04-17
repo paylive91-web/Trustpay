@@ -10,14 +10,20 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQueryClient } from "@tanstack/react-query";
 import { getAdminGetSettingsQueryKey } from "@workspace/api-client-react";
-import { Plus, Trash2 } from "lucide-react";
-import { clearAuthToken } from "@/lib/auth";
+import { Plus, Trash2, Bell } from "lucide-react";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
 interface UpiEntry {
   upiId: string;
   upiName: string;
+  qrImageUrl?: string;
+}
+
+interface Announcement {
+  title: string;
+  message: string;
+  imageUrl?: string;
 }
 
 export default function AdminSettings() {
@@ -25,10 +31,14 @@ export default function AdminSettings() {
   const queryClient = useQueryClient();
   const { data: settings, isLoading } = useAdminGetSettings();
   const [saving, setSaving] = useState(false);
+  const [notifying, setNotifying] = useState(false);
+  const [broadcastTitle, setBroadcastTitle] = useState("");
+  const [broadcastMessage, setBroadcastMessage] = useState("");
 
   const [upiId, setUpiId] = useState("");
   const [upiName, setUpiName] = useState("");
   const [multipleUpiIds, setMultipleUpiIds] = useState<UpiEntry[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [popupMessage, setPopupMessage] = useState("");
   const [popupImageUrl, setPopupImageUrl] = useState("");
   const [telegramLink, setTelegramLink] = useState("");
@@ -42,6 +52,7 @@ export default function AdminSettings() {
       setUpiId((settings as any).upiId || "");
       setUpiName((settings as any).upiName || "");
       setMultipleUpiIds((settings as any).multipleUpiIds || []);
+      setAnnouncements((settings as any).announcements || []);
       setPopupMessage((settings as any).popupMessage || "");
       setPopupImageUrl((settings as any).popupImageUrl || "");
       setTelegramLink((settings as any).telegramLink || "");
@@ -52,19 +63,15 @@ export default function AdminSettings() {
     }
   }, [settings]);
 
-  const addUpiEntry = () => {
-    setMultipleUpiIds((prev) => [...prev, { upiId: "", upiName: "" }]);
-  };
+  const addUpiEntry = () => setMultipleUpiIds((prev) => [...prev, { upiId: "", upiName: "", qrImageUrl: "" }]);
+  const removeUpiEntry = (i: number) => setMultipleUpiIds((prev) => prev.filter((_, idx) => idx !== i));
+  const updateUpiEntry = (i: number, field: keyof UpiEntry, val: string) =>
+    setMultipleUpiIds((prev) => prev.map((e, idx) => idx === i ? { ...e, [field]: val } : e));
 
-  const removeUpiEntry = (index: number) => {
-    setMultipleUpiIds((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const updateUpiEntry = (index: number, field: keyof UpiEntry, value: string) => {
-    setMultipleUpiIds((prev) =>
-      prev.map((entry, i) => (i === index ? { ...entry, [field]: value } : entry))
-    );
-  };
+  const addAnnouncement = () => setAnnouncements((prev) => [...prev, { title: "", message: "", imageUrl: "" }]);
+  const removeAnnouncement = (i: number) => setAnnouncements((prev) => prev.filter((_, idx) => idx !== i));
+  const updateAnnouncement = (i: number, field: keyof Announcement, val: string) =>
+    setAnnouncements((prev) => prev.map((a, idx) => idx === i ? { ...a, [field]: val } : a));
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,6 +82,7 @@ export default function AdminSettings() {
         upiId,
         upiName,
         multipleUpiIds: multipleUpiIds.filter((u) => u.upiId.trim()),
+        announcements: announcements.filter((a) => a.message.trim()),
         popupMessage,
         popupImageUrl,
         telegramLink,
@@ -86,10 +94,7 @@ export default function AdminSettings() {
 
       const res = await fetch(`${API_BASE}/admin/settings`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
@@ -103,6 +108,30 @@ export default function AdminSettings() {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSendBroadcast = async () => {
+    if (!broadcastMessage.trim()) {
+      toast({ title: "Message is required", variant: "destructive" });
+      return;
+    }
+    setNotifying(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      const res = await fetch(`${API_BASE}/admin/notify-all`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ message: broadcastMessage.trim(), title: broadcastTitle.trim() || "TrustPay" }),
+      });
+      if (!res.ok) throw new Error("Failed to send notification");
+      toast({ title: "Notification sent to all users!" });
+      setBroadcastMessage("");
+      setBroadcastTitle("");
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setNotifying(false);
     }
   };
 
@@ -141,39 +170,51 @@ export default function AdminSettings() {
             <Card>
               <CardHeader>
                 <CardTitle>Multiple UPI IDs</CardTitle>
-                <CardDescription>
-                  Add multiple UPI IDs for payment. Users can choose which to pay to when buying.
-                </CardDescription>
+                <CardDescription>Add multiple UPI IDs. Each can have its own QR code image URL.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {multipleUpiIds.map((entry, idx) => (
-                  <div key={idx} className="flex gap-2 items-start">
-                    <div className="flex-1 grid grid-cols-2 gap-2">
-                      <Input
-                        placeholder="UPI ID (e.g. example@paytm)"
-                        value={entry.upiId}
-                        onChange={(e) => updateUpiEntry(idx, "upiId", e.target.value)}
-                      />
-                      <Input
-                        placeholder="Display Name"
-                        value={entry.upiName}
-                        onChange={(e) => updateUpiEntry(idx, "upiName", e.target.value)}
-                      />
-                    </div>
-                    <Button
+                  <div key={idx} className="border rounded-xl p-4 space-y-3 relative">
+                    <button
                       type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive shrink-0"
+                      className="absolute top-3 right-3 text-destructive hover:text-destructive/80"
                       onClick={() => removeUpiEntry(idx)}
                     >
                       <Trash2 className="w-4 h-4" />
-                    </Button>
+                    </button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">UPI ID</Label>
+                        <Input
+                          placeholder="e.g. example@paytm"
+                          value={entry.upiId}
+                          onChange={(e) => updateUpiEntry(idx, "upiId", e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Display Name</Label>
+                        <Input
+                          placeholder="Name"
+                          value={entry.upiName}
+                          onChange={(e) => updateUpiEntry(idx, "upiName", e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">QR Code Image URL (Optional)</Label>
+                      <Input
+                        placeholder="https://example.com/qr.png"
+                        value={entry.qrImageUrl || ""}
+                        onChange={(e) => updateUpiEntry(idx, "qrImageUrl", e.target.value)}
+                      />
+                      {entry.qrImageUrl && (
+                        <img src={entry.qrImageUrl} alt="QR Preview" className="w-20 h-20 mt-2 object-contain border rounded" />
+                      )}
+                    </div>
                   </div>
                 ))}
                 <Button type="button" variant="outline" onClick={addUpiEntry} className="w-full">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add UPI ID
+                  <Plus className="w-4 h-4 mr-2" /> Add UPI ID
                 </Button>
               </CardContent>
             </Card>
@@ -210,26 +251,62 @@ export default function AdminSettings() {
               </CardContent>
             </Card>
 
-            {/* Announcement Popup */}
+            {/* Multiple Announcements */}
             <Card>
               <CardHeader>
-                <CardTitle>Announcement Popup</CardTitle>
-                <CardDescription>Shown to users when they open the app.</CardDescription>
+                <CardTitle>Announcements</CardTitle>
+                <CardDescription>Multiple announcements shown to users once per day on app open.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Message Content</Label>
+                {announcements.map((ann, idx) => (
+                  <div key={idx} className="border rounded-xl p-4 space-y-3 relative">
+                    <button
+                      type="button"
+                      className="absolute top-3 right-3 text-destructive hover:text-destructive/80"
+                      onClick={() => removeAnnouncement(idx)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Title</Label>
+                      <Input
+                        placeholder="Announcement"
+                        value={ann.title}
+                        onChange={(e) => updateAnnouncement(idx, "title", e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Message</Label>
+                      <Textarea
+                        placeholder="Message content..."
+                        value={ann.message}
+                        onChange={(e) => updateAnnouncement(idx, "message", e.target.value)}
+                        className="min-h-[80px]"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Image URL (Optional)</Label>
+                      <Input
+                        placeholder="https://example.com/image.png"
+                        value={ann.imageUrl || ""}
+                        onChange={(e) => updateAnnouncement(idx, "imageUrl", e.target.value)}
+                      />
+                    </div>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" onClick={addAnnouncement} className="w-full">
+                  <Plus className="w-4 h-4 mr-2" /> Add Announcement
+                </Button>
+                <div className="border-t pt-4 space-y-2">
+                  <Label className="text-xs text-muted-foreground">Legacy Single Popup Message (fallback)</Label>
                   <Textarea
                     placeholder="Welcome to TrustPay..."
-                    className="min-h-[100px]"
+                    className="min-h-[80px]"
                     value={popupMessage}
                     onChange={(e) => setPopupMessage(e.target.value)}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label>Image URL (Optional)</Label>
                   <Input
-                    placeholder="https://example.com/image.png"
+                    placeholder="Image URL (Optional)"
                     value={popupImageUrl}
                     onChange={(e) => setPopupImageUrl(e.target.value)}
                   />
@@ -244,15 +321,12 @@ export default function AdminSettings() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Help Center / Support Telegram Link</Label>
+                  <Label>Support Telegram Link</Label>
                   <Input
                     placeholder="https://t.me/..."
                     value={telegramLink}
                     onChange={(e) => setTelegramLink(e.target.value)}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    This link opens when users click "Help Center" on the home screen.
-                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label>Home Banner Images (Comma separated URLs)</Label>
@@ -261,9 +335,6 @@ export default function AdminSettings() {
                     value={bannerImages}
                     onChange={(e) => setBannerImages(e.target.value)}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    These images appear in the top carousel on the home page.
-                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -293,6 +364,36 @@ export default function AdminSettings() {
             </div>
           </form>
         )}
+
+        {/* Broadcast Notification */}
+        <Card className="border-blue-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="w-5 h-5 text-blue-500" />
+              Send Notification to All Users
+            </CardTitle>
+            <CardDescription>This message will appear as a popup next time users open the app.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-2">
+              <Label>Title</Label>
+              <Input placeholder="Important Update" value={broadcastTitle} onChange={(e) => setBroadcastTitle(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Message</Label>
+              <Textarea
+                placeholder="Write your message here..."
+                value={broadcastMessage}
+                onChange={(e) => setBroadcastMessage(e.target.value)}
+                className="min-h-[80px]"
+              />
+            </div>
+            <Button onClick={handleSendBroadcast} disabled={notifying} className="w-full">
+              <Bell className="w-4 h-4 mr-2" />
+              {notifying ? "Sending..." : "Send to All Users"}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </AdminLayout>
   );

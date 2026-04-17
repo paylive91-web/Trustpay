@@ -1,4 +1,4 @@
-import { pgTable, serial, text, numeric, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, numeric, timestamp, pgEnum, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -12,6 +12,10 @@ export const usersTable = pgTable("users", {
   balance: numeric("balance", { precision: 12, scale: 2 }).notNull().default("0"),
   totalDeposits: numeric("total_deposits", { precision: 12, scale: 2 }).notNull().default("0"),
   totalWithdrawals: numeric("total_withdrawals", { precision: 12, scale: 2 }).notNull().default("0"),
+  inviteEarnings: numeric("invite_earnings", { precision: 12, scale: 2 }).notNull().default("0"),
+  inviteEarningsL2: numeric("invite_earnings_l2", { precision: 12, scale: 2 }).notNull().default("0"),
+  referralCode: text("referral_code").unique(),
+  referredBy: integer("referred_by"),
   role: userRoleEnum("role").notNull().default("user"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

@@ -1,10 +1,9 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { ordersTable, usersTable, depositTasksTable, transactionsTable } from "@workspace/db";
+import { ordersTable, usersTable, depositTasksTable, transactionsTable, referralsTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { requireAuth } from "../lib/auth.js";
 import { getSettings } from "../lib/settings.js";
-import { CreateOrderBody } from "@workspace/api-zod";
 
 const router = Router();
 
@@ -23,6 +22,8 @@ function formatOrder(order: any, user?: any) {
     userUpiId: order.userUpiId,
     userUpiName: order.userUpiName,
     userName: order.userName,
+    utrNumber: order.utrNumber,
+    screenshotUrl: order.screenshotUrl,
     notes: order.notes,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
@@ -41,7 +42,6 @@ function getWithdrawalRewardPercent(amount: number): number {
 
 router.get("/deposit-tasks", requireAuth, async (req, res) => {
   const tasks = await db.select().from(depositTasksTable).where(eq(depositTasksTable.isActive, true));
-  const settings = await getSettings(["upiId", "upiName"]);
   const formatted = tasks.map((t) => {
     const amount = parseFloat(t.amount);
     const rewardPercent = parseFloat(t.rewardPercent);
@@ -68,6 +68,18 @@ router.get("/withdrawal-orders", requireAuth, async (req, res) => {
   })));
 });
 
+router.get("/active-deposit", requireAuth, async (req, res) => {
+  const currentUser = (req as any).user;
+  const [order] = await db.select().from(ordersTable).where(
+    and(
+      eq(ordersTable.userId, currentUser.id),
+      eq(ordersTable.type, "deposit"),
+      eq(ordersTable.status, "pending")
+    )
+  ).limit(1);
+  res.json(order ? formatOrder(order) : null);
+});
+
 router.get("/", requireAuth, async (req, res) => {
   const currentUser = (req as any).user;
   const { type, status } = req.query as { type?: string; status?: string };
@@ -80,16 +92,15 @@ router.get("/", requireAuth, async (req, res) => {
 
 router.get("/:id", requireAuth, async (req, res) => {
   const id = parseInt(req.params.id);
-  const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
+  const currentUser = (req as any).user;
+  const [order] = await db.select().from(ordersTable).where(and(eq(ordersTable.id, id), eq(ordersTable.userId, currentUser.id))).limit(1);
   if (!order) { res.status(404).json({ error: "Not found" }); return; }
-  const settings = await getSettings(["upiId", "upiName"]);
-  res.json({ ...formatOrder(order), upiId: settings.upiId, upiName: settings.upiName });
+  res.json(formatOrder(order));
 });
 
 router.post("/", requireAuth, async (req, res) => {
-  const parsed = CreateOrderBody.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: "Invalid request body" }); return; }
-  const { type, amount, depositTaskId, userUpiId, userUpiName, userName } = parsed.data;
+  const { type, amount, depositTaskId, userUpiId, userUpiName, userName, utrNumber, screenshotUrl, notes } = req.body;
+  if (!type || !amount) { res.status(400).json({ error: "Type and amount required" }); return; }
   const currentUser = (req as any).user;
   const settings = await getSettings(["upiId", "upiName"]);
 
@@ -113,9 +124,9 @@ router.post("/", requireAuth, async (req, res) => {
       userId: currentUser.id,
       type: "withdrawal",
       amount: String(amount),
-      rewardPercent: String(rewardPercent),
-      rewardAmount: String(rewardAmount),
-      totalAmount: String(totalAmount),
+      rewardPercent: String(0),
+      rewardAmount: String(0),
+      totalAmount: String(amount),
       status: "pending",
       userUpiId,
       userUpiName,
@@ -127,7 +138,19 @@ router.post("/", requireAuth, async (req, res) => {
     return;
   }
 
-  // deposit
+  // deposit - check for active pending deposit
+  const [existing] = await db.select().from(ordersTable).where(
+    and(
+      eq(ordersTable.userId, currentUser.id),
+      eq(ordersTable.type, "deposit"),
+      eq(ordersTable.status, "pending")
+    )
+  ).limit(1);
+  if (existing) {
+    res.status(400).json({ error: "You already have a pending deposit order. Please complete or cancel it first." });
+    return;
+  }
+
   let rewardPercent = 4;
   if (depositTaskId) {
     const [task] = await db.select().from(depositTasksTable).where(eq(depositTasksTable.id, depositTaskId)).limit(1);
@@ -145,8 +168,23 @@ router.post("/", requireAuth, async (req, res) => {
     status: "pending",
     upiId: settings.upiId,
     upiName: settings.upiName,
+    userName: userName || currentUser.username,
+    utrNumber: utrNumber || null,
+    screenshotUrl: screenshotUrl || null,
+    notes: notes || null,
   }).returning();
-  res.json({ ...formatOrder(order), upiId: settings.upiId, upiName: settings.upiName });
+  res.json(formatOrder(order));
+});
+
+router.post("/:id/cancel", requireAuth, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const currentUser = (req as any).user;
+  const [order] = await db.select().from(ordersTable).where(
+    and(eq(ordersTable.id, id), eq(ordersTable.userId, currentUser.id), eq(ordersTable.status, "pending"))
+  ).limit(1);
+  if (!order) { res.status(404).json({ error: "Order not found or cannot be cancelled" }); return; }
+  await db.update(ordersTable).set({ status: "rejected", updatedAt: new Date() }).where(eq(ordersTable.id, id));
+  res.json({ success: true });
 });
 
 router.post("/:id/pay", requireAuth, async (req, res) => {
@@ -164,13 +202,11 @@ router.post("/:id/pay", requireAuth, async (req, res) => {
     return;
   }
 
-  // Deduct from buyer, approve the withdrawal order, credit to seller (original user gets reward too)
   await db.update(ordersTable).set({ status: "approved", updatedAt: new Date() }).where(eq(ordersTable.id, id));
   await db.update(usersTable).set({
     balance: sql`${usersTable.balance} - ${totalAmount}`,
   }).where(eq(usersTable.id, currentUser.id));
 
-  // Credit the withdrawal owner with reward
   const rewardAmount = parseFloat(order.rewardAmount);
   await db.update(usersTable).set({
     balance: sql`${usersTable.balance} + ${rewardAmount}`,

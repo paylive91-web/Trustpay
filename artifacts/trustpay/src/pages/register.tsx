@@ -25,11 +25,16 @@ export default function Register() {
   const [sentOtp, setSentOtp] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [referralCode, setReferralCode] = useState("");
 
   useEffect(() => {
     if (user && !isUserLoading) {
       setLocation("/");
     }
+    // Pre-fill referral code from URL param
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref) setReferralCode(ref.toUpperCase());
   }, [user, isUserLoading, setLocation]);
 
   const handleSendOtp = async (e: React.FormEvent) => {
@@ -82,10 +87,12 @@ export default function Register() {
     }
     setLoading(true);
     try {
+      const body: any = { phone, password };
+      if (referralCode.trim()) body.referralCode = referralCode.trim().toUpperCase();
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, password }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Registration failed");
@@ -104,7 +111,6 @@ export default function Register() {
       <div className="flex flex-col items-center justify-center min-h-screen p-6">
         <img src={logoPath} alt="TrustPay Logo" className="w-24 h-24 mb-8" />
 
-        {/* Step indicators */}
         <div className="flex items-center gap-2 mb-8">
           {["phone", "otp", "password"].map((s, i) => (
             <React.Fragment key={s}>
@@ -199,6 +205,14 @@ export default function Register() {
                   placeholder="Repeat your password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Referral Code <span className="text-muted-foreground font-normal">(Optional)</span></Label>
+                <Input
+                  placeholder="e.g. TP000001"
+                  value={referralCode}
+                  onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
                 />
               </div>
               <Button type="submit" className="w-full h-12 text-base" disabled={loading}>

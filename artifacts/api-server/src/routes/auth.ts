@@ -8,14 +8,12 @@ import { RegisterBody, LoginBody } from "@workspace/api-zod";
 
 const router = Router();
 
-// In-memory OTP store: phone -> { otp, expiresAt }
 const otpStore = new Map<string, { otp: string; expiresAt: number }>();
 
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// POST /api/auth/send-otp
 router.post("/send-otp", async (req, res) => {
   const { phone } = req.body;
   if (!phone || !/^[6-9]\d{9}$/.test(phone)) {
@@ -24,12 +22,9 @@ router.post("/send-otp", async (req, res) => {
   }
   const otp = generateOTP();
   otpStore.set(phone, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
-  // In production, integrate with SMS provider (Twilio, MSG91, etc.)
-  // For demo, OTP is returned in response
   res.json({ success: true, otp, message: "OTP sent successfully (demo mode)" });
 });
 
-// POST /api/auth/verify-otp
 router.post("/verify-otp", async (req, res) => {
   const { phone, otp } = req.body;
   if (!phone || !otp) {
@@ -54,11 +49,9 @@ router.post("/verify-otp", async (req, res) => {
   res.json({ success: true, verified: true });
 });
 
-// POST /api/auth/register (phone + password, OTP must be verified externally)
 router.post("/register", async (req, res) => {
-  const { phone, password } = req.body;
+  const { phone, password, referralCode } = req.body;
   if (!phone || !password) {
-    // Fall back to old schema for backward compat
     const parsed = RegisterBody.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: "Phone and password are required" });
@@ -72,6 +65,9 @@ router.post("/register", async (req, res) => {
     }
     const passwordHash = await bcrypt.hash(pw, 10);
     const [user] = await db.insert(usersTable).values({ username, passwordHash }).returning();
+    const code = "TP" + String(user.id).padStart(6, "0");
+    await db.update(usersTable).set({ referralCode: code }).where(eq(usersTable.id, user.id));
+    user.referralCode = code;
     const token = signToken(user.id, user.role);
     res.json({ user: formatUser(user), token });
     return;
@@ -91,17 +87,30 @@ router.post("/register", async (req, res) => {
     res.status(400).json({ error: "Mobile number already registered" });
     return;
   }
+
+  // Resolve referrer if referralCode provided
+  let referredById: number | null = null;
+  if (referralCode) {
+    const [referrer] = await db.select().from(usersTable).where(eq(usersTable.referralCode, referralCode.toUpperCase())).limit(1);
+    if (referrer) referredById = referrer.id;
+  }
+
   const passwordHash = await bcrypt.hash(password, 10);
   const [user] = await db.insert(usersTable).values({
     username: phone,
     passwordHash,
     phone,
+    referredBy: referredById || undefined,
   }).returning();
+
+  const code = "TP" + String(user.id).padStart(6, "0");
+  await db.update(usersTable).set({ referralCode: code }).where(eq(usersTable.id, user.id));
+  user.referralCode = code;
+
   const token = signToken(user.id, user.role);
   res.json({ user: formatUser(user), token });
 });
 
-// POST /api/auth/login
 router.post("/login", async (req, res) => {
   const { phone, username, password } = req.body;
   const identifier = phone || username;
@@ -125,7 +134,6 @@ router.post("/login", async (req, res) => {
   res.json({ user: formatUser(user), token });
 });
 
-// POST /api/auth/reset-password (OTP must be verified first)
 router.post("/reset-password", async (req, res) => {
   const { phone, otp, newPassword } = req.body;
   if (!phone || !otp || !newPassword) {
@@ -136,7 +144,6 @@ router.post("/reset-password", async (req, res) => {
     res.status(400).json({ error: "Password must be at least 6 characters" });
     return;
   }
-  // Re-verify OTP inline
   const stored = otpStore.get(`reset_${phone}`);
   if (!stored) {
     res.status(400).json({ error: "OTP not found. Please request a new OTP." });
@@ -164,7 +171,6 @@ router.post("/reset-password", async (req, res) => {
   res.json({ success: true, message: "Password updated successfully" });
 });
 
-// POST /api/auth/send-reset-otp
 router.post("/send-reset-otp", async (req, res) => {
   const { phone } = req.body;
   if (!phone) {

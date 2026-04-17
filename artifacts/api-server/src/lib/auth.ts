@@ -58,6 +58,10 @@ export function formatUser(user: any) {
     balance: parseFloat(user.balance),
     totalDeposits: parseFloat(user.totalDeposits),
     totalWithdrawals: parseFloat(user.totalWithdrawals),
+    inviteEarnings: parseFloat(user.inviteEarnings || "0"),
+    inviteEarningsL2: parseFloat(user.inviteEarningsL2 || "0"),
+    referralCode: user.referralCode,
+    referredBy: user.referredBy,
     role: user.role,
     createdAt: user.createdAt,
   };

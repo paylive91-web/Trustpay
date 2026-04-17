@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { clearAuthToken } from "@/lib/auth";
-import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_1776335785514.png";
-import { Headset, LogOut, ChevronRight, TrendingUp, Wallet, ArrowDownCircle, ArrowUpCircle, Phone } from "lucide-react";
+import { Headset, LogOut, ChevronRight, TrendingUp, Wallet, ArrowDownCircle, ArrowUpCircle, Phone, Gift, Copy } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -40,6 +39,14 @@ export default function Profile() {
     }
   };
 
+  const handleCopyReferral = () => {
+    const code = (user as any)?.referralCode;
+    if (code) {
+      navigator.clipboard.writeText(code);
+      toast({ title: "Referral code copied!" });
+    }
+  };
+
   if (isLoading) {
     return (
       <Layout>
@@ -54,12 +61,8 @@ export default function Profile() {
 
   const displayName = user?.phone || user?.username || "User";
   const initials = displayName.slice(0, 2).toUpperCase();
-
-  // Compute estimated rewards: balance + withdrawals - deposits (net reward added)
-  const estimatedRewards = Math.max(
-    0,
-    (user?.balance || 0) + (user?.totalWithdrawals || 0) - (user?.totalDeposits || 0)
-  );
+  const inviteEarnings = (user as any)?.inviteEarnings || 0;
+  const inviteEarningsL2 = (user as any)?.inviteEarningsL2 || 0;
 
   const stats = [
     {
@@ -75,10 +78,10 @@ export default function Profile() {
       color: "bg-green-50 border-green-100",
     },
     {
-      label: "Total Rewards Earned",
-      value: `₹ ${estimatedRewards.toFixed(2)}`,
-      icon: <TrendingUp className="w-5 h-5 text-yellow-500" />,
-      color: "bg-yellow-50 border-yellow-100",
+      label: "Invite Earnings (L1)",
+      value: `₹ ${inviteEarnings.toFixed(2)}`,
+      icon: <Gift className="w-5 h-5 text-purple-500" />,
+      color: "bg-purple-50 border-purple-100",
     },
     {
       label: "Total Withdrawn (Sell)",
@@ -90,7 +93,6 @@ export default function Profile() {
 
   return (
     <Layout>
-      {/* Header */}
       <div className="bg-primary pt-10 pb-20 px-4 text-primary-foreground">
         <div className="flex items-center gap-4">
           <Avatar className="h-16 w-16 border-2 border-primary-foreground/20">
@@ -110,7 +112,6 @@ export default function Profile() {
       </div>
 
       <div className="px-4 -mt-12 relative z-10 space-y-4">
-        {/* Stats Grid */}
         <Card className="border-none shadow-md overflow-hidden">
           <CardContent className="p-4">
             <h3 className="font-semibold text-sm text-muted-foreground mb-3 uppercase tracking-wide">Account Statistics</h3>
@@ -128,20 +129,32 @@ export default function Profile() {
           </CardContent>
         </Card>
 
-        {/* Quick Actions */}
+        {/* Referral Code */}
+        {(user as any)?.referralCode && (
+          <Card className="border-none shadow-md">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs text-muted-foreground mb-1">Your Referral Code</div>
+                  <div className="text-xl font-bold tracking-widest text-primary">{(user as any).referralCode}</div>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleCopyReferral} className="shrink-0">
+                  <Copy className="w-4 h-4 mr-1" /> Copy
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card className="border-none shadow-md overflow-hidden">
           <div className="divide-y">
             <MenuItem icon={<Headset className="text-blue-500" />} label="Contact Support" onClick={handleContactSupport} />
+            <MenuItem icon={<Gift className="text-purple-500" />} label="Invite & Earn" onClick={() => setLocation("/invite")} />
           </div>
         </Card>
 
-        {/* App Info + Logout */}
         <Card className="border-none shadow-md">
-          <div className="p-4 flex items-center justify-center flex-col text-center">
-            <img src={logoPath} alt="TrustPay" className="w-16 h-16 mb-3 rounded-xl shadow-sm" />
-            <h3 className="font-bold text-lg">TrustPay</h3>
-            <p className="text-xs text-muted-foreground mb-4">Version 1.0.0</p>
-
+          <div className="p-4">
             <Button
               variant="destructive"
               className="w-full rounded-xl"
