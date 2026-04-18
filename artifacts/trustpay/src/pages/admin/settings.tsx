@@ -52,7 +52,6 @@ function ImagePicker({ value, onChange, label }: { value: string; onChange: (v: 
   );
 }
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
 interface UpiEntry {
   upiId: string;
