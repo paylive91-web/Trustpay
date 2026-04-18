@@ -271,3 +271,48 @@ test("dispute: lock blocked while user has open dispute", async () => {
   assert.equal(blocked.status, 403);
   assert.match(JSON.stringify(blocked.data), /open dispute/i);
 });
+
+// ─── FRAUD RULE TOGGLES ─────────────────────────────────────────────────────
+
+test("fraud-rules: list, toggle off+on, validate, and require admin", async () => {
+  const admin = await adminLogin();
+  // List endpoint requires admin
+  const noAuth = await api("/admin/fraud-rules");
+  assert.equal(noAuth.status, 401);
+
+  const listed = await api("/admin/fraud-rules", { token: admin.token });
+  assert.equal(listed.status, 200);
+  assert.ok(Array.isArray(listed.data) && listed.data.length >= 28, `expected 28+ rules, got ${listed.data?.length}`);
+  const sample = listed.data.find((r: any) => r.rule === "duplicate_utr");
+  assert.ok(sample, "duplicate_utr rule must be in canonical list");
+  assert.equal(typeof sample.enabled, "boolean");
+
+  // Unknown rule rejected
+  const bad = await api("/admin/fraud-rules/toggle", {
+    method: "POST", token: admin.token, body: { rule: "does_not_exist", enabled: false },
+  });
+  assert.equal(bad.status, 400);
+
+  // Bad payload rejected
+  const badBody = await api("/admin/fraud-rules/toggle", {
+    method: "POST", token: admin.token, body: { rule: "duplicate_utr" },
+  });
+  assert.equal(badBody.status, 400);
+
+  // Toggle off persists
+  const off = await api("/admin/fraud-rules/toggle", {
+    method: "POST", token: admin.token, body: { rule: "duplicate_utr", enabled: false },
+  });
+  assert.equal(off.status, 200);
+  // Cache TTL is 5s; wait so the next read sees the new value.
+  await new Promise((r) => setTimeout(r, 5500));
+  const after = await api("/admin/fraud-rules", { token: admin.token });
+  const dup = after.data.find((r: any) => r.rule === "duplicate_utr");
+  assert.equal(dup.enabled, false);
+
+  // Toggle back on (cleanup so no other test is affected)
+  const on = await api("/admin/fraud-rules/toggle", {
+    method: "POST", token: admin.token, body: { rule: "duplicate_utr", enabled: true },
+  });
+  assert.equal(on.status, 200);
+});

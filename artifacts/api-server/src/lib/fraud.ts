@@ -1,11 +1,97 @@
 import { db } from "@workspace/db";
 import {
   fraudAlertsTable, utrIndexTable, imageHashesTable, ordersTable, usersTable,
-  deviceFingerprintsTable, disputesTable, userNotificationsTable,
+  deviceFingerprintsTable, disputesTable, userNotificationsTable, settingsTable,
 } from "@workspace/db";
 import { eq, and, sql, ne, or, inArray } from "drizzle-orm";
+import { getSetting, setSetting } from "./settings.js";
 
 type Severity = "info" | "warn" | "critical";
+
+// Canonical list of every fraud rule the engine can emit. Each entry pairs the
+// rule name passed to logAlert() with its default severity and a friendly label
+// for the admin UI. Adding a new rule? Register it here so it shows up as a
+// toggle on the Fraud Watch "Rules" tab.
+export const FRAUD_RULES: Array<{ rule: string; severity: Severity; label: string }> = [
+  { rule: "duplicate_utr", severity: "critical", label: "Duplicate UTR across users" },
+  { rule: "duplicate_utr_same_user", severity: "warn", label: "Same user reusing UTR" },
+  { rule: "utr_reuse_recent", severity: "warn", label: "UTR reused within 7 days" },
+  { rule: "fake_utr_pattern", severity: "critical", label: "UTR is repeated digits" },
+  { rule: "fake_utr_sequential", severity: "warn", label: "UTR starts with sequential digits" },
+  { rule: "fake_utr_length", severity: "warn", label: "UTR length unusual" },
+  { rule: "duplicate_screenshot_cross_user", severity: "critical", label: "Screenshot reused across users" },
+  { rule: "duplicate_screenshot_same_user", severity: "warn", label: "Same user reusing screenshot" },
+  { rule: "duplicate_recording_cross_user", severity: "critical", label: "Recording reused across users" },
+  { rule: "duplicate_recording_same_user", severity: "warn", label: "Same user reusing recording" },
+  { rule: "velocity_burst", severity: "critical", label: "10+ lock attempts in 5 min" },
+  { rule: "velocity_high", severity: "warn", label: "5+ lock attempts in 5 min" },
+  { rule: "off_hours_burst", severity: "warn", label: "Heavy activity 1-5 AM IST" },
+  { rule: "upi_multi_account", severity: "critical", label: "UPI shared across accounts" },
+  { rule: "upi_suspicious_pattern", severity: "warn", label: "UPI matches suspicious pattern" },
+  { rule: "high_cancel_rate", severity: "warn", label: "High cancellation rate (>=60%)" },
+  { rule: "extreme_cancel_rate", severity: "critical", label: "Extreme cancellation rate (>=80%)" },
+  { rule: "rapid_lock_release", severity: "warn", label: "3+ rapid lock/release in 10 min" },
+  { rule: "multi_account_same_device", severity: "critical", label: "Multiple accounts on same device" },
+  { rule: "multi_ip_login", severity: "warn", label: "5+ distinct IPs in 24h" },
+  { rule: "multi_ip_login_critical", severity: "critical", label: "10+ distinct IPs in 24h" },
+  { rule: "frozen_user_login_attempt", severity: "info", label: "Frozen user login attempt" },
+  { rule: "referral_self_loop", severity: "critical", label: "Self-referral" },
+  { rule: "referral_same_device", severity: "critical", label: "Referral from same device" },
+  { rule: "high_dispute_rate", severity: "warn", label: "Dispute rate >=30%" },
+  { rule: "extreme_dispute_rate", severity: "critical", label: "Dispute rate >=50%" },
+  { rule: "new_account_high_value", severity: "critical", label: "High-value action on new account" },
+  { rule: "balance_drain_attempt", severity: "critical", label: "Repeated lock/release drain attempt" },
+];
+
+const DISABLED_RULES_KEY = "disabled_fraud_rules";
+const DISABLED_RULES_TTL_MS = 5_000;
+
+let disabledCache: { set: Set<string>; expires: number } | null = null;
+
+async function loadDisabledRules(): Promise<Set<string>> {
+  const now = Date.now();
+  if (disabledCache && disabledCache.expires > now) return disabledCache.set;
+  const raw = await getSetting(DISABLED_RULES_KEY);
+  let arr: string[] = [];
+  try { arr = raw ? JSON.parse(raw) : []; } catch { arr = []; }
+  const set = new Set(Array.isArray(arr) ? arr.filter((x) => typeof x === "string") : []);
+  disabledCache = { set, expires: now + DISABLED_RULES_TTL_MS };
+  return set;
+}
+
+export function invalidateFraudRuleCache() {
+  disabledCache = null;
+}
+
+export async function isFraudRuleEnabled(rule: string): Promise<boolean> {
+  const disabled = await loadDisabledRules();
+  return !disabled.has(rule);
+}
+
+export async function listFraudRules(): Promise<Array<{
+  rule: string; severity: Severity; label: string; enabled: boolean; updatedAt: string | null;
+}>> {
+  const disabled = await loadDisabledRules();
+  // Fetch the timestamp of the toggle setting so the UI can show "last changed".
+  const [row] = await db.select().from(settingsTable).where(eq(settingsTable.key, DISABLED_RULES_KEY)).limit(1);
+  const updatedAt = row ? new Date(row.updatedAt).toISOString() : null;
+  return FRAUD_RULES.map((r) => ({
+    ...r,
+    enabled: !disabled.has(r.rule),
+    updatedAt: disabled.has(r.rule) ? updatedAt : null,
+  }));
+}
+
+export async function setFraudRuleEnabled(rule: string, enabled: boolean): Promise<void> {
+  if (!FRAUD_RULES.some((r) => r.rule === rule)) {
+    throw new Error(`Unknown fraud rule: ${rule}`);
+  }
+  const current = await loadDisabledRules();
+  const next = new Set(current);
+  if (enabled) next.delete(rule); else next.add(rule);
+  await setSetting(DISABLED_RULES_KEY, JSON.stringify([...next]));
+  invalidateFraudRuleCache();
+}
 
 function describeRule(rule: string, severity: Severity): { title: string; body: string } {
   const sevLabel = severity === "critical" ? "Critical" : severity === "warn" ? "Warning" : "Notice";
@@ -47,6 +133,9 @@ function describeRule(rule: string, severity: Severity): { title: string; body: 
 }
 
 async function logAlert(userId: number | null, orderId: number | null, rule: string, severity: Severity, evidence: string) {
+  // Admin can disable individual rules from the Fraud Watch UI. When disabled,
+  // skip the alert insert, the user notification, and any auto-freeze side effect.
+  if (!(await isFraudRuleEnabled(rule))) return;
   // Insert the alert; notify the user in-app for warn/critical (info is too noisy).
   const shouldNotify = userId != null && (severity === "warn" || severity === "critical");
   const [alert] = await db.insert(fraudAlertsTable).values({

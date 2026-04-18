@@ -617,6 +617,32 @@ export const AdminFreezeUserResponse = zod.object({
 });
 
 /**
+ * @summary List all fraud rules with their enabled flag
+ */
+export const AdminGetFraudRulesResponseItem = zod.object({
+  rule: zod.string(),
+  severity: zod.enum(["critical", "warn", "info"]),
+  label: zod.string(),
+  enabled: zod.boolean(),
+  updatedAt: zod.string().nullish(),
+});
+export const AdminGetFraudRulesResponse = zod.array(
+  AdminGetFraudRulesResponseItem,
+);
+
+/**
+ * @summary Enable or disable a single fraud rule
+ */
+export const AdminToggleFraudRuleBody = zod.object({
+  rule: zod.string(),
+  enabled: zod.boolean(),
+});
+
+export const AdminToggleFraudRuleResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
  * @summary Broadcast notification to all users
  */
 export const AdminNotifyAllBody = zod.object({

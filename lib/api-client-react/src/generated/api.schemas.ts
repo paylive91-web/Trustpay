@@ -268,6 +268,28 @@ export interface ReviewHighValueBody {
   notes?: string;
 }
 
+export type FraudRuleSeverity =
+  (typeof FraudRuleSeverity)[keyof typeof FraudRuleSeverity];
+
+export const FraudRuleSeverity = {
+  critical: "critical",
+  warn: "warn",
+  info: "info",
+} as const;
+
+export interface FraudRule {
+  rule: string;
+  severity: FraudRuleSeverity;
+  label: string;
+  enabled: boolean;
+  updatedAt?: string | null;
+}
+
+export interface ToggleFraudRuleBody {
+  rule: string;
+  enabled: boolean;
+}
+
 export interface NotifyAllBody {
   title?: string;
   message: string;

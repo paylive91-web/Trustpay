@@ -572,6 +572,46 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
+  /admin/fraud-rules:
+    get:
+      operationId: adminGetFraudRules
+      tags: [admin]
+      summary: List all fraud rules with their enabled flag
+      responses:
+        "200":
+          description: Fraud rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FraudRule"
+
+  /admin/fraud-rules/toggle:
+    post:
+      operationId: adminToggleFraudRule
+      tags: [admin]
+      summary: Enable or disable a single fraud rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ToggleFraudRuleBody"
+      responses:
+        "200":
+          description: Toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /admin/notify-all:
     post:
       operationId: adminNotifyAll
@@ -1250,6 +1290,32 @@ components:
       properties:
         notes:
           type: string
+
+    FraudRule:
+      type: object
+      properties:
+        rule:
+          type: string
+        severity:
+          type: string
+          enum: [critical, warn, info]
+        label:
+          type: string
+        enabled:
+          type: boolean
+        updatedAt:
+          type: string
+          nullable: true
+      required: [rule, severity, label, enabled]
+
+    ToggleFraudRuleBody:
+      type: object
+      properties:
+        rule:
+          type: string
+        enabled:
+          type: boolean
+      required: [rule, enabled]
 
     NotifyAllBody:
       type: object

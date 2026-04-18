@@ -5,6 +5,7 @@ import { usersTable, ordersTable, transactionsTable, depositTasksTable, fraudAle
 import { eq, and, sql, inArray } from "drizzle-orm";
 import { signToken, requireAdmin, formatUser } from "../lib/auth.js";
 import { getSetting, getAllSettings, setSetting } from "../lib/settings.js";
+import { listFraudRules, setFraudRuleEnabled } from "../lib/fraud.js";
 
 const router = Router();
 
@@ -180,6 +181,28 @@ router.post("/fraud-alerts/:id/notify", requireAdmin, async (req, res) => {
   await db.update(fraudAlertsTable)
     .set({ notifiedAt: new Date(), notifiedBy: adminId })
     .where(eq(fraudAlertsTable.id, id));
+  res.json({ success: true });
+});
+
+// List every fraud rule the engine knows about, plus its current enabled flag.
+router.get("/fraud-rules", requireAdmin, async (_req, res) => {
+  res.json(await listFraudRules());
+});
+
+// Toggle one rule on/off. Disabled rules produce no alerts, no notifications,
+// and never auto-freeze users until re-enabled.
+router.post("/fraud-rules/toggle", requireAdmin, async (req, res) => {
+  const { rule, enabled } = req.body || {};
+  if (typeof rule !== "string" || typeof enabled !== "boolean") {
+    res.status(400).json({ error: "rule (string) and enabled (boolean) required" });
+    return;
+  }
+  try {
+    await setFraudRuleEnabled(rule, enabled);
+  } catch (e: any) {
+    res.status(400).json({ error: e.message || "Failed to toggle rule" });
+    return;
+  }
   res.json({ success: true });
 });
 

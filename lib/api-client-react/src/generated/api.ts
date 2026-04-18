@@ -38,6 +38,7 @@ import type {
   DepositTask,
   ErrorResponse,
   FraudAlert,
+  FraudRule,
   GetOrdersParams,
   HealthStatus,
   HighValueEvent,
@@ -51,6 +52,7 @@ import type {
   ReviewHighValueBody,
   SellerProofBody,
   SuccessResponse,
+  ToggleFraudRuleBody,
   Transaction,
   UpdateBalanceBody,
   UploadImageBody,
@@ -2444,6 +2446,167 @@ export const useAdminFreezeUser = <
   TContext
 > => {
   return useMutation(getAdminFreezeUserMutationOptions(options));
+};
+
+/**
+ * @summary List all fraud rules with their enabled flag
+ */
+export const getAdminGetFraudRulesUrl = () => {
+  return `/api/admin/fraud-rules`;
+};
+
+export const adminGetFraudRules = async (
+  options?: RequestInit,
+): Promise<FraudRule[]> => {
+  return customFetch<FraudRule[]>(getAdminGetFraudRulesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getAdminGetFraudRulesQueryKey = () => {
+  return [`/api/admin/fraud-rules`] as const;
+};
+
+export const getAdminGetFraudRulesQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminGetFraudRules>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof adminGetFraudRules>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminGetFraudRulesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminGetFraudRules>>
+  > = ({ signal }) => adminGetFraudRules({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminGetFraudRules>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminGetFraudRulesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminGetFraudRules>>
+>;
+export type AdminGetFraudRulesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all fraud rules with their enabled flag
+ */
+
+export function useAdminGetFraudRules<
+  TData = Awaited<ReturnType<typeof adminGetFraudRules>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof adminGetFraudRules>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminGetFraudRulesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Enable or disable a single fraud rule
+ */
+export const getAdminToggleFraudRuleUrl = () => {
+  return `/api/admin/fraud-rules/toggle`;
+};
+
+export const adminToggleFraudRule = async (
+  toggleFraudRuleBody: ToggleFraudRuleBody,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getAdminToggleFraudRuleUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(toggleFraudRuleBody),
+  });
+};
+
+export const getAdminToggleFraudRuleMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminToggleFraudRule>>,
+    TError,
+    { data: BodyType<ToggleFraudRuleBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminToggleFraudRule>>,
+  TError,
+  { data: BodyType<ToggleFraudRuleBody> },
+  TContext
+> => {
+  const mutationKey = ["adminToggleFraudRule"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminToggleFraudRule>>,
+    { data: BodyType<ToggleFraudRuleBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminToggleFraudRule(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminToggleFraudRuleMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminToggleFraudRule>>
+>;
+export type AdminToggleFraudRuleMutationBody = BodyType<ToggleFraudRuleBody>;
+export type AdminToggleFraudRuleMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Enable or disable a single fraud rule
+ */
+export const useAdminToggleFraudRule = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminToggleFraudRule>>,
+    TError,
+    { data: BodyType<ToggleFraudRuleBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminToggleFraudRule>>,
+  TError,
+  { data: BodyType<ToggleFraudRuleBody> },
+  TContext
+> => {
+  return useMutation(getAdminToggleFraudRuleMutationOptions(options));
 };
 
 /**
