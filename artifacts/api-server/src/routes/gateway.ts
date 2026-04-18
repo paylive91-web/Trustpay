@@ -38,16 +38,24 @@ router.post("/create-deposit", requireAuth, async (req, res) => {
     "gatewayBaseUrl",
     "gatewayMerchantId",
     "gatewayApiKey",
+    "gatewayApiSecret",
+    "gatewayWebhookSecret",
     "gatewayAuthMethod",
     "gatewayCreatePaymentPath",
+    "gatewayVerifyPaymentPath",
+    "gatewayRefundPath",
     "gatewayStatusPath",
   ]);
   const gatewayBaseUrl = gatewaySettings.gatewayBaseUrl || "https://gateway-hub--kishorimeeraa.replit.app";
   const gatewayApi = `${gatewayBaseUrl}/api`;
   const gatewayKey = gatewaySettings.gatewayApiKey || "";
+  const gatewaySecret = gatewaySettings.gatewayApiSecret || "";
+  const gatewayWebhookSecret = gatewaySettings.gatewayWebhookSecret || "whsec_trustpay1";
   const gatewayMerchantId = gatewaySettings.gatewayMerchantId || "Tporder";
   const gatewayAuthMethod = gatewaySettings.gatewayAuthMethod || "bearer";
   const gatewayCreatePath = gatewaySettings.gatewayCreatePaymentPath || "/payments";
+  const gatewayVerifyPath = gatewaySettings.gatewayVerifyPaymentPath || "/payments/:id/verify";
+  const gatewayRefundPath = gatewaySettings.gatewayRefundPath || "/refunds";
   const gatewayStatusPath = gatewaySettings.gatewayStatusPath || "/payments/:id/status";
   const rewardPercent = 4;
   const rewardAmount = parseFloat((amount * rewardPercent / 100).toFixed(2));
@@ -84,6 +92,8 @@ router.post("/create-deposit", requireAuth, async (req, res) => {
     description: `TrustPay deposit order #${order.id}`,
     redirectUrl,
     webhookUrl,
+    apiSecret: gatewaySecret,
+    webhookSecret: gatewayWebhookSecret,
   };
 
   try {
@@ -112,6 +122,8 @@ router.post("/create-deposit", requireAuth, async (req, res) => {
 
     const txnId = data.id || data.transactionId || data.orderId || data.paymentId || null;
     const paymentUrl = data.paymentUrl || data.redirectUrl || data.url || (txnId ? `${gatewayBaseUrl}/pay/${txnId}` : null);
+    const verifyUrl = txnId ? `${gatewayApi}${gatewayVerifyPath.replace(":id", encodeURIComponent(String(txnId)))}` : null;
+    const refundUrl = txnId ? `${gatewayApi}${gatewayRefundPath}` : null;
 
     await db.update(ordersTable).set({
       notes: txnId ? `gw_txn:${txnId}` : "gateway:created",
@@ -122,6 +134,8 @@ router.post("/create-deposit", requireAuth, async (req, res) => {
       orderId: order.id,
       transactionId: txnId,
       paymentUrl,
+      verifyUrl,
+      refundUrl,
       qrCode: data.qrCode || null,
       gateway: data,
     });
