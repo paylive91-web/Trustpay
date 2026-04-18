@@ -1,4 +1,4 @@
-import { db, usersTable, ordersTable, userUpiIdsTable, disputesTable, settingsTable, highValueEventsTable } from "@workspace/db";
+import { db, usersTable, ordersTable, userUpiIdsTable, disputesTable, settingsTable, highValueEventsTable, fraudAlertsTable, userNotificationsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
@@ -117,4 +117,12 @@ export const TINY_PDF = "data:application/pdf;base64," + Buffer.from("%PDF-1.4\n
 export function uniqueImg(): string {
   const padding = Buffer.from(`unique-${Date.now()}-${Math.random().toString(36).slice(2)}-${"x".repeat(120)}`).toString("base64");
   return `data:image/png;base64,${padding}`;
+}
+
+export async function fraudAlertsForUser(userId: number) {
+  return db.select().from(fraudAlertsTable).where(eq(fraudAlertsTable.userId, userId));
+}
+
+export async function notificationsForUser(userId: number) {
+  return db.select().from(userNotificationsTable).where(eq(userNotificationsTable.userId, userId));
 }

@@ -4,6 +4,7 @@ import {
   api, registerUser, adminLogin, setUserBalance, getUser,
   insertSellChunk, setOrderConfirmDeadline, findDisputeForOrder,
   highValueRowsForOrder, freshUsername, freshPhone,
+  fraudAlertsForUser, notificationsForUser,
   TINY_PNG, TINY_PDF, uniqueImg,
 } from "./helpers.js";
 
@@ -274,12 +275,29 @@ test("dispute: lock blocked while user has open dispute", async () => {
 
 // ─── FRAUD RULE TOGGLES ─────────────────────────────────────────────────────
 
-test("fraud-rules: list, toggle off+on, validate, and require admin", async () => {
-  const admin = await adminLogin();
-  // List endpoint requires admin
-  const noAuth = await api("/admin/fraud-rules");
-  assert.equal(noAuth.status, 401);
+const FRAUD_CACHE_TTL_MS = 5500;
 
+test("fraud-rules: list/toggle endpoints validate input and require admin auth", async () => {
+  const admin = await adminLogin();
+  const u = await registerUser("frrules");
+
+  // Both endpoints reject unauthenticated callers
+  const listNoAuth = await api("/admin/fraud-rules");
+  assert.ok([401, 403].includes(listNoAuth.status), `expected 401/403, got ${listNoAuth.status}`);
+  const toggleNoAuth = await api("/admin/fraud-rules/toggle", {
+    method: "POST", body: { rule: "duplicate_utr", enabled: false },
+  });
+  assert.ok([401, 403].includes(toggleNoAuth.status), `expected 401/403, got ${toggleNoAuth.status}`);
+
+  // Both endpoints reject regular users (admin-only)
+  const listAsUser = await api("/admin/fraud-rules", { token: u.token });
+  assert.ok([401, 403].includes(listAsUser.status), `expected 401/403, got ${listAsUser.status}`);
+  const toggleAsUser = await api("/admin/fraud-rules/toggle", {
+    method: "POST", token: u.token, body: { rule: "duplicate_utr", enabled: false },
+  });
+  assert.ok([401, 403].includes(toggleAsUser.status), `expected 401/403, got ${toggleAsUser.status}`);
+
+  // Admin can list — gets every canonical rule
   const listed = await api("/admin/fraud-rules", { token: admin.token });
   assert.equal(listed.status, 200);
   assert.ok(Array.isArray(listed.data) && listed.data.length >= 28, `expected 28+ rules, got ${listed.data?.length}`);
@@ -288,31 +306,134 @@ test("fraud-rules: list, toggle off+on, validate, and require admin", async () =
   assert.equal(typeof sample.enabled, "boolean");
 
   // Unknown rule rejected
-  const bad = await api("/admin/fraud-rules/toggle", {
+  const badRule = await api("/admin/fraud-rules/toggle", {
     method: "POST", token: admin.token, body: { rule: "does_not_exist", enabled: false },
   });
-  assert.equal(bad.status, 400);
+  assert.equal(badRule.status, 400);
 
-  // Bad payload rejected
+  // Missing field rejected
   const badBody = await api("/admin/fraud-rules/toggle", {
     method: "POST", token: admin.token, body: { rule: "duplicate_utr" },
   });
   assert.equal(badBody.status, 400);
+});
 
-  // Toggle off persists
+test("fraud-rules: per-rule timestamps update independently and survive re-enable", async () => {
+  const admin = await adminLogin();
+
+  await api("/admin/fraud-rules/toggle", {
+    method: "POST", token: admin.token, body: { rule: "fake_utr_pattern", enabled: false },
+  });
+  await new Promise((r) => setTimeout(r, FRAUD_CACHE_TTL_MS));
+
+  // Toggle a different rule; the first one's timestamp must remain intact.
+  const before = (await api("/admin/fraud-rules", { token: admin.token })).data
+    .find((r: any) => r.rule === "fake_utr_pattern");
+  assert.equal(before.enabled, false);
+  assert.ok(before.updatedAt, "first toggled rule must have its own timestamp");
+
+  await new Promise((r) => setTimeout(r, 1100));
+  await api("/admin/fraud-rules/toggle", {
+    method: "POST", token: admin.token, body: { rule: "velocity_high", enabled: false },
+  });
+  await new Promise((r) => setTimeout(r, FRAUD_CACHE_TTL_MS));
+
+  const after = (await api("/admin/fraud-rules", { token: admin.token })).data;
+  const fake = after.find((r: any) => r.rule === "fake_utr_pattern");
+  const vel = after.find((r: any) => r.rule === "velocity_high");
+  assert.equal(fake.updatedAt, before.updatedAt, "untouched rule keeps its timestamp");
+  assert.ok(vel.updatedAt && vel.updatedAt !== fake.updatedAt, "newly toggled rule has its own timestamp");
+
+  // Re-enabling preserves a timestamp (it just records the latest change).
+  await api("/admin/fraud-rules/toggle", {
+    method: "POST", token: admin.token, body: { rule: "fake_utr_pattern", enabled: true },
+  });
+  await api("/admin/fraud-rules/toggle", {
+    method: "POST", token: admin.token, body: { rule: "velocity_high", enabled: true },
+  });
+  await new Promise((r) => setTimeout(r, FRAUD_CACHE_TTL_MS));
+  const reenabled = (await api("/admin/fraud-rules", { token: admin.token })).data
+    .find((r: any) => r.rule === "fake_utr_pattern");
+  assert.equal(reenabled.enabled, true);
+  assert.ok(reenabled.updatedAt, "re-enabled rule keeps a timestamp of its last change");
+});
+
+// Drives a cross-user duplicate UTR through /p2p submit and asserts the
+// `duplicate_utr` rule's three side effects (alert row, notification row,
+// auto-freeze) are fully suppressed when the rule is disabled, and restored
+// when re-enabled. This is the headline guarantee of the toggle feature.
+test("fraud-rules: disabled rule produces no alert, no notification, no freeze; re-enable restores", async () => {
+  const admin = await adminLogin();
+  const sellerA = await registerUser("frfsa");
+  const sellerB = await registerUser("frfsb");
+  const buyerA = await registerUser("frfba");
+  const buyerB = await registerUser("frfbb");
+  await setUserBalance(sellerA.id, 600);
+  await setUserBalance(sellerB.id, 600);
+
+  const sharedUtr = "FRDUP" + Math.floor(Math.random() * 1e10);
+
+  // Disable duplicate_utr first
   const off = await api("/admin/fraud-rules/toggle", {
     method: "POST", token: admin.token, body: { rule: "duplicate_utr", enabled: false },
   });
   assert.equal(off.status, 200);
-  // Cache TTL is 5s; wait so the next read sees the new value.
-  await new Promise((r) => setTimeout(r, 5500));
-  const after = await api("/admin/fraud-rules", { token: admin.token });
-  const dup = after.data.find((r: any) => r.rule === "duplicate_utr");
-  assert.equal(dup.enabled, false);
+  await new Promise((r) => setTimeout(r, FRAUD_CACHE_TTL_MS));
 
-  // Toggle back on (cleanup so no other test is affected)
+  // Buyer A locks + submits a UTR (seeds the index)
+  const cA = await insertSellChunk(sellerA.id, 100);
+  let r = await api(`/p2p/lock/${cA}`, { method: "POST", token: buyerA.token });
+  assert.equal(r.status, 200, `lockA: ${JSON.stringify(r.data)}`);
+  r = await api(`/p2p/submit/${cA}`, {
+    method: "POST", token: buyerA.token,
+    body: { utrNumber: sharedUtr, screenshotUrl: uniqueImg(), recordingUrl: uniqueImg() },
+  });
+  assert.equal(r.status, 200, `submitA: ${JSON.stringify(r.data)}`);
+
+  // Buyer B reuses the same UTR on a different seller's chunk — would normally
+  // fire a critical `duplicate_utr` alert and freeze buyerB.
+  const cB = await insertSellChunk(sellerB.id, 100);
+  r = await api(`/p2p/lock/${cB}`, { method: "POST", token: buyerB.token });
+  assert.equal(r.status, 200, `lockB: ${JSON.stringify(r.data)}`);
+  r = await api(`/p2p/submit/${cB}`, {
+    method: "POST", token: buyerB.token,
+    body: { utrNumber: sharedUtr, screenshotUrl: uniqueImg(), recordingUrl: uniqueImg() },
+  });
+  assert.equal(r.status, 200, `submitB: ${JSON.stringify(r.data)}`);
+
+  // ── While disabled: no alert row, no notification, no freeze ──
+  const alertsDisabled = (await fraudAlertsForUser(buyerB.id))
+    .filter((a) => a.rule === "duplicate_utr");
+  assert.equal(alertsDisabled.length, 0, "disabled rule must not insert fraud_alerts row");
+  const notesDisabled = (await notificationsForUser(buyerB.id))
+    .filter((n) => n.kind === "fraud_alert");
+  assert.equal(notesDisabled.length, 0, "disabled rule must not send a notification");
+  const buyerBState = await getUser(buyerB.id);
+  assert.equal(buyerBState.isFrozen, false, "disabled critical rule must not auto-freeze user");
+
+  // ── Re-enable, run the same scenario with a fresh buyer ──
   const on = await api("/admin/fraud-rules/toggle", {
     method: "POST", token: admin.token, body: { rule: "duplicate_utr", enabled: true },
   });
   assert.equal(on.status, 200);
+  await new Promise((r) => setTimeout(r, FRAUD_CACHE_TTL_MS));
+
+  const buyerC = await registerUser("frfbc");
+  const cC = await insertSellChunk(sellerB.id, 100);
+  r = await api(`/p2p/lock/${cC}`, { method: "POST", token: buyerC.token });
+  assert.equal(r.status, 200, `lockC: ${JSON.stringify(r.data)}`);
+  r = await api(`/p2p/submit/${cC}`, {
+    method: "POST", token: buyerC.token,
+    body: { utrNumber: sharedUtr, screenshotUrl: uniqueImg(), recordingUrl: uniqueImg() },
+  });
+  assert.equal(r.status, 200, `submitC: ${JSON.stringify(r.data)}`);
+
+  const alertsEnabled = (await fraudAlertsForUser(buyerC.id))
+    .filter((a) => a.rule === "duplicate_utr");
+  assert.ok(alertsEnabled.length >= 1, "re-enabled rule must insert a fraud_alerts row");
+  const notesEnabled = (await notificationsForUser(buyerC.id))
+    .filter((n) => n.kind === "fraud_alert");
+  assert.ok(notesEnabled.length >= 1, "re-enabled critical rule must send a notification");
+  const buyerCState = await getUser(buyerC.id);
+  assert.equal(buyerCState.isFrozen, true, "re-enabled critical rule must auto-freeze the user");
 });

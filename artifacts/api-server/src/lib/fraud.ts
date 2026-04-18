@@ -43,53 +43,66 @@ export const FRAUD_RULES: Array<{ rule: string; severity: Severity; label: strin
   { rule: "balance_drain_attempt", severity: "critical", label: "Repeated lock/release drain attempt" },
 ];
 
-const DISABLED_RULES_KEY = "disabled_fraud_rules";
-const DISABLED_RULES_TTL_MS = 5_000;
+// Per-rule state is stored as a JSON object so each rule keeps its own
+// "last toggled" timestamp independently. Missing key = enabled, no timestamp.
+// Shape: { [rule]: { enabled: boolean, updatedAt: ISO string } }
+const FRAUD_RULE_STATE_KEY = "fraud_rule_state";
+const FRAUD_RULE_STATE_TTL_MS = 5_000;
 
-let disabledCache: { set: Set<string>; expires: number } | null = null;
+type RuleState = { enabled: boolean; updatedAt: string };
+type RuleStateMap = Record<string, RuleState>;
 
-async function loadDisabledRules(): Promise<Set<string>> {
+let stateCache: { map: RuleStateMap; expires: number } | null = null;
+
+async function loadRuleState(): Promise<RuleStateMap> {
   const now = Date.now();
-  if (disabledCache && disabledCache.expires > now) return disabledCache.set;
-  const raw = await getSetting(DISABLED_RULES_KEY);
-  let arr: string[] = [];
-  try { arr = raw ? JSON.parse(raw) : []; } catch { arr = []; }
-  const set = new Set(Array.isArray(arr) ? arr.filter((x) => typeof x === "string") : []);
-  disabledCache = { set, expires: now + DISABLED_RULES_TTL_MS };
-  return set;
+  if (stateCache && stateCache.expires > now) return stateCache.map;
+  const raw = await getSetting(FRAUD_RULE_STATE_KEY);
+  let parsed: any = {};
+  try { parsed = raw ? JSON.parse(raw) : {}; } catch { parsed = {}; }
+  const map: RuleStateMap = {};
+  if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+    for (const [k, v] of Object.entries(parsed)) {
+      if (v && typeof v === "object" && typeof (v as any).enabled === "boolean") {
+        map[k] = { enabled: (v as any).enabled, updatedAt: String((v as any).updatedAt || "") };
+      }
+    }
+  }
+  stateCache = { map, expires: now + FRAUD_RULE_STATE_TTL_MS };
+  return map;
 }
 
 export function invalidateFraudRuleCache() {
-  disabledCache = null;
+  stateCache = null;
 }
 
 export async function isFraudRuleEnabled(rule: string): Promise<boolean> {
-  const disabled = await loadDisabledRules();
-  return !disabled.has(rule);
+  const state = await loadRuleState();
+  // Default: a rule with no entry is enabled.
+  return state[rule]?.enabled !== false;
 }
 
 export async function listFraudRules(): Promise<Array<{
   rule: string; severity: Severity; label: string; enabled: boolean; updatedAt: string | null;
 }>> {
-  const disabled = await loadDisabledRules();
-  // Fetch the timestamp of the toggle setting so the UI can show "last changed".
-  const [row] = await db.select().from(settingsTable).where(eq(settingsTable.key, DISABLED_RULES_KEY)).limit(1);
-  const updatedAt = row ? new Date(row.updatedAt).toISOString() : null;
-  return FRAUD_RULES.map((r) => ({
-    ...r,
-    enabled: !disabled.has(r.rule),
-    updatedAt: disabled.has(r.rule) ? updatedAt : null,
-  }));
+  const state = await loadRuleState();
+  return FRAUD_RULES.map((r) => {
+    const s = state[r.rule];
+    return {
+      ...r,
+      enabled: s?.enabled !== false,
+      updatedAt: s?.updatedAt || null,
+    };
+  });
 }
 
 export async function setFraudRuleEnabled(rule: string, enabled: boolean): Promise<void> {
   if (!FRAUD_RULES.some((r) => r.rule === rule)) {
     throw new Error(`Unknown fraud rule: ${rule}`);
   }
-  const current = await loadDisabledRules();
-  const next = new Set(current);
-  if (enabled) next.delete(rule); else next.add(rule);
-  await setSetting(DISABLED_RULES_KEY, JSON.stringify([...next]));
+  const current = await loadRuleState();
+  const next: RuleStateMap = { ...current, [rule]: { enabled, updatedAt: new Date().toISOString() } };
+  await setSetting(FRAUD_RULE_STATE_KEY, JSON.stringify(next));
   invalidateFraudRuleCache();
 }
 

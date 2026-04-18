@@ -206,13 +206,32 @@ export default function FraudWatch() {
 function RulesPanel() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const queryKey = getAdminGetFraudRulesQueryKey();
   const { data, isLoading } = useAdminGetFraudRules();
   const rules = data ?? [];
 
-  const toggleMut = useAdminToggleFraudRule({
+  // Optimistic toggle: patch the cached rules immediately, roll back on error,
+  // and revalidate from the server on settle so the timestamp the server
+  // assigned overrides the placeholder.
+  const toggleMut = useAdminToggleFraudRule<{ previous: typeof rules | undefined }>({
     mutation: {
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: getAdminGetFraudRulesQueryKey() }),
-      onError: (e: any) => toast({ title: "Toggle failed", description: e.message, variant: "destructive" }),
+      onMutate: async ({ data }) => {
+        const body = data as { rule: string; enabled: boolean };
+        await queryClient.cancelQueries({ queryKey });
+        const previous = queryClient.getQueryData<typeof rules>(queryKey);
+        if (previous) {
+          const nowIso = new Date().toISOString();
+          queryClient.setQueryData<typeof rules>(queryKey, previous.map((r) =>
+            r.rule === body.rule ? { ...r, enabled: body.enabled, updatedAt: nowIso } : r,
+          ));
+        }
+        return { previous };
+      },
+      onError: (e: any, _vars, ctx) => {
+        if (ctx?.previous) queryClient.setQueryData(queryKey, ctx.previous);
+        toast({ title: "Toggle failed", description: e.message, variant: "destructive" });
+      },
+      onSettled: () => queryClient.invalidateQueries({ queryKey }),
     },
   });
 
