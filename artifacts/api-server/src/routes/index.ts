@@ -6,6 +6,7 @@ import transactionsRouter from "./transactions.js";
 import dashboardRouter from "./dashboard.js";
 import settingsRouter from "./settings.js";
 import adminRouter from "./admin.js";
+import gatewayRouter from "./gateway.js";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use("/transactions", transactionsRouter);
 router.use("/dashboard", dashboardRouter);
 router.use("/settings", settingsRouter);
 router.use("/admin", adminRouter);
+router.use("/gateway", gatewayRouter);
 
 export default router;

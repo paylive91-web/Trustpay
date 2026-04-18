@@ -228,6 +228,52 @@ export default function Buy() {
     setStep("submitted");
   };
 
+  const [gatewayLoading, setGatewayLoading] = useState<number | null>(null);
+  const handleGatewayPay = async (task: any) => {
+    if (activeDeposit) {
+      toast({ title: "You have a pending deposit", variant: "destructive" });
+      return;
+    }
+    setGatewayLoading(task.id);
+    try {
+      const res = await fetch(`${API_BASE}/gateway/create-deposit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          amount: task.amount,
+          depositTaskId: task.id,
+          userName: user?.username,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast({ title: "Gateway error", description: data.error || "Failed", variant: "destructive" });
+        setGatewayLoading(null);
+        return;
+      }
+      await fetchActiveDeposit();
+      if (data.paymentUrl) {
+        window.open(data.paymentUrl, "_blank");
+        toast({ title: "Payment page opened", description: "Complete payment in the new tab. Status will update automatically." });
+      } else {
+        toast({ title: "Gateway response received", description: `Txn ID: ${data.transactionId || "n/a"}` });
+      }
+      setTimerSeconds(600);
+      setTimerExpired(false);
+      setExtendedTimer(7200);
+      setOrderApproved(false);
+      setShowTimer(true);
+      setStep("submitted");
+    } catch (err: any) {
+      toast({ title: "Network error", description: err.message, variant: "destructive" });
+    } finally {
+      setGatewayLoading(null);
+    }
+  };
+
   // Submitted / Timer screen
   if (step === "submitted") {
     return (
@@ -452,13 +498,23 @@ export default function Buy() {
                     <div className="text-xs text-muted-foreground">Total Return</div>
                     <div className="font-semibold">₹ {task.totalAmount.toFixed(2)}</div>
                   </div>
-                  <Button
-                    onClick={() => handleBuyClick(task)}
-                    className="px-8 rounded-full shadow-md"
-                    disabled={!!activeDeposit}
-                  >
-                    Buy
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => handleGatewayPay(task)}
+                      className="rounded-full text-xs"
+                      disabled={!!activeDeposit || gatewayLoading === task.id}
+                    >
+                      {gatewayLoading === task.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Test Gateway"}
+                    </Button>
+                    <Button
+                      onClick={() => handleBuyClick(task)}
+                      className="px-8 rounded-full shadow-md"
+                      disabled={!!activeDeposit}
+                    >
+                      Buy
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
