@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { getAuthToken } from "@/lib/auth";
+import { resolveFraudAlert } from "@/lib/admin-actions";
 import { Snowflake } from "lucide-react";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
@@ -37,10 +38,7 @@ export default function FraudWatch() {
 
   const resolve = async (id: number) => {
     try {
-      await fetch(`${API_BASE}/admin/fraud-alerts/${id}/resolve`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${getAuthToken()}` },
-      });
+      await resolveFraudAlert(id);
       toast({ title: "Marked resolved" });
       load();
     } catch (e: any) {

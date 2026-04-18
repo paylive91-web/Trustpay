@@ -52,3 +52,7 @@ Frontend pages: `/`, `/login`, `/register`, `/buy`, `/sell`, `/orders`, `/transa
 - Fraud Watch admin UI (backend list endpoint exists at `/api/admin/fraud-alerts`).
 - High-value deposit tracking UI.
 - Buyer-side dispute proof upload UI on `/orders`.
+
+## Tests
+
+API tests live under `artifacts/api-server/tests/*.test.ts` (node:test + tsx). Run with `pnpm --filter @workspace/api-server test`. They hit the running API at `https://$REPLIT_DEV_DOMAIN/api` and use `@workspace/db` directly to seed seller balances and chunks. Coverage: register-with-username + login by either identifier, single-active-buy enforcement, lock/cancel/settle held-balance math, high-value warn/critical tier logging, dispute proof upload validation (buyer + seller).

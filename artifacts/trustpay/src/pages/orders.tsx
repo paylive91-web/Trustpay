@@ -11,17 +11,9 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { IndianRupee, ArrowDownCircle, ArrowUpCircle, Clock, CheckCircle2, XCircle, ShieldAlert, Upload } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
+import { submitBuyerProof, submitSellerProof } from "@/lib/dispute-actions";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
-
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result as string);
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-}
 
 export default function Orders() {
   const { toast } = useToast();
@@ -59,24 +51,12 @@ export default function Orders() {
       const role = activeProof.role;
       if (role === "buyer") {
         if (!bankFile) { toast({ title: "Bank statement required", variant: "destructive" }); return; }
-        const dataUrl = await fileToDataUrl(bankFile);
-        const r = await fetch(`${API_BASE}/disputes/buyer-proof/${activeProof.id}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${getAuthToken()}` },
-          body: JSON.stringify({ bankStatementUrl: dataUrl }),
-        });
-        if (!r.ok) throw new Error((await r.json()).error || "Upload failed");
+        await submitBuyerProof(activeProof.id, bankFile);
       } else {
         if (!bankFile || !recordingFile || !lastTxnFile) {
           toast({ title: "All three proofs required", variant: "destructive" }); return;
         }
-        const [b, rec, lt] = await Promise.all([fileToDataUrl(bankFile), fileToDataUrl(recordingFile), fileToDataUrl(lastTxnFile)]);
-        const r = await fetch(`${API_BASE}/disputes/seller-proof/${activeProof.id}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${getAuthToken()}` },
-          body: JSON.stringify({ bankStatementUrl: b, recordingUrl: rec, lastTxnScreenshotUrl: lt }),
-        });
-        if (!r.ok) throw new Error((await r.json()).error || "Upload failed");
+        await submitSellerProof(activeProof.id, bankFile, recordingFile, lastTxnFile);
       }
       toast({ title: "Proof uploaded successfully" });
       setActiveProof(null); setBankFile(null); setRecordingFile(null); setLastTxnFile(null);
