@@ -11,6 +11,7 @@ const GATEWAY_BASE = "https://gateway-hub--kishorimeeraa.replit.app";
 const GATEWAY_API = `${GATEWAY_BASE}/api`;
 const GATEWAY_KEY = "pgw_b9a52a8a038a55372749391deb54b24e95196ad3d3d99bd878617878cd7f0366";
 const GATEWAY_MERCHANT = "Tporder";
+const GATEWAY_APP_ID = "8";
 
 function extractGatewayTxn(notes: string | null): string | null {
   if (!notes) return null;
@@ -63,7 +64,7 @@ router.post("/create-deposit", requireAuth, async (req, res) => {
   const redirectUrl = `${proto}://${host}/`;
 
   const payload = {
-    appId: GATEWAY_MERCHANT,
+    appId: GATEWAY_APP_ID,
     orderId: `trustpay_${order.id}_${Date.now()}`,
     amount: Number(amount),
     currency: "INR",
@@ -98,8 +99,8 @@ router.post("/create-deposit", requireAuth, async (req, res) => {
       return;
     }
 
-    const txnId = data.transactionId || data.id || data.orderId || data.paymentId || null;
-    const paymentUrl = data.paymentUrl || data.redirectUrl || data.url || null;
+    const txnId = data.id || data.transactionId || data.orderId || data.paymentId || null;
+    const paymentUrl = data.paymentUrl || data.redirectUrl || data.url || (txnId ? `${GATEWAY_BASE}/pay/${txnId}` : null);
 
     await db.update(ordersTable).set({
       notes: txnId ? `gw_txn:${txnId}` : "gateway:created",
@@ -110,6 +111,7 @@ router.post("/create-deposit", requireAuth, async (req, res) => {
       orderId: order.id,
       transactionId: txnId,
       paymentUrl,
+      qrCode: data.qrCode || null,
       gateway: data,
     });
   } catch (err: any) {
