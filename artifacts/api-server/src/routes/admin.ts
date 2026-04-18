@@ -284,6 +284,16 @@ function formatSettingsResponse(s: any) {
     telegramLink: s.telegramLink || "",
     bannerImages: JSON.parse(s.bannerImages || "[]"),
     appName: s.appName || "TrustPay",
+    gatewayBaseUrl: s.gatewayBaseUrl || "https://gateway-hub--kishorimeeraa.replit.app",
+    gatewayMerchantId: s.gatewayMerchantId || "Tporder",
+    gatewayApiKey: s.gatewayApiKey || "",
+    gatewayApiSecret: s.gatewayApiSecret || "",
+    gatewayWebhookSecret: s.gatewayWebhookSecret || "whsec_trustpay1",
+    gatewayAuthMethod: s.gatewayAuthMethod || "bearer",
+    gatewayCreatePaymentPath: s.gatewayCreatePaymentPath || "/payments",
+    gatewayVerifyPaymentPath: s.gatewayVerifyPaymentPath || "/payments/:id/verify",
+    gatewayRefundPath: s.gatewayRefundPath || "/refunds",
+    gatewayStatusPath: s.gatewayStatusPath || "/payments/:id/status",
     buyRules: s.buyRules || "",
     sellRules: s.sellRules || "",
     broadcastNotification,
@@ -297,7 +307,7 @@ router.get("/settings", requireAdmin, async (req, res) => {
 
 router.put("/settings", requireAdmin, async (req, res) => {
   const body = req.body;
-  const { upiId, upiName, multipleUpiIds, popupMessage, popupImageUrl, announcements, telegramLink, bannerImages, adminPassword, buyRules, sellRules } = body;
+  const { upiId, upiName, multipleUpiIds, popupMessage, popupImageUrl, announcements, telegramLink, bannerImages, gatewayBaseUrl, gatewayMerchantId, gatewayApiKey, gatewayApiSecret, gatewayWebhookSecret, gatewayAuthMethod, gatewayCreatePaymentPath, gatewayVerifyPaymentPath, gatewayRefundPath, gatewayStatusPath, adminPassword, buyRules, sellRules } = body;
   if (upiId != null) await setSetting("upiId", upiId);
   if (upiName != null) await setSetting("upiName", upiName);
   if (multipleUpiIds != null) await setSetting("multipleUpiIds", JSON.stringify(multipleUpiIds));
@@ -306,6 +316,16 @@ router.put("/settings", requireAdmin, async (req, res) => {
   if (announcements != null) await setSetting("announcements", JSON.stringify(announcements));
   if (telegramLink != null) await setSetting("telegramLink", telegramLink);
   if (bannerImages != null) await setSetting("bannerImages", JSON.stringify(bannerImages));
+  if (gatewayBaseUrl != null) await setSetting("gatewayBaseUrl", gatewayBaseUrl);
+  if (gatewayMerchantId != null) await setSetting("gatewayMerchantId", gatewayMerchantId);
+  if (gatewayApiKey != null) await setSetting("gatewayApiKey", gatewayApiKey);
+  if (gatewayApiSecret != null) await setSetting("gatewayApiSecret", gatewayApiSecret);
+  if (gatewayWebhookSecret != null) await setSetting("gatewayWebhookSecret", gatewayWebhookSecret);
+  if (gatewayAuthMethod != null) await setSetting("gatewayAuthMethod", gatewayAuthMethod);
+  if (gatewayCreatePaymentPath != null) await setSetting("gatewayCreatePaymentPath", gatewayCreatePaymentPath);
+  if (gatewayVerifyPaymentPath != null) await setSetting("gatewayVerifyPaymentPath", gatewayVerifyPaymentPath);
+  if (gatewayRefundPath != null) await setSetting("gatewayRefundPath", gatewayRefundPath);
+  if (gatewayStatusPath != null) await setSetting("gatewayStatusPath", gatewayStatusPath);
   if (buyRules != null) await setSetting("buyRules", buyRules);
   if (sellRules != null) await setSetting("sellRules", sellRules);
   if (adminPassword != null) {

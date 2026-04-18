@@ -10,6 +10,16 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   telegramLink: "https://t.me/trustpay",
   bannerImages: JSON.stringify([]),
   appName: "TrustPay",
+  gatewayBaseUrl: "https://gateway-hub--kishorimeeraa.replit.app",
+  gatewayMerchantId: "Tporder",
+  gatewayApiKey: "",
+  gatewayApiSecret: "",
+  gatewayWebhookSecret: "whsec_trustpay1",
+  gatewayAuthMethod: "bearer",
+  gatewayCreatePaymentPath: "/payments",
+  gatewayVerifyPaymentPath: "/payments/:id/verify",
+  gatewayRefundPath: "/refunds",
+  gatewayStatusPath: "/payments/:id/status",
   adminUsername: "admin",
   adminPasswordHash: "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
 };

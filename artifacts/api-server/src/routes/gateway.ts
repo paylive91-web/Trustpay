@@ -7,12 +7,6 @@ import { getSettings } from "../lib/settings.js";
 
 const router = Router();
 
-const GATEWAY_BASE = "https://gateway-hub--kishorimeeraa.replit.app";
-const GATEWAY_API = `${GATEWAY_BASE}/api`;
-const GATEWAY_KEY = "pgw_b9a52a8a038a55372749391deb54b24e95196ad3d3d99bd878617878cd7f0366";
-const GATEWAY_MERCHANT = "Tporder";
-const GATEWAY_APP_ID = "8";
-
 function extractGatewayTxn(notes: string | null): string | null {
   if (!notes) return null;
   const m = notes.match(/gw_txn:([A-Za-z0-9_-]+)/);
@@ -40,6 +34,21 @@ router.post("/create-deposit", requireAuth, async (req, res) => {
   }
 
   const settings = await getSettings(["upiId", "upiName"]);
+  const gatewaySettings = await getSettings([
+    "gatewayBaseUrl",
+    "gatewayMerchantId",
+    "gatewayApiKey",
+    "gatewayAuthMethod",
+    "gatewayCreatePaymentPath",
+    "gatewayStatusPath",
+  ]);
+  const gatewayBaseUrl = gatewaySettings.gatewayBaseUrl || "https://gateway-hub--kishorimeeraa.replit.app";
+  const gatewayApi = `${gatewayBaseUrl}/api`;
+  const gatewayKey = gatewaySettings.gatewayApiKey || "";
+  const gatewayMerchantId = gatewaySettings.gatewayMerchantId || "Tporder";
+  const gatewayAuthMethod = gatewaySettings.gatewayAuthMethod || "bearer";
+  const gatewayCreatePath = gatewaySettings.gatewayCreatePaymentPath || "/payments";
+  const gatewayStatusPath = gatewaySettings.gatewayStatusPath || "/payments/:id/status";
   const rewardPercent = 4;
   const rewardAmount = parseFloat((amount * rewardPercent / 100).toFixed(2));
   const totalAmount = parseFloat((amount + rewardAmount).toFixed(2));
@@ -64,7 +73,8 @@ router.post("/create-deposit", requireAuth, async (req, res) => {
   const redirectUrl = `${proto}://${host}/`;
 
   const payload = {
-    appId: GATEWAY_APP_ID,
+    appId: gatewayMerchantId,
+    merchantId: gatewayMerchantId,
     orderId: `trustpay_${order.id}_${Date.now()}`,
     amount: Number(amount),
     currency: "INR",
@@ -77,11 +87,11 @@ router.post("/create-deposit", requireAuth, async (req, res) => {
   };
 
   try {
-    const gatewayRes = await fetch(`${GATEWAY_API}/payments`, {
+    const gatewayRes = await fetch(`${gatewayApi}${gatewayCreatePath}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${GATEWAY_KEY}`,
+        Authorization: gatewayAuthMethod === "bearer" ? `Bearer ${gatewayKey}` : gatewayKey,
       },
       body: JSON.stringify(payload),
     });
@@ -100,7 +110,7 @@ router.post("/create-deposit", requireAuth, async (req, res) => {
     }
 
     const txnId = data.id || data.transactionId || data.orderId || data.paymentId || null;
-    const paymentUrl = data.paymentUrl || data.redirectUrl || data.url || (txnId ? `${GATEWAY_BASE}/pay/${txnId}` : null);
+    const paymentUrl = data.paymentUrl || data.redirectUrl || data.url || (txnId ? `${gatewayBaseUrl}/pay/${txnId}` : null);
 
     await db.update(ordersTable).set({
       notes: txnId ? `gw_txn:${txnId}` : "gateway:created",
@@ -196,8 +206,8 @@ router.get("/status/:orderId", requireAuth, async (req, res) => {
   let gatewayStatus: any = null;
   if (txnId) {
     try {
-      const r = await fetch(`${GATEWAY_API}/payments/${txnId}/status`, {
-        headers: { Authorization: `Bearer ${GATEWAY_KEY}` },
+      const r = await fetch(`${gatewayApi}${gatewayStatusPath.replace(":id", encodeURIComponent(String(txnId)))}`, {
+        headers: { Authorization: gatewayAuthMethod === "bearer" ? `Bearer ${gatewayKey}` : gatewayKey },
       });
       const text = await r.text();
       try { gatewayStatus = JSON.parse(text); } catch { gatewayStatus = { raw: text }; }
