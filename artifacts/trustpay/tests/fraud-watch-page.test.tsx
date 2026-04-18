@@ -43,6 +43,24 @@ function setupFetch(initialAlerts: unknown[]): { calls: Captured[] } {
   return { calls };
 }
 
+function setupRulesFetch(initialRules: any[]) {
+  let rules = [...initialRules];
+  const json = (data: unknown) =>
+    new Response(JSON.stringify(data), { status: 200, headers: { "content-type": "application/json" } });
+  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === "string" ? input : (input as URL).toString();
+    if (url.endsWith("/api/admin/fraud-rules") && (!init?.method || init.method === "GET")) {
+      return json(rules);
+    }
+    if (url.endsWith("/api/admin/fraud-rules/toggle") && init?.method === "POST") {
+      const body = JSON.parse(init.body as string);
+      rules = rules.map((r) => (r.rule === body.rule ? { ...r, enabled: body.enabled, updatedAt: new Date().toISOString() } : r));
+      return json({ success: true });
+    }
+    return json([]);
+  }));
+}
+
 beforeEach(() => {
   toastSpy.mockReset();
   localStorage.setItem("authToken", "admin-token");
@@ -84,6 +102,39 @@ describe("FraudWatch page — admin resolve flow", () => {
     });
     await waitFor(() => {
       expect(screen.queryByText("duplicate_utr")).toBeNull();
+    });
+  });
+});
+
+describe("FraudWatch Rules tab — last-toggled timestamp visibility", () => {
+  test("renders Last changed for both enabled and disabled rules and updates after toggling", async () => {
+    const enabledTs = new Date("2026-04-01T10:00:00Z").toISOString();
+    const disabledTs = new Date("2026-04-02T11:30:00Z").toISOString();
+    setupRulesFetch([
+      { rule: "duplicate_utr", label: "Duplicate UTR", severity: "critical", enabled: true, updatedAt: enabledTs },
+      { rule: "fake_utr_pattern", label: "Fake UTR pattern", severity: "warn", enabled: false, updatedAt: disabledTs },
+      { rule: "velocity_high", label: "High velocity", severity: "info", enabled: true, updatedAt: null },
+    ]);
+    const user = userEvent.setup();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={client}><FraudWatchPage /></QueryClientProvider>);
+
+    await user.click(await screen.findByRole("tab", { name: /rules/i }));
+
+    // Each rule row has its own timestamp line, regardless of enabled state.
+    const enabledRow = await screen.findByTestId("rule-updated-duplicate_utr");
+    expect(enabledRow.textContent).toMatch(/Last changed: .* \(enabled\)/);
+    const disabledRow = await screen.findByTestId("rule-updated-fake_utr_pattern");
+    expect(disabledRow.textContent).toMatch(/Last changed: .* \(disabled\)/);
+    const neverRow = await screen.findByTestId("rule-updated-velocity_high");
+    expect(neverRow.textContent).toMatch(/Last changed: never/);
+
+    // Toggling an enabled rule off should keep the timestamp line and flip its label.
+    const switches = screen.getAllByRole("switch");
+    await user.click(switches[0]); // duplicate_utr
+    await waitFor(() => {
+      const after = screen.getByTestId("rule-updated-duplicate_utr");
+      expect(after.textContent).toMatch(/Last changed: .* \(disabled\)/);
     });
   });
 });

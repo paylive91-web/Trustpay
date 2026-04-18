@@ -275,9 +275,11 @@ function RulesPanel() {
                       <Badge variant="outline" className={sevColor(r.severity)}>{r.severity}</Badge>
                     </div>
                     <p className="font-mono text-[11px] text-muted-foreground mt-1">{r.rule}</p>
-                    {!r.enabled && r.updatedAt && (
-                      <p className="text-[10px] text-muted-foreground mt-1">disabled {format(new Date(r.updatedAt), "MMM dd HH:mm")}</p>
-                    )}
+                    <p className="text-[10px] text-muted-foreground mt-1" data-testid={`rule-updated-${r.rule}`}>
+                      {r.updatedAt
+                        ? `Last changed: ${format(new Date(r.updatedAt), "MMM dd HH:mm")} (${r.enabled ? "enabled" : "disabled"})`
+                        : "Last changed: never"}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`text-xs ${r.enabled ? "text-green-700" : "text-muted-foreground"}`}>
