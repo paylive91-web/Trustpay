@@ -51,6 +51,20 @@ export const fraudAlertsTable = pgTable("fraud_alerts", {
   severity: fraudSeverityEnum("severity").notNull().default("warn"),
   evidence: text("evidence"),
   resolved: boolean("resolved").notNull().default(false),
+  notifiedAt: timestamp("notified_at"),
+  notifiedBy: integer("notified_by"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const userNotificationsTable = pgTable("user_notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => usersTable.id),
+  kind: text("kind").notNull(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  severity: fraudSeverityEnum("severity").notNull().default("info"),
+  fraudAlertId: integer("fraud_alert_id"),
+  readAt: timestamp("read_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -84,3 +98,4 @@ export type UserUpiIdRow = typeof userUpiIdsTable.$inferSelect;
 export type Dispute = typeof disputesTable.$inferSelect;
 export type FraudAlert = typeof fraudAlertsTable.$inferSelect;
 export type TrustEvent = typeof trustEventsTable.$inferSelect;
+export type UserNotification = typeof userNotificationsTable.$inferSelect;

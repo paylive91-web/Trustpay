@@ -4,6 +4,7 @@ import { useLocation, Link } from "wouter";
 import Layout from "@/components/layout";
 import AppStartupPopup from "@/components/app-startup-popup";
 import DisputePauseBanner from "@/components/dispute-pause-banner";
+import NotificationsBell from "@/components/notifications-bell";
 import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_1776335785514.png";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -96,7 +97,10 @@ export default function Home() {
           <img src={logoPath} alt="TrustPay" className="w-8 h-8 rounded bg-white p-1" />
           <span className="font-bold text-lg">TrustPay</span>
         </div>
-        <div className="text-sm font-medium">Hello, {displayName}</div>
+        <div className="flex items-center gap-1">
+          <span className="text-sm font-medium">Hello, {displayName}</span>
+          <NotificationsBell />
+        </div>
       </div>
 
       {settings?.bannerImages && settings.bannerImages.length > 0 && (

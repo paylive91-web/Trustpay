@@ -14,7 +14,7 @@ Monorepo (pnpm workspace) with three artifacts:
 - `artifacts/mockup-sandbox` — design preview server (canvas)
 
 Shared libs:
-- `lib/db` — Drizzle schema (`users`, `orders`, `transactions`, `settings`, `referrals`, `user_upi_ids`, `disputes`, `fraud_alerts`, `trust_events`, `utr_index`, `image_hashes`)
+- `lib/db` — Drizzle schema (`users`, `orders`, `transactions`, `settings`, `referrals`, `user_upi_ids`, `disputes`, `fraud_alerts`, `trust_events`, `utr_index`, `image_hashes`, `user_notifications`)
 - `lib/api-client-react` — orval-generated React Query hooks (legacy hooks remain; new P2P endpoints use raw fetch from frontend)
 
 ## P2P Trade Lifecycle
@@ -31,6 +31,7 @@ Reward tiers: ≤₹1000 → 5%, ₹1001-2000 → 4%, ₹2001+ → 3%. Referral 
 
 - Trust starts at 0, capped at +100, freeze at -80.
 - Fraud rules: duplicate UTR, fake UTR patterns, duplicate image hashes, velocity bursts, UPI multi-account. Critical hits auto-freeze.
+- When a fraud alert fires (warn/critical) the user gets an in-app notification (bell on home page). Admins see the `notifiedAt` timestamp on the Fraud Watch page and can press "Notify user" for any alert that wasn't auto-notified (e.g. info-severity or seeded). Repeat notify is idempotent — it refreshes `notifiedAt`/`notifiedBy` but never duplicates the user-facing message.
 
 ## Auth
 

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db } from "@workspace/db";
-import { usersTable, ordersTable, transactionsTable, depositTasksTable, fraudAlertsTable, trustEventsTable, highValueEventsTable } from "@workspace/db";
+import { usersTable, ordersTable, transactionsTable, depositTasksTable, fraudAlertsTable, trustEventsTable, highValueEventsTable, userNotificationsTable } from "@workspace/db";
 import { eq, and, sql, inArray } from "drizzle-orm";
 import { signToken, requireAdmin, formatUser } from "../lib/auth.js";
 import { getSetting, getAllSettings, setSetting } from "../lib/settings.js";
@@ -154,6 +154,32 @@ router.get("/fraud-alerts", requireAdmin, async (req, res) => {
 router.post("/fraud-alerts/:id/resolve", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
   await db.update(fraudAlertsTable).set({ resolved: true }).where(eq(fraudAlertsTable.id, id));
+  res.json({ success: true });
+});
+
+// Admin marks alert as notified (or sends a fresh in-app notice if not yet sent).
+// Idempotent: marking again does not create a second notification.
+router.post("/fraud-alerts/:id/notify", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const adminId = (req as any).user.id;
+  const [alert] = await db.select().from(fraudAlertsTable).where(eq(fraudAlertsTable.id, id)).limit(1);
+  if (!alert) { res.status(404).json({ error: "Alert not found" }); return; }
+  if (!alert.userId) { res.status(400).json({ error: "Alert has no associated user" }); return; }
+
+  if (!alert.notifiedAt) {
+    const sevLabel = alert.severity === "critical" ? "Critical" : alert.severity === "warn" ? "Warning" : "Notice";
+    await db.insert(userNotificationsTable).values({
+      userId: alert.userId,
+      kind: "fraud_alert",
+      title: `${sevLabel}: Account flagged (${alert.rule})`,
+      body: `An admin has reviewed activity on your account and asked us to notify you.${alert.evidence ? `\n\nDetails: ${alert.evidence}` : ""}`,
+      severity: alert.severity,
+      fraudAlertId: alert.id,
+    });
+  }
+  await db.update(fraudAlertsTable)
+    .set({ notifiedAt: new Date(), notifiedBy: adminId })
+    .where(eq(fraudAlertsTable.id, id));
   res.json({ success: true });
 });
 

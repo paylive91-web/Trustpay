@@ -1,18 +1,73 @@
 import { db } from "@workspace/db";
 import {
   fraudAlertsTable, utrIndexTable, imageHashesTable, ordersTable, usersTable,
-  deviceFingerprintsTable, disputesTable,
+  deviceFingerprintsTable, disputesTable, userNotificationsTable,
 } from "@workspace/db";
 import { eq, and, sql, ne, or, inArray } from "drizzle-orm";
 
 type Severity = "info" | "warn" | "critical";
 
+function describeRule(rule: string, severity: Severity): { title: string; body: string } {
+  const sevLabel = severity === "critical" ? "Critical" : severity === "warn" ? "Warning" : "Notice";
+  const titles: Record<string, string> = {
+    duplicate_utr: "Duplicate payment reference flagged",
+    duplicate_utr_same_user: "You reused a payment reference",
+    utr_reuse_recent: "You reused a payment reference recently",
+    fake_utr_pattern: "Suspicious payment reference",
+    fake_utr_sequential: "Suspicious payment reference",
+    fake_utr_length: "Unusual payment reference length",
+    duplicate_screenshot_cross_user: "Duplicate screenshot flagged",
+    duplicate_screenshot_same_user: "You reused a screenshot",
+    duplicate_recording_cross_user: "Duplicate recording flagged",
+    duplicate_recording_same_user: "You reused a recording",
+    velocity_burst: "Too many actions in a short time",
+    velocity_high: "High activity detected",
+    off_hours_burst: "Unusual late-night activity",
+    upi_multi_account: "Your UPI is in use on other accounts",
+    upi_suspicious_pattern: "Your UPI looks suspicious",
+    high_cancel_rate: "High cancellation rate on your account",
+    extreme_cancel_rate: "Excessive cancellations on your account",
+    rapid_lock_release: "Rapid lock/release pattern",
+    multi_account_same_device: "Multiple accounts on your device",
+    multi_ip_login: "Logins from many IPs",
+    multi_ip_login_critical: "Logins from many IPs",
+    frozen_user_login_attempt: "Login attempt while frozen",
+    referral_self_loop: "Self-referral detected",
+    referral_same_device: "Referral from same device flagged",
+    high_dispute_rate: "High dispute rate on your account",
+    extreme_dispute_rate: "Excessive disputes on your account",
+    new_account_high_value: "High-value action on new account",
+    balance_drain_attempt: "Repeated lock-and-release flagged",
+  };
+  const title = titles[rule] || `Account flagged: ${rule}`;
+  const frozenNote = severity === "critical"
+    ? " Your account has been frozen for review — please contact support to resolve."
+    : " Please review your recent activity. Contact support if you believe this is a mistake.";
+  return { title: `${sevLabel}: ${title}`, body: `Our fraud system flagged your account.${frozenNote}` };
+}
+
 async function logAlert(userId: number | null, orderId: number | null, rule: string, severity: Severity, evidence: string) {
-  await db.insert(fraudAlertsTable).values({
+  // Insert the alert; notify the user in-app for warn/critical (info is too noisy).
+  const shouldNotify = userId != null && (severity === "warn" || severity === "critical");
+  const [alert] = await db.insert(fraudAlertsTable).values({
     userId: userId ?? undefined,
     orderId: orderId ?? undefined,
     rule, severity, evidence,
-  });
+    notifiedAt: shouldNotify ? new Date() : undefined,
+  }).returning();
+
+  if (shouldNotify && alert) {
+    const { title, body } = describeRule(rule, severity);
+    await db.insert(userNotificationsTable).values({
+      userId: userId!,
+      kind: "fraud_alert",
+      title,
+      body: `${body}${evidence ? `\n\nDetails: ${evidence}` : ""}`,
+      severity,
+      fraudAlertId: alert.id,
+    });
+  }
+
   if (severity === "critical" && userId) {
     await db.update(usersTable).set({ isFrozen: true }).where(eq(usersTable.id, userId));
   }

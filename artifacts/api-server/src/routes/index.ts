@@ -9,6 +9,7 @@ import adminRouter from "./admin.js";
 import p2pRouter from "./p2p.js";
 import disputesRouter from "./disputes.js";
 import upiRouter from "./upi.js";
+import notificationsRouter from "./notifications.js";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use("/admin", adminRouter);
 router.use("/p2p", p2pRouter);
 router.use("/disputes", disputesRouter);
 router.use("/upi", upiRouter);
+router.use("/notifications", notificationsRouter);
 
 export default router;

@@ -14,7 +14,10 @@ import {
   getAdminGetFraudAlertsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Snowflake } from "lucide-react";
+import { getAuthToken } from "@/lib/auth";
+import { Snowflake, BellRing } from "lucide-react";
+
+const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
 export default function FraudWatch() {
   const { toast } = useToast();
@@ -42,6 +45,20 @@ export default function FraudWatch() {
       onError: (e: any) => toast({ title: "Freeze failed", description: e.message, variant: "destructive" }),
     },
   });
+
+  const notifyAlert = async (id: number) => {
+    try {
+      const r = await fetch(`${API_BASE}/admin/fraud-alerts/${id}/notify`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${getAuthToken()}` },
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      toast({ title: "User notified" });
+      invalidate();
+    } catch (e: any) {
+      toast({ title: "Notify failed", description: e.message, variant: "destructive" });
+    }
+  };
 
   const freezeUser = (userId: number, username: string) => {
     if (!confirm(`Freeze user ${username}? They won't be able to lock new chunks.`)) return;
@@ -132,7 +149,18 @@ export default function FraudWatch() {
                         <p className="text-xs text-muted-foreground mt-1 break-words">{a.evidence}</p>
                         <p className="text-[10px] text-muted-foreground mt-1">{format(new Date(a.createdAt), "MMM dd HH:mm:ss")}</p>
                       </div>
-                      <div className="flex gap-2 items-start">
+                      <div className="flex gap-2 items-start flex-wrap">
+                        {a.notifiedAt ? (
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                            <BellRing className="h-3 w-3 mr-1" />notified {format(new Date(a.notifiedAt), "MMM dd HH:mm")}
+                          </Badge>
+                        ) : (
+                          a.user && (
+                            <Button size="sm" variant="outline" onClick={() => notifyAlert(a.id)}>
+                              <BellRing className="h-3.5 w-3.5 mr-1" />Notify user
+                            </Button>
+                          )
+                        )}
                         {a.user && !a.resolved && (
                           <Button size="sm" variant="outline" onClick={() => freezeUser(a.user!.id, a.user!.username)}>
                             <Snowflake className="h-3.5 w-3.5 mr-1" />Freeze

@@ -68,6 +68,27 @@ export async function ensureSchema(): Promise<void> {
       WHERE (username IS NULL OR username = '') AND phone IS NOT NULL AND phone <> ''
     `);
 
+    // fraud_alerts — add notification tracking columns
+    await db.execute(sql`ALTER TABLE fraud_alerts ADD COLUMN IF NOT EXISTS notified_at TIMESTAMP`);
+    await db.execute(sql`ALTER TABLE fraud_alerts ADD COLUMN IF NOT EXISTS notified_by INTEGER`);
+
+    // user_notifications — must match userNotificationsTable in p2p.ts
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS user_notifications (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        kind TEXT NOT NULL,
+        title TEXT NOT NULL,
+        body TEXT NOT NULL,
+        severity fraud_severity NOT NULL DEFAULT 'info',
+        fraud_alert_id INTEGER,
+        read_at TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS user_notifications_user_idx ON user_notifications(user_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS user_notifications_read_idx ON user_notifications(user_id, read_at)`);
+
     logger.info("ensureSchema OK");
   } catch (err) {
     logger.error({ err }, "ensureSchema failed");
