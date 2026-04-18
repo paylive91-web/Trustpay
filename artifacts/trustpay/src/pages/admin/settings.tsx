@@ -71,7 +71,6 @@ export default function AdminSettings() {
   const queryClient = useQueryClient();
   const { data: settings, isLoading } = useAdminGetSettings();
   const notifyMut = useAdminNotifyAll();
-  const saving = false;
   const [broadcastTitle, setBroadcastTitle] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
 
@@ -384,8 +383,8 @@ export default function AdminSettings() {
             </Card>
 
             <div className="flex justify-end">
-              <Button type="submit" size="lg" disabled={saving}>
-                {saving ? "Saving..." : "Save All Settings"}
+              <Button type="submit" size="lg" disabled={updateSettingsMut.isPending}>
+                {updateSettingsMut.isPending ? "Saving..." : "Save All Settings"}
               </Button>
             </div>
           </form>

@@ -14,16 +14,13 @@ import { format } from "date-fns";
 import {
   useAdminGetHighValue,
   useAdminReviewHighValue,
+  adminExportHighValueCsv,
   getAdminGetHighValueQueryKey,
-  getAdminGetHighValueUrl,
   type AdminGetHighValueParams,
   type HighValueEvent,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { getAuthToken } from "@/lib/auth";
 import { Download } from "lucide-react";
-
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
 export default function HighValue() {
   const { toast } = useToast();
@@ -60,20 +57,15 @@ export default function HighValue() {
 
   const exportCsv = async () => {
     try {
-      // CSV download endpoint — keep raw fetch since it returns a binary blob, not JSON.
-      const url = getAdminGetHighValueUrl(params).replace("/admin/high-value", "/admin/high-value/export.csv");
-      const r = await fetch(`${API_BASE.replace("/api", "")}${url}`, {
-        headers: { Authorization: `Bearer ${getAuthToken()}` },
-      });
-      if (!r.ok) throw new Error("Export failed");
-      const blob = await r.blob();
+      const csv = await adminExportHighValueCsv(params);
+      const blob = new Blob([csv as unknown as string], { type: "text/csv;charset=utf-8" });
       const objectUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = objectUrl; a.download = `high-value-${Date.now()}.csv`;
       document.body.appendChild(a); a.click(); a.remove();
       URL.revokeObjectURL(objectUrl);
     } catch (e: any) {
-      toast({ title: "Export failed", description: e.message, variant: "destructive" });
+      toast({ title: "Export failed", description: e?.message, variant: "destructive" });
     }
   };
 

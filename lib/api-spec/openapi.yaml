@@ -648,6 +648,42 @@ paths:
                 items:
                   $ref: "#/components/schemas/HighValueEvent"
 
+  /admin/high-value/export.csv:
+    get:
+      operationId: adminExportHighValueCsv
+      tags: [admin]
+      summary: Export high-value events as CSV
+      parameters:
+        - name: tier
+          in: query
+          schema:
+            type: string
+            enum: [warn, critical]
+        - name: reviewed
+          in: query
+          schema:
+            type: string
+            enum: ["true", "false"]
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+        - name: to
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+
   /admin/high-value/{id}/review:
     post:
       operationId: adminReviewHighValue

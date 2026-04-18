@@ -442,3 +442,27 @@ export const AdminGetHighValueReviewed = {
   true: "true",
   false: "false",
 } as const;
+
+export type AdminExportHighValueCsvParams = {
+  tier?: AdminExportHighValueCsvTier;
+  reviewed?: AdminExportHighValueCsvReviewed;
+  search?: string;
+  from?: string;
+  to?: string;
+};
+
+export type AdminExportHighValueCsvTier =
+  (typeof AdminExportHighValueCsvTier)[keyof typeof AdminExportHighValueCsvTier];
+
+export const AdminExportHighValueCsvTier = {
+  warn: "warn",
+  critical: "critical",
+} as const;
+
+export type AdminExportHighValueCsvReviewed =
+  (typeof AdminExportHighValueCsvReviewed)[keyof typeof AdminExportHighValueCsvReviewed];
+
+export const AdminExportHighValueCsvReviewed = {
+  true: "true",
+  false: "false",
+} as const;

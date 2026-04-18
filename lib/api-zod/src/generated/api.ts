@@ -676,6 +676,17 @@ export const AdminGetHighValueResponse = zod.array(
 );
 
 /**
+ * @summary Export high-value events as CSV
+ */
+export const AdminExportHighValueCsvQueryParams = zod.object({
+  tier: zod.enum(["warn", "critical"]).optional(),
+  reviewed: zod.enum(["true", "false"]).optional(),
+  search: zod.coerce.string().optional(),
+  from: zod.coerce.string().optional(),
+  to: zod.coerce.string().optional(),
+});
+
+/**
  * @summary Mark a high-value event as reviewed
  */
 export const AdminReviewHighValueParams = zod.object({

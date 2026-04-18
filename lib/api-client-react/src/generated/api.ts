@@ -19,6 +19,7 @@ import type {
 import type {
   AdminApproveOrderBody,
   AdminDispute,
+  AdminExportHighValueCsvParams,
   AdminGetFraudAlertsParams,
   AdminGetHighValueParams,
   AdminGetOrdersParams,
@@ -2706,6 +2707,109 @@ export function useAdminGetHighValue<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getAdminGetHighValueQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Export high-value events as CSV
+ */
+export const getAdminExportHighValueCsvUrl = (
+  params?: AdminExportHighValueCsvParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/high-value/export.csv?${stringifiedParams}`
+    : `/api/admin/high-value/export.csv`;
+};
+
+export const adminExportHighValueCsv = async (
+  params?: AdminExportHighValueCsvParams,
+  options?: RequestInit,
+): Promise<string> => {
+  return customFetch<string>(getAdminExportHighValueCsvUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getAdminExportHighValueCsvQueryKey = (
+  params?: AdminExportHighValueCsvParams,
+) => {
+  return [
+    `/api/admin/high-value/export.csv`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getAdminExportHighValueCsvQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminExportHighValueCsv>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: AdminExportHighValueCsvParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminExportHighValueCsv>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminExportHighValueCsvQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminExportHighValueCsv>>
+  > = ({ signal }) =>
+    adminExportHighValueCsv(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminExportHighValueCsv>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminExportHighValueCsvQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminExportHighValueCsv>>
+>;
+export type AdminExportHighValueCsvQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Export high-value events as CSV
+ */
+
+export function useAdminExportHighValueCsv<
+  TData = Awaited<ReturnType<typeof adminExportHighValueCsv>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: AdminExportHighValueCsvParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminExportHighValueCsv>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminExportHighValueCsvQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
