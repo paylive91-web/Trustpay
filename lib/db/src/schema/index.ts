@@ -5,3 +5,4 @@ export * from "./transactions";
 export * from "./settings";
 export * from "./referrals";
 export * from "./p2p";
+export * from "./devices";

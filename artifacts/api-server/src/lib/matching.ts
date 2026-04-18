@@ -1,6 +1,6 @@
 import { db } from "@workspace/db";
-import { ordersTable, usersTable, userUpiIdsTable } from "@workspace/db";
-import { eq, and, sql } from "drizzle-orm";
+import { ordersTable, usersTable, userUpiIdsTable, disputesTable } from "@workspace/db";
+import { eq, and, sql, or } from "drizzle-orm";
 import { getSettings } from "./settings.js";
 
 function rand(min: number, max: number): number {
@@ -15,6 +15,12 @@ function rand(min: number, max: number): number {
 export async function regenerateChunksForUser(userId: number) {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
   if (!user || !user.autoSellEnabled || user.isBlocked || user.isFrozen) return;
+  // Pause auto-sell if user has any open dispute
+  const [openDispute] = await db.select().from(disputesTable).where(and(
+    or(eq(disputesTable.buyerId, userId), eq(disputesTable.sellerId, userId)),
+    eq(disputesTable.status, "open"),
+  )).limit(1);
+  if (openDispute) return;
   const [upi] = await db.select().from(userUpiIdsTable)
     .where(and(eq(userUpiIdsTable.userId, userId), eq(userUpiIdsTable.isActive, true))).limit(1);
   if (!upi) return;
@@ -73,14 +79,21 @@ export async function releaseExpiredLocks() {
       eq(ordersTable.status, "locked"),
       sql`${ordersTable.confirmDeadline} < ${now}`,
     ));
+  const { releaseHold } = await import("./hold.js");
   for (const o of expired) {
-    await db.update(ordersTable).set({
-      status: "available",
-      lockedAt: null,
-      lockedByUserId: null,
-      confirmDeadline: null,
-      updatedAt: now,
-    }).where(eq(ordersTable.id, o.id));
+    const heldAmt = parseFloat(o.heldAmount || "0");
+    // Atomic: release seller hold using per-order reserved amount
+    // (legacy locks have heldAmount=0 so nothing is released).
+    await db.transaction(async (tx) => {
+      await releaseHold(o.userId, heldAmt, tx);
+      await tx.update(ordersTable).set({
+        status: "available",
+        lockedAt: null,
+        lockedByUserId: null,
+        confirmDeadline: null,
+        updatedAt: now,
+      }).where(eq(ordersTable.id, o.id));
+    });
   }
 }
 

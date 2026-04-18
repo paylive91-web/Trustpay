@@ -1,111 +1,96 @@
 import React, { useState } from "react";
 import AdminLayout from "@/components/admin-layout";
-import { useAdminGetOrders, useAdminApproveOrder, useAdminRejectOrder, useAdminUpdateOrder } from "@workspace/api-client-react";
+import { useAdminGetOrders } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
-import { useQueryClient } from "@tanstack/react-query";
-import { getAdminGetOrdersQueryKey } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Eye, Image } from "lucide-react";
+import { Image as ImageIcon } from "lucide-react";
+
+const STATUS_OPTIONS = ["all", "available", "locked", "pending_confirmation", "disputed", "confirmed", "cancelled", "expired"];
 
 export default function AdminOrders() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const [userQuery, setUserQuery] = useState("");
+  const [minAmount, setMinAmount] = useState("");
+  const [maxAmount, setMaxAmount] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   const params: any = {};
   if (statusFilter !== "all") params.status = statusFilter;
   if (typeFilter !== "all") params.type = typeFilter;
 
-  const { data: orders, isLoading } = useAdminGetOrders(params, {
-    query: { queryKey: ["/api/admin/orders", params] }
+  const { data: ordersAll, isLoading } = useAdminGetOrders(params, {
+    query: { queryKey: ["/api/admin/orders", params] },
   });
 
-  const approveMutation = useAdminApproveOrder();
-  const rejectMutation = useAdminRejectOrder();
-  const updateMutation = useAdminUpdateOrder();
+  const orders = React.useMemo(() => {
+    if (!ordersAll) return [];
+    const uq = userQuery.trim().toLowerCase();
+    const min = minAmount ? Number(minAmount) : null;
+    const max = maxAmount ? Number(maxAmount) : null;
+    const from = fromDate ? new Date(fromDate).getTime() : null;
+    const to = toDate ? new Date(toDate).getTime() + 86399999 : null;
+    return (ordersAll as any[]).filter((o) => {
+      if (uq) {
+        const u = `${o.user?.username || ""} ${o.user?.phone || ""} ${o.userId}`.toLowerCase();
+        if (!u.includes(uq)) return false;
+      }
+      const amt = Number(o.amount);
+      if (min != null && amt < min) return false;
+      if (max != null && amt > max) return false;
+      const ts = new Date(o.createdAt).getTime();
+      if (from != null && ts < from) return false;
+      if (to != null && ts > to) return false;
+      return true;
+    });
+  }, [ordersAll, userQuery, minAmount, maxAmount, fromDate, toDate]);
 
-  const [editOrder, setEditOrder] = useState<any>(null);
-  const [editRewardPercent, setEditRewardPercent] = useState("");
-  const [editAmount, setEditAmount] = useState("");
   const [viewOrder, setViewOrder] = useState<any>(null);
 
-  const handleApprove = (id: number) => {
-    approveMutation.mutate({ id, data: {} }, {
-      onSuccess: () => {
-        toast({ title: "Order approved" });
-        queryClient.invalidateQueries({ queryKey: getAdminGetOrdersQueryKey(params) });
-      }
-    });
-  };
-
-  const handleReject = (id: number) => {
-    if (window.confirm("Are you sure you want to reject this order?")) {
-      rejectMutation.mutate({ id, data: {} }, {
-        onSuccess: () => {
-          toast({ title: "Order rejected" });
-          queryClient.invalidateQueries({ queryKey: getAdminGetOrdersQueryKey(params) });
-        }
-      });
-    }
-  };
-
-  const openEdit = (order: any) => {
-    setEditOrder(order);
-    setEditRewardPercent(order.rewardPercent.toString());
-    setEditAmount(order.amount.toString());
-  };
-
-  const handleSaveEdit = () => {
-    if (!editOrder) return;
-    updateMutation.mutate({
-      id: editOrder.id,
-      data: {
-        rewardPercent: parseFloat(editRewardPercent),
-        amount: parseFloat(editAmount),
-      }
-    }, {
-      onSuccess: () => {
-        toast({ title: "Order updated" });
-        setEditOrder(null);
-        queryClient.invalidateQueries({ queryKey: getAdminGetOrdersQueryKey(params) });
-      }
-    });
+  const statusColor = (s: string) => {
+    if (s === "confirmed") return "bg-green-100 text-green-800";
+    if (s === "disputed") return "bg-red-100 text-red-800";
+    if (s === "cancelled" || s === "expired") return "bg-gray-100 text-gray-700";
+    if (s === "pending_confirmation") return "bg-blue-100 text-blue-800";
+    if (s === "locked") return "bg-orange-100 text-orange-800";
+    return "bg-yellow-100 text-yellow-800";
   };
 
   return (
     <AdminLayout>
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h1 className="text-2xl font-bold tracking-tight">Manage Orders</h1>
-
-          <div className="flex gap-2 w-full sm:w-auto">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Orders (Read-only)</h1>
+            <p className="text-sm text-muted-foreground">P2P trades are settled automatically. Use the Disputes tab to intervene.</p>
+          </div>
+          <div className="flex gap-2 w-full sm:w-auto flex-wrap">
+            <Input className="w-[180px]" placeholder="User / phone / id" value={userQuery} onChange={(e) => setUserQuery(e.target.value)} />
+            <Input className="w-[110px]" type="number" placeholder="Min ₹" value={minAmount} onChange={(e) => setMinAmount(e.target.value)} />
+            <Input className="w-[110px]" type="number" placeholder="Max ₹" value={maxAmount} onChange={(e) => setMaxAmount(e.target.value)} />
+            <Input className="w-[150px]" type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+            <Input className="w-[150px]" type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-[130px]">
-                <SelectValue placeholder="Type" />
-              </SelectTrigger>
+              <SelectTrigger className="w-[140px]"><SelectValue placeholder="Type" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="deposit">Deposit</SelectItem>
-                <SelectItem value="withdrawal">Withdrawal</SelectItem>
+                <SelectItem value="deposit">Buy</SelectItem>
+                <SelectItem value="withdrawal">Sell</SelectItem>
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[130px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
+              <SelectTrigger className="w-[170px]"><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
+                {STATUS_OPTIONS.map((s) => (
+                  <SelectItem key={s} value={s}>{s === "all" ? "All Status" : s}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -118,19 +103,17 @@ export default function AdminOrders() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>ID</TableHead>
-                    <TableHead>User / Date</TableHead>
+                    <TableHead>User</TableHead>
                     <TableHead>Type</TableHead>
-                    <TableHead>Amount + Reward</TableHead>
-                    <TableHead>Details / UTR</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Details</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center">Loading...</TableCell>
-                    </TableRow>
+                    <TableRow><TableCell colSpan={7} className="h-24 text-center">Loading...</TableCell></TableRow>
                   ) : orders && orders.length > 0 ? (
                     orders.map((order: any) => (
                       <TableRow key={order.id}>
@@ -147,63 +130,31 @@ export default function AdminOrders() {
                         </TableCell>
                         <TableCell>
                           <div className="font-bold">₹{order.amount}</div>
-                          {order.type === "deposit" && (
+                          {order.rewardPercent > 0 && (
                             <div className="text-xs text-green-600">+{order.rewardPercent}% (₹{order.rewardAmount})</div>
                           )}
                         </TableCell>
                         <TableCell>
-                          {order.type === "deposit" ? (
-                            <div className="text-xs space-y-1">
-                              <div>Name: <span className="font-medium">{order.userName || "-"}</span></div>
-                              {order.utrNumber && (
-                                <div className="font-bold text-blue-700">UTR: {order.utrNumber}</div>
-                              )}
-                              {order.screenshotUrl && (
-                                <button
-                                  className="text-blue-600 underline flex items-center gap-1"
-                                  onClick={() => setViewOrder(order)}
-                                >
-                                  <Image className="w-3 h-3" /> Screenshot
-                                </button>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="text-xs space-y-1">
-                              <div>UPI: <span className="font-medium">{order.userUpiId}</span></div>
-                              <div>Name: <span className="font-medium">{order.userUpiName}</span></div>
-                            </div>
-                          )}
+                          <div className="text-xs space-y-1">
+                            {order.userUpiId && <div>UPI: <span className="font-medium">{order.userUpiId}</span></div>}
+                            {order.utrNumber && <div className="font-bold text-blue-700">UTR: {order.utrNumber}</div>}
+                            {order.lockedByUserId && <div>Buyer: #{order.lockedByUserId}</div>}
+                          </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={
-                            order.status === "approved" ? "bg-green-100 text-green-800" :
-                            order.status === "rejected" ? "bg-red-100 text-red-800" :
-                            "bg-yellow-100 text-yellow-800"
-                          }>
-                            {order.status}
-                          </Badge>
+                          <Badge variant="outline" className={statusColor(order.status)}>{order.status}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            {order.status === "pending" && (
-                              <>
-                                <Button size="sm" variant="outline" onClick={() => handleApprove(order.id)} className="bg-green-50 text-green-700 hover:bg-green-100 border-green-200">
-                                  Approve
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={() => handleReject(order.id)} className="text-red-600 hover:bg-red-50 border-red-200">
-                                  Reject
-                                </Button>
-                              </>
-                            )}
-                            <Button size="sm" variant="ghost" onClick={() => openEdit(order)}>Edit</Button>
-                          </div>
+                          {(order.screenshotUrl || order.recordingUrl) && (
+                            <Button size="sm" variant="ghost" onClick={() => setViewOrder(order)}>
+                              <ImageIcon className="w-4 h-4" />
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))
                   ) : (
-                    <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">No orders found.</TableCell>
-                    </TableRow>
+                    <TableRow><TableCell colSpan={7} className="h-24 text-center text-muted-foreground">No orders found.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -212,34 +163,10 @@ export default function AdminOrders() {
         </Card>
       </div>
 
-      {/* Edit Dialog */}
-      <Dialog open={!!editOrder} onOpenChange={(open) => !open && setEditOrder(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Order #{editOrder?.id}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Amount (₹)</label>
-              <Input type="number" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Reward Percent (%)</label>
-              <Input type="number" value={editRewardPercent} onChange={(e) => setEditRewardPercent(e.target.value)} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOrder(null)}>Cancel</Button>
-            <Button onClick={handleSaveEdit} disabled={updateMutation.isPending}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Screenshot View Dialog */}
       <Dialog open={!!viewOrder} onOpenChange={(open) => !open && setViewOrder(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Payment Screenshot — Order #{viewOrder?.id}</DialogTitle>
+            <DialogTitle>Order #{viewOrder?.id} — Proof</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             {viewOrder?.utrNumber && (
@@ -249,17 +176,20 @@ export default function AdminOrders() {
               </div>
             )}
             {viewOrder?.screenshotUrl && (
-              <img src={viewOrder.screenshotUrl} alt="Payment Screenshot" className="w-full rounded-lg border" />
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">Payment Screenshot</div>
+                <img src={viewOrder.screenshotUrl} alt="Screenshot" className="w-full rounded-lg border" />
+              </div>
+            )}
+            {viewOrder?.recordingUrl && (
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">Screen Recording</div>
+                <img src={viewOrder.recordingUrl} alt="Recording" className="w-full rounded-lg border" />
+              </div>
             )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setViewOrder(null)}>Close</Button>
-            {viewOrder?.status === "pending" && (
-              <>
-                <Button variant="outline" onClick={() => { handleApprove(viewOrder.id); setViewOrder(null); }} className="bg-green-50 text-green-700 border-green-200">Approve</Button>
-                <Button variant="outline" onClick={() => { handleReject(viewOrder.id); setViewOrder(null); }} className="text-red-600 border-red-200">Reject</Button>
-              </>
-            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

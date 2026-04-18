@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useGetMe } from "@workspace/api-client-react";
 import { useLocation, Link } from "wouter";
 import { setAuthToken } from "@/lib/auth";
+import { getDeviceFingerprint } from "@/lib/fingerprint";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +18,7 @@ export default function Register() {
   const { data: user, isLoading: isUserLoading } = useGetMe({ query: { retry: false } });
 
   const [loading, setLoading] = useState(false);
+  const [username, setUsername] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -33,6 +35,10 @@ export default function Register() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
+      toast({ title: "Username must be 3-20 chars (letters, numbers, _)", variant: "destructive" });
+      return;
+    }
     if (!/^[6-9]\d{9}$/.test(phone)) {
       toast({ title: "Enter a valid 10-digit mobile number", variant: "destructive" });
       return;
@@ -47,7 +53,7 @@ export default function Register() {
     }
     setLoading(true);
     try {
-      const body: any = { phone, password };
+      const body: any = { username, phone, password, deviceFingerprint: getDeviceFingerprint() };
       if (referralCode.trim()) body.referralCode = referralCode.trim().toUpperCase();
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
@@ -73,6 +79,16 @@ export default function Register() {
         <h1 className="text-2xl font-bold mb-2">Create Account</h1>
         <p className="text-muted-foreground mb-8 text-center">Sign up with your mobile number</p>
         <form onSubmit={handleRegister} className="w-full space-y-4">
+          <div className="space-y-2">
+            <Label>Username</Label>
+            <Input
+              type="text"
+              placeholder="3-20 chars, letters/numbers/underscore"
+              value={username}
+              onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, "").slice(0, 20))}
+              maxLength={20}
+            />
+          </div>
           <div className="space-y-2">
             <Label>Mobile Number</Label>
             <div className="flex gap-2">

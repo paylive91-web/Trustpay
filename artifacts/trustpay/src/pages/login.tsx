@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useGetMe } from "@workspace/api-client-react";
 import { useLocation, Link } from "wouter";
 import { setAuthToken } from "@/lib/auth";
+import { getDeviceFingerprint } from "@/lib/fingerprint";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +23,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   // Login form state
-  const [phone, setPhone] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
 
   // Forgot password state
@@ -40,8 +41,8 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!phone || !password) {
-      toast({ title: "Please enter mobile number and password", variant: "destructive" });
+    if (!identifier || !password) {
+      toast({ title: "Please enter username/mobile and password", variant: "destructive" });
       return;
     }
     setLoading(true);
@@ -49,7 +50,7 @@ export default function Login() {
       const res = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, password }),
+        body: JSON.stringify({ identifier, password, deviceFingerprint: getDeviceFingerprint() }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Login failed");
@@ -138,16 +139,15 @@ export default function Login() {
         {step === "login" && (
           <>
             <h1 className="text-2xl font-bold mb-2">Welcome Back</h1>
-            <p className="text-muted-foreground mb-8 text-center">Login with your mobile number</p>
+            <p className="text-muted-foreground mb-8 text-center">Login with your username or mobile number</p>
             <form onSubmit={handleLogin} className="w-full space-y-4">
               <div className="space-y-2">
-                <Label>Mobile Number</Label>
+                <Label>Username or Mobile Number</Label>
                 <Input
-                  type="tel"
-                  placeholder="Enter 10-digit mobile number"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                  maxLength={10}
+                  type="text"
+                  placeholder="Username or 10-digit mobile"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                 />
               </div>
               <div className="space-y-2">

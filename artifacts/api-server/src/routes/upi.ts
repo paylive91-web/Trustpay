@@ -4,6 +4,7 @@ import { userUpiIdsTable, usersTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { requireAuth } from "../lib/auth.js";
 import { regenerateChunksForUser } from "../lib/matching.js";
+import { checkUpiReuse } from "../lib/fraud.js";
 
 const router = Router();
 
@@ -28,6 +29,8 @@ router.post("/", requireAuth, async (req, res) => {
   const [row] = await db.insert(userUpiIdsTable).values({
     userId: u.id, upiId, platform, bankName, holderName, isActive: true,
   }).returning();
+  // Fraud: detect UPI shared across accounts.
+  await checkUpiReuse(upiId, u.id);
   // enable auto-sell + chunk balance
   await db.update(usersTable).set({ autoSellEnabled: true }).where(eq(usersTable.id, u.id));
   await regenerateChunksForUser(u.id);

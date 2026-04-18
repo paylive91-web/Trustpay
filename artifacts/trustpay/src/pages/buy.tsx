@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { useGetMe } from "@workspace/api-client-react";
+import { useGetMe, useGetAppSettings } from "@workspace/api-client-react";
 import { useLocation, Link } from "wouter";
 import Layout from "@/components/layout";
+import DisputePauseBanner from "@/components/dispute-pause-banner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Clock, Copy, ShieldCheck, Upload } from "lucide-react";
+import { ArrowLeft, BookOpen, Clock, Copy, ShieldCheck, Upload } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
 
@@ -46,8 +47,10 @@ function fmtCountdown(ms: number) {
 export default function Buy() {
   const [, setLocation] = useLocation();
   const { data: user, isError } = useGetMe({ query: { retry: false } });
+  const { data: settings } = useGetAppSettings();
   const { toast } = useToast();
   const qc = useQueryClient();
+  const [showRules, setShowRules] = useState(false);
 
   const { data: myBuy, refetch: refetchBuy } = useQuery<any>({
     queryKey: ["my-buy"],
@@ -77,8 +80,17 @@ export default function Buy() {
     <Layout>
       <div className="flex items-center gap-3 p-4 bg-primary text-primary-foreground">
         <Link href="/"><ArrowLeft className="cursor-pointer" /></Link>
-        <span className="font-bold text-lg">Buy</span>
+        <span className="font-bold text-lg flex-1">Buy</span>
+        <button onClick={() => setShowRules((v) => !v)} className="flex items-center gap-1 text-xs bg-primary-foreground/15 px-2 py-1 rounded">
+          <BookOpen className="w-3.5 h-3.5" /> Rules
+        </button>
       </div>
+      {showRules && (settings as any)?.buyRules && (
+        <div className="p-4 bg-primary/5 border-b border-primary/20 text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+          {(settings as any).buyRules}
+        </div>
+      )}
+      <div className="px-4 pt-3"><DisputePauseBanner /></div>
 
       <div className="p-4 space-y-4">
         {myBuy ? (

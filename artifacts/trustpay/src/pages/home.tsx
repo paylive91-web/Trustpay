@@ -3,6 +3,7 @@ import { useGetMe, useGetAppSettings } from "@workspace/api-client-react";
 import { useLocation, Link } from "wouter";
 import Layout from "@/components/layout";
 import AppStartupPopup from "@/components/app-startup-popup";
+import DisputePauseBanner from "@/components/dispute-pause-banner";
 import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_1776335785514.png";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -88,6 +89,7 @@ export default function Home() {
   return (
     <Layout>
       <AppStartupPopup />
+      <div className="px-4 pt-3"><DisputePauseBanner /></div>
 
       <div className="flex items-center justify-between p-4 bg-primary text-primary-foreground">
         <div className="flex items-center gap-2">

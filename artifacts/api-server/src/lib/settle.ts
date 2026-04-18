@@ -1,7 +1,10 @@
 import { db } from "@workspace/db";
-import { ordersTable, usersTable, transactionsTable, referralsTable } from "@workspace/db";
+import { ordersTable, usersTable, transactionsTable, referralsTable, highValueEventsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { applyTrustDelta, bumpSuccessfulTrade } from "./trust.js";
+import { getSettings } from "./settings.js";
+import { checkNewAccountHighValue, checkDisputeRate } from "./fraud.js";
+import { logger } from "./logger.js";
 
 function getRewardPercent(amount: number): number {
   if (amount >= 2001) return 3;
@@ -11,8 +14,7 @@ function getRewardPercent(amount: number): number {
 
 /**
  * Settle a pending_confirmation chunk: buyer credited (amount + reward),
- * seller's heldBalance debited and balance reduced.
- * Trust deltas applied: both +1 normally; on auto-confirm seller gets -2 (late) instead of +1.
+ * seller's heldBalance and balance both decremented (held was reserved on lock).
  */
 export async function settleConfirmedTrade(chunkOrderId: number, isAutoConfirm = false) {
   const [chunk] = await db.select().from(ordersTable).where(eq(ordersTable.id, chunkOrderId)).limit(1);
@@ -22,45 +24,58 @@ export async function settleConfirmedTrade(chunkOrderId: number, isAutoConfirm =
   const sellerId = chunk.userId;
   const buyerId = chunk.lockedByUserId!;
   const amount = parseFloat(chunk.amount);
+
+  // Per-order reservation tracking: chunk.heldAmount records exactly what was
+  // moved into seller.heldBalance at lock time (0 for legacy locks created
+  // before held-balance semantics). For legacy chunks the seller's main
+  // balance was never debited at lock; we debit balance directly. New chunks
+  // debit heldBalance for the previously-reserved amount.
+  const heldDebit = parseFloat(chunk.heldAmount || "0");
+  const balanceDebit = parseFloat((amount - heldDebit).toFixed(2));
+
   const rewardPercent = getRewardPercent(amount);
   const rewardAmount = parseFloat((amount * rewardPercent / 100).toFixed(2));
   const totalCredit = parseFloat((amount + rewardAmount).toFixed(2));
 
-  // Update chunk
-  await db.update(ordersTable).set({
-    status: "confirmed",
-    rewardPercent: String(rewardPercent),
-    rewardAmount: String(rewardAmount),
-    totalAmount: String(totalCredit),
-    confirmedAt: new Date(),
-    updatedAt: new Date(),
-  }).where(eq(ordersTable.id, chunkOrderId));
+  // Atomic ledger update: order -> confirmed, buyer credit, seller hold released, transaction rows.
+  // Seller balance was already debited at lock time (balance -> heldBalance), so settlement
+  // only debits the held portion (NOT balance) to avoid double-debiting funds.
+  await db.transaction(async (tx) => {
+    await tx.update(ordersTable).set({
+      status: "confirmed",
+      rewardPercent: String(rewardPercent),
+      rewardAmount: String(rewardAmount),
+      totalAmount: String(totalCredit),
+      confirmedAt: new Date(),
+      updatedAt: new Date(),
+    }).where(eq(ordersTable.id, chunkOrderId));
 
-  // Buyer: credit
-  await db.update(usersTable).set({
-    balance: sql`${usersTable.balance} + ${totalCredit}`,
-    totalDeposits: sql`${usersTable.totalDeposits} + ${amount}`,
-  }).where(eq(usersTable.id, buyerId));
+    // Buyer: credit
+    await tx.update(usersTable).set({
+      balance: sql`${usersTable.balance} + ${totalCredit}`,
+      totalDeposits: sql`${usersTable.totalDeposits} + ${amount}`,
+    }).where(eq(usersTable.id, buyerId));
 
-  // Seller: debit (the chunk amount was reserved from balance via held? No — we just deduct now)
-  await db.update(usersTable).set({
-    balance: sql`${usersTable.balance} - ${amount}`,
-    totalWithdrawals: sql`${usersTable.totalWithdrawals} + ${amount}`,
-  }).where(eq(usersTable.id, sellerId));
+    // Seller: debit heldBalance (preferred) and fall back to balance for any
+    // shortfall (legacy locks created before held-balance semantics).
+    await tx.update(usersTable).set({
+      heldBalance: sql`GREATEST(${usersTable.heldBalance} - ${heldDebit}, 0)`,
+      balance: sql`${usersTable.balance} - ${balanceDebit}`,
+      totalWithdrawals: sql`${usersTable.totalWithdrawals} + ${amount}`,
+    }).where(eq(usersTable.id, sellerId));
 
-  // Transactions
-  await db.insert(transactionsTable).values({
-    userId: buyerId, orderId: chunkOrderId, type: "credit",
-    amount: String(totalCredit),
-    description: `Buy confirmed +${rewardPercent}% reward (chunk #${chunkOrderId})`,
+    await tx.insert(transactionsTable).values({
+      userId: buyerId, orderId: chunkOrderId, type: "credit",
+      amount: String(totalCredit),
+      description: `Buy confirmed +${rewardPercent}% reward (chunk #${chunkOrderId})`,
+    });
+    await tx.insert(transactionsTable).values({
+      userId: sellerId, orderId: chunkOrderId, type: "debit",
+      amount: String(amount),
+      description: `Chunk sold to buyer #${buyerId} (chunk #${chunkOrderId})`,
+    });
   });
-  await db.insert(transactionsTable).values({
-    userId: sellerId, orderId: chunkOrderId, type: "debit",
-    amount: String(amount),
-    description: `Chunk sold to buyer #${buyerId} (chunk #${chunkOrderId})`,
-  });
 
-  // Trust + counters
   if (isAutoConfirm) {
     await applyTrustDelta(buyerId, 1, "auto_confirm_win", chunkOrderId);
     await applyTrustDelta(sellerId, -2, "late_confirm", chunkOrderId);
@@ -71,7 +86,32 @@ export async function settleConfirmedTrade(chunkOrderId: number, isAutoConfirm =
   await bumpSuccessfulTrade(buyerId);
   await bumpSuccessfulTrade(sellerId);
 
-  // Referral commissions for buyer's deposit
+  // High-value tracking — log + alert, but never block settlement on a logging failure.
+  try {
+    const s = await getSettings(["highValueThreshold", "highValueCriticalThreshold"]);
+    const warnT = parseInt(s.highValueThreshold) || 5000;
+    const critT = parseInt(s.highValueCriticalThreshold) || 10000;
+    if (amount >= warnT) {
+      const tier = amount >= critT ? "critical" : "warn";
+      await db.insert(highValueEventsTable).values({
+        userId: buyerId, orderId: chunkOrderId,
+        amount: String(amount), tier,
+      });
+      await checkNewAccountHighValue(buyerId, amount);
+    }
+  } catch (err) {
+    logger.error({ err, chunkOrderId, buyerId, amount }, "high-value tracking failed");
+  }
+
+  // Dispute-rate fraud check after each settlement.
+  try {
+    await checkDisputeRate(buyerId);
+    await checkDisputeRate(sellerId);
+  } catch (err) {
+    logger.error({ err, chunkOrderId, buyerId, sellerId }, "dispute-rate check failed");
+  }
+
+  // Referral commissions
   const [buyer] = await db.select().from(usersTable).where(eq(usersTable.id, buyerId)).limit(1);
   if (buyer && buyer.referredBy) {
     const l1 = parseFloat((amount * 0.01).toFixed(2));
@@ -109,7 +149,6 @@ export async function settleConfirmedTrade(chunkOrderId: number, isAutoConfirm =
     }
   }
 
-  // After settling, regenerate chunks for buyer (their deposit increased available balance)
   const { regenerateChunksForUser } = await import("./matching.js");
   await regenerateChunksForUser(buyerId);
 }

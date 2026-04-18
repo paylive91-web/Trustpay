@@ -1,9 +1,10 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, ListOrdered, Settings, CreditCard, ShieldAlert, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, ListOrdered, Settings, CreditCard, ShieldAlert, LogOut, Eye, AlertTriangle } from "lucide-react";
 import { useGetMe, useLogout } from "@workspace/api-client-react";
-import { clearAuthToken } from "@/lib/auth";
-import { useQueryClient } from "@tanstack/react-query";
+import { clearAuthToken, getAuthToken } from "@/lib/auth";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
 import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_1776335785514.png";
 import { cn } from "@/lib/utils";
 
@@ -37,13 +38,28 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     });
   };
 
+  const { data: criticalCountData } = useQuery({
+    queryKey: ["fraud-critical-open-count"],
+    queryFn: async () => {
+      const r = await fetch("/api/admin/fraud-alerts?resolved=false", { headers: { Authorization: `Bearer ${getAuthToken()}` } });
+      if (!r.ok) return { count: 0 };
+      const rows = await r.json();
+      return { count: Array.isArray(rows) ? rows.filter((a: any) => a.severity === "critical").length : 0 };
+    },
+    refetchInterval: 30000,
+    enabled: !!user && user.role === "admin",
+  });
+  const criticalOpen = criticalCountData?.count ?? 0;
+
   const navItems = [
-    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/admin/orders", label: "Orders", icon: ListOrdered },
-    { href: "/admin/disputes", label: "Disputes", icon: ShieldAlert },
-    { href: "/admin/users", label: "Users", icon: Users },
-    { href: "/admin/deposit-tasks", label: "Deposit Tasks", icon: CreditCard },
-    { href: "/admin/settings", label: "Settings", icon: Settings },
+    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, badge: 0 },
+    { href: "/admin/orders", label: "Orders", icon: ListOrdered, badge: 0 },
+    { href: "/admin/disputes", label: "Disputes", icon: ShieldAlert, badge: 0 },
+    { href: "/admin/fraud-watch", label: "Fraud Watch", icon: AlertTriangle, badge: criticalOpen },
+    { href: "/admin/high-value", label: "High Value", icon: Eye, badge: 0 },
+    { href: "/admin/users", label: "Users", icon: Users, badge: 0 },
+    { href: "/admin/deposit-tasks", label: "Deposit Tasks", icon: CreditCard, badge: 0 },
+    { href: "/admin/settings", label: "Settings", icon: Settings, badge: 0 },
   ];
 
   return (
@@ -66,7 +82,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     : "hover:bg-sidebar-accent/50"
                 )}>
                   <item.icon className="w-5 h-5" />
-                  {item.label}
+                  <span className="flex-1">{item.label}</span>
+                  {item.badge > 0 && (
+                    <Badge variant="destructive" className="text-[10px] h-5 px-1.5">{item.badge}</Badge>
+                  )}
                 </Link>
               </li>
             ))}

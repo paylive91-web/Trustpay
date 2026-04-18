@@ -24,11 +24,25 @@ router.get("/my", requireAuth, async (req, res) => {
   })));
 });
 
+const ALLOWED_PROOF_MIME = /^data:(image\/(png|jpe?g|gif|webp|heic)|application\/pdf);base64,/i;
+const MAX_PROOF_BYTES = 5 * 1024 * 1024; // 5 MB raw
+function validateProof(dataUrl: unknown, kind: "image" | "any"): string | null {
+  if (typeof dataUrl !== "string" || dataUrl.length < 32) return "Invalid file";
+  const ok = kind === "any" ? ALLOWED_PROOF_MIME : /^data:image\/(png|jpe?g|gif|webp|heic);base64,/i;
+  if (!ok.test(dataUrl)) return "Only PNG/JPG/WEBP/HEIC images" + (kind === "any" ? " or PDF allowed" : " allowed");
+  // base64 expands by ~4/3; check decoded byte size <= MAX_PROOF_BYTES
+  const b64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
+  const bytes = Math.floor(b64.length * 3 / 4);
+  if (bytes > MAX_PROOF_BYTES) return "File exceeds 5 MB";
+  return null;
+}
+
 router.post("/buyer-proof/:id", requireAuth, async (req, res) => {
   const u = (req as any).user;
   const id = parseInt(req.params.id);
   const { bankStatementUrl } = req.body;
-  if (!bankStatementUrl) { res.status(400).json({ error: "Bank statement required" }); return; }
+  const err = validateProof(bankStatementUrl, "any");
+  if (err) { res.status(400).json({ error: err }); return; }
   const [d] = await db.select().from(disputesTable).where(eq(disputesTable.id, id)).limit(1);
   if (!d || d.buyerId !== u.id || d.status !== "open") {
     res.status(400).json({ error: "Cannot upload" }); return;
@@ -44,8 +58,13 @@ router.post("/seller-proof/:id", requireAuth, async (req, res) => {
   const u = (req as any).user;
   const id = parseInt(req.params.id);
   const { bankStatementUrl, recordingUrl, lastTxnScreenshotUrl } = req.body;
-  if (!bankStatementUrl || !recordingUrl || !lastTxnScreenshotUrl) {
-    res.status(400).json({ error: "All three proofs required" }); return;
+  for (const [name, url, kind] of [
+    ["bank statement", bankStatementUrl, "any" as const],
+    ["screen recording", recordingUrl, "image" as const],
+    ["last-transaction screenshot", lastTxnScreenshotUrl, "image" as const],
+  ]) {
+    const e = validateProof(url, kind as any);
+    if (e) { res.status(400).json({ error: `${name}: ${e}` }); return; }
   }
   const [d] = await db.select().from(disputesTable).where(eq(disputesTable.id, id)).limit(1);
   if (!d || d.sellerId !== u.id || d.status !== "open") {
@@ -94,14 +113,22 @@ router.post("/admin/resolve/:id", requireAdmin, async (req, res) => {
     // Reverse the unintended seller +1, then apply the -10 dispute loss net.
     await applyTrustDelta(d.sellerId, -11, "dispute_loss", d.orderId);
   } else {
-    // seller wins - chunk goes back to available, buyer gets nothing
-    await db.update(ordersTable).set({
-      status: "available",
-      lockedAt: null, lockedByUserId: null, confirmDeadline: null,
-      utrNumber: null, screenshotUrl: null, recordingUrl: null,
-      submittedAt: null,
-      updatedAt: new Date(),
-    }).where(eq(ordersTable.id, d.orderId));
+    // Seller wins - release seller's hold back to balance, reset chunk to available, buyer gets nothing.
+    const [chunk] = await db.select().from(ordersTable).where(eq(ordersTable.id, d.orderId)).limit(1);
+    const heldAmt = chunk ? parseFloat(chunk.heldAmount || "0") : 0;
+    const { releaseHold } = await import("../lib/hold.js");
+    await db.transaction(async (tx) => {
+      if (chunk) {
+        await releaseHold(chunk.userId, heldAmt, tx);
+      }
+      await tx.update(ordersTable).set({
+        status: "available",
+        lockedAt: null, lockedByUserId: null, confirmDeadline: null,
+        utrNumber: null, screenshotUrl: null, recordingUrl: null,
+        submittedAt: null,
+        updatedAt: new Date(),
+      }).where(eq(ordersTable.id, d.orderId));
+    });
     await applyTrustDelta(d.buyerId, -10, "dispute_loss", d.orderId);
   }
   await db.update(disputesTable).set({
@@ -122,13 +149,21 @@ async function autoResolveSilent() {
     const buyerLate = d.buyerProofDeadline && d.buyerProofDeadline < now && !buyerSubmitted;
     const sellerLate = d.sellerProofDeadline && d.sellerProofDeadline < now && !sellerSubmitted;
     if (buyerLate && !sellerLate) {
-      // Seller wins - buyer silent
-      await db.update(ordersTable).set({
-        status: "available",
-        lockedAt: null, lockedByUserId: null, confirmDeadline: null,
-        utrNumber: null, screenshotUrl: null, recordingUrl: null, submittedAt: null,
-        updatedAt: new Date(),
-      }).where(eq(ordersTable.id, d.orderId));
+      // Seller wins - buyer silent. Release seller's hold back to balance.
+      const [chunk] = await db.select().from(ordersTable).where(eq(ordersTable.id, d.orderId)).limit(1);
+      const heldAmt = chunk ? parseFloat(chunk.heldAmount || "0") : 0;
+      const { releaseHold } = await import("../lib/hold.js");
+      await db.transaction(async (tx) => {
+        if (chunk) {
+          await releaseHold(chunk.userId, heldAmt, tx);
+        }
+        await tx.update(ordersTable).set({
+          status: "available",
+          lockedAt: null, lockedByUserId: null, confirmDeadline: null,
+          utrNumber: null, screenshotUrl: null, recordingUrl: null, submittedAt: null,
+          updatedAt: new Date(),
+        }).where(eq(ordersTable.id, d.orderId));
+      });
       await applyTrustDelta(d.buyerId, -10, "dispute_silent", d.orderId);
       await db.update(disputesTable).set({
         status: "auto_resolved", resolvedAt: now, adminNotes: "Buyer silent → seller wins",

@@ -14,6 +14,7 @@ import Transactions from "@/pages/transactions";
 import Support from "@/pages/support";
 import Profile from "@/pages/profile";
 import Invite from "@/pages/invite";
+import Info from "@/pages/info";
 
 import AdminLogin from "@/pages/admin/login";
 import AdminDashboard from "@/pages/admin/dashboard";
@@ -22,6 +23,8 @@ import AdminDisputes from "@/pages/admin/disputes";
 import AdminUsers from "@/pages/admin/users";
 import AdminSettings from "@/pages/admin/settings";
 import AdminDepositTasks from "@/pages/admin/deposit-tasks";
+import AdminFraudWatch from "@/pages/admin/fraud-watch";
+import AdminHighValue from "@/pages/admin/high-value";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +41,7 @@ function Router() {
       <Route path="/support" component={Support} />
       <Route path="/profile" component={Profile} />
       <Route path="/invite" component={Invite} />
+      <Route path="/info" component={Info} />
 
       {/* Admin Routes */}
       <Route path="/admin" component={AdminLogin} />
@@ -47,6 +51,8 @@ function Router() {
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/admin/settings" component={AdminSettings} />
       <Route path="/admin/deposit-tasks" component={AdminDepositTasks} />
+      <Route path="/admin/fraud-watch" component={AdminFraudWatch} />
+      <Route path="/admin/high-value" component={AdminHighValue} />
 
       <Route component={NotFound} />
     </Switch>

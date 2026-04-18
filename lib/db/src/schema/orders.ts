@@ -27,6 +27,10 @@ export const ordersTable = pgTable("orders", {
   userId: integer("user_id").notNull().references(() => usersTable.id),
   type: orderTypeEnum("type").notNull(),
   amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  // Amount actually moved to seller.heldBalance at lock time. 0 for legacy
+  // locks created before held-balance semantics — use this instead of
+  // global heldBalance to decide what to release/debit per-order.
+  heldAmount: numeric("held_amount", { precision: 12, scale: 2 }).notNull().default("0"),
   rewardPercent: numeric("reward_percent", { precision: 5, scale: 2 }).notNull().default("0"),
   rewardAmount: numeric("reward_amount", { precision: 12, scale: 2 }).notNull().default("0"),
   totalAmount: numeric("total_amount", { precision: 12, scale: 2 }).notNull(),

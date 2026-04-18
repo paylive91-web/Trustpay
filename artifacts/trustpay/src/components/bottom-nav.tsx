@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { Home, ListOrdered, Gift, ArrowRightLeft, User } from "lucide-react";
+import { Home, ListOrdered, Gift, Info, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function BottomNav() {
@@ -10,7 +10,7 @@ export default function BottomNav() {
     { href: "/", label: "Home", icon: Home },
     { href: "/orders", label: "Orders", icon: ListOrdered },
     { href: "/invite", label: "Invite", icon: Gift, center: true },
-    { href: "/transactions", label: "History", icon: ArrowRightLeft },
+    { href: "/info", label: "Info", icon: Info },
     { href: "/profile", label: "Me", icon: User },
   ];
 

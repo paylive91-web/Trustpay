@@ -10,7 +10,53 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQueryClient } from "@tanstack/react-query";
 import { getAdminGetSettingsQueryKey } from "@workspace/api-client-react";
-import { Plus, Trash2, Bell } from "lucide-react";
+import { Plus, Trash2, Bell, Upload } from "lucide-react";
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result as string);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+function ImagePicker({ value, onChange, label }: { value: string; onChange: (v: string) => void; label?: string }) {
+  const { toast } = useToast();
+  const [busy, setBusy] = React.useState(false);
+  const onPick = async (file: File | null) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast({ title: "Image must be under 5 MB", variant: "destructive" }); return; }
+    setBusy(true);
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      const token = localStorage.getItem("authToken");
+      const r = await fetch(`${API_BASE}/admin/upload-image`, {
+        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ dataUrl }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "Upload failed");
+      onChange(d.url);
+      toast({ title: "Image uploaded" });
+    } catch (e: any) {
+      toast({ title: "Upload failed", description: e.message, variant: "destructive" });
+    } finally { setBusy(false); }
+  };
+  return (
+    <div className="space-y-2">
+      {label && <Label className="text-xs">{label}</Label>}
+      <div className="flex items-center gap-2">
+        <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder="Image URL or upload below" />
+      </div>
+      <label className="inline-flex items-center gap-2 px-3 py-1.5 border rounded text-xs cursor-pointer hover:bg-muted">
+        <Upload className="w-3 h-3" /> {busy ? "Uploading..." : "Upload from device"}
+        <input type="file" accept="image/*" className="hidden" onChange={(e) => onPick(e.target.files?.[0] || null)} />
+      </label>
+      {value && <img src={value} alt="preview" className="w-24 h-24 object-contain border rounded" />}
+    </div>
+  );
+}
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
@@ -42,7 +88,7 @@ export default function AdminSettings() {
   const [popupMessage, setPopupMessage] = useState("");
   const [popupImageUrl, setPopupImageUrl] = useState("");
   const [telegramLink, setTelegramLink] = useState("");
-  const [bannerImages, setBannerImages] = useState("");
+  const [bannerImages, setBannerImages] = useState<string[]>([]);
   const [adminPassword, setAdminPassword] = useState("");
   const [buyRules, setBuyRules] = useState("");
   const [sellRules, setSellRules] = useState("");
@@ -56,7 +102,7 @@ export default function AdminSettings() {
       setPopupMessage((settings as any).popupMessage || "");
       setPopupImageUrl((settings as any).popupImageUrl || "");
       setTelegramLink((settings as any).telegramLink || "");
-      setBannerImages((settings as any).bannerImages ? (settings as any).bannerImages.join(",") : "");
+      setBannerImages(Array.isArray((settings as any).bannerImages) ? (settings as any).bannerImages : []);
       setBuyRules((settings as any).buyRules || "");
       setSellRules((settings as any).sellRules || "");
       setAdminPassword("");
@@ -86,7 +132,7 @@ export default function AdminSettings() {
         popupMessage,
         popupImageUrl,
         telegramLink,
-        bannerImages: bannerImages.split(",").map((s) => s.trim()).filter(Boolean),
+        bannerImages,
         buyRules,
         sellRules,
       };
@@ -200,17 +246,11 @@ export default function AdminSettings() {
                         />
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">QR Code Image URL (Optional)</Label>
-                      <Input
-                        placeholder="https://example.com/qr.png"
-                        value={entry.qrImageUrl || ""}
-                        onChange={(e) => updateUpiEntry(idx, "qrImageUrl", e.target.value)}
-                      />
-                      {entry.qrImageUrl && (
-                        <img src={entry.qrImageUrl} alt="QR Preview" className="w-20 h-20 mt-2 object-contain border rounded" />
-                      )}
-                    </div>
+                    <ImagePicker
+                      label="QR Code Image (Optional)"
+                      value={entry.qrImageUrl || ""}
+                      onChange={(v) => updateUpiEntry(idx, "qrImageUrl", v)}
+                    />
                   </div>
                 ))}
                 <Button type="button" variant="outline" onClick={addUpiEntry} className="w-full">
@@ -284,14 +324,11 @@ export default function AdminSettings() {
                         className="min-h-[80px]"
                       />
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Image URL (Optional)</Label>
-                      <Input
-                        placeholder="https://example.com/image.png"
-                        value={ann.imageUrl || ""}
-                        onChange={(e) => updateAnnouncement(idx, "imageUrl", e.target.value)}
-                      />
-                    </div>
+                    <ImagePicker
+                      label="Image (Optional)"
+                      value={ann.imageUrl || ""}
+                      onChange={(v) => updateAnnouncement(idx, "imageUrl", v)}
+                    />
                   </div>
                 ))}
                 <Button type="button" variant="outline" onClick={addAnnouncement} className="w-full">
@@ -305,11 +342,7 @@ export default function AdminSettings() {
                     value={popupMessage}
                     onChange={(e) => setPopupMessage(e.target.value)}
                   />
-                  <Input
-                    placeholder="Image URL (Optional)"
-                    value={popupImageUrl}
-                    onChange={(e) => setPopupImageUrl(e.target.value)}
-                  />
+                  <ImagePicker label="Popup Image (Optional)" value={popupImageUrl} onChange={setPopupImageUrl} />
                 </div>
               </CardContent>
             </Card>
@@ -329,12 +362,26 @@ export default function AdminSettings() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Home Banner Images (Comma separated URLs)</Label>
-                  <Textarea
-                    placeholder="https://img1.jpg, https://img2.jpg"
-                    value={bannerImages}
-                    onChange={(e) => setBannerImages(e.target.value)}
-                  />
+                  <Label>Home Banner Images</Label>
+                  <div className="space-y-3">
+                    {bannerImages.map((url, idx) => (
+                      <div key={idx} className="border rounded p-3 space-y-2">
+                        <ImagePicker
+                          label={`Banner ${idx + 1}`}
+                          value={url}
+                          onChange={(v) => setBannerImages((prev) => prev.map((u, i) => i === idx ? v : u))}
+                        />
+                        <Button
+                          type="button" variant="outline" size="sm"
+                          onClick={() => setBannerImages((prev) => prev.filter((_, i) => i !== idx))}
+                        >Remove</Button>
+                      </div>
+                    ))}
+                    <Button
+                      type="button" variant="outline" size="sm"
+                      onClick={() => setBannerImages((prev) => [...prev, ""])}
+                    ><Upload className="w-3 h-3 mr-1" /> Add Banner</Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

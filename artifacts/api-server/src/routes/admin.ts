@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db } from "@workspace/db";
-import { usersTable, ordersTable, transactionsTable, depositTasksTable, fraudAlertsTable, trustEventsTable } from "@workspace/db";
+import { usersTable, ordersTable, transactionsTable, depositTasksTable, fraudAlertsTable, trustEventsTable, highValueEventsTable } from "@workspace/db";
 import { eq, and, sql, inArray } from "drizzle-orm";
 import { signToken, requireAdmin, formatUser } from "../lib/auth.js";
 import { getSetting, getAllSettings, setSetting } from "../lib/settings.js";
@@ -272,6 +272,81 @@ router.put("/deposit-tasks/:id", requireAdmin, async (req, res) => {
 router.delete("/deposit-tasks/:id", requireAdmin, async (req, res) => {
   await db.delete(depositTasksTable).where(eq(depositTasksTable.id, parseInt(req.params.id)));
   res.json({ message: "Deleted" });
+});
+
+// High-value tracking — supports tier/reviewed/search/date-range filters.
+async function loadHighValue(query: any) {
+  const { tier, reviewed, search, from, to } = query as { tier?: string; reviewed?: string; search?: string; from?: string; to?: string };
+  const conds: any[] = [];
+  if (tier) conds.push(eq(highValueEventsTable.tier, tier));
+  if (reviewed === "true") conds.push(sql`${highValueEventsTable.reviewedAt} IS NOT NULL`);
+  if (reviewed === "false") conds.push(sql`${highValueEventsTable.reviewedAt} IS NULL`);
+  if (from) conds.push(sql`${highValueEventsTable.createdAt} >= ${new Date(from)}`);
+  if (to) conds.push(sql`${highValueEventsTable.createdAt} <= ${new Date(to)}`);
+  const rows = conds.length > 0
+    ? await db.select().from(highValueEventsTable).where(and(...conds)).orderBy(sql`${highValueEventsTable.createdAt} desc`).limit(1000)
+    : await db.select().from(highValueEventsTable).orderBy(sql`${highValueEventsTable.createdAt} desc`).limit(1000);
+  const userIds = [...new Set(rows.map((r) => r.userId))];
+  const users = userIds.length ? await db.select().from(usersTable).where(inArray(usersTable.id, userIds)) : [];
+  const byId = new Map(users.map((u) => [u.id, u]));
+  let enriched = rows.map((r) => ({
+    ...r,
+    amount: parseFloat(r.amount),
+    user: byId.get(r.userId) ? { id: r.userId, username: byId.get(r.userId)!.username, trustScore: byId.get(r.userId)!.trustScore } : null,
+  }));
+  if (search) {
+    const q = search.toLowerCase();
+    enriched = enriched.filter((r) => r.user?.username?.toLowerCase().includes(q) || String(r.orderId).includes(q));
+  }
+  return enriched;
+}
+
+router.get("/high-value", requireAdmin, async (req, res) => {
+  res.json(await loadHighValue(req.query));
+});
+
+router.get("/high-value/export.csv", requireAdmin, async (req, res) => {
+  const rows = await loadHighValue(req.query);
+  const header = "id,createdAt,tier,amount,orderId,userId,username,trustScore,reviewedAt,notes";
+  const escape = (v: any) => v == null ? "" : `"${String(v).replace(/"/g, '""')}"`;
+  const body = rows.map((r) => [
+    r.id, new Date(r.createdAt).toISOString(), r.tier, r.amount, r.orderId,
+    r.userId, r.user?.username || "", r.user?.trustScore ?? "",
+    r.reviewedAt ? new Date(r.reviewedAt).toISOString() : "", r.notes || "",
+  ].map(escape).join(","));
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="high-value-${Date.now()}.csv"`);
+  res.send([header, ...body].join("\n"));
+});
+
+router.post("/high-value/:id/review", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { notes } = req.body || {};
+  await db.update(highValueEventsTable).set({
+    reviewedAt: new Date(),
+    reviewedBy: (req as any).user.id,
+    notes: notes || null,
+  }).where(eq(highValueEventsTable.id, id));
+  res.json({ success: true });
+});
+
+// Image upload (base64 data URL passthrough with size check, ~5MB)
+router.post("/upload-image", requireAdmin, async (req, res) => {
+  const { dataUrl, kind } = req.body || {};
+  if (!dataUrl || typeof dataUrl !== "string") {
+    res.status(400).json({ error: "dataUrl required" });
+    return;
+  }
+  if (!/^data:image\/(png|jpeg|jpg|gif|webp);base64,/i.test(dataUrl)) {
+    res.status(400).json({ error: "Only PNG/JPEG/GIF/WEBP images supported" });
+    return;
+  }
+  const sizeBytes = Math.ceil((dataUrl.length - dataUrl.indexOf(",") - 1) * 3 / 4);
+  if (sizeBytes > 5 * 1024 * 1024) {
+    res.status(400).json({ error: "Image must be under 5 MB" });
+    return;
+  }
+  res.json({ url: dataUrl, kind: kind || "image", sizeBytes });
 });
 
 export default router;
