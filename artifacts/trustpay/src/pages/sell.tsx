@@ -1,239 +1,227 @@
-import React, { useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useCreateOrder, useGetWithdrawalOrders, usePayWithdrawalOrder, useGetMe } from "@workspace/api-client-react";
-import { useLocation } from "wouter";
+import React, { useEffect, useState } from "react";
+import { useGetMe } from "@workspace/api-client-react";
+import { useLocation, Link } from "wouter";
 import Layout from "@/components/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { IndianRupee } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { useQueryClient } from "@tanstack/react-query";
-import { getGetWithdrawalOrdersQueryKey, getGetMeQueryKey } from "@workspace/api-client-react";
+import { ArrowLeft, Clock, RefreshCw, ShieldCheck } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getAuthToken } from "@/lib/auth";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
-const sellSchema = z.object({
-  amount: z.coerce.number()
-    .min(1, "Amount required")
-    .refine((v) => v % 100 === 0, "Amount must be a multiple of 100"),
-  userUpiId: z.string().min(5, "Valid UPI ID is required"),
-  userUpiName: z.string().min(2, "Name is required"),
-});
+const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+async function api(path: string, opts: RequestInit = {}) {
+  const token = getAuthToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...opts,
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(opts.headers || {}) },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Request failed");
+  return data;
+}
 
-type SellValues = z.infer<typeof sellSchema>;
+function fmtCountdown(ms: number) {
+  if (ms <= 0) return "00:00";
+  const m = Math.floor(ms / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+const STATUS_COLOR: Record<string, string> = {
+  available: "bg-blue-100 text-blue-700",
+  locked: "bg-amber-100 text-amber-700",
+  pending_confirmation: "bg-orange-100 text-orange-700",
+  confirmed: "bg-green-100 text-green-700",
+  disputed: "bg-red-100 text-red-700",
+};
 
 export default function Sell() {
   const [, setLocation] = useLocation();
+  const { data: user, isError } = useGetMe({ query: { retry: false } });
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const { data: user } = useGetMe();
-  const { data: openOrders, isLoading: ordersLoading } = useGetWithdrawalOrders();
-  const createOrder = useCreateOrder();
-  const payOrder = usePayWithdrawalOrder();
+  const qc = useQueryClient();
 
-  const [activeTab, setActiveTab] = useState("create");
-  const [selectedOrderToPay, setSelectedOrderToPay] = useState<any>(null);
-
-  const form = useForm<SellValues>({
-    resolver: zodResolver(sellSchema),
-    defaultValues: {
-      amount: 100,
-      userUpiId: "",
-      userUpiName: "",
-    },
+  const { data: chunks = [], refetch: refetchChunks } = useQuery<any[]>({
+    queryKey: ["my-chunks"], queryFn: () => api("/p2p/my-chunks"), enabled: !!user, refetchInterval: 8000,
+  });
+  const { data: pendingConfirms = [], refetch: refetchPending } = useQuery<any[]>({
+    queryKey: ["pending-confirms"], queryFn: () => api("/p2p/my-pending-confirmations"), enabled: !!user, refetchInterval: 4000,
   });
 
-  const onSubmit = (data: SellValues) => {
-    if (user && data.amount > user.balance) {
-      toast({ title: "Insufficient balance", variant: "destructive" });
-      return;
-    }
-    createOrder.mutate({
-      data: {
-        type: "withdrawal",
-        ...data,
-      }
-    }, {
-      onSuccess: () => {
-        toast({ title: "Sell request submitted successfully" });
-        queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
-        setLocation("/orders");
-      },
-      onError: (err) => {
-        toast({ title: "Error", description: err.error || "Failed to submit sell request", variant: "destructive" });
-      }
-    });
-  };
+  useEffect(() => { if (isError) setLocation("/login"); }, [isError, setLocation]);
 
-  const handlePayOrder = () => {
-    if (!selectedOrderToPay) return;
-    payOrder.mutate({
-      data: { orderId: selectedOrderToPay.id }
-    }, {
-      onSuccess: () => {
-        toast({ title: "Order accepted", description: "Please complete payment" });
-        setSelectedOrderToPay(null);
-        queryClient.invalidateQueries({ queryKey: getGetWithdrawalOrdersQueryKey() });
-        queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
-      },
-      onError: (err) => {
-        toast({ title: "Error", description: err.error || "Failed to accept order", variant: "destructive" });
-      }
-    });
-  };
+  const regenMut = useMutation({
+    mutationFn: () => api("/p2p/regenerate-chunks", { method: "POST" }),
+    onSuccess: () => { toast({ title: "Chunks regenerated" }); refetchChunks(); },
+  });
+
+  if (!user) return null;
+  const trustScore = (user as any).trustScore ?? 0;
+  const isFrozen = (user as any).isFrozen;
+  const heldBalance = (user as any).heldBalance ?? 0;
 
   return (
     <Layout>
-      <div className="p-4 space-y-4">
-        <h1 className="text-xl font-bold">Sell</h1>
+      <div className="flex items-center gap-3 p-4 bg-secondary text-secondary-foreground">
+        <Link href="/"><ArrowLeft className="cursor-pointer" /></Link>
+        <span className="font-bold text-lg flex-1">My Sell Queue</span>
+        <button onClick={() => regenMut.mutate()} className="opacity-80 hover:opacity-100" title="Regenerate chunks">
+          <RefreshCw className="h-4 w-4" />
+        </button>
+      </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="create">Sell Funds</TabsTrigger>
-            <TabsTrigger value="pay">Fulfill Orders</TabsTrigger>
+      <div className="p-4 space-y-4">
+        <Card>
+          <CardContent className="p-4 grid grid-cols-3 gap-2 text-center text-xs">
+            <div>
+              <div className="text-muted-foreground">Balance</div>
+              <div className="text-base font-bold">₹{user.balance.toFixed(0)}</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">Held</div>
+              <div className="text-base font-bold">₹{Number(heldBalance).toFixed(0)}</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground flex items-center gap-1 justify-center"><ShieldCheck className="h-3 w-3" /> Trust</div>
+              <div className={`text-base font-bold ${trustScore >= 0 ? "text-green-600" : "text-red-600"}`}>{trustScore}</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {isFrozen && (
+          <Card className="border-red-400 bg-red-50">
+            <CardContent className="p-3 text-sm text-red-700">Account frozen — sells paused.</CardContent>
+          </Card>
+        )}
+
+        <Tabs defaultValue="pending">
+          <TabsList className="w-full">
+            <TabsTrigger value="pending" className="flex-1">
+              Pending {pendingConfirms.length > 0 && <span className="ml-1 px-1.5 bg-orange-500 text-white rounded-full text-xs">{pendingConfirms.length}</span>}
+            </TabsTrigger>
+            <TabsTrigger value="chunks" className="flex-1">My Chunks</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="create">
-            <Card>
-              <CardContent className="p-4 pt-6">
-                <div className="bg-primary/5 rounded-lg p-4 mb-6 flex justify-between items-center">
-                  <span className="text-sm font-medium">Available Balance</span>
-                  <span className="text-lg font-bold text-primary">₹ {user?.balance?.toFixed(2) || "0.00"}</span>
-                </div>
-
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="amount"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Amount to Sell (multiples of 100)</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">₹</span>
-                              <Input
-                                type="number"
-                                step={100}
-                                min={100}
-                                placeholder="e.g. 500"
-                                className="pl-8"
-                                value={field.value || ""}
-                                onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : "")}
-                              />
-                            </div>
-                          </FormControl>
-                          <p className="text-xs text-muted-foreground">Enter amount in multiples of 100 (e.g. 100, 200, 500)</p>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="userUpiId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Your UPI ID</FormLabel>
-                          <FormControl>
-                            <Input placeholder="example@upi" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="userUpiName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Name on Bank Account</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Your full name" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <Button type="submit" className="w-full mt-6 h-12 text-lg rounded-xl" disabled={createOrder.isPending}>
-                      {createOrder.isPending ? "Submitting..." : "Submit Sell Request"}
-                    </Button>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
+          <TabsContent value="pending" className="space-y-2 mt-3">
+            {pendingConfirms.length === 0 ? (
+              <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">No pending confirmations.</CardContent></Card>
+            ) : (
+              pendingConfirms.map((c) => (
+                <PendingConfirmCard key={c.id} chunk={c} onResolved={() => { refetchPending(); refetchChunks(); qc.invalidateQueries({ queryKey: ["me"] }); }} />
+              ))
+            )}
           </TabsContent>
 
-          <TabsContent value="pay">
-            <p className="text-sm text-muted-foreground mb-4">Pay other users' sell requests.</p>
-
-            {ordersLoading ? (
-              Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-xl mb-4" />)
-            ) : openOrders && openOrders.length > 0 ? (
-              openOrders.map((order: any) => (
-                <Card key={order.id} className="overflow-hidden mb-4">
-                  <CardContent className="p-4 flex flex-col gap-3">
-                    <div className="flex justify-between items-center border-b pb-3">
-                      <div className="flex items-center text-xl font-bold text-primary">
-                        <IndianRupee className="w-5 h-5 mr-1" />
-                        {order.amount.toFixed(2)}
-                      </div>
+          <TabsContent value="chunks" className="space-y-2 mt-3">
+            {chunks.length === 0 ? (
+              <Card>
+                <CardContent className="p-6 text-center text-sm text-muted-foreground">
+                  No active chunks. Connect UPI on home page to start auto-sell.
+                </CardContent>
+              </Card>
+            ) : (
+              chunks.map((c) => (
+                <Card key={c.id}>
+                  <CardContent className="p-3 flex items-center justify-between">
+                    <div>
+                      <div className="font-bold">₹{c.amount}</div>
+                      <div className="text-xs text-muted-foreground">Chunk #{c.id}</div>
                     </div>
-                    <div className="flex justify-between items-center mt-1">
-                      <div>
-                        <div className="text-xs text-muted-foreground">You Pay</div>
-                        <div className="font-semibold text-foreground">₹ {order.totalAmount.toFixed(2)}</div>
-                      </div>
-                      <Button
-                        onClick={() => setSelectedOrderToPay(order)}
-                        className="px-6 rounded-full shadow-md"
-                        variant="secondary"
-                      >
-                        Accept & Pay
-                      </Button>
-                    </div>
+                    <span className={`text-xs px-2 py-1 rounded ${STATUS_COLOR[c.status] || "bg-muted"}`}>{c.status.replace(/_/g, " ")}</span>
                   </CardContent>
                 </Card>
               ))
-            ) : (
-              <div className="text-center p-8 text-muted-foreground bg-card rounded-xl border border-dashed">
-                No open sell requests available right now.
-              </div>
             )}
           </TabsContent>
         </Tabs>
       </div>
-
-      <Dialog open={!!selectedOrderToPay} onOpenChange={(open) => !open && setSelectedOrderToPay(null)}>
-        <DialogContent className="max-w-[380px] rounded-xl">
-          <DialogHeader>
-            <DialogTitle>Accept Order</DialogTitle>
-            <DialogDescription>
-              Pay ₹{selectedOrderToPay?.amount.toFixed(2)} to the user's UPI ID. Once confirmed, you receive the reward amount.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setSelectedOrderToPay(null)} className="w-full">Cancel</Button>
-            <Button onClick={handlePayOrder} disabled={payOrder.isPending} className="w-full">
-              {payOrder.isPending ? "Accepting..." : "Confirm Acceptance"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Layout>
+  );
+}
+
+function PendingConfirmCard({ chunk, onResolved }: { chunk: any; onResolved: () => void }) {
+  const { toast } = useToast();
+  const [now, setNow] = useState(Date.now());
+  const [showProof, setShowProof] = useState(false);
+  const [reason, setReason] = useState("");
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
+  const deadline = new Date(chunk.confirmDeadline).getTime();
+  const remaining = deadline - now;
+
+  const confirmMut = useMutation({
+    mutationFn: () => api(`/p2p/confirm/${chunk.id}`, { method: "POST" }),
+    onSuccess: () => { toast({ title: "Confirmed!", description: `Trade settled. ₹${chunk.amount} released.` }); onResolved(); },
+    onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+  const disputeMut = useMutation({
+    mutationFn: () => api(`/p2p/dispute/${chunk.id}`, { method: "POST", body: JSON.stringify({ reason }) }),
+    onSuccess: () => { toast({ title: "Dispute opened" }); onResolved(); },
+    onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+
+  return (
+    <Card className="border-orange-300">
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="font-bold text-lg">₹{chunk.amount}</div>
+            <div className="text-xs text-muted-foreground">Buyer #{chunk.buyer?.id || chunk.lockedByUserId}</div>
+          </div>
+          <div className={`flex items-center gap-1 text-sm ${remaining < 5 * 60 * 1000 ? "text-red-600" : "text-orange-600"}`}>
+            <Clock className="h-4 w-4" />
+            <span className="font-mono font-semibold">{fmtCountdown(remaining)}</span>
+          </div>
+        </div>
+
+        <div className="bg-muted/50 rounded p-2 text-xs space-y-1">
+          <div>UTR: <span className="font-mono font-semibold">{chunk.utrNumber}</span></div>
+        </div>
+        {chunk.screenshotUrl && (
+          <a href={chunk.screenshotUrl} target="_blank" className="text-xs text-primary underline">View Screenshot</a>
+        )}{" "}
+        {chunk.recordingUrl && (
+          <a href={chunk.recordingUrl} target="_blank" className="text-xs text-primary underline ml-2">View Recording</a>
+        )}
+
+        <div className="text-xs text-muted-foreground">
+          Check your bank app for ₹{chunk.amount} from buyer's UPI. Confirm only if received.
+        </div>
+
+        {!showProof ? (
+          <div className="grid grid-cols-2 gap-2">
+            <Button className="bg-green-600 hover:bg-green-700" disabled={confirmMut.isPending} onClick={() => confirmMut.mutate()}>
+              YES — Received
+            </Button>
+            <Button variant="destructive" onClick={() => setShowProof(true)}>
+              NO — Not Received
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <textarea
+              className="w-full border rounded p-2 text-sm"
+              rows={2}
+              placeholder="Reason (optional)"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+            />
+            <div className="text-xs text-red-700">
+              ⚠ Opening a dispute will require you to upload bank statement, full screen recording, and last transaction screenshot within 24 hours.
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="ghost" onClick={() => setShowProof(false)}>Back</Button>
+              <Button variant="destructive" disabled={disputeMut.isPending} onClick={() => disputeMut.mutate()}>
+                Open Dispute
+              </Button>
+            </div>
+          </div>
+        )}
+        <div className="text-xs text-center text-muted-foreground">
+          Auto-confirms to buyer in {fmtCountdown(remaining)} if no action taken.
+        </div>
+      </CardContent>
+    </Card>
   );
 }

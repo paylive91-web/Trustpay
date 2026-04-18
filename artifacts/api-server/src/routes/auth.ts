@@ -4,72 +4,13 @@ import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
 import { eq, or } from "drizzle-orm";
 import { signToken, requireAuth, formatUser } from "../lib/auth.js";
-import { RegisterBody, LoginBody } from "@workspace/api-zod";
 
 const router = Router();
-
-const otpStore = new Map<string, { otp: string; expiresAt: number }>();
-
-function generateOTP(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-router.post("/send-otp", async (req, res) => {
-  const { phone } = req.body;
-  if (!phone || !/^[6-9]\d{9}$/.test(phone)) {
-    res.status(400).json({ error: "Valid 10-digit Indian mobile number required" });
-    return;
-  }
-  const otp = generateOTP();
-  otpStore.set(phone, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
-  res.json({ success: true, otp, message: "OTP sent successfully (demo mode)" });
-});
-
-router.post("/verify-otp", async (req, res) => {
-  const { phone, otp } = req.body;
-  if (!phone || !otp) {
-    res.status(400).json({ error: "Phone and OTP are required" });
-    return;
-  }
-  const stored = otpStore.get(phone);
-  if (!stored) {
-    res.status(400).json({ error: "OTP not found. Please request a new OTP." });
-    return;
-  }
-  if (Date.now() > stored.expiresAt) {
-    otpStore.delete(phone);
-    res.status(400).json({ error: "OTP expired. Please request a new OTP." });
-    return;
-  }
-  if (stored.otp !== otp) {
-    res.status(400).json({ error: "Invalid OTP" });
-    return;
-  }
-  otpStore.delete(phone);
-  res.json({ success: true, verified: true });
-});
 
 router.post("/register", async (req, res) => {
   const { phone, password, referralCode } = req.body;
   if (!phone || !password) {
-    const parsed = RegisterBody.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: "Phone and password are required" });
-      return;
-    }
-    const { username, password: pw } = parsed.data;
-    const existing = await db.select().from(usersTable).where(eq(usersTable.username, username)).limit(1);
-    if (existing[0]) {
-      res.status(400).json({ error: "Username already taken" });
-      return;
-    }
-    const passwordHash = await bcrypt.hash(pw, 10);
-    const [user] = await db.insert(usersTable).values({ username, passwordHash }).returning();
-    const code = "TP" + String(user.id).padStart(6, "0");
-    await db.update(usersTable).set({ referralCode: code }).where(eq(usersTable.id, user.id));
-    user.referralCode = code;
-    const token = signToken(user.id, user.role);
-    res.json({ user: formatUser(user), token });
+    res.status(400).json({ error: "Phone and password are required" });
     return;
   }
   if (!/^[6-9]\d{9}$/.test(phone)) {
@@ -88,7 +29,6 @@ router.post("/register", async (req, res) => {
     return;
   }
 
-  // Resolve referrer if referralCode provided
   let referredById: number | null = null;
   if (referralCode) {
     const [referrer] = await db.select().from(usersTable).where(eq(usersTable.referralCode, referralCode.toUpperCase())).limit(1);
@@ -125,6 +65,10 @@ router.post("/login", async (req, res) => {
     res.status(401).json({ error: "Invalid mobile number or password" });
     return;
   }
+  if (user.isBlocked) {
+    res.status(403).json({ error: "Account blocked", reason: user.blockedReason || "Contact support" });
+    return;
+  }
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
     res.status(401).json({ error: "Invalid mobile number or password" });
@@ -134,62 +78,7 @@ router.post("/login", async (req, res) => {
   res.json({ user: formatUser(user), token });
 });
 
-router.post("/reset-password", async (req, res) => {
-  const { phone, otp, newPassword } = req.body;
-  if (!phone || !otp || !newPassword) {
-    res.status(400).json({ error: "Phone, OTP, and new password are required" });
-    return;
-  }
-  if (newPassword.length < 6) {
-    res.status(400).json({ error: "Password must be at least 6 characters" });
-    return;
-  }
-  const stored = otpStore.get(`reset_${phone}`);
-  if (!stored) {
-    res.status(400).json({ error: "OTP not found. Please request a new OTP." });
-    return;
-  }
-  if (Date.now() > stored.expiresAt) {
-    otpStore.delete(`reset_${phone}`);
-    res.status(400).json({ error: "OTP expired. Please request a new OTP." });
-    return;
-  }
-  if (stored.otp !== otp) {
-    res.status(400).json({ error: "Invalid OTP" });
-    return;
-  }
-  otpStore.delete(`reset_${phone}`);
-  const [user] = await db.select().from(usersTable).where(
-    or(eq(usersTable.phone, phone), eq(usersTable.username, phone))
-  ).limit(1);
-  if (!user) {
-    res.status(404).json({ error: "Account not found" });
-    return;
-  }
-  const passwordHash = await bcrypt.hash(newPassword, 10);
-  await db.update(usersTable).set({ passwordHash }).where(eq(usersTable.id, user.id));
-  res.json({ success: true, message: "Password updated successfully" });
-});
-
-router.post("/send-reset-otp", async (req, res) => {
-  const { phone } = req.body;
-  if (!phone) {
-    res.status(400).json({ error: "Phone is required" });
-    return;
-  }
-  const [user] = await db.select().from(usersTable).where(
-    or(eq(usersTable.phone, phone), eq(usersTable.username, phone))
-  ).limit(1);
-  if (!user) {
-    res.status(404).json({ error: "No account found with this mobile number" });
-    return;
-  }
-  const otp = generateOTP();
-  otpStore.set(`reset_${phone}`, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
-  res.json({ success: true, otp, message: "Reset OTP sent (demo mode)" });
-});
-
-router.post("/logout", (req, res) => {
+router.post("/logout", (_req, res) => {
   res.json({ message: "Logged out" });
 });
 

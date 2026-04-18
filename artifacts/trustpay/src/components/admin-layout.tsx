@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, ListOrdered, Settings, CreditCard, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, ListOrdered, Settings, CreditCard, ShieldAlert, LogOut } from "lucide-react";
 import { useGetMe, useLogout } from "@workspace/api-client-react";
 import { clearAuthToken } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
@@ -40,6 +40,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const navItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/orders", label: "Orders", icon: ListOrdered },
+    { href: "/admin/disputes", label: "Disputes", icon: ShieldAlert },
     { href: "/admin/users", label: "Users", icon: Users },
     { href: "/admin/deposit-tasks", label: "Deposit Tasks", icon: CreditCard },
     { href: "/admin/settings", label: "Settings", icon: Settings },

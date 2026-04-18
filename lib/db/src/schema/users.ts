@@ -1,4 +1,4 @@
-import { pgTable, serial, text, numeric, timestamp, pgEnum, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, numeric, timestamp, pgEnum, integer, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -10,6 +10,7 @@ export const usersTable = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
   phone: text("phone"),
   balance: numeric("balance", { precision: 12, scale: 2 }).notNull().default("0"),
+  heldBalance: numeric("held_balance", { precision: 12, scale: 2 }).notNull().default("0"),
   totalDeposits: numeric("total_deposits", { precision: 12, scale: 2 }).notNull().default("0"),
   totalWithdrawals: numeric("total_withdrawals", { precision: 12, scale: 2 }).notNull().default("0"),
   inviteEarnings: numeric("invite_earnings", { precision: 12, scale: 2 }).notNull().default("0"),
@@ -17,6 +18,13 @@ export const usersTable = pgTable("users", {
   referralCode: text("referral_code").unique(),
   referredBy: integer("referred_by"),
   role: userRoleEnum("role").notNull().default("user"),
+  trustScore: integer("trust_score").notNull().default(0),
+  successfulTrades: integer("successful_trades").notNull().default(0),
+  isBlocked: boolean("is_blocked").notNull().default(false),
+  blockedReason: text("blocked_reason"),
+  blockedAt: timestamp("blocked_at"),
+  isFrozen: boolean("is_frozen").notNull().default(false),
+  autoSellEnabled: boolean("auto_sell_enabled").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

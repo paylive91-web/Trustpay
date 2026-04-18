@@ -1,0 +1,259 @@
+import { Router } from "express";
+import { db } from "@workspace/db";
+import { ordersTable, usersTable, disputesTable } from "@workspace/db";
+import { eq, and, sql, inArray, ne } from "drizzle-orm";
+import { requireAuth } from "../lib/auth.js";
+import { getSettings } from "../lib/settings.js";
+import { releaseExpiredLocks, autoConfirmExpired, regenerateChunksForUser } from "../lib/matching.js";
+import { settleConfirmedTrade } from "../lib/settle.js";
+import { applyTrustDelta } from "../lib/trust.js";
+import { checkUtrFraud, checkImageHash, checkVelocity } from "../lib/fraud.js";
+
+const router = Router();
+
+function f(o: any, sellerInfo?: any) {
+  return {
+    id: o.id,
+    sellerId: o.userId,
+    amount: parseFloat(o.amount),
+    rewardPercent: parseFloat(o.rewardPercent),
+    rewardAmount: parseFloat(o.rewardAmount),
+    totalAmount: parseFloat(o.totalAmount),
+    status: o.status,
+    upiId: o.userUpiId,
+    upiName: o.userUpiName,
+    holderName: o.userName,
+    lockedAt: o.lockedAt,
+    lockedByUserId: o.lockedByUserId,
+    confirmDeadline: o.confirmDeadline,
+    submittedAt: o.submittedAt,
+    utrNumber: o.utrNumber,
+    screenshotUrl: o.screenshotUrl,
+    recordingUrl: o.recordingUrl,
+    createdAt: o.createdAt,
+    seller: sellerInfo ? { id: sellerInfo.id, username: sellerInfo.username, trustScore: sellerInfo.trustScore } : undefined,
+  };
+}
+
+// User has any active engagement (buyer-side or seller dispute)?
+async function getActiveBuy(userId: number) {
+  const [r] = await db.select().from(ordersTable).where(and(
+    eq(ordersTable.lockedByUserId, userId),
+    inArray(ordersTable.status, ["locked", "pending_confirmation", "disputed"]),
+  )).limit(1);
+  return r || null;
+}
+
+// GET buy queue (live chunks, oldest first)
+router.get("/queue", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  await releaseExpiredLocks();
+  await autoConfirmExpired();
+  const chunks = await db.select().from(ordersTable).where(and(
+    eq(ordersTable.type, "withdrawal"),
+    eq(ordersTable.status, "available"),
+    ne(ordersTable.userId, u.id),
+  )).orderBy(ordersTable.createdAt).limit(50);
+  // Tag with reward % preview
+  const enriched = chunks.map((c) => {
+    const a = parseFloat(c.amount);
+    const rp = a >= 2001 ? 3 : a >= 1001 ? 4 : 5;
+    const ra = parseFloat((a * rp / 100).toFixed(2));
+    return { ...f(c), rewardPercent: rp, rewardAmount: ra, totalAmount: parseFloat((a + ra).toFixed(2)) };
+  });
+  res.json(enriched);
+});
+
+// GET my active buy (locked or pending_confirmation chunk that I'm buying)
+router.get("/my-buy", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  const r = await getActiveBuy(u.id);
+  if (!r) { res.json(null); return; }
+  const [seller] = await db.select().from(usersTable).where(eq(usersTable.id, r.userId)).limit(1);
+  res.json(f(r, seller));
+});
+
+// POST lock chunk
+router.post("/lock/:id", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  if (u.isFrozen) { res.status(403).json({ error: "Account frozen due to low trust score" }); return; }
+  const id = parseInt(req.params.id);
+
+  // Single-active-order rule
+  const existing = await getActiveBuy(u.id);
+  if (existing) {
+    res.status(400).json({ error: "You already have an active buy. Complete it first." });
+    return;
+  }
+
+  const settings = await getSettings(["buyLockMinutes"]);
+  const lockMin = parseInt(settings.buyLockMinutes) || 15;
+
+  const [chunk] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
+  if (!chunk || chunk.status !== "available" || chunk.type !== "withdrawal") {
+    res.status(400).json({ error: "Chunk no longer available" });
+    return;
+  }
+  if (chunk.userId === u.id) {
+    res.status(400).json({ error: "Cannot buy your own chunk" });
+    return;
+  }
+
+  const now = new Date();
+  const deadline = new Date(now.getTime() + lockMin * 60 * 1000);
+  const upd = await db.update(ordersTable).set({
+    status: "locked",
+    lockedAt: now,
+    lockedByUserId: u.id,
+    confirmDeadline: deadline,
+    updatedAt: now,
+  }).where(and(eq(ordersTable.id, id), eq(ordersTable.status, "available"))).returning();
+  if (upd.length === 0) { res.status(409).json({ error: "Race - chunk just taken" }); return; }
+
+  await checkVelocity(u.id);
+  const [seller] = await db.select().from(usersTable).where(eq(usersTable.id, upd[0].userId)).limit(1);
+  res.json(f(upd[0], seller));
+});
+
+// POST submit UTR + screenshot + recording
+router.post("/submit/:id", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  const id = parseInt(req.params.id);
+  const { utrNumber, screenshotUrl, recordingUrl } = req.body;
+  if (!utrNumber || utrNumber.length < 6) {
+    res.status(400).json({ error: "Valid UTR required" });
+    return;
+  }
+  if (!screenshotUrl) {
+    res.status(400).json({ error: "Payment screenshot required" });
+    return;
+  }
+  if (!recordingUrl) {
+    res.status(400).json({ error: "Screen recording required" });
+    return;
+  }
+  const [chunk] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
+  if (!chunk || chunk.status !== "locked" || chunk.lockedByUserId !== u.id) {
+    res.status(400).json({ error: "Cannot submit on this chunk" });
+    return;
+  }
+
+  // Fraud checks
+  const utrIssues = await checkUtrFraud(utrNumber, u.id, id);
+  await checkImageHash(screenshotUrl, u.id, id, "screenshot");
+  await checkImageHash(recordingUrl, u.id, id, "recording");
+  if (utrIssues.includes("fake_utr_repeated_digits")) {
+    await applyTrustDelta(u.id, -5, "fake_utr", id);
+    res.status(400).json({ error: "UTR rejected: looks fake" });
+    return;
+  }
+
+  const settings = await getSettings(["sellerConfirmMinutes"]);
+  const confirmMin = parseInt(settings.sellerConfirmMinutes) || 15;
+  const now = new Date();
+  const deadline = new Date(now.getTime() + confirmMin * 60 * 1000);
+  await db.update(ordersTable).set({
+    status: "pending_confirmation",
+    utrNumber, screenshotUrl, recordingUrl,
+    submittedAt: now,
+    confirmDeadline: deadline,
+    updatedAt: now,
+  }).where(eq(ordersTable.id, id));
+  const [updated] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
+  res.json(f(updated));
+});
+
+// GET seller pending confirmations (chunks I sold that buyers submitted)
+router.get("/my-pending-confirmations", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  await autoConfirmExpired();
+  const rows = await db.select().from(ordersTable).where(and(
+    eq(ordersTable.userId, u.id),
+    eq(ordersTable.type, "withdrawal"),
+    eq(ordersTable.status, "pending_confirmation"),
+  )).orderBy(ordersTable.confirmDeadline);
+  const buyerIds = [...new Set(rows.map((r) => r.lockedByUserId).filter(Boolean))] as number[];
+  const buyers = buyerIds.length ? await db.select().from(usersTable).where(inArray(usersTable.id, buyerIds)) : [];
+  const byId = new Map(buyers.map((b) => [b.id, b]));
+  res.json(rows.map((r) => ({
+    ...f(r),
+    buyer: byId.get(r.lockedByUserId!) ? { id: r.lockedByUserId, username: byId.get(r.lockedByUserId!)!.username, trustScore: byId.get(r.lockedByUserId!)!.trustScore } : undefined,
+  })));
+});
+
+// POST seller confirms YES
+router.post("/confirm/:id", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  const id = parseInt(req.params.id);
+  const [chunk] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
+  if (!chunk || chunk.userId !== u.id || chunk.status !== "pending_confirmation") {
+    res.status(400).json({ error: "Cannot confirm this chunk" });
+    return;
+  }
+  await settleConfirmedTrade(id, false);
+  res.json({ success: true });
+});
+
+// POST seller rejects -> opens dispute
+router.post("/dispute/:id", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  const id = parseInt(req.params.id);
+  const { reason } = req.body;
+  const [chunk] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
+  if (!chunk || chunk.userId !== u.id || chunk.status !== "pending_confirmation") {
+    res.status(400).json({ error: "Cannot dispute this chunk" });
+    return;
+  }
+  const settings = await getSettings(["disputeWindowHours"]);
+  const winHrs = parseInt(settings.disputeWindowHours) || 24;
+  const now = new Date();
+  const proofDeadline = new Date(now.getTime() + winHrs * 60 * 60 * 1000);
+  await db.update(ordersTable).set({ status: "disputed", updatedAt: now }).where(eq(ordersTable.id, id));
+  await db.insert(disputesTable).values({
+    orderId: id,
+    buyerId: chunk.lockedByUserId!,
+    sellerId: u.id,
+    reason: reason || "Seller did not receive payment",
+    status: "open",
+    buyerProofDeadline: proofDeadline,
+    sellerProofDeadline: proofDeadline,
+  });
+  res.json({ success: true });
+});
+
+// POST cancel my locked buy (before submitting)
+router.post("/cancel/:id", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  const id = parseInt(req.params.id);
+  const [chunk] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
+  if (!chunk || chunk.lockedByUserId !== u.id || chunk.status !== "locked") {
+    res.status(400).json({ error: "Cannot cancel" });
+    return;
+  }
+  await db.update(ordersTable).set({
+    status: "available",
+    lockedAt: null, lockedByUserId: null, confirmDeadline: null,
+    updatedAt: new Date(),
+  }).where(eq(ordersTable.id, id));
+  res.json({ success: true });
+});
+
+// GET my chunks (seller view)
+router.get("/my-chunks", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  const rows = await db.select().from(ordersTable).where(and(
+    eq(ordersTable.userId, u.id),
+    eq(ordersTable.type, "withdrawal"),
+    inArray(ordersTable.status, ["available", "locked", "pending_confirmation", "disputed", "confirmed"]),
+  )).orderBy(sql`${ordersTable.createdAt} desc`).limit(50);
+  res.json(rows.map((r) => f(r)));
+});
+
+// POST regenerate chunks (manual trigger after deposit/balance change)
+router.post("/regenerate-chunks", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  await regenerateChunksForUser(u.id);
+  res.json({ success: true });
+});
+
+export default router;

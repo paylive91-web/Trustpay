@@ -10,18 +10,17 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   telegramLink: "https://t.me/trustpay",
   bannerImages: JSON.stringify([]),
   appName: "TrustPay",
-  gatewayBaseUrl: "https://payment-gateway-hub--atulusf3.replit.app",
-  gatewayMerchantId: "0cb5695cfa01460dc19477a9",
-  gatewayApiKey: "pgk_930dd0184344858e81f092212cdf6cd1dd12badd1a7fb527",
-  gatewayApiSecret: "pgs_d62ef4708d20beb03c3fbc7daeaceffa7e7cc8f8ac5f3b8f",
-  gatewayWebhookSecret: "273afd48d760a653c9340104be092f349fe2f4b483ec6b04d2a50d6522b98d44",
-  gatewayAuthMethod: "bearer",
-  gatewayCreatePaymentPath: "/payments",
-  gatewayVerifyPaymentPath: "/payments/{id}/verify",
-  gatewayRefundPath: "/refunds",
-  gatewayStatusPath: "/payments/{id}/status",
   adminUsername: "admin",
   adminPasswordHash: "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
+  highValueThreshold: "5000",
+  highValueCriticalThreshold: "10000",
+  newUserChunkCap: "500",
+  newUserTradeThreshold: "5",
+  chunkMin: "99",
+  chunkMax: "499",
+  buyLockMinutes: "15",
+  sellerConfirmMinutes: "15",
+  disputeWindowHours: "24",
 };
 
 export async function getSetting(key: string): Promise<string> {
@@ -31,12 +30,6 @@ export async function getSetting(key: string): Promise<string> {
 }
 
 export async function getSettings(keys: string[]): Promise<Record<string, string>> {
-  const rows = await db.select().from(settingsTable).where(
-    // @ts-ignore
-    keys.length === 1
-      ? eq(settingsTable.key, keys[0])
-      : undefined
-  );
   const allRows = await db.select().from(settingsTable);
   const result: Record<string, string> = {};
   for (const key of keys) {

@@ -1,24 +1,16 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db } from "@workspace/db";
-import { usersTable, ordersTable, transactionsTable, depositTasksTable, referralsTable } from "@workspace/db";
-import { eq, and, sql } from "drizzle-orm";
+import { usersTable, ordersTable, transactionsTable, depositTasksTable, fraudAlertsTable, trustEventsTable } from "@workspace/db";
+import { eq, and, sql, inArray } from "drizzle-orm";
 import { signToken, requireAdmin, formatUser } from "../lib/auth.js";
 import { getSetting, getAllSettings, setSetting } from "../lib/settings.js";
-import {
-  AdminLoginBody,
-  AdminApproveOrderBody,
-  AdminUpdateOrderBody,
-  AdminCreateDepositTaskBody,
-  AdminUpdateUserBalanceBody,
-} from "@workspace/api-zod";
 
 const router = Router();
 
 router.post("/login", async (req, res) => {
-  const parsed = AdminLoginBody.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: "Invalid request body" }); return; }
-  const { username, password } = parsed.data;
+  const { username, password } = req.body || {};
+  if (!username || !password) { res.status(400).json({ error: "Username and password required" }); return; }
 
   const storedUsername = await getSetting("adminUsername");
   const storedHash = await getSetting("adminPasswordHash");
@@ -40,9 +32,7 @@ router.post("/login", async (req, res) => {
   let adminUser = await db.select().from(usersTable).where(eq(usersTable.username, "admin")).limit(1);
   if (!adminUser[0]) {
     const [newAdmin] = await db.insert(usersTable).values({
-      username: "admin",
-      passwordHash: storedHash,
-      role: "admin",
+      username: "admin", passwordHash: storedHash, role: "admin",
     }).returning();
     adminUser = [newAdmin];
   } else if (adminUser[0].role !== "admin") {
@@ -54,33 +44,18 @@ router.post("/login", async (req, res) => {
   res.json({ user: formatUser(adminUser[0]), token });
 });
 
-function formatOrder(order: any, user?: any) {
+function fOrder(o: any, user?: any) {
   const base = {
-    id: order.id,
-    userId: order.userId,
-    type: order.type,
-    amount: parseFloat(order.amount),
-    rewardPercent: parseFloat(order.rewardPercent),
-    rewardAmount: parseFloat(order.rewardAmount),
-    totalAmount: parseFloat(order.totalAmount),
-    status: order.status,
-    upiId: order.upiId,
-    upiName: order.upiName,
-    userUpiId: order.userUpiId,
-    userUpiName: order.userUpiName,
-    userName: order.userName,
-    utrNumber: order.utrNumber,
-    screenshotUrl: order.screenshotUrl,
-    notes: order.notes,
-    createdAt: order.createdAt,
-    updatedAt: order.updatedAt,
+    id: o.id, userId: o.userId, type: o.type,
+    amount: parseFloat(o.amount), rewardPercent: parseFloat(o.rewardPercent),
+    rewardAmount: parseFloat(o.rewardAmount), totalAmount: parseFloat(o.totalAmount),
+    status: o.status, upiId: o.upiId, upiName: o.upiName,
+    userUpiId: o.userUpiId, userUpiName: o.userUpiName, userName: o.userName,
+    utrNumber: o.utrNumber, screenshotUrl: o.screenshotUrl, recordingUrl: o.recordingUrl,
+    notes: o.notes, lockedByUserId: o.lockedByUserId,
+    createdAt: o.createdAt, updatedAt: o.updatedAt,
   };
-  if (user) {
-    return {
-      ...base,
-      user: { id: user.id, username: user.username, phone: user.phone, balance: parseFloat(user.balance), totalDeposits: parseFloat(user.totalDeposits), totalWithdrawals: parseFloat(user.totalWithdrawals), inviteEarnings: parseFloat(user.inviteEarnings || "0"), inviteEarningsL2: parseFloat(user.inviteEarningsL2 || "0"), role: user.role },
-    };
-  }
+  if (user) return { ...base, user: formatUser(user) };
   return base;
 }
 
@@ -89,151 +64,15 @@ router.get("/orders", requireAdmin, async (req, res) => {
   let conditions: any[] = [];
   if (type) conditions.push(eq(ordersTable.type, type as any));
   if (status) conditions.push(eq(ordersTable.status, status as any));
-  const query = conditions.length > 0
-    ? db.select().from(ordersTable).where(and(...conditions)).orderBy(sql`${ordersTable.createdAt} desc`)
-    : db.select().from(ordersTable).orderBy(sql`${ordersTable.createdAt} desc`);
-  const orders = await query;
+  const orders = conditions.length > 0
+    ? await db.select().from(ordersTable).where(and(...conditions)).orderBy(sql`${ordersTable.createdAt} desc`).limit(300)
+    : await db.select().from(ordersTable).orderBy(sql`${ordersTable.createdAt} desc`).limit(300);
   const userIds = [...new Set(orders.map((o) => o.userId))];
   const users = userIds.length > 0
-    ? await db.select().from(usersTable).where(sql`${usersTable.id} = ANY(${sql.raw(`ARRAY[${userIds.join(",")}]`)})`)
+    ? await db.select().from(usersTable).where(inArray(usersTable.id, userIds))
     : [];
   const userMap = new Map(users.map((u) => [u.id, u]));
-  res.json(orders.map((o) => formatOrder(o, userMap.get(o.userId))));
-});
-
-router.post("/orders/:id/approve", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
-  const parsed = AdminApproveOrderBody.safeParse(req.body || {});
-  const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
-  if (!order) { res.status(404).json({ error: "Not found" }); return; }
-  if (order.status !== "pending") { res.status(400).json({ error: "Order is not pending" }); return; }
-
-  let rewardPercent = parseFloat(order.rewardPercent);
-  if (parsed.success && parsed.data.rewardPercent != null) {
-    rewardPercent = parsed.data.rewardPercent;
-  }
-  const amount = parseFloat(order.amount);
-  const rewardAmount = parseFloat((amount * rewardPercent / 100).toFixed(2));
-  const totalAmount = parseFloat((amount + rewardAmount).toFixed(2));
-
-  await db.update(ordersTable).set({
-    status: "approved",
-    rewardPercent: String(rewardPercent),
-    rewardAmount: String(rewardAmount),
-    totalAmount: String(totalAmount),
-    notes: parsed.success ? parsed.data.notes || order.notes : order.notes,
-    updatedAt: new Date(),
-  }).where(eq(ordersTable.id, id));
-
-  if (order.type === "deposit") {
-    await db.update(usersTable).set({
-      balance: sql`${usersTable.balance} + ${totalAmount}`,
-      totalDeposits: sql`${usersTable.totalDeposits} + ${amount}`,
-    }).where(eq(usersTable.id, order.userId));
-    await db.insert(transactionsTable).values({
-      userId: order.userId,
-      orderId: id,
-      type: "credit",
-      amount: String(totalAmount),
-      description: `Buy approved for order #${id} (+${rewardPercent}% reward)`,
-    });
-
-    // Handle referral commissions
-    const [depositor] = await db.select().from(usersTable).where(eq(usersTable.id, order.userId)).limit(1);
-    if (depositor && depositor.referredBy) {
-      // Level 1 commission: 1% to direct referrer
-      const l1Commission = parseFloat((amount * 0.01).toFixed(2));
-      if (l1Commission > 0) {
-        await db.update(usersTable).set({
-          balance: sql`${usersTable.balance} + ${l1Commission}`,
-          inviteEarnings: sql`${usersTable.inviteEarnings} + ${l1Commission}`,
-        }).where(eq(usersTable.id, depositor.referredBy));
-        await db.insert(referralsTable).values({
-          referrerId: depositor.referredBy,
-          referredUserId: depositor.id,
-          orderId: id,
-          level: 1,
-          commissionAmount: String(l1Commission),
-        });
-        await db.insert(transactionsTable).values({
-          userId: depositor.referredBy,
-          orderId: id,
-          type: "credit",
-          amount: String(l1Commission),
-          description: `Invite commission (L1 1%) from user #${depositor.id} deposit`,
-        });
-
-        // Level 2 commission: 0.1% to L1 referrer's referrer
-        const [l1Referrer] = await db.select().from(usersTable).where(eq(usersTable.id, depositor.referredBy)).limit(1);
-        if (l1Referrer && l1Referrer.referredBy) {
-          const l2Commission = parseFloat((amount * 0.001).toFixed(2));
-          if (l2Commission > 0) {
-            await db.update(usersTable).set({
-              balance: sql`${usersTable.balance} + ${l2Commission}`,
-              inviteEarningsL2: sql`${usersTable.inviteEarningsL2} + ${l2Commission}`,
-            }).where(eq(usersTable.id, l1Referrer.referredBy));
-            await db.insert(referralsTable).values({
-              referrerId: l1Referrer.referredBy,
-              referredUserId: depositor.id,
-              orderId: id,
-              level: 2,
-              commissionAmount: String(l2Commission),
-            });
-            await db.insert(transactionsTable).values({
-              userId: l1Referrer.referredBy,
-              orderId: id,
-              type: "credit",
-              amount: String(l2Commission),
-              description: `Invite commission (L2 0.1%) from user #${depositor.id} deposit`,
-            });
-          }
-        }
-      }
-    }
-  }
-
-  const [updated] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
-  res.json(formatOrder(updated));
-});
-
-router.post("/orders/:id/reject", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
-  const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
-  if (!order) { res.status(404).json({ error: "Not found" }); return; }
-
-  if (order.type === "withdrawal" && order.status === "pending") {
-    await db.update(usersTable).set({
-      balance: sql`${usersTable.balance} + ${parseFloat(order.amount)}`,
-      totalWithdrawals: sql`${usersTable.totalWithdrawals} - ${parseFloat(order.amount)}`,
-    }).where(eq(usersTable.id, order.userId));
-  }
-
-  await db.update(ordersTable).set({ status: "rejected", updatedAt: new Date() }).where(eq(ordersTable.id, id));
-  const [updated] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
-  res.json(formatOrder(updated));
-});
-
-router.put("/orders/:id", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
-  const parsed = AdminUpdateOrderBody.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: "Invalid body" }); return; }
-  const updates: any = { updatedAt: new Date() };
-  if (parsed.data.rewardPercent != null) updates.rewardPercent = String(parsed.data.rewardPercent);
-  if (parsed.data.amount != null) updates.amount = String(parsed.data.amount);
-  if (parsed.data.notes != null) updates.notes = parsed.data.notes;
-  if (parsed.data.status != null) updates.status = parsed.data.status;
-
-  const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
-  if (!order) { res.status(404).json({ error: "Not found" }); return; }
-
-  const amount = parseFloat(parsed.data.amount != null ? String(parsed.data.amount) : order.amount);
-  const rewardPercent = parsed.data.rewardPercent != null ? parsed.data.rewardPercent : parseFloat(order.rewardPercent);
-  updates.rewardAmount = String(parseFloat((amount * rewardPercent / 100).toFixed(2)));
-  updates.totalAmount = String(parseFloat((amount + parseFloat(updates.rewardAmount)).toFixed(2)));
-
-  await db.update(ordersTable).set(updates).where(eq(ordersTable.id, id));
-  const [updated] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
-  res.json(formatOrder(updated));
+  res.json(orders.map((o) => fOrder(o, userMap.get(o.userId))));
 });
 
 router.get("/users", requireAdmin, async (req, res) => {
@@ -241,24 +80,83 @@ router.get("/users", requireAdmin, async (req, res) => {
   res.json(users.map(formatUser));
 });
 
+router.get("/users/:id", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id)).limit(1);
+  if (!user) { res.status(404).json({ error: "Not found" }); return; }
+  const orders = await db.select().from(ordersTable).where(eq(ordersTable.userId, id)).orderBy(sql`${ordersTable.createdAt} desc`).limit(50);
+  const trustEvents = await db.select().from(trustEventsTable).where(eq(trustEventsTable.userId, id)).orderBy(sql`${trustEventsTable.createdAt} desc`).limit(30);
+  const fraudAlerts = await db.select().from(fraudAlertsTable).where(eq(fraudAlertsTable.userId, id)).orderBy(sql`${fraudAlertsTable.createdAt} desc`).limit(30);
+  res.json({ user: formatUser(user), orders: orders.map((o) => fOrder(o)), trustEvents, fraudAlerts });
+});
+
+router.post("/users/:id/block", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { reason } = req.body || {};
+  await db.update(usersTable).set({
+    isBlocked: true, blockedReason: reason || "Blocked by admin", blockedAt: new Date(),
+  }).where(eq(usersTable.id, id));
+  res.json({ success: true });
+});
+
+router.post("/users/:id/unblock", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  await db.update(usersTable).set({
+    isBlocked: false, blockedReason: null, blockedAt: null,
+  }).where(eq(usersTable.id, id));
+  res.json({ success: true });
+});
+
+router.post("/users/:id/freeze", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  await db.update(usersTable).set({ isFrozen: true }).where(eq(usersTable.id, id));
+  res.json({ success: true });
+});
+
+router.post("/users/:id/unfreeze", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  await db.update(usersTable).set({ isFrozen: false }).where(eq(usersTable.id, id));
+  res.json({ success: true });
+});
+
 router.put("/users/:id/balance", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
-  const parsed = AdminUpdateUserBalanceBody.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: "Invalid body" }); return; }
-  await db.update(usersTable).set({ balance: String(parsed.data.balance) }).where(eq(usersTable.id, id));
-  if (parsed.data.reason) {
+  const { balance, reason } = req.body || {};
+  if (typeof balance !== "number") { res.status(400).json({ error: "balance number required" }); return; }
+  await db.update(usersTable).set({ balance: String(balance) }).where(eq(usersTable.id, id));
+  if (reason) {
     await db.insert(transactionsTable).values({
-      userId: id,
-      type: parsed.data.balance >= 0 ? "credit" : "debit",
-      amount: String(Math.abs(parsed.data.balance)),
-      description: parsed.data.reason || "Admin balance update",
+      userId: id, type: balance >= 0 ? "credit" : "debit",
+      amount: String(Math.abs(balance)), description: reason || "Admin balance update",
     });
   }
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id)).limit(1);
   res.json(formatUser(user));
 });
 
-// Send broadcast notification to all users
+router.get("/fraud-alerts", requireAdmin, async (req, res) => {
+  const { resolved } = req.query as { resolved?: string };
+  const conds: any[] = [];
+  if (resolved === "true") conds.push(eq(fraudAlertsTable.resolved, true));
+  if (resolved === "false") conds.push(eq(fraudAlertsTable.resolved, false));
+  const rows = conds.length > 0
+    ? await db.select().from(fraudAlertsTable).where(and(...conds)).orderBy(sql`${fraudAlertsTable.createdAt} desc`).limit(200)
+    : await db.select().from(fraudAlertsTable).orderBy(sql`${fraudAlertsTable.createdAt} desc`).limit(200);
+  const userIds = [...new Set(rows.map((r) => r.userId).filter(Boolean))] as number[];
+  const users = userIds.length ? await db.select().from(usersTable).where(inArray(usersTable.id, userIds)) : [];
+  const byId = new Map(users.map((u) => [u.id, u]));
+  res.json(rows.map((r) => ({
+    ...r,
+    user: r.userId && byId.get(r.userId) ? { id: r.userId, username: byId.get(r.userId)!.username, trustScore: byId.get(r.userId)!.trustScore } : null,
+  })));
+});
+
+router.post("/fraud-alerts/:id/resolve", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  await db.update(fraudAlertsTable).set({ resolved: true }).where(eq(fraudAlertsTable.id, id));
+  res.json({ success: true });
+});
+
 router.post("/notify-all", requireAdmin, async (req, res) => {
   const { message, title } = req.body;
   if (!message) { res.status(400).json({ error: "Message is required" }); return; }
@@ -267,142 +165,112 @@ router.post("/notify-all", requireAdmin, async (req, res) => {
   res.json({ success: true, notification });
 });
 
-function formatSettingsResponse(s: any) {
-  let multipleUpiIds = [];
+function fSettings(s: any) {
+  let multipleUpiIds: any[] = [];
   try { multipleUpiIds = JSON.parse(s.multipleUpiIds || "[]"); } catch {}
-  let announcements = [];
+  let announcements: any[] = [];
   try { announcements = JSON.parse(s.announcements || "[]"); } catch {}
-  let broadcastNotification = null;
+  let broadcastNotification: any = null;
   try { broadcastNotification = JSON.parse(s.broadcastNotification || "null"); } catch {}
   return {
     upiId: s.upiId || "trustpay@upi",
     upiName: s.upiName || "TrustPay",
-    multipleUpiIds,
-    popupMessage: s.popupMessage || "",
-    popupImageUrl: s.popupImageUrl || "",
-    announcements,
-    telegramLink: s.telegramLink || "",
+    multipleUpiIds, popupMessage: s.popupMessage || "", popupImageUrl: s.popupImageUrl || "",
+    announcements, telegramLink: s.telegramLink || "",
     bannerImages: JSON.parse(s.bannerImages || "[]"),
     appName: s.appName || "TrustPay",
-    gatewayBaseUrl: s.gatewayBaseUrl || "https://payment-gateway-hub--atulusf3.replit.app",
-    gatewayMerchantId: s.gatewayMerchantId || "0cb5695cfa01460dc19477a9",
-    gatewayApiKey: s.gatewayApiKey || "",
-    gatewayApiSecret: s.gatewayApiSecret || "",
-    gatewayWebhookSecret: s.gatewayWebhookSecret || "",
-    gatewayAuthMethod: s.gatewayAuthMethod || "bearer",
-    gatewayCreatePaymentPath: s.gatewayCreatePaymentPath || "/payments",
-    gatewayVerifyPaymentPath: s.gatewayVerifyPaymentPath || "/payments/{id}/verify",
-    gatewayRefundPath: s.gatewayRefundPath || "/refunds",
-    gatewayStatusPath: s.gatewayStatusPath || "/payments/{id}/status",
-    buyRules: s.buyRules || "",
-    sellRules: s.sellRules || "",
+    buyRules: s.buyRules || "", sellRules: s.sellRules || "",
+    chunkMin: parseInt(s.chunkMin || "99"),
+    chunkMax: parseInt(s.chunkMax || "499"),
+    newUserChunkCap: parseInt(s.newUserChunkCap || "500"),
+    newUserTradeThreshold: parseInt(s.newUserTradeThreshold || "5"),
+    buyLockMinutes: parseInt(s.buyLockMinutes || "15"),
+    sellerConfirmMinutes: parseInt(s.sellerConfirmMinutes || "15"),
+    disputeWindowHours: parseInt(s.disputeWindowHours || "24"),
+    highValueThreshold: parseInt(s.highValueThreshold || "5000"),
+    highValueCriticalThreshold: parseInt(s.highValueCriticalThreshold || "10000"),
     broadcastNotification,
   };
 }
 
-router.get("/settings", requireAdmin, async (req, res) => {
-  const s = await getAllSettings();
-  res.json(formatSettingsResponse(s));
+router.get("/settings", requireAdmin, async (_req, res) => {
+  res.json(fSettings(await getAllSettings()));
 });
 
 router.put("/settings", requireAdmin, async (req, res) => {
-  const body = req.body;
-  const { upiId, upiName, multipleUpiIds, popupMessage, popupImageUrl, announcements, telegramLink, bannerImages, gatewayBaseUrl, gatewayMerchantId, gatewayApiKey, gatewayApiSecret, gatewayWebhookSecret, gatewayAuthMethod, gatewayCreatePaymentPath, gatewayVerifyPaymentPath, gatewayRefundPath, gatewayStatusPath, adminPassword, buyRules, sellRules } = body;
-  if (upiId != null) await setSetting("upiId", upiId);
-  if (upiName != null) await setSetting("upiName", upiName);
-  if (multipleUpiIds != null) await setSetting("multipleUpiIds", JSON.stringify(multipleUpiIds));
-  if (popupMessage != null) await setSetting("popupMessage", popupMessage);
-  if (popupImageUrl != null) await setSetting("popupImageUrl", popupImageUrl);
-  if (announcements != null) await setSetting("announcements", JSON.stringify(announcements));
-  if (telegramLink != null) await setSetting("telegramLink", telegramLink);
-  if (bannerImages != null) await setSetting("bannerImages", JSON.stringify(bannerImages));
-  if (gatewayBaseUrl != null) await setSetting("gatewayBaseUrl", gatewayBaseUrl);
-  if (gatewayMerchantId != null) await setSetting("gatewayMerchantId", gatewayMerchantId);
-  if (gatewayApiKey != null) await setSetting("gatewayApiKey", gatewayApiKey);
-  if (gatewayApiSecret != null) await setSetting("gatewayApiSecret", gatewayApiSecret);
-  if (gatewayWebhookSecret != null) await setSetting("gatewayWebhookSecret", gatewayWebhookSecret);
-  if (gatewayAuthMethod != null) await setSetting("gatewayAuthMethod", gatewayAuthMethod);
-  if (gatewayCreatePaymentPath != null) await setSetting("gatewayCreatePaymentPath", gatewayCreatePaymentPath);
-  if (gatewayVerifyPaymentPath != null) await setSetting("gatewayVerifyPaymentPath", gatewayVerifyPaymentPath);
-  if (gatewayRefundPath != null) await setSetting("gatewayRefundPath", gatewayRefundPath);
-  if (gatewayStatusPath != null) await setSetting("gatewayStatusPath", gatewayStatusPath);
-  if (buyRules != null) await setSetting("buyRules", buyRules);
-  if (sellRules != null) await setSetting("sellRules", sellRules);
-  if (adminPassword != null) {
-    const hash = await bcrypt.hash(adminPassword, 10);
+  const b = req.body || {};
+  const map: Record<string, any> = {
+    upiId: b.upiId, upiName: b.upiName,
+    popupMessage: b.popupMessage, popupImageUrl: b.popupImageUrl,
+    telegramLink: b.telegramLink,
+    appName: b.appName, buyRules: b.buyRules, sellRules: b.sellRules,
+    chunkMin: b.chunkMin, chunkMax: b.chunkMax,
+    newUserChunkCap: b.newUserChunkCap, newUserTradeThreshold: b.newUserTradeThreshold,
+    buyLockMinutes: b.buyLockMinutes, sellerConfirmMinutes: b.sellerConfirmMinutes,
+    disputeWindowHours: b.disputeWindowHours,
+    highValueThreshold: b.highValueThreshold, highValueCriticalThreshold: b.highValueCriticalThreshold,
+  };
+  for (const [k, v] of Object.entries(map)) {
+    if (v != null) await setSetting(k, String(v));
+  }
+  if (b.multipleUpiIds != null) await setSetting("multipleUpiIds", JSON.stringify(b.multipleUpiIds));
+  if (b.announcements != null) await setSetting("announcements", JSON.stringify(b.announcements));
+  if (b.bannerImages != null) await setSetting("bannerImages", JSON.stringify(b.bannerImages));
+  if (b.adminPassword) {
+    const hash = await bcrypt.hash(b.adminPassword, 10);
     await setSetting("adminPasswordHash", hash);
   }
-  const s = await getAllSettings();
-  res.json(formatSettingsResponse(s));
+  res.json(fSettings(await getAllSettings()));
 });
 
-router.get("/stats/daily", requireAdmin, async (req, res) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayDeposits = await db.select({ sum: sql<string>`COALESCE(SUM(${ordersTable.amount}), 0)`, count: sql<string>`COUNT(*)` })
-    .from(ordersTable)
-    .where(and(eq(ordersTable.type, "deposit"), eq(ordersTable.status, "approved"), sql`${ordersTable.createdAt} >= ${today}`));
-  const todayWithdrawals = await db.select({ sum: sql<string>`COALESCE(SUM(${ordersTable.amount}), 0)`, count: sql<string>`COUNT(*)` })
-    .from(ordersTable)
-    .where(and(eq(ordersTable.type, "withdrawal"), eq(ordersTable.status, "approved"), sql`${ordersTable.createdAt} >= ${today}`));
+router.get("/stats/daily", requireAdmin, async (_req, res) => {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const todayConfirmed = await db.select({ sum: sql<string>`COALESCE(SUM(${ordersTable.amount}), 0)`, count: sql<string>`COUNT(*)` })
+    .from(ordersTable).where(and(eq(ordersTable.status, "confirmed"), sql`${ordersTable.createdAt} >= ${today}`));
   const totalUsers = await db.select({ count: sql<string>`COUNT(*)` }).from(usersTable);
-  const pendingOrders = await db.select({ count: sql<string>`COUNT(*)` }).from(ordersTable).where(eq(ordersTable.status, "pending"));
+  const openDisputes = await db.select({ count: sql<string>`COUNT(*)` }).from(ordersTable).where(eq(ordersTable.status, "disputed"));
+  const fraudOpen = await db.select({ count: sql<string>`COUNT(*)` }).from(fraudAlertsTable).where(eq(fraudAlertsTable.resolved, false));
   res.json({
-    todayDeposits: parseFloat(String(todayDeposits[0]?.sum || "0")),
-    todayWithdrawals: parseFloat(String(todayWithdrawals[0]?.sum || "0")),
-    todayDepositCount: parseInt(String(todayDeposits[0]?.count || "0")),
-    todayWithdrawalCount: parseInt(String(todayWithdrawals[0]?.count || "0")),
+    todayDeposits: parseFloat(String(todayConfirmed[0]?.sum || "0")),
+    todayWithdrawals: parseFloat(String(todayConfirmed[0]?.sum || "0")),
+    todayDepositCount: parseInt(String(todayConfirmed[0]?.count || "0")),
+    todayWithdrawalCount: parseInt(String(todayConfirmed[0]?.count || "0")),
     totalUsers: parseInt(String(totalUsers[0]?.count || "0")),
-    pendingOrders: parseInt(String(pendingOrders[0]?.count || "0")),
+    pendingOrders: parseInt(String(openDisputes[0]?.count || "0")),
+    openDisputes: parseInt(String(openDisputes[0]?.count || "0")),
+    openFraudAlerts: parseInt(String(fraudOpen[0]?.count || "0")),
   });
 });
 
-router.get("/deposit-tasks", requireAdmin, async (req, res) => {
+router.get("/deposit-tasks", requireAdmin, async (_req, res) => {
   const tasks = await db.select().from(depositTasksTable).orderBy(depositTasksTable.amount);
   res.json(tasks.map((t) => {
-    const amount = parseFloat(t.amount);
-    const rewardPercent = parseFloat(t.rewardPercent);
-    const rewardAmount = parseFloat((amount * rewardPercent / 100).toFixed(2));
-    return { id: t.id, amount, rewardPercent, rewardAmount, totalAmount: amount + rewardAmount, isActive: t.isActive };
+    const a = parseFloat(t.amount); const rp = parseFloat(t.rewardPercent);
+    const ra = parseFloat((a * rp / 100).toFixed(2));
+    return { id: t.id, amount: a, rewardPercent: rp, rewardAmount: ra, totalAmount: a + ra, isActive: t.isActive };
   }));
 });
 
 router.post("/deposit-tasks", requireAdmin, async (req, res) => {
-  const parsed = AdminCreateDepositTaskBody.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: "Invalid body" }); return; }
-  const { amount, rewardPercent, isActive } = parsed.data;
+  const { amount, rewardPercent, isActive } = req.body || {};
   const [task] = await db.insert(depositTasksTable).values({
-    amount: String(amount),
-    rewardPercent: String(rewardPercent),
-    isActive: isActive ?? true,
+    amount: String(amount), rewardPercent: String(rewardPercent), isActive: isActive ?? true,
   }).returning();
-  const amt = parseFloat(task.amount);
-  const pct = parseFloat(task.rewardPercent);
-  const reward = parseFloat((amt * pct / 100).toFixed(2));
-  res.json({ id: task.id, amount: amt, rewardPercent: pct, rewardAmount: reward, totalAmount: amt + reward, isActive: task.isActive });
+  res.json(task);
 });
 
 router.put("/deposit-tasks/:id", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
-  const parsed = AdminCreateDepositTaskBody.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: "Invalid body" }); return; }
-  const { amount, rewardPercent, isActive } = parsed.data;
+  const { amount, rewardPercent, isActive } = req.body || {};
   await db.update(depositTasksTable).set({
-    amount: String(amount),
-    rewardPercent: String(rewardPercent),
-    isActive: isActive ?? true,
+    amount: String(amount), rewardPercent: String(rewardPercent), isActive: isActive ?? true,
   }).where(eq(depositTasksTable.id, id));
   const [task] = await db.select().from(depositTasksTable).where(eq(depositTasksTable.id, id)).limit(1);
-  if (!task) { res.status(404).json({ error: "Not found" }); return; }
-  const amt = parseFloat(task.amount);
-  const pct = parseFloat(task.rewardPercent);
-  const reward = parseFloat((amt * pct / 100).toFixed(2));
-  res.json({ id: task.id, amount: amt, rewardPercent: pct, rewardAmount: reward, totalAmount: amt + reward, isActive: task.isActive });
+  res.json(task);
 });
 
 router.delete("/deposit-tasks/:id", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
-  await db.delete(depositTasksTable).where(eq(depositTasksTable.id, id));
+  await db.delete(depositTasksTable).where(eq(depositTasksTable.id, parseInt(req.params.id)));
   res.json({ message: "Deleted" });
 });
 

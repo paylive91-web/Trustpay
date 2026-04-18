@@ -4,7 +4,23 @@ import { z } from "zod/v4";
 import { usersTable } from "./users";
 
 export const orderTypeEnum = pgEnum("order_type", ["deposit", "withdrawal"]);
-export const orderStatusEnum = pgEnum("order_status", ["pending", "approved", "rejected"]);
+// Status flow:
+// available -> locked (buyer locks chunk, 15min) -> pending_confirmation (buyer submitted UTR) -> confirmed | disputed
+// disputed -> confirmed | refunded (admin or auto)
+// also: expired, cancelled, rejected, approved, pending (legacy)
+export const orderStatusEnum = pgEnum("order_status", [
+  "pending",
+  "approved",
+  "rejected",
+  "available",
+  "locked",
+  "pending_confirmation",
+  "confirmed",
+  "disputed",
+  "refunded",
+  "expired",
+  "cancelled",
+]);
 
 export const ordersTable = pgTable("orders", {
   id: serial("id").primaryKey(),
@@ -22,7 +38,15 @@ export const ordersTable = pgTable("orders", {
   userName: text("user_name"),
   utrNumber: text("utr_number"),
   screenshotUrl: text("screenshot_url"),
+  recordingUrl: text("recording_url"),
   notes: text("notes"),
+  // P2P chunk fields
+  parentSellId: integer("parent_sell_id"),
+  lockedAt: timestamp("locked_at"),
+  lockedByUserId: integer("locked_by_user_id"),
+  submittedAt: timestamp("submitted_at"),
+  confirmDeadline: timestamp("confirm_deadline"),
+  confirmedAt: timestamp("confirmed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

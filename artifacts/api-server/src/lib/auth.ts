@@ -35,6 +35,10 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     res.status(401).json({ error: "User not found" });
     return;
   }
+  if (user[0].isBlocked && user[0].role !== "admin") {
+    res.status(403).json({ error: "Account blocked", reason: user[0].blockedReason || "Contact support" });
+    return;
+  }
   (req as any).user = user[0];
   next();
 }
@@ -56,6 +60,7 @@ export function formatUser(user: any) {
     username: user.username,
     phone: user.phone,
     balance: parseFloat(user.balance),
+    heldBalance: parseFloat(user.heldBalance || "0"),
     totalDeposits: parseFloat(user.totalDeposits),
     totalWithdrawals: parseFloat(user.totalWithdrawals),
     inviteEarnings: parseFloat(user.inviteEarnings || "0"),
@@ -63,6 +68,12 @@ export function formatUser(user: any) {
     referralCode: user.referralCode,
     referredBy: user.referredBy,
     role: user.role,
+    trustScore: user.trustScore ?? 0,
+    successfulTrades: user.successfulTrades ?? 0,
+    isBlocked: !!user.isBlocked,
+    isFrozen: !!user.isFrozen,
+    autoSellEnabled: !!user.autoSellEnabled,
+    blockedReason: user.blockedReason,
     createdAt: user.createdAt,
   };
 }

@@ -6,7 +6,9 @@ import transactionsRouter from "./transactions.js";
 import dashboardRouter from "./dashboard.js";
 import settingsRouter from "./settings.js";
 import adminRouter from "./admin.js";
-import gatewayRouter from "./gateway.js";
+import p2pRouter from "./p2p.js";
+import disputesRouter from "./disputes.js";
+import upiRouter from "./upi.js";
 
 const router: IRouter = Router();
 
@@ -17,6 +19,8 @@ router.use("/transactions", transactionsRouter);
 router.use("/dashboard", dashboardRouter);
 router.use("/settings", settingsRouter);
 router.use("/admin", adminRouter);
-router.use("/gateway", gatewayRouter);
+router.use("/p2p", p2pRouter);
+router.use("/disputes", disputesRouter);
+router.use("/upi", upiRouter);
 
 export default router;
