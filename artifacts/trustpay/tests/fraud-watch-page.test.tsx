@@ -2,6 +2,7 @@ import { describe, test, expect, vi, beforeEach } from "vitest";
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 vi.mock("@/components/admin-layout", () => ({
   default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -19,22 +20,25 @@ interface Captured { url: string; method?: string }
 function setupFetch(initialAlerts: unknown[]): { calls: Captured[] } {
   const calls: Captured[] = [];
   let alerts = [...initialAlerts];
-  vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+  const json = (data: unknown) =>
+    new Response(JSON.stringify(data), { status: 200, headers: { "content-type": "application/json" } });
+  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === "string" ? input : (input as URL).toString();
     calls.push({ url, method: init?.method });
     const m = url.match(/\/api\/admin\/fraud-alerts\/(\d+)\/resolve$/);
     if (m && init?.method === "POST") {
       const id = Number(m[1]);
       alerts = alerts.map((a: any) => (a.id === id ? { ...a, resolved: true } : a));
-      return { ok: true, status: 200, json: async () => ({ ok: true }) } as Response;
+      return json({ success: true });
     }
     if (url.includes("/api/admin/fraud-alerts")) {
       const showResolved = url.includes("resolved=true");
       const filtered = url.includes("resolved=")
         ? alerts.filter((a: any) => Boolean(a.resolved) === showResolved)
         : alerts;
-      return { ok: true, status: 200, json: async () => filtered } as Response;
+      return json(filtered);
     }
-    return { ok: true, status: 200, json: async () => ({}) } as Response;
+    return json({});
   }));
   return { calls };
 }
@@ -59,7 +63,8 @@ describe("FraudWatch page — admin resolve flow", () => {
     const { calls } = setupFetch([alert]);
     const user = userEvent.setup();
 
-    render(<FraudWatchPage />);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={client}><FraudWatchPage /></QueryClientProvider>);
 
     // Initial GET fires; the alert row appears with rule + Resolve button
     await screen.findByText("duplicate_utr");

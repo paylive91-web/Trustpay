@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import AdminLayout from "@/components/admin-layout";
-import { useAdminGetSettings } from "@workspace/api-client-react";
+import { useAdminGetSettings, useAdminUploadImage, useAdminNotifyAll, useAdminUpdateSettings } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,26 +23,20 @@ function fileToDataUrl(file: File): Promise<string> {
 
 function ImagePicker({ value, onChange, label }: { value: string; onChange: (v: string) => void; label?: string }) {
   const { toast } = useToast();
-  const [busy, setBusy] = React.useState(false);
+  const uploadMut = useAdminUploadImage();
   const onPick = async (file: File | null) => {
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) { toast({ title: "Image must be under 5 MB", variant: "destructive" }); return; }
-    setBusy(true);
     try {
       const dataUrl = await fileToDataUrl(file);
-      const token = localStorage.getItem("authToken");
-      const r = await fetch(`${API_BASE}/admin/upload-image`, {
-        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ dataUrl }),
-      });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || "Upload failed");
+      const d = await uploadMut.mutateAsync({ data: { dataUrl } });
       onChange(d.url);
       toast({ title: "Image uploaded" });
     } catch (e: any) {
       toast({ title: "Upload failed", description: e.message, variant: "destructive" });
-    } finally { setBusy(false); }
+    }
   };
+  const busy = uploadMut.isPending;
   return (
     <div className="space-y-2">
       {label && <Label className="text-xs">{label}</Label>}
@@ -76,8 +70,8 @@ export default function AdminSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: settings, isLoading } = useAdminGetSettings();
-  const [saving, setSaving] = useState(false);
-  const [notifying, setNotifying] = useState(false);
+  const notifyMut = useAdminNotifyAll();
+  const saving = false;
   const [broadcastTitle, setBroadcastTitle] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
 
@@ -119,42 +113,35 @@ export default function AdminSettings() {
   const updateAnnouncement = (i: number, field: keyof Announcement, val: string) =>
     setAnnouncements((prev) => prev.map((a, idx) => idx === i ? { ...a, [field]: val } : a));
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      const token = localStorage.getItem("authToken");
-      const payload: any = {
-        upiId,
-        upiName,
-        multipleUpiIds: multipleUpiIds.filter((u) => u.upiId.trim()),
-        announcements: announcements.filter((a) => a.message.trim()),
-        popupMessage,
-        popupImageUrl,
-        telegramLink,
-        bannerImages,
-        buyRules,
-        sellRules,
-      };
-      if (adminPassword) payload.adminPassword = adminPassword;
+  const updateSettingsMut = useAdminUpdateSettings({
+    mutation: {
+      onSuccess: () => {
+        toast({ title: "Settings updated successfully" });
+        queryClient.invalidateQueries({ queryKey: getAdminGetSettingsQueryKey() });
+        setAdminPassword("");
+      },
+      onError: (err: any) => {
+        toast({ title: "Error", description: err?.message || "Failed to save settings", variant: "destructive" });
+      },
+    },
+  });
 
-      const res = await fetch(`${API_BASE}/admin/settings`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to save settings");
-      }
-      toast({ title: "Settings updated successfully" });
-      queryClient.invalidateQueries({ queryKey: getAdminGetSettingsQueryKey() });
-      setAdminPassword("");
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    } finally {
-      setSaving(false);
-    }
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const payload: any = {
+      upiId,
+      upiName,
+      multipleUpiIds: multipleUpiIds.filter((u) => u.upiId.trim()),
+      announcements: announcements.filter((a) => a.message.trim()),
+      popupMessage,
+      popupImageUrl,
+      telegramLink,
+      bannerImages,
+      buyRules,
+      sellRules,
+    };
+    if (adminPassword) payload.adminPassword = adminPassword;
+    updateSettingsMut.mutate({ data: payload });
   };
 
   const handleSendBroadcast = async () => {
@@ -162,24 +149,16 @@ export default function AdminSettings() {
       toast({ title: "Message is required", variant: "destructive" });
       return;
     }
-    setNotifying(true);
     try {
-      const token = localStorage.getItem("authToken");
-      const res = await fetch(`${API_BASE}/admin/notify-all`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ message: broadcastMessage.trim(), title: broadcastTitle.trim() || "TrustPay" }),
-      });
-      if (!res.ok) throw new Error("Failed to send notification");
+      await notifyMut.mutateAsync({ data: { message: broadcastMessage.trim(), title: broadcastTitle.trim() || "TrustPay" } });
       toast({ title: "Notification sent to all users!" });
       setBroadcastMessage("");
       setBroadcastTitle("");
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
-    } finally {
-      setNotifying(false);
     }
   };
+  const notifying = notifyMut.isPending;
 
   return (
     <AdminLayout>

@@ -212,6 +212,158 @@ export interface UpdateBalanceBody {
   reason?: string;
 }
 
+export interface SuccessResponse {
+  success: boolean;
+}
+
+export interface UserSummary {
+  id: number;
+  username: string;
+  trustScore?: number;
+}
+
+export type FraudAlertSeverity =
+  (typeof FraudAlertSeverity)[keyof typeof FraudAlertSeverity];
+
+export const FraudAlertSeverity = {
+  critical: "critical",
+  warn: "warn",
+  info: "info",
+} as const;
+
+export interface FraudAlert {
+  id: number;
+  rule: string;
+  severity: FraudAlertSeverity;
+  evidence?: string | null;
+  userId?: number | null;
+  orderId?: number | null;
+  resolved: boolean;
+  createdAt: string;
+  user?: UserSummary | null;
+}
+
+export type HighValueEventTier =
+  (typeof HighValueEventTier)[keyof typeof HighValueEventTier];
+
+export const HighValueEventTier = {
+  warn: "warn",
+  critical: "critical",
+} as const;
+
+export interface HighValueEvent {
+  id: number;
+  tier: HighValueEventTier;
+  amount: number;
+  orderId: number;
+  userId: number;
+  reviewedAt?: string | null;
+  reviewedBy?: number | null;
+  notes?: string | null;
+  createdAt: string;
+  user?: UserSummary | null;
+}
+
+export interface ReviewHighValueBody {
+  notes?: string;
+}
+
+export interface NotifyAllBody {
+  title?: string;
+  message: string;
+}
+
+export interface UploadImageBody {
+  dataUrl: string;
+  kind?: string;
+}
+
+export interface UploadImageResponse {
+  url: string;
+  kind?: string;
+  sizeBytes?: number;
+}
+
+export interface DisputeOrder {
+  id: number;
+  amount: string;
+  utrNumber?: string | null;
+  screenshotUrl?: string | null;
+  userUpiId?: string | null;
+  userUpiName?: string | null;
+}
+
+export type DisputeBaseStatus =
+  (typeof DisputeBaseStatus)[keyof typeof DisputeBaseStatus];
+
+export const DisputeBaseStatus = {
+  open: "open",
+  buyer_won: "buyer_won",
+  seller_won: "seller_won",
+  auto_resolved: "auto_resolved",
+} as const;
+
+export interface DisputeBase {
+  id: number;
+  orderId: number;
+  buyerId: number;
+  sellerId: number;
+  status: DisputeBaseStatus;
+  reason?: string | null;
+  adminNotes?: string | null;
+  createdAt: string;
+  resolvedAt?: string | null;
+  buyerProofAt?: string | null;
+  sellerProofAt?: string | null;
+  buyerProofDeadline?: string | null;
+  sellerProofDeadline?: string | null;
+  buyerBankStatementUrl?: string | null;
+  sellerBankStatementUrl?: string | null;
+  sellerRecordingUrl?: string | null;
+  sellerLastTxnScreenshotUrl?: string | null;
+}
+
+export type MyDisputeRole = (typeof MyDisputeRole)[keyof typeof MyDisputeRole];
+
+export const MyDisputeRole = {
+  buyer: "buyer",
+  seller: "seller",
+} as const;
+
+export type MyDispute = DisputeBase & {
+  role: MyDisputeRole;
+  order?: DisputeOrder | null;
+};
+
+export type AdminDispute = DisputeBase & {
+  buyer?: UserSummary | null;
+  seller?: UserSummary | null;
+  order?: DisputeOrder | null;
+};
+
+export interface BuyerProofBody {
+  bankStatementUrl: string;
+}
+
+export interface SellerProofBody {
+  bankStatementUrl: string;
+  recordingUrl: string;
+  lastTxnScreenshotUrl: string;
+}
+
+export type AdminResolveDisputeBodyWinner =
+  (typeof AdminResolveDisputeBodyWinner)[keyof typeof AdminResolveDisputeBodyWinner];
+
+export const AdminResolveDisputeBodyWinner = {
+  buyer: "buyer",
+  seller: "seller",
+} as const;
+
+export interface AdminResolveDisputeBody {
+  winner: AdminResolveDisputeBodyWinner;
+  notes?: string;
+}
+
 export type GetOrdersParams = {
   type?: GetOrdersType;
   status?: GetOrdersStatus;
@@ -253,4 +405,40 @@ export const AdminGetOrdersStatus = {
   pending: "pending",
   approved: "approved",
   rejected: "rejected",
+} as const;
+
+export type AdminGetFraudAlertsParams = {
+  resolved?: AdminGetFraudAlertsResolved;
+};
+
+export type AdminGetFraudAlertsResolved =
+  (typeof AdminGetFraudAlertsResolved)[keyof typeof AdminGetFraudAlertsResolved];
+
+export const AdminGetFraudAlertsResolved = {
+  true: "true",
+  false: "false",
+} as const;
+
+export type AdminGetHighValueParams = {
+  tier?: AdminGetHighValueTier;
+  reviewed?: AdminGetHighValueReviewed;
+  search?: string;
+  from?: string;
+  to?: string;
+};
+
+export type AdminGetHighValueTier =
+  (typeof AdminGetHighValueTier)[keyof typeof AdminGetHighValueTier];
+
+export const AdminGetHighValueTier = {
+  warn: "warn",
+  critical: "critical",
+} as const;
+
+export type AdminGetHighValueReviewed =
+  (typeof AdminGetHighValueReviewed)[keyof typeof AdminGetHighValueReviewed];
+
+export const AdminGetHighValueReviewed = {
+  true: "true",
+  false: "false",
 } as const;

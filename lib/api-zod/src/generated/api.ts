@@ -567,6 +567,273 @@ export const AdminCreateDepositTaskResponse = zod.object({
 });
 
 /**
+ * @summary List fraud alerts
+ */
+export const AdminGetFraudAlertsQueryParams = zod.object({
+  resolved: zod.enum(["true", "false"]).optional(),
+});
+
+export const AdminGetFraudAlertsResponseItem = zod.object({
+  id: zod.number(),
+  rule: zod.string(),
+  severity: zod.enum(["critical", "warn", "info"]),
+  evidence: zod.string().nullish(),
+  userId: zod.number().nullish(),
+  orderId: zod.number().nullish(),
+  resolved: zod.boolean(),
+  createdAt: zod.string(),
+  user: zod
+    .object({
+      id: zod.number(),
+      username: zod.string(),
+      trustScore: zod.number().optional(),
+    })
+    .nullish(),
+});
+export const AdminGetFraudAlertsResponse = zod.array(
+  AdminGetFraudAlertsResponseItem,
+);
+
+/**
+ * @summary Mark fraud alert as resolved
+ */
+export const AdminResolveFraudAlertParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AdminResolveFraudAlertResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Freeze a user account
+ */
+export const AdminFreezeUserParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AdminFreezeUserResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Broadcast notification to all users
+ */
+export const AdminNotifyAllBody = zod.object({
+  title: zod.string().optional(),
+  message: zod.string(),
+});
+
+export const AdminNotifyAllResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Upload an image (data URL passthrough)
+ */
+export const AdminUploadImageBody = zod.object({
+  dataUrl: zod.string(),
+  kind: zod.string().optional(),
+});
+
+export const AdminUploadImageResponse = zod.object({
+  url: zod.string(),
+  kind: zod.string().optional(),
+  sizeBytes: zod.number().optional(),
+});
+
+/**
+ * @summary List high-value trade events
+ */
+export const AdminGetHighValueQueryParams = zod.object({
+  tier: zod.enum(["warn", "critical"]).optional(),
+  reviewed: zod.enum(["true", "false"]).optional(),
+  search: zod.coerce.string().optional(),
+  from: zod.coerce.string().optional(),
+  to: zod.coerce.string().optional(),
+});
+
+export const AdminGetHighValueResponseItem = zod.object({
+  id: zod.number(),
+  tier: zod.enum(["warn", "critical"]),
+  amount: zod.number(),
+  orderId: zod.number(),
+  userId: zod.number(),
+  reviewedAt: zod.string().nullish(),
+  reviewedBy: zod.number().nullish(),
+  notes: zod.string().nullish(),
+  createdAt: zod.string(),
+  user: zod
+    .object({
+      id: zod.number(),
+      username: zod.string(),
+      trustScore: zod.number().optional(),
+    })
+    .nullish(),
+});
+export const AdminGetHighValueResponse = zod.array(
+  AdminGetHighValueResponseItem,
+);
+
+/**
+ * @summary Mark a high-value event as reviewed
+ */
+export const AdminReviewHighValueParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AdminReviewHighValueBody = zod.object({
+  notes: zod.string().optional(),
+});
+
+export const AdminReviewHighValueResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Get disputes involving the current user
+ */
+export const GetMyDisputesResponseItem = zod
+  .object({
+    id: zod.number(),
+    orderId: zod.number(),
+    buyerId: zod.number(),
+    sellerId: zod.number(),
+    status: zod.enum(["open", "buyer_won", "seller_won", "auto_resolved"]),
+    reason: zod.string().nullish(),
+    adminNotes: zod.string().nullish(),
+    createdAt: zod.string(),
+    resolvedAt: zod.string().nullish(),
+    buyerProofAt: zod.string().nullish(),
+    sellerProofAt: zod.string().nullish(),
+    buyerProofDeadline: zod.string().nullish(),
+    sellerProofDeadline: zod.string().nullish(),
+    buyerBankStatementUrl: zod.string().nullish(),
+    sellerBankStatementUrl: zod.string().nullish(),
+    sellerRecordingUrl: zod.string().nullish(),
+    sellerLastTxnScreenshotUrl: zod.string().nullish(),
+  })
+  .and(
+    zod.object({
+      role: zod.enum(["buyer", "seller"]),
+      order: zod
+        .object({
+          id: zod.number(),
+          amount: zod.string(),
+          utrNumber: zod.string().nullish(),
+          screenshotUrl: zod.string().nullish(),
+          userUpiId: zod.string().nullish(),
+          userUpiName: zod.string().nullish(),
+        })
+        .nullish(),
+    }),
+  );
+export const GetMyDisputesResponse = zod.array(GetMyDisputesResponseItem);
+
+/**
+ * @summary Submit buyer proof for a dispute
+ */
+export const SubmitBuyerProofParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const SubmitBuyerProofBody = zod.object({
+  bankStatementUrl: zod.string(),
+});
+
+export const SubmitBuyerProofResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Submit seller proof for a dispute
+ */
+export const SubmitSellerProofParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const SubmitSellerProofBody = zod.object({
+  bankStatementUrl: zod.string(),
+  recordingUrl: zod.string(),
+  lastTxnScreenshotUrl: zod.string(),
+});
+
+export const SubmitSellerProofResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary List all disputes (admin)
+ */
+export const AdminListDisputesResponseItem = zod
+  .object({
+    id: zod.number(),
+    orderId: zod.number(),
+    buyerId: zod.number(),
+    sellerId: zod.number(),
+    status: zod.enum(["open", "buyer_won", "seller_won", "auto_resolved"]),
+    reason: zod.string().nullish(),
+    adminNotes: zod.string().nullish(),
+    createdAt: zod.string(),
+    resolvedAt: zod.string().nullish(),
+    buyerProofAt: zod.string().nullish(),
+    sellerProofAt: zod.string().nullish(),
+    buyerProofDeadline: zod.string().nullish(),
+    sellerProofDeadline: zod.string().nullish(),
+    buyerBankStatementUrl: zod.string().nullish(),
+    sellerBankStatementUrl: zod.string().nullish(),
+    sellerRecordingUrl: zod.string().nullish(),
+    sellerLastTxnScreenshotUrl: zod.string().nullish(),
+  })
+  .and(
+    zod.object({
+      buyer: zod
+        .object({
+          id: zod.number(),
+          username: zod.string(),
+          trustScore: zod.number().optional(),
+        })
+        .nullish(),
+      seller: zod
+        .object({
+          id: zod.number(),
+          username: zod.string(),
+          trustScore: zod.number().optional(),
+        })
+        .nullish(),
+      order: zod
+        .object({
+          id: zod.number(),
+          amount: zod.string(),
+          utrNumber: zod.string().nullish(),
+          screenshotUrl: zod.string().nullish(),
+          userUpiId: zod.string().nullish(),
+          userUpiName: zod.string().nullish(),
+        })
+        .nullish(),
+    }),
+  );
+export const AdminListDisputesResponse = zod.array(
+  AdminListDisputesResponseItem,
+);
+
+/**
+ * @summary Resolve a dispute (admin)
+ */
+export const AdminResolveDisputeParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AdminResolveDisputeBody = zod.object({
+  winner: zod.enum(["buyer", "seller"]),
+  notes: zod.string().optional(),
+});
+
+export const AdminResolveDisputeResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
  * @summary Update deposit task
  */
 export const AdminUpdateDepositTaskParams = zod.object({

@@ -21,6 +21,8 @@ tags:
     description: Admin operations
   - name: settings
     description: App settings
+  - name: disputes
+    description: Dispute management
 paths:
   /healthz:
     get:
@@ -510,6 +512,272 @@ paths:
               schema:
                 $ref: "#/components/schemas/DepositTask"
 
+  /admin/fraud-alerts:
+    get:
+      operationId: adminGetFraudAlerts
+      tags: [admin]
+      summary: List fraud alerts
+      parameters:
+        - name: resolved
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["true", "false"]
+      responses:
+        "200":
+          description: Fraud alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FraudAlert"
+
+  /admin/fraud-alerts/{id}/resolve:
+    post:
+      operationId: adminResolveFraudAlert
+      tags: [admin]
+      summary: Mark fraud alert as resolved
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Resolved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/users/{id}/freeze:
+    post:
+      operationId: adminFreezeUser
+      tags: [admin]
+      summary: Freeze a user account
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Frozen
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/notify-all:
+    post:
+      operationId: adminNotifyAll
+      tags: [admin]
+      summary: Broadcast notification to all users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotifyAllBody"
+      responses:
+        "200":
+          description: Notified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/upload-image:
+    post:
+      operationId: adminUploadImage
+      tags: [admin]
+      summary: Upload an image (data URL passthrough)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadImageBody"
+      responses:
+        "200":
+          description: Uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadImageResponse"
+
+  /admin/high-value:
+    get:
+      operationId: adminGetHighValue
+      tags: [admin]
+      summary: List high-value trade events
+      parameters:
+        - name: tier
+          in: query
+          schema:
+            type: string
+            enum: [warn, critical]
+        - name: reviewed
+          in: query
+          schema:
+            type: string
+            enum: ["true", "false"]
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+        - name: to
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: High value events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HighValueEvent"
+
+  /admin/high-value/{id}/review:
+    post:
+      operationId: adminReviewHighValue
+      tags: [admin]
+      summary: Mark a high-value event as reviewed
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewHighValueBody"
+      responses:
+        "200":
+          description: Reviewed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /disputes/my:
+    get:
+      operationId: getMyDisputes
+      tags: [disputes]
+      summary: Get disputes involving the current user
+      responses:
+        "200":
+          description: Disputes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MyDispute"
+
+  /disputes/buyer-proof/{id}:
+    post:
+      operationId: submitBuyerProof
+      tags: [disputes]
+      summary: Submit buyer proof for a dispute
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BuyerProofBody"
+      responses:
+        "200":
+          description: Uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /disputes/seller-proof/{id}:
+    post:
+      operationId: submitSellerProof
+      tags: [disputes]
+      summary: Submit seller proof for a dispute
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SellerProofBody"
+      responses:
+        "200":
+          description: Uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /disputes/admin/list:
+    get:
+      operationId: adminListDisputes
+      tags: [admin, disputes]
+      summary: List all disputes (admin)
+      responses:
+        "200":
+          description: Disputes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminDispute"
+
+  /disputes/admin/resolve/{id}:
+    post:
+      operationId: adminResolveDispute
+      tags: [admin, disputes]
+      summary: Resolve a dispute (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminResolveDisputeBody"
+      responses:
+        "200":
+          description: Resolved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
   /admin/deposit-tasks/{id}:
     put:
       operationId: adminUpdateDepositTask
@@ -862,3 +1130,248 @@ components:
         reason:
           type: string
       required: [balance]
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required: [success]
+
+    UserSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        trustScore:
+          type: integer
+      required: [id, username]
+
+    FraudAlert:
+      type: object
+      properties:
+        id:
+          type: integer
+        rule:
+          type: string
+        severity:
+          type: string
+          enum: [critical, warn, info]
+        evidence:
+          type: string
+          nullable: true
+        userId:
+          type: integer
+          nullable: true
+        orderId:
+          type: integer
+          nullable: true
+        resolved:
+          type: boolean
+        createdAt:
+          type: string
+        user:
+          allOf:
+            - $ref: "#/components/schemas/UserSummary"
+          nullable: true
+      required: [id, rule, severity, resolved, createdAt]
+
+    HighValueEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+        tier:
+          type: string
+          enum: [warn, critical]
+        amount:
+          type: number
+        orderId:
+          type: integer
+        userId:
+          type: integer
+        reviewedAt:
+          type: string
+          nullable: true
+        reviewedBy:
+          type: integer
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+        user:
+          allOf:
+            - $ref: "#/components/schemas/UserSummary"
+          nullable: true
+      required: [id, tier, amount, orderId, userId, createdAt]
+
+    ReviewHighValueBody:
+      type: object
+      properties:
+        notes:
+          type: string
+
+    NotifyAllBody:
+      type: object
+      properties:
+        title:
+          type: string
+        message:
+          type: string
+      required: [message]
+
+    UploadImageBody:
+      type: object
+      properties:
+        dataUrl:
+          type: string
+        kind:
+          type: string
+      required: [dataUrl]
+
+    UploadImageResponse:
+      type: object
+      properties:
+        url:
+          type: string
+        kind:
+          type: string
+        sizeBytes:
+          type: integer
+      required: [url]
+
+    DisputeOrder:
+      type: object
+      properties:
+        id:
+          type: integer
+        amount:
+          type: string
+        utrNumber:
+          type: string
+          nullable: true
+        screenshotUrl:
+          type: string
+          nullable: true
+        userUpiId:
+          type: string
+          nullable: true
+        userUpiName:
+          type: string
+          nullable: true
+      required: [id, amount]
+
+    DisputeBase:
+      type: object
+      properties:
+        id:
+          type: integer
+        orderId:
+          type: integer
+        buyerId:
+          type: integer
+        sellerId:
+          type: integer
+        status:
+          type: string
+          enum: [open, buyer_won, seller_won, auto_resolved]
+        reason:
+          type: string
+          nullable: true
+        adminNotes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+        resolvedAt:
+          type: string
+          nullable: true
+        buyerProofAt:
+          type: string
+          nullable: true
+        sellerProofAt:
+          type: string
+          nullable: true
+        buyerProofDeadline:
+          type: string
+          nullable: true
+        sellerProofDeadline:
+          type: string
+          nullable: true
+        buyerBankStatementUrl:
+          type: string
+          nullable: true
+        sellerBankStatementUrl:
+          type: string
+          nullable: true
+        sellerRecordingUrl:
+          type: string
+          nullable: true
+        sellerLastTxnScreenshotUrl:
+          type: string
+          nullable: true
+      required: [id, orderId, buyerId, sellerId, status, createdAt]
+
+    MyDispute:
+      allOf:
+        - $ref: "#/components/schemas/DisputeBase"
+        - type: object
+          properties:
+            role:
+              type: string
+              enum: [buyer, seller]
+            order:
+              allOf:
+                - $ref: "#/components/schemas/DisputeOrder"
+              nullable: true
+          required: [role]
+
+    AdminDispute:
+      allOf:
+        - $ref: "#/components/schemas/DisputeBase"
+        - type: object
+          properties:
+            buyer:
+              allOf:
+                - $ref: "#/components/schemas/UserSummary"
+              nullable: true
+            seller:
+              allOf:
+                - $ref: "#/components/schemas/UserSummary"
+              nullable: true
+            order:
+              allOf:
+                - $ref: "#/components/schemas/DisputeOrder"
+              nullable: true
+
+    BuyerProofBody:
+      type: object
+      properties:
+        bankStatementUrl:
+          type: string
+      required: [bankStatementUrl]
+
+    SellerProofBody:
+      type: object
+      properties:
+        bankStatementUrl:
+          type: string
+        recordingUrl:
+          type: string
+        lastTxnScreenshotUrl:
+          type: string
+      required: [bankStatementUrl, recordingUrl, lastTxnScreenshotUrl]
+
+    AdminResolveDisputeBody:
+      type: object
+      properties:
+        winner:
+          type: string
+          enum: [buyer, seller]
+        notes:
+          type: string
+      required: [winner]

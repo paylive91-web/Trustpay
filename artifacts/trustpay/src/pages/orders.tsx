@@ -1,5 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { useGetOrders } from "@workspace/api-client-react";
+import React, { useState } from "react";
+import {
+  useGetOrders,
+  useGetMyDisputes,
+  useSubmitBuyerProof,
+  useSubmitSellerProof,
+  getGetMyDisputesQueryKey,
+  type MyDispute,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import Layout from "@/components/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,60 +18,57 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { IndianRupee, ArrowDownCircle, ArrowUpCircle, Clock, CheckCircle2, XCircle, ShieldAlert, Upload } from "lucide-react";
-import { getAuthToken } from "@/lib/auth";
-import { submitBuyerProof, submitSellerProof } from "@/lib/dispute-actions";
-
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+import { fileToDataUrl } from "@/lib/dispute-actions";
 
 export default function Orders() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [filterType, setFilterType] = useState<"all" | "deposit" | "withdrawal" | "disputes">("all");
 
-  const { data: orders, isLoading } = useGetOrders({
-    query: { queryKey: ["/api/orders", { type: filterType !== "all" && filterType !== "disputes" ? filterType : undefined }] },
-  }, { request: filterType !== "all" && filterType !== "disputes" ? { type: filterType } : undefined } as any);
+  const ordersTypeParam = filterType === "deposit" || filterType === "withdrawal" ? filterType : undefined;
+  const { data: orders, isLoading } = useGetOrders(ordersTypeParam ? { type: ordersTypeParam } : undefined);
 
   const filteredOrders = orders?.filter(o => filterType === "all" || filterType === "disputes" || o.type === filterType) || [];
 
   // Disputes
-  const [disputes, setDisputes] = useState<any[]>([]);
-  const [loadingDisputes, setLoadingDisputes] = useState(false);
-  const [activeProof, setActiveProof] = useState<any>(null);
+  const { data: disputesData, isLoading: loadingDisputes } = useGetMyDisputes();
+  const disputes = disputesData ?? [];
+  const [activeProof, setActiveProof] = useState<MyDispute | null>(null);
   const [bankFile, setBankFile] = useState<File | null>(null);
   const [recordingFile, setRecordingFile] = useState<File | null>(null);
   const [lastTxnFile, setLastTxnFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
 
-  const loadDisputes = async () => {
-    setLoadingDisputes(true);
-    try {
-      const r = await fetch(`${API_BASE}/disputes/my`, { headers: { Authorization: `Bearer ${getAuthToken()}` } });
-      const d = await r.json();
-      if (Array.isArray(d)) setDisputes(d);
-    } catch {} finally { setLoadingDisputes(false); }
-  };
-  useEffect(() => { loadDisputes(); }, []);
+  const invalidateDisputes = () => queryClient.invalidateQueries({ queryKey: getGetMyDisputesQueryKey() });
+
+  const buyerProofMut = useSubmitBuyerProof();
+  const sellerProofMut = useSubmitSellerProof();
+  const uploading = buyerProofMut.isPending || sellerProofMut.isPending;
 
   const submitProof = async () => {
     if (!activeProof) return;
-    setUploading(true);
     try {
       const role = activeProof.role;
       if (role === "buyer") {
         if (!bankFile) { toast({ title: "Bank statement required", variant: "destructive" }); return; }
-        await submitBuyerProof(activeProof.id, bankFile);
+        const bankStatementUrl = await fileToDataUrl(bankFile);
+        await buyerProofMut.mutateAsync({ id: activeProof.id, data: { bankStatementUrl } });
       } else {
         if (!bankFile || !recordingFile || !lastTxnFile) {
           toast({ title: "All three proofs required", variant: "destructive" }); return;
         }
-        await submitSellerProof(activeProof.id, bankFile, recordingFile, lastTxnFile);
+        const [bankStatementUrl, recordingUrl, lastTxnScreenshotUrl] = await Promise.all([
+          fileToDataUrl(bankFile),
+          fileToDataUrl(recordingFile),
+          fileToDataUrl(lastTxnFile),
+        ]);
+        await sellerProofMut.mutateAsync({ id: activeProof.id, data: { bankStatementUrl, recordingUrl, lastTxnScreenshotUrl } });
       }
       toast({ title: "Proof uploaded successfully" });
       setActiveProof(null); setBankFile(null); setRecordingFile(null); setLastTxnFile(null);
-      loadDisputes();
+      invalidateDisputes();
     } catch (e: any) {
       toast({ title: "Failed", description: e.message, variant: "destructive" });
-    } finally { setUploading(false); }
+    }
   };
 
   const getStatusIcon = (status: string) => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import AdminLayout from "@/components/admin-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,57 +7,45 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { getAuthToken } from "@/lib/auth";
-import { resolveFraudAlert } from "@/lib/admin-actions";
+import {
+  useAdminGetFraudAlerts,
+  useAdminResolveFraudAlert,
+  useAdminFreezeUser,
+  getAdminGetFraudAlertsQueryKey,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Snowflake } from "lucide-react";
-
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
 export default function FraudWatch() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [filter, setFilter] = useState<"all" | "open" | "resolved">("open");
   const [sevFilter, setSevFilter] = useState<"all" | "critical" | "warn" | "info">("all");
   const [ruleFilter, setRuleFilter] = useState<string>("all");
-  const [rows, setRows] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const params = filter === "all" ? "" : `?resolved=${filter === "resolved" ? "true" : "false"}`;
-      const r = await fetch(`${API_BASE}/admin/fraud-alerts${params}`, {
-        headers: { Authorization: `Bearer ${getAuthToken()}` },
-      });
-      const d = await r.json();
-      if (Array.isArray(d)) setRows(d);
-    } catch (e: any) {
-      toast({ title: "Failed to load", description: e.message, variant: "destructive" });
-    } finally { setLoading(false); }
-  };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [filter]);
+  const queryParams = filter === "all" ? undefined : { resolved: filter === "resolved" ? "true" as const : "false" as const };
+  const { data, isLoading, refetch } = useAdminGetFraudAlerts(queryParams);
+  const rows = data ?? [];
 
-  const resolve = async (id: number) => {
-    try {
-      await resolveFraudAlert(id);
-      toast({ title: "Marked resolved" });
-      load();
-    } catch (e: any) {
-      toast({ title: "Failed", description: e.message, variant: "destructive" });
-    }
-  };
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: getAdminGetFraudAlertsQueryKey(queryParams) });
 
-  const freezeUser = async (userId: number, username: string) => {
+  const resolveMut = useAdminResolveFraudAlert({
+    mutation: {
+      onSuccess: () => { toast({ title: "Marked resolved" }); invalidate(); },
+      onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+    },
+  });
+
+  const freezeMut = useAdminFreezeUser({
+    mutation: {
+      onSuccess: () => { refetch(); },
+      onError: (e: any) => toast({ title: "Freeze failed", description: e.message, variant: "destructive" }),
+    },
+  });
+
+  const freezeUser = (userId: number, username: string) => {
     if (!confirm(`Freeze user ${username}? They won't be able to lock new chunks.`)) return;
-    try {
-      const r = await fetch(`${API_BASE}/admin/users/${userId}/freeze`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${getAuthToken()}` },
-      });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      toast({ title: `Froze ${username}` });
-    } catch (e: any) {
-      toast({ title: "Freeze failed", description: e.message, variant: "destructive" });
-    }
+    freezeMut.mutate({ id: userId }, { onSuccess: () => toast({ title: `Froze ${username}` }) });
   };
 
   const sevColor = (s: string) =>
@@ -72,7 +60,7 @@ export default function FraudWatch() {
       (ruleFilter === "all" || r.rule === ruleFilter)),
     [rows, sevFilter, ruleFilter],
   );
-  const grouped = visible.reduce<Record<string, any[]>>((acc, r) => {
+  const grouped = visible.reduce<Record<string, typeof rows>>((acc, r) => {
     (acc[r.severity] ||= []).push(r);
     return acc;
   }, {});
@@ -119,7 +107,7 @@ export default function FraudWatch() {
           </div>
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <Skeleton className="h-96 w-full" />
         ) : (
           ["critical", "warn", "info"].map((sev) => (
@@ -146,12 +134,12 @@ export default function FraudWatch() {
                       </div>
                       <div className="flex gap-2 items-start">
                         {a.user && !a.resolved && (
-                          <Button size="sm" variant="outline" onClick={() => freezeUser(a.user.id, a.user.username)}>
+                          <Button size="sm" variant="outline" onClick={() => freezeUser(a.user!.id, a.user!.username)}>
                             <Snowflake className="h-3.5 w-3.5 mr-1" />Freeze
                           </Button>
                         )}
                         {!a.resolved && (
-                          <Button size="sm" variant="outline" onClick={() => resolve(a.id)}>Resolve</Button>
+                          <Button size="sm" variant="outline" onClick={() => resolveMut.mutate({ id: a.id })}>Resolve</Button>
                         )}
                         {a.resolved && <Badge variant="outline" className="bg-green-50 text-green-700">resolved</Badge>}
                       </div>
@@ -162,7 +150,7 @@ export default function FraudWatch() {
             )
           ))
         )}
-        {!loading && visible.length === 0 && (
+        {!isLoading && visible.length === 0 && (
           <div className="text-center text-muted-foreground p-12">No fraud alerts.</div>
         )}
       </div>

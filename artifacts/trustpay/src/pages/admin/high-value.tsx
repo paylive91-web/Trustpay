@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import AdminLayout from "@/components/admin-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import {
+  useAdminGetHighValue,
+  useAdminReviewHighValue,
+  getAdminGetHighValueQueryKey,
+  getAdminGetHighValueUrl,
+  type AdminGetHighValueParams,
+  type HighValueEvent,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
 import { Download } from "lucide-react";
 
@@ -18,73 +27,59 @@ const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
 export default function HighValue() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState<"unreviewed" | "reviewed" | "all">("unreviewed");
   const [tier, setTier] = useState<"all" | "warn" | "critical">("all");
   const [search, setSearch] = useState("");
+  const [submittedSearch, setSubmittedSearch] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [rows, setRows] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [reviewing, setReviewing] = useState<any>(null);
+  const [reviewing, setReviewing] = useState<HighValueEvent | null>(null);
   const [notes, setNotes] = useState("");
 
-  const buildQuery = () => {
-    const p = new URLSearchParams();
-    if (tab !== "all") p.set("reviewed", tab === "reviewed" ? "true" : "false");
-    if (tier !== "all") p.set("tier", tier);
-    if (search.trim()) p.set("search", search.trim());
-    if (from) p.set("from", new Date(from).toISOString());
-    if (to) p.set("to", new Date(to).toISOString());
-    return p.toString();
-  };
+  const params: AdminGetHighValueParams = {};
+  if (tab !== "all") params.reviewed = tab === "reviewed" ? "true" : "false";
+  if (tier !== "all") params.tier = tier;
+  if (submittedSearch.trim()) params.search = submittedSearch.trim();
+  if (from) params.from = new Date(from).toISOString();
+  if (to) params.to = new Date(to).toISOString();
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const q = buildQuery();
-      const r = await fetch(`${API_BASE}/admin/high-value${q ? `?${q}` : ""}`, {
-        headers: { Authorization: `Bearer ${getAuthToken()}` },
-      });
-      const d = await r.json();
-      if (Array.isArray(d)) setRows(d);
-    } catch (e: any) {
-      toast({ title: "Failed to load", description: e.message, variant: "destructive" });
-    } finally { setLoading(false); }
-  };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [tab, tier, from, to]);
+  const { data, isLoading } = useAdminGetHighValue(params);
+  const rows = data ?? [];
+
+  const reviewMut = useAdminReviewHighValue({
+    mutation: {
+      onSuccess: () => {
+        toast({ title: "Reviewed" });
+        setReviewing(null); setNotes("");
+        queryClient.invalidateQueries({ queryKey: getAdminGetHighValueQueryKey(params) });
+      },
+      onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+    },
+  });
 
   const exportCsv = async () => {
     try {
-      const q = buildQuery();
-      const r = await fetch(`${API_BASE}/admin/high-value/export.csv${q ? `?${q}` : ""}`, {
+      // CSV download endpoint — keep raw fetch since it returns a binary blob, not JSON.
+      const url = getAdminGetHighValueUrl(params).replace("/admin/high-value", "/admin/high-value/export.csv");
+      const r = await fetch(`${API_BASE.replace("/api", "")}${url}`, {
         headers: { Authorization: `Bearer ${getAuthToken()}` },
       });
       if (!r.ok) throw new Error("Export failed");
       const blob = await r.blob();
-      const url = URL.createObjectURL(blob);
+      const objectUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url; a.download = `high-value-${Date.now()}.csv`;
+      a.href = objectUrl; a.download = `high-value-${Date.now()}.csv`;
       document.body.appendChild(a); a.click(); a.remove();
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(objectUrl);
     } catch (e: any) {
       toast({ title: "Export failed", description: e.message, variant: "destructive" });
     }
   };
 
-  const submitReview = async () => {
+  const submitReview = () => {
     if (!reviewing) return;
-    try {
-      await fetch(`${API_BASE}/admin/high-value/${reviewing.id}/review`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getAuthToken()}` },
-        body: JSON.stringify({ notes }),
-      });
-      toast({ title: "Reviewed" });
-      setReviewing(null); setNotes("");
-      load();
-    } catch (e: any) {
-      toast({ title: "Failed", description: e.message, variant: "destructive" });
-    }
+    reviewMut.mutate({ id: reviewing.id, data: { notes } });
   };
 
   const tierColor = (t: string) => t === "critical" ? "bg-red-100 text-red-800 border-red-200" : "bg-yellow-100 text-yellow-800 border-yellow-200";
@@ -105,8 +100,8 @@ export default function HighValue() {
             <div className="md:col-span-2">
               <label className="text-xs text-muted-foreground">Search username / order #</label>
               <div className="flex gap-2">
-                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="user or order id" onKeyDown={(e) => e.key === "Enter" && load()} />
-                <Button variant="secondary" onClick={load}>Go</Button>
+                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="user or order id" onKeyDown={(e) => e.key === "Enter" && setSubmittedSearch(search)} />
+                <Button variant="secondary" onClick={() => setSubmittedSearch(search)}>Go</Button>
               </div>
             </div>
             <div>
@@ -139,7 +134,7 @@ export default function HighValue() {
           </TabsList>
         </Tabs>
 
-        {loading ? <Skeleton className="h-96 w-full" /> : (
+        {isLoading ? <Skeleton className="h-96 w-full" /> : (
           <Card>
             <CardHeader><CardTitle>{rows.length} event(s)</CardTitle></CardHeader>
             <CardContent className="space-y-2">
@@ -184,7 +179,7 @@ export default function HighValue() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setReviewing(null)}>Cancel</Button>
-            <Button onClick={submitReview}>Save Review</Button>
+            <Button onClick={submitReview} disabled={reviewMut.isPending}>{reviewMut.isPending ? "Saving..." : "Save Review"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -5,47 +5,40 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAuthToken } from "@/lib/auth";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useAdminListDisputes,
+  useAdminResolveDispute,
+  getAdminListDisputesQueryKey,
+  type AdminDispute,
+} from "@workspace/api-client-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ShieldAlert, Eye } from "lucide-react";
-
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
-async function api(path: string, opts: RequestInit = {}) {
-  const token = getAuthToken();
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...opts,
-    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(opts.headers || {}) },
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || "Request failed");
-  return data;
-}
 
 export default function AdminDisputes() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [filter, setFilter] = useState<"open" | "all">("open");
-  const [viewDispute, setView] = useState<any>(null);
-  const [resolveOpen, setResolveOpen] = useState<{ d: any; winner: "buyer" | "seller" } | null>(null);
+  const [viewDispute, setView] = useState<AdminDispute | null>(null);
+  const [resolveOpen, setResolveOpen] = useState<{ d: AdminDispute; winner: "buyer" | "seller" } | null>(null);
   const [notes, setNotes] = useState("");
 
-  const { data: rows = [], isLoading } = useQuery<any[]>({
-    queryKey: ["admin-disputes"],
-    queryFn: () => api("/disputes/admin/list"),
-    refetchInterval: 10000,
+  const { data, isLoading } = useAdminListDisputes({
+    query: { queryKey: getAdminListDisputesQueryKey(), refetchInterval: 10000 },
   });
+  const rows = data ?? [];
 
   const filtered = filter === "open" ? rows.filter((r) => r.status === "open") : rows;
 
-  const resolveMut = useMutation({
-    mutationFn: ({ id, winner, notes }: any) => api(`/disputes/admin/resolve/${id}`, { method: "POST", body: JSON.stringify({ winner, notes }) }),
-    onSuccess: () => {
-      toast({ title: "Dispute resolved" });
-      setResolveOpen(null); setNotes("");
-      qc.invalidateQueries({ queryKey: ["admin-disputes"] });
+  const resolveMut = useAdminResolveDispute({
+    mutation: {
+      onSuccess: () => {
+        toast({ title: "Dispute resolved" });
+        setResolveOpen(null); setNotes("");
+        qc.invalidateQueries({ queryKey: getAdminListDisputesQueryKey() });
+      },
+      onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
     },
-    onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
   });
 
   return (
@@ -171,7 +164,7 @@ export default function AdminDisputes() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setResolveOpen(null)}>Cancel</Button>
-            <Button onClick={() => resolveMut.mutate({ id: resolveOpen!.d.id, winner: resolveOpen!.winner, notes })} disabled={resolveMut.isPending}>
+            <Button onClick={() => resolveMut.mutate({ id: resolveOpen!.d.id, data: { winner: resolveOpen!.winner, notes } })} disabled={resolveMut.isPending}>
               {resolveMut.isPending ? "Resolving..." : "Confirm Resolution"}
             </Button>
           </DialogFooter>
