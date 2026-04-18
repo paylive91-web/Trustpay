@@ -7,10 +7,10 @@ import { getSettings } from "../lib/settings.js";
 
 const router = Router();
 
-const GATEWAY_BASE = "https://payment-gateway--atulusf.replit.app";
+const GATEWAY_BASE = "https://gateway-hub--kishorimeeraa.replit.app";
 const GATEWAY_API = `${GATEWAY_BASE}/api`;
-const GATEWAY_KEY = "mk_live_aa310baacf734a52d9f30bae9d44dec91a8b9999f543c4a3";
-const GATEWAY_MERCHANT = "f9e61993-b1ef-4faf-bbed-73020fa6f523";
+const GATEWAY_KEY = "pgw_b9a52a8a038a55372749391deb54b24e95196ad3d3d99bd878617878cd7f0366";
+const GATEWAY_MERCHANT = "Tporder";
 
 function extractGatewayTxn(notes: string | null): string | null {
   if (!notes) return null;
@@ -63,8 +63,10 @@ router.post("/create-deposit", requireAuth, async (req, res) => {
   const redirectUrl = `${proto}://${host}/`;
 
   const payload = {
+    appId: GATEWAY_MERCHANT,
+    orderId: `trustpay_${order.id}_${Date.now()}`,
     amount: Number(amount),
-    merchantId: GATEWAY_MERCHANT,
+    currency: "INR",
     customerName: userName || currentUser.username,
     customerEmail: `${currentUser.username}@trustpay.local`,
     customerPhone: currentUser.phone || "9999999999",
@@ -192,7 +194,7 @@ router.get("/status/:orderId", requireAuth, async (req, res) => {
   let gatewayStatus: any = null;
   if (txnId) {
     try {
-      const r = await fetch(`${GATEWAY_API}/payments/public/${txnId}`, {
+      const r = await fetch(`${GATEWAY_API}/payments/${txnId}/status`, {
         headers: { Authorization: `Bearer ${GATEWAY_KEY}` },
       });
       const text = await r.text();
