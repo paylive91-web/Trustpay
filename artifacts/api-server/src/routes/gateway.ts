@@ -100,12 +100,13 @@ router.post("/create-deposit", requireAuth, async (req, res) => {
     try { data = JSON.parse(text); } catch {}
 
     if (!gatewayRes.ok) {
+      const detail = typeof data === "object" && data ? data : { raw: text };
       await db.update(ordersTable).set({
         status: "rejected",
         notes: `gateway_error:${text.slice(0, 200)}`,
         updatedAt: new Date(),
       }).where(eq(ordersTable.id, order.id));
-      res.status(502).json({ error: "Gateway create failed", detail: data || text, status: gatewayRes.status });
+      res.status(502).json({ error: "Gateway create failed", detail, status: gatewayRes.status });
       return;
     }
 
