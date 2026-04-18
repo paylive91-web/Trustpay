@@ -89,8 +89,10 @@ router.post("/admin/resolve/:id", requireAdmin, async (req, res) => {
   if (!d || d.status !== "open") { res.status(400).json({ error: "Dispute already resolved" }); return; }
 
   if (winner === "buyer") {
-    await settleConfirmedTrade(d.orderId, true);
-    await applyTrustDelta(d.sellerId, -10, "dispute_loss", d.orderId);
+    await settleConfirmedTrade(d.orderId, false);
+    // Settlement applies +1 trust to both parties for trade_success.
+    // Reverse the unintended seller +1, then apply the -10 dispute loss net.
+    await applyTrustDelta(d.sellerId, -11, "dispute_loss", d.orderId);
   } else {
     // seller wins - chunk goes back to available, buyer gets nothing
     await db.update(ordersTable).set({
@@ -133,8 +135,8 @@ async function autoResolveSilent() {
       }).where(eq(disputesTable.id, d.id));
     } else if (sellerLate && !buyerLate) {
       // Buyer wins - seller silent
-      await settleConfirmedTrade(d.orderId, true);
-      await applyTrustDelta(d.sellerId, -10, "dispute_silent", d.orderId);
+      await settleConfirmedTrade(d.orderId, false);
+      await applyTrustDelta(d.sellerId, -11, "dispute_silent", d.orderId);
       await db.update(disputesTable).set({
         status: "auto_resolved", resolvedAt: now, adminNotes: "Seller silent → buyer wins",
       }).where(eq(disputesTable.id, d.id));
