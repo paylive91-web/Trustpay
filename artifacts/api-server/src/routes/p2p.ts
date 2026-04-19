@@ -164,7 +164,6 @@ router.post("/submit/:id", requireAuth, async (req, res) => {
     return;
   }
   if (!screenshotUrl) { res.status(400).json({ error: "Payment screenshot required" }); return; }
-  if (!recordingUrl) { res.status(400).json({ error: "Screen recording required" }); return; }
 
   const [chunk] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
   if (!chunk || chunk.status !== "locked" || chunk.lockedByUserId !== u.id) {
@@ -174,7 +173,7 @@ router.post("/submit/:id", requireAuth, async (req, res) => {
 
   const utrIssues = await checkUtrFraud(utrNumber, u.id, id);
   await checkImageHash(screenshotUrl, u.id, id, "screenshot");
-  await checkImageHash(recordingUrl, u.id, id, "recording");
+  if (recordingUrl) await checkImageHash(recordingUrl, u.id, id, "recording");
   if (utrIssues.includes("fake_utr_repeated_digits")) {
     await applyTrustDelta(u.id, -5, "fake_utr", id);
     res.status(400).json({ error: "UTR rejected: looks fake" });
@@ -187,13 +186,11 @@ router.post("/submit/:id", requireAuth, async (req, res) => {
   const deadline = new Date(now.getTime() + confirmMin * 60 * 1000);
   await db.update(ordersTable).set({
     status: "pending_confirmation",
-    utrNumber, screenshotUrl, recordingUrl,
+    utrNumber, screenshotUrl, recordingUrl: recordingUrl || null,
     submittedAt: now,
     confirmDeadline: deadline,
     updatedAt: now,
   }).where(eq(ordersTable.id, id));
-  await applyTrustDelta(chunk.userId, -10, "buyer_submitted_proof", id);
-  await applyTrustDelta(u.id, -10, "buyer_submitted_proof", id);
   const [updated] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
   res.json(f(updated));
 });
@@ -250,8 +247,6 @@ router.post("/dispute/:id", requireAuth, async (req, res) => {
     buyerProofDeadline: proofDeadline,
     sellerProofDeadline: proofDeadline,
   });
-  await applyTrustDelta(chunk.lockedByUserId!, -10, "seller_denied_payment", id);
-  await applyTrustDelta(u.id, -10, "seller_denied_payment", id);
   res.json({ success: true });
 });
 

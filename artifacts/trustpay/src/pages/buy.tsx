@@ -368,30 +368,23 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
                 <Label className="text-xs">UTR / Reference Number</Label>
                 <Input placeholder="12-digit UTR from your UPI app" value={utr} onChange={(e) => setUtr(e.target.value.trim())} />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Payment Screenshot</Label>
-                <input type="file" accept="image/*" onChange={(e) => handleFile(e, "shot")} className="text-xs w-full" />
-                {screenshotUrl && <div className="text-xs text-green-600 flex items-center gap-1"><Upload className="h-3 w-3" /> Loaded</div>}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Payment Screenshot <span className="text-red-600">*</span></Label>
+                <label className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed ${screenshotUrl ? "border-green-400 bg-green-50" : "border-primary/50 bg-primary/5"} rounded-2xl p-5 cursor-pointer hover:bg-primary/10 transition-colors`}>
+                  <Upload className={`w-8 h-8 ${screenshotUrl ? "text-green-600" : "text-primary"}`} />
+                  <div className="text-sm font-semibold">
+                    {screenshotUrl ? "Screenshot uploaded ✓" : "Tap to upload screenshot"}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground">JPG / PNG · max 5 MB</div>
+                  <input type="file" accept="image/*" onChange={(e) => handleFile(e, "shot")} className="hidden" />
+                </label>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Screen Recording (min 2 min)</Label>
-                {/* Recording instructions */}
-                <div className="text-xs text-muted-foreground bg-muted/50 rounded-xl p-2 space-y-1">
-                  <div className="font-medium">How to record:</div>
-                  <ol className="list-decimal pl-3 space-y-0.5">
-                    <li>Start screen recording BEFORE opening your UPI app</li>
-                    <li>Open UPI app → Enter UPI ID → Pay ₹{buy.amount}</li>
-                    <li>Show transaction success screen</li>
-                    <li>Stop recording (must be at least 2 minutes total)</li>
-                  </ol>
-                </div>
-                <input type="file" accept="video/*" onChange={(e) => handleFile(e, "rec")} className="text-xs w-full" />
-                {uploading === "rec" && <div className="text-xs text-blue-600">Checking duration...</div>}
-                {recordingUrl && <div className="text-xs text-green-600 flex items-center gap-1"><Upload className="h-3 w-3" /> Loaded</div>}
+              <div className="text-[11px] text-muted-foreground bg-muted/40 rounded-lg p-2 leading-snug">
+                Optional: also record your screen while paying. You'll need it only if a dispute opens later.
               </div>
               <Button
-                className="w-full"
-                disabled={!utr || !screenshotUrl || !recordingUrl || submitMut.isPending || !!uploading}
+                className="w-full h-12 text-base font-bold rounded-xl"
+                disabled={!utr || !screenshotUrl || submitMut.isPending || !!uploading}
                 onClick={() => submitMut.mutate()}
               >
                 {submitMut.isPending ? "Submitting..." : "Submit Payment Proof"}

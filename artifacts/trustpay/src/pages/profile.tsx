@@ -93,20 +93,25 @@ export default function Profile() {
 
   return (
     <Layout>
-      <div className="bg-primary pt-10 pb-20 px-4 text-primary-foreground">
+      <div className="bg-gradient-to-br from-primary via-primary to-sky-700 pt-10 pb-20 px-4 text-primary-foreground">
         <div className="flex items-center gap-4">
-          <Avatar className="h-16 w-16 border-2 border-primary-foreground/20">
+          <Avatar className="h-16 w-16 border-2 border-primary-foreground/30 shadow-lg">
             <AvatarFallback className="bg-primary-foreground/10 text-xl text-white font-bold">
               {initials}
             </AvatarFallback>
           </Avatar>
-          <div>
-            <h2 className="text-xl font-bold">{displayName}</h2>
-            <div className="flex items-center gap-1 text-primary-foreground/70 text-sm mt-1">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-xl font-bold truncate">{displayName}</h2>
+            <div className="flex items-center gap-1 text-primary-foreground/80 text-sm mt-1">
               <Phone className="w-3 h-3" />
               <span>+91 {user?.phone || user?.username}</span>
             </div>
-            <p className="text-primary-foreground/50 text-xs mt-1">User ID: #{user?.id}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[10px] bg-primary-foreground/15 px-2 py-0.5 rounded-full">ID #{user?.id}</span>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full ${(user as any)?.trustScore >= 0 ? "bg-green-500/30" : "bg-red-500/40"}`}>
+                Trust {(user as any)?.trustScore ?? 0}
+              </span>
+            </div>
           </div>
         </div>
       </div>

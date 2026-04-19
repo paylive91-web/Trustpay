@@ -242,23 +242,14 @@ export default function Orders() {
             <DialogTitle>Upload {activeProof?.role === "buyer" ? "Buyer" : "Seller"} Proof</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Bank Statement Screenshot *</label>
-              <input type="file" accept="image/*,application/pdf" onChange={(e) => setBankFile(e.target.files?.[0] || null)} className="block w-full text-sm" />
-            </div>
+            <UploadTile label="Bank Statement" required file={bankFile} onChange={setBankFile} accept="image/*,application/pdf" hint="PDF / image up to 5 MB" />
             {activeProof?.role === "seller" && (
               <>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Screen Recording (Image) *</label>
-                  <input type="file" accept="image/*" onChange={(e) => setRecordingFile(e.target.files?.[0] || null)} className="block w-full text-sm" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Last Transaction Screenshot *</label>
-                  <input type="file" accept="image/*" onChange={(e) => setLastTxnFile(e.target.files?.[0] || null)} className="block w-full text-sm" />
-                </div>
+                <UploadTile label="Screen Recording" required file={recordingFile} onChange={setRecordingFile} accept="image/*,video/*" hint="Image or short video" />
+                <UploadTile label="Last Transaction Screenshot" required file={lastTxnFile} onChange={setLastTxnFile} accept="image/*" hint="Most recent UPI txn from your bank app" />
               </>
             )}
-            <div className="text-xs text-muted-foreground">Files must be under 5 MB each.</div>
+            <div className="text-xs text-muted-foreground">All files must be under 5 MB each.</div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setActiveProof(null)}>Cancel</Button>
@@ -267,5 +258,32 @@ export default function Orders() {
         </DialogContent>
       </Dialog>
     </Layout>
+  );
+}
+
+function UploadTile({
+  label, file, onChange, accept, hint, required,
+}: {
+  label: string;
+  file: File | null;
+  onChange: (f: File | null) => void;
+  accept: string;
+  hint: string;
+  required?: boolean;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="text-sm font-semibold">
+        {label} {required && <span className="text-red-600">*</span>}
+      </label>
+      <label className={`flex flex-col items-center justify-center gap-1 border-2 border-dashed ${file ? "border-green-400 bg-green-50" : "border-primary/40 bg-primary/5"} rounded-xl p-4 cursor-pointer hover:bg-primary/10 transition-colors`}>
+        <Upload className={`w-6 h-6 ${file ? "text-green-600" : "text-primary"}`} />
+        <div className="text-sm font-medium text-center">
+          {file ? `${file.name.slice(0, 30)} ✓` : `Tap to upload ${label.toLowerCase()}`}
+        </div>
+        <div className="text-[10px] text-muted-foreground">{hint}</div>
+        <input type="file" accept={accept} onChange={(e) => onChange(e.target.files?.[0] || null)} className="hidden" />
+      </label>
+    </div>
   );
 }
