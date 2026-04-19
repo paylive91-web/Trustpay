@@ -51,10 +51,12 @@ export default function Register() {
       toast({ title: "Passwords don't match", variant: "destructive" });
       return;
     }
+    if (!referralCode.trim()) {
+      setReferralCode("TP000001");
+    }
     setLoading(true);
     try {
-      const body: any = { username, phone, password, deviceFingerprint: getDeviceFingerprint() };
-      if (referralCode.trim()) body.referralCode = referralCode.trim().toUpperCase();
+      const body: any = { username, phone, password, deviceFingerprint: getDeviceFingerprint(), referralCode: (referralCode.trim() || "TP000001").toUpperCase() };
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -122,11 +124,12 @@ export default function Register() {
             />
           </div>
           <div className="space-y-2">
-            <Label>Referral Code <span className="text-muted-foreground font-normal">(Optional)</span></Label>
+            <Label>Referral Code</Label>
             <Input
-              placeholder="e.g. TP000001"
+              placeholder="Enter invite code"
               value={referralCode}
               onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+              required
             />
           </div>
           <Button type="submit" className="w-full h-12 text-base" disabled={loading}>

@@ -10,6 +10,7 @@ const router = Router();
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
 const PHONE_RE = /^[6-9]\d{9}$/;
+const ADMIN_REFERRAL_CODE = "TP000001";
 
 router.post("/register", async (req, res) => {
   const { username, phone, password, referralCode, deviceFingerprint } = req.body || {};
@@ -42,11 +43,13 @@ router.post("/register", async (req, res) => {
     return;
   }
 
-  let referredById: number | null = null;
-  if (referralCode) {
-    const [referrer] = await db.select().from(usersTable).where(eq(usersTable.referralCode, referralCode.toUpperCase())).limit(1);
-    if (referrer) referredById = referrer.id;
+  const normalizedReferralCode = String(referralCode || "").trim().toUpperCase() || ADMIN_REFERRAL_CODE;
+  const [referrer] = await db.select().from(usersTable).where(eq(usersTable.referralCode, normalizedReferralCode)).limit(1);
+  if (!referrer) {
+    res.status(400).json({ error: "Valid referral code required" });
+    return;
   }
+  const referredById = referrer.id;
 
   const passwordHash = await bcrypt.hash(password, 10);
   const [user] = await db.insert(usersTable).values({
