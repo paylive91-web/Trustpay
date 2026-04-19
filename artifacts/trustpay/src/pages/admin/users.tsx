@@ -11,6 +11,26 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getAdminGetUsersQueryKey } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
+import { getAuthToken } from "@/lib/auth";
+
+const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+
+async function api(path: string, opts: RequestInit = {}) {
+  const token = getAuthToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...opts,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(opts.headers || {}),
+    },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Request failed");
+  return data;
+}
 
 export default function AdminUsers() {
   const { toast } = useToast();
@@ -21,6 +41,7 @@ export default function AdminUsers() {
   const [editUser, setEditUser] = useState<any>(null);
   const [newBalance, setNewBalance] = useState("");
   const [reason, setReason] = useState("");
+  const [deleteUser, setDeleteUser] = useState<any>(null);
 
   const openEdit = (user: any) => {
     setEditUser(user);
@@ -43,8 +64,19 @@ export default function AdminUsers() {
         queryClient.invalidateQueries({ queryKey: getAdminGetUsersQueryKey() });
       },
       onError: (err) => {
-        toast({ title: "Error", description: err.error || "Failed to update", variant: "destructive" });
+        toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to update", variant: "destructive" });
       }
+    });
+  };
+
+  const handleDeleteUser = () => {
+    if (!deleteUser) return;
+    api(`/admin/users/${deleteUser.id}`, { method: "DELETE" }).then(() => {
+      toast({ title: "User removed" });
+      setDeleteUser(null);
+      queryClient.invalidateQueries({ queryKey: getAdminGetUsersQueryKey() });
+    }).catch((err: any) => {
+      toast({ title: "Error", description: err.message || "Failed to delete user", variant: "destructive" });
     });
   };
 
@@ -102,9 +134,16 @@ export default function AdminUsers() {
                           {user.createdAt ? format(new Date(user.createdAt), "MMM dd, yyyy") : "-"}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button size="sm" variant="outline" onClick={() => openEdit(user)}>
-                            Edit Balance
-                          </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button size="sm" variant="outline" onClick={() => openEdit(user)}>
+                              Edit Balance
+                            </Button>
+                            {user.role !== "admin" && (
+                              <Button size="sm" variant="destructive" onClick={() => setDeleteUser(user)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -150,6 +189,21 @@ export default function AdminUsers() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleteUser} onOpenChange={(open) => !open && setDeleteUser(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete user?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove {deleteUser?.username}. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteUser}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }

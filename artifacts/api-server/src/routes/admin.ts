@@ -135,6 +135,15 @@ router.put("/users/:id/balance", requireAdmin, async (req, res) => {
   res.json(formatUser(user));
 });
 
+router.delete("/users/:id", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id)).limit(1);
+  if (!user) { res.status(404).json({ error: "Not found" }); return; }
+  if (user.role === "admin") { res.status(400).json({ error: "Admin users cannot be deleted" }); return; }
+  await db.delete(usersTable).where(eq(usersTable.id, id));
+  res.json({ success: true });
+});
+
 router.get("/fraud-alerts", requireAdmin, async (req, res) => {
   const { resolved } = req.query as { resolved?: string };
   const conds: any[] = [];
