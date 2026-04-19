@@ -8,10 +8,14 @@ There is no external payment gateway — all flows are internal P2P.
 
 ## Architecture
 
-Monorepo (pnpm workspace) with three artifacts:
-- `artifacts/api-server` — Express + Drizzle ORM + PostgreSQL backend on `$PORT`
-- `artifacts/trustpay` — React + Vite frontend (mobile-first)
+Monorepo (pnpm workspace):
+- `artifacts/api-server` — Express + Drizzle ORM + PostgreSQL backend on `$PORT` (port 8080). In production this is the **only deployable artifact** — it builds the trustpay frontend during its production build and serves the static files at `/` (API at `/api/*`).
+- `artifacts/trustpay` — React + Vite frontend (mobile-first). Runs as its own dev server (port 24041) for local preview only — its `.replit-artifact/` was removed (backed up at `.local/backup/trustpay-replit-artifact/`) so autoscale only exposes a single port.
 - `artifacts/mockup-sandbox` — design preview server (canvas)
+
+## Deployment
+
+Single-service autoscale on port 8080. The api-server's production build runs `pnpm --filter @workspace/trustpay run build && pnpm --filter @workspace/api-server run build`, then `app.ts` serves `artifacts/trustpay/dist/public/` as static files when `NODE_ENV=production`. SPA fallback: any non-`/api` route returns `index.html`.
 
 Shared libs:
 - `lib/db` — Drizzle schema (`users`, `orders`, `transactions`, `settings`, `referrals`, `user_upi_ids`, `disputes`, `fraud_alerts`, `trust_events`, `utr_index`, `image_hashes`, `user_notifications`)
