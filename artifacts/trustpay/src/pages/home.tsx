@@ -36,7 +36,7 @@ async function api(path: string, opts: RequestInit = {}) {
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const { data: user, isLoading, isError } = useGetMe({ query: { retry: false } });
+  const { data: user, isLoading, isError } = useGetMe({ query: { queryKey: ["me"], retry: false } });
   const { data: settings } = useGetAppSettings();
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
   const { toast } = useToast();

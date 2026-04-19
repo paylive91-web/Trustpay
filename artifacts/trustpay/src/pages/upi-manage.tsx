@@ -26,7 +26,7 @@ async function api(path: string, opts: RequestInit = {}) {
 
 export default function UpiManage() {
   const [, setLocation] = useLocation();
-  const { data: user, isError } = useGetMe({ query: { retry: false } });
+  const { data: user, isError } = useGetMe({ query: { queryKey: ["me"], retry: false } });
   const { toast } = useToast();
   const qc = useQueryClient();
   const [showAdd, setShowAdd] = useState(false);
