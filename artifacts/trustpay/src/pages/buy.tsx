@@ -76,7 +76,7 @@ export default function Buy() {
     queryKey: ["p2p-queue"],
     queryFn: () => api("/p2p/queue"),
     enabled: !!user && !myBuy,
-    refetchInterval: 3000,
+    refetchInterval: 1000,
   });
 
   useEffect(() => { if (isError) setLocation("/login"); }, [isError, setLocation]);
@@ -86,7 +86,7 @@ export default function Buy() {
     const el = listRef.current;
     if (!el || queue.length < 2) return;
 
-    const speedPerSecond = 120;
+    const speedPerSecond = 360;
     let last = performance.now();
 
     const tick = (now: number) => {
@@ -165,7 +165,7 @@ export default function Buy() {
                 onWheel={() => pauseAutoScroll(1600)}
               >
                 {queue.map((c) => (
-                  <Card key={c.id} className="hover:shadow-md transition-shadow rounded-2xl">
+                  <Card key={c.id} className="hover:shadow-md transition-shadow rounded-2xl animate-pulse">
                     <CardContent className="p-3 flex items-center justify-between gap-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
@@ -394,7 +394,7 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
               </Button>
               <Button variant="outline" size="sm" className="w-full" onClick={() => setLocation("/support")}>
                 <Headset className="mr-2 h-4 w-4" />
-                Customer Care
+                Contact Support
               </Button>
             </>
           )}

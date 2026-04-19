@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, BookOpen, Clock, ShieldCheck, BellRing, CheckCircle2, Loader2,
-  Pencil, Radio, Wallet, User as UserIcon, Sparkles, Wifi, WifiOff,
+  Pencil, Radio, Wallet, User as UserIcon, Sparkles, Wifi, WifiOff, Headset,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
@@ -65,6 +65,7 @@ export default function Sell() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [showRules, setShowRules] = useState(false);
+  const [confirmPopupOpen, setConfirmPopupOpen] = useState(false);
   const [now, setNow] = useState(Date.now());
 
   // 1-second tick drives the matching countdown.
@@ -144,7 +145,15 @@ export default function Sell() {
       {isFrozen && (
         <div className="px-4 pt-3">
           <Card className="border-red-400 bg-red-50">
-            <CardContent className="p-3 text-sm text-red-700">Account frozen — sells paused. Contact support.</CardContent>
+            <CardContent className="p-3 text-sm text-red-700">
+              Account frozen — sells paused.{" "}
+              <button
+                className="underline font-semibold"
+                onClick={() => window.open((settings as any)?.supportLink || "/support", "_blank")}
+              >
+                Contact Support
+              </button>
+            </CardContent>
           </Card>
         </div>
       )}
@@ -216,20 +225,12 @@ export default function Sell() {
 
               <div className="mt-5">
                 {isMatching ? (
-                  <Button
-                    onClick={() => stopMut.mutate()}
-                    disabled={stopMut.isPending}
-                    className="w-full h-12 text-base font-bold rounded-2xl bg-white text-violet-700 hover:bg-white/90 shadow-lg"
-                  >
+                  <Button onClick={() => stopMut.mutate()} disabled={stopMut.isPending} className="w-full h-12 text-base font-bold rounded-2xl bg-white text-violet-700 hover:bg-white/90 shadow-lg">
                     {stopMut.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                     Stop Matching
                   </Button>
                 ) : (
-                  <Button
-                    onClick={() => startMut.mutate()}
-                    disabled={startMut.isPending || isFrozen}
-                    className="w-full h-12 text-base font-bold rounded-2xl bg-white text-violet-700 hover:bg-white/90 shadow-lg"
-                  >
+                  <Button onClick={() => startMut.mutate()} disabled={startMut.isPending || isFrozen} className="w-full h-12 text-base font-bold rounded-2xl bg-white text-violet-700 hover:bg-white/90 shadow-lg">
                     {startMut.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Radio className="w-4 h-4 mr-2" />}
                     Start Selling — 15 min
                   </Button>
@@ -253,7 +254,7 @@ export default function Sell() {
               <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">No pending confirmations.</CardContent></Card>
             ) : (
               pendingConfirms.map((c) => (
-                <PendingConfirmCard key={c.id} chunk={c} onResolved={() => { refetchPending(); refetchChunks(); qc.invalidateQueries({ queryKey: ["me"] }); }} />
+                <PendingConfirmCard key={c.id} chunk={c} onResolved={() => { refetchPending(); refetchChunks(); qc.invalidateQueries({ queryKey: ["me"] }); }} confirmPopupOpen={confirmPopupOpen} setConfirmPopupOpen={setConfirmPopupOpen} />
               ))
             )}
           </TabsContent>
@@ -344,7 +345,7 @@ function MePanel({ user, onUpdated }: { user: any; onUpdated: () => void }) {
   );
 }
 
-function PendingConfirmCard({ chunk, onResolved }: { chunk: any; onResolved: () => void }) {
+function PendingConfirmCard({ chunk, onResolved, confirmPopupOpen, setConfirmPopupOpen }: { chunk: any; onResolved: () => void; confirmPopupOpen: boolean; setConfirmPopupOpen: (v: boolean) => void; }) {
   const { toast } = useToast();
   const [now, setNow] = useState(Date.now());
   const [showProof, setShowProof] = useState(false);
@@ -408,7 +409,7 @@ function PendingConfirmCard({ chunk, onResolved }: { chunk: any; onResolved: () 
 
         {!showProof ? (
           <div className="grid grid-cols-2 gap-3">
-            <Button size="lg" className="bg-green-600 hover:bg-green-700 h-12 text-base" disabled={confirmMut.isPending} onClick={() => confirmMut.mutate()}>
+            <Button size="lg" className="bg-green-600 hover:bg-green-700 h-12 text-base" disabled={confirmMut.isPending} onClick={() => setConfirmPopupOpen(true)}>
               YES — Received
             </Button>
             <Button size="lg" variant="destructive" className="h-12 text-base" onClick={() => setShowProof(true)}>
@@ -416,7 +417,7 @@ function PendingConfirmCard({ chunk, onResolved }: { chunk: any; onResolved: () 
             </Button>
           </div>
         ) : (
-          <div className="space-y-2">
+            <div className="space-y-2">
             <textarea
               className="w-full border rounded-2xl p-3 text-sm"
               rows={2}
@@ -439,6 +440,22 @@ function PendingConfirmCard({ chunk, onResolved }: { chunk: any; onResolved: () 
           Auto-confirms to buyer in {fmtCountdown(remaining)} if no action taken.
         </div>
       </CardContent>
+      {confirmPopupOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <Card className="w-full max-w-sm">
+            <CardContent className="p-4 space-y-3">
+              <div className="text-base font-bold">Please check recent history</div>
+              <div className="text-sm text-muted-foreground leading-relaxed">
+                Please jo UPI ID aapne PhonePe / GPay / Paytm me add ki thi usme jaake ek baar Recent history check kar lo ki payment received hai ya nahi. Phir aap dobara confirm karo — isse scam ka chance kam hoga.
+              </div>
+              <div className="flex gap-2">
+                <Button className="flex-1" onClick={() => { setConfirmPopupOpen(false); confirmMut.mutate(); }}>Continue</Button>
+                <Button variant="outline" className="flex-1" onClick={() => setConfirmPopupOpen(false)}>Cancel</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </Card>
   );
 }

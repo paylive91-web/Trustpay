@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, Copy, Share2, Users, TrendingUp, IndianRupee, ChevronRight } from "lucide-react";
+import { Gift, Copy, Share2, Users, TrendingUp, IndianRupee, ChevronRight, ExternalLink } from "lucide-react";
 
 export default function Invite() {
   const { toast } = useToast();
@@ -15,6 +15,7 @@ export default function Invite() {
   const inviteEarnings = (user as any)?.inviteEarnings || 0;
   const inviteEarningsL2 = (user as any)?.inviteEarningsL2 || 0;
   const totalEarnings = inviteEarnings + inviteEarningsL2;
+  const invitees = (user as any)?.invitees || [];
 
   const shareUrl = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}/register?ref=${referralCode}`;
 
@@ -57,7 +58,7 @@ export default function Invite() {
 
   return (
     <Layout>
-      <div className="p-4 space-y-4 pb-8">
+      <div className="p-4 space-y-4 pb-24">
         {/* Hero */}
         <div className="bg-gradient-to-br from-primary to-primary/80 rounded-2xl p-6 text-primary-foreground text-center">
           <div className="w-16 h-16 bg-primary-foreground/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -158,6 +159,27 @@ export default function Invite() {
                 </div>
               </div>
             ))}
+          </CardContent>
+        </Card>
+
+        <Card className="border-none shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Invited Users</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {invitees.length === 0 ? (
+              <div className="text-sm text-muted-foreground text-center py-4">No one has joined with your invite yet.</div>
+            ) : (
+              invitees.map((u: any) => (
+                <div key={u.id} className="flex items-center justify-between rounded-xl bg-muted/50 p-3">
+                  <div>
+                    <div className="font-medium text-sm">{u.displayName || u.username}</div>
+                    <div className="text-xs text-muted-foreground">Joined with your code</div>
+                  </div>
+                  <Users className="w-4 h-4 text-primary" />
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
