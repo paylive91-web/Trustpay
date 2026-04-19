@@ -1,8 +1,8 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db } from "@workspace/db";
-import { usersTable } from "@workspace/db";
-import { eq, or } from "drizzle-orm";
+import { usersTable, referralsTable } from "@workspace/db";
+import { eq, or, desc } from "drizzle-orm";
 import { signToken, requireAuth, formatUser } from "../lib/auth.js";
 import { recordDeviceFingerprint, checkAccountFraud, checkReferralSelfLoop } from "../lib/fraud.js";
 
@@ -138,6 +138,17 @@ router.post("/logout", (_req, res) => {
 
 router.get("/me", requireAuth, (req, res) => {
   res.json(formatUser((req as any).user));
+});
+
+router.get("/invitees", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  const rows = await db.select({
+    id: usersTable.id,
+    username: usersTable.username,
+    displayName: usersTable.displayName,
+    createdAt: usersTable.createdAt,
+  }).from(referralsTable).innerJoin(usersTable, eq(referralsTable.referredUserId, usersTable.id)).where(eq(referralsTable.referrerId, u.id)).orderBy(desc(usersTable.createdAt));
+  res.json(rows);
 });
 
 // Lightweight heartbeat — keeps lastSeenAt fresh (called every ~30s from frontend).

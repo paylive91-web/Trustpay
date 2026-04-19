@@ -1,23 +1,36 @@
 import React, { useState } from "react";
-import { useGetMe } from "@workspace/api-client-react";
+import { useGetMe, useGetAppSettings } from "@workspace/api-client-react";
 import Layout from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, Copy, Share2, Users, TrendingUp, IndianRupee, ChevronRight, ExternalLink } from "lucide-react";
+import { Gift, Copy, Share2, Users, TrendingUp, IndianRupee, ChevronRight, Headset } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { getAuthToken } from "@/lib/auth";
 
 export default function Invite() {
   const { toast } = useToast();
   const { data: user, isLoading } = useGetMe();
+  const { data: settings } = useGetAppSettings();
 
   const referralCode = (user as any)?.referralCode || "";
   const inviteEarnings = (user as any)?.inviteEarnings || 0;
   const inviteEarningsL2 = (user as any)?.inviteEarningsL2 || 0;
   const totalEarnings = inviteEarnings + inviteEarningsL2;
-  const invitees = (user as any)?.invitees || [];
 
   const shareUrl = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}/register?ref=${referralCode}`;
+  const { data: invitees = [] } = useQuery<any[]>({
+    queryKey: ["invitees"],
+    queryFn: async () => {
+      const token = getAuthToken();
+      const res = await fetch(`${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/auth/invitees`, {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      });
+      return res.json();
+    },
+    enabled: !!user,
+  });
 
   const handleCopyCode = () => {
     if (!referralCode) return;
@@ -180,6 +193,24 @@ export default function Invite() {
                 </div>
               ))
             )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-none shadow-sm">
+          <CardContent className="p-4">
+            <button
+              className="w-full flex items-center justify-between"
+              onClick={() => window.open((settings as any)?.telegramLink || "/support", "_blank")}
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-muted p-2 rounded-lg"><Headset className="w-4 h-4" /></div>
+                <div className="text-left">
+                  <div className="font-medium text-sm">Contact Support</div>
+                  <div className="text-xs text-muted-foreground">Open help link</div>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
           </CardContent>
         </Card>
       </div>
