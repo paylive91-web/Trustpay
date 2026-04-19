@@ -23,6 +23,10 @@ function rewardForAmount(amount: number) {
   return { rewardPercent: rp, rewardAmount: ra };
 }
 
+function asString(v: string | string[] | undefined) {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 function f(o: any, sellerInfo?: any) {
   const amount = parseFloat(o.amount);
   // Always compute reward dynamically: stored rewardAmount on chunk rows is
@@ -114,7 +118,7 @@ router.post("/lock/:id", requireAuth, async (req, res) => {
     res.status(403).json({ error: "Account paused — you have an open dispute. Resolve it before starting a new buy." });
     return;
   }
-  const id = parseInt(req.params.id);
+  const id = parseInt(asString(req.params.id));
 
   const existing = await getActiveBuy(u.id);
   if (existing) {
@@ -171,7 +175,7 @@ router.post("/lock/:id", requireAuth, async (req, res) => {
 
 router.post("/submit/:id", requireAuth, async (req, res) => {
   const u = (req as any).user;
-  const id = parseInt(req.params.id);
+  const id = parseInt(asString(req.params.id));
   const { utrNumber, screenshotUrl, recordingUrl } = req.body;
   if (!utrNumber || utrNumber.length < 6) {
     res.status(400).json({ error: "Valid UTR required" });
@@ -252,7 +256,7 @@ router.get("/my-pending-confirmations", requireAuth, async (req, res) => {
 
 router.post("/confirm/:id", requireAuth, async (req, res) => {
   const u = (req as any).user;
-  const id = parseInt(req.params.id);
+  const id = parseInt(asString(req.params.id));
   const [chunk] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
   if (!chunk || chunk.userId !== u.id || chunk.status !== "pending_confirmation") {
     res.status(400).json({ error: "Cannot confirm this chunk" });
@@ -264,7 +268,7 @@ router.post("/confirm/:id", requireAuth, async (req, res) => {
 
 router.post("/dispute/:id", requireAuth, async (req, res) => {
   const u = (req as any).user;
-  const id = parseInt(req.params.id);
+  const id = parseInt(asString(req.params.id));
   const { reason } = req.body;
   const [chunk] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
   if (!chunk || chunk.userId !== u.id || chunk.status !== "pending_confirmation") {
@@ -290,7 +294,7 @@ router.post("/dispute/:id", requireAuth, async (req, res) => {
 
 router.post("/cancel/:id", requireAuth, async (req, res) => {
   const u = (req as any).user;
-  const id = parseInt(req.params.id);
+  const id = parseInt(asString(req.params.id));
   const [chunk] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
   if (!chunk || chunk.lockedByUserId !== u.id || chunk.status !== "locked") {
     res.status(400).json({ error: "Cannot cancel" });

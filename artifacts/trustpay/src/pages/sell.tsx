@@ -60,7 +60,7 @@ const STATUS_COLOR: Record<string, string> = {
 
 export default function Sell() {
   const [, setLocation] = useLocation();
-  const { data: user, isError, refetch: refetchMe } = useGetMe({ query: { retry: false } });
+  const { data: user, isError, refetch: refetchMe } = useGetMe({ query: { queryKey: ["me"], retry: false } });
   const { data: settings } = useGetAppSettings();
   const { toast } = useToast();
   const qc = useQueryClient();
