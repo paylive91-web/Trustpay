@@ -25,6 +25,7 @@ export const usersTable = pgTable("users", {
   blockedAt: timestamp("blocked_at"),
   isFrozen: boolean("is_frozen").notNull().default(false),
   autoSellEnabled: boolean("auto_sell_enabled").notNull().default(false),
+  lastSeenAt: timestamp("last_seen_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

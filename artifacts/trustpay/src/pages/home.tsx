@@ -11,18 +11,10 @@ import { Button } from "@/components/ui/button";
 import { ArrowDownCircle, BookOpen, HelpCircle, Link as LinkIcon, ShieldAlert, ShieldCheck, User as UserIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import useEmblaCarousel from "embla-carousel-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { getAuthToken } from "@/lib/auth";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
@@ -43,17 +35,15 @@ async function api(path: string, opts: RequestInit = {}) {
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const { data: user, isLoading, isError, refetch: refetchMe } = useGetMe({ query: { retry: false } });
+  const { data: user, isLoading, isError } = useGetMe({ query: { retry: false } });
   const { data: settings } = useGetAppSettings();
-  const [emblaRef] = useEmblaCarousel({ loop: true });
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
   const { toast } = useToast();
-  const qc = useQueryClient();
 
   const [showBuyRules, setShowBuyRules] = useState(false);
   const [showSellRules, setShowSellRules] = useState(false);
-  const [showUpiModal, setShowUpiModal] = useState(false);
 
-  const { data: upiList = [], refetch: refetchUpi } = useQuery({
+  const { data: upiList = [] } = useQuery({
     queryKey: ["upi"],
     queryFn: () => api("/upi"),
     enabled: !!user,
@@ -62,6 +52,22 @@ export default function Home() {
   useEffect(() => {
     if (isError) setLocation("/login");
   }, [isError, setLocation]);
+
+  // Heartbeat: update lastSeenAt every 30s
+  useEffect(() => {
+    if (!user) return;
+    const ping = () => api("/auth/heartbeat", { method: "POST" }).catch(() => {});
+    ping();
+    const t = setInterval(ping, 30_000);
+    return () => clearInterval(t);
+  }, [user]);
+
+  // Auto-advance banner carousel every 4 seconds
+  useEffect(() => {
+    if (!emblaApi) return;
+    const t = setInterval(() => emblaApi.scrollNext(), 4000);
+    return () => clearInterval(t);
+  }, [emblaApi]);
 
   const handleHelpCenter = () => {
     const link = (settings as any)?.telegramLink;
@@ -81,7 +87,8 @@ export default function Home() {
   }
   if (!user) return null;
 
-  const hasUpi = (upiList as any[]).length > 0;
+  const activeUpiList = (upiList as any[]).filter((u: any) => u.isActive);
+  const hasUpi = activeUpiList.length > 0;
   const displayName = user.phone || user.username;
   const trustScore = (user as any).trustScore ?? 0;
   const isFrozen = (user as any).isFrozen;
@@ -142,23 +149,24 @@ export default function Home() {
                   BUY
                 </Button>
               </Link>
-              <Button
-                onClick={() => setShowUpiModal(true)}
-                className={`w-full h-12 text-lg rounded-xl shadow-md ${hasUpi ? "bg-green-600 hover:bg-green-700 text-white" : "bg-secondary hover:bg-secondary/90 text-secondary-foreground"}`}
-              >
-                <LinkIcon className="mr-2 h-5 w-5" />
-                {hasUpi ? "UPI Linked" : "Connect UPI"}
-              </Button>
+              <Link href="/upi" className="w-full">
+                <Button
+                  className={`w-full h-12 text-lg rounded-xl shadow-md ${hasUpi ? "bg-green-600 hover:bg-green-700 text-white" : "bg-secondary hover:bg-secondary/90 text-secondary-foreground"}`}
+                >
+                  <LinkIcon className="mr-2 h-5 w-5" />
+                  {hasUpi ? "UPI Linked" : "Connect UPI"}
+                </Button>
+              </Link>
             </div>
             {hasUpi && (
               <div className="mt-3 text-xs text-center text-muted-foreground">
-                Auto-Sell is ON. Your balance is being matched to buyers.
+                Auto-Sell is ON · {activeUpiList[0]?.upiId}
               </div>
             )}
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-4 gap-2 py-4">
+        <div className="grid grid-cols-4 gap-2 py-2">
           <QuickAction icon={<BookOpen className="text-primary" />} label="Buy Rules" onClick={() => setShowBuyRules(true)} />
           <QuickAction icon={<ShieldAlert className="text-secondary" />} label="Sell Rules" onClick={() => setShowSellRules(true)} />
           <QuickAction icon={<HelpCircle className="text-primary" />} label="Help Center" onClick={handleHelpCenter} />
@@ -183,7 +191,7 @@ export default function Home() {
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <h3 className="font-semibold text-secondary">My Sell Queue</h3>
-              <p className="text-sm text-muted-foreground">See active orders &amp; pending confirmations</p>
+              <p className="text-sm text-muted-foreground">See active orders & pending confirmations</p>
             </div>
             <Link href="/sell">
               <Button variant="outline" size="sm" className="rounded-full">Open</Button>
@@ -191,13 +199,6 @@ export default function Home() {
           </CardContent>
         </Card>
       </div>
-
-      <UpiModal
-        open={showUpiModal}
-        onOpenChange={setShowUpiModal}
-        upiList={upiList as any[]}
-        onChanged={() => { refetchUpi(); refetchMe(); qc.invalidateQueries({ queryKey: ["my-chunks"] }); }}
-      />
 
       <Dialog open={showBuyRules} onOpenChange={setShowBuyRules}>
         <DialogContent className="max-w-[380px] rounded-xl max-h-[80vh] overflow-y-auto">
@@ -238,95 +239,5 @@ function QuickAction({ icon, label, onClick }: { icon: React.ReactNode; label: s
       <div className="w-12 h-12 rounded-full bg-card shadow-sm border flex items-center justify-center">{icon}</div>
       <span className="text-xs text-center font-medium">{label}</span>
     </div>
-  );
-}
-
-function UpiModal({
-  open, onOpenChange, upiList, onChanged,
-}: { open: boolean; onOpenChange: (v: boolean) => void; upiList: any[]; onChanged: () => void }) {
-  const { toast } = useToast();
-  const [upiId, setUpiId] = useState("");
-  const [platform, setPlatform] = useState("PhonePe");
-  const [bankName, setBankName] = useState("");
-  const [holderName, setHolderName] = useState("");
-
-  const addMut = useMutation({
-    mutationFn: () => api("/upi", { method: "POST", body: JSON.stringify({ upiId, platform, bankName, holderName }) }),
-    onSuccess: () => {
-      toast({ title: "UPI connected!", description: "Auto-Sell activated. Your balance will be split into chunks for buyers." });
-      setUpiId(""); setBankName(""); setHolderName("");
-      onChanged();
-    },
-    onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
-  });
-
-  const disconnectMut = useMutation({
-    mutationFn: () => api("/upi/disconnect", { method: "POST" }),
-    onSuccess: () => {
-      toast({ title: "UPI disconnected", description: "Auto-Sell paused." });
-      onChanged();
-    },
-  });
-
-  const hasUpi = upiList.length > 0;
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[380px] rounded-xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><LinkIcon className="w-5 h-5 text-primary" />UPI Connect</DialogTitle>
-        </DialogHeader>
-
-        {hasUpi ? (
-          <div className="space-y-3">
-            {upiList.map((u) => (
-              <div key={u.id} className="border rounded-lg p-3 bg-green-50">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="font-semibold text-sm">{u.upiId}</div>
-                    <div className="text-xs text-muted-foreground">{u.platform} • {u.bankName} • {u.holderName}</div>
-                  </div>
-                  <span className="text-xs px-2 py-1 rounded bg-green-600 text-white">Active</span>
-                </div>
-              </div>
-            ))}
-            <Button
-              variant="destructive"
-              className="w-full"
-              onClick={() => disconnectMut.mutate()}
-              disabled={disconnectMut.isPending}
-            >
-              Disconnect UPI & Pause Auto-Sell
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label>UPI ID</Label>
-              <Input placeholder="yourname@paytm" value={upiId} onChange={(e) => setUpiId(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>UPI App / Platform</Label>
-              <Input placeholder="e.g. PhonePe, Google Pay, Paytm" value={platform} onChange={(e) => setPlatform(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Bank Name</Label>
-              <Input placeholder="e.g. SBI, HDFC" value={bankName} onChange={(e) => setBankName(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Account Holder Name</Label>
-              <Input placeholder="As per bank records" value={holderName} onChange={(e) => setHolderName(e.target.value)} />
-            </div>
-            <Button
-              className="w-full"
-              onClick={() => addMut.mutate()}
-              disabled={addMut.isPending || !upiId || !bankName || !holderName}
-            >
-              {addMut.isPending ? "Connecting..." : "Connect & Activate Auto-Sell"}
-            </Button>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
   );
 }

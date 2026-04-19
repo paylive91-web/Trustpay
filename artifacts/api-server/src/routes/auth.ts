@@ -118,4 +118,11 @@ router.get("/me", requireAuth, (req, res) => {
   res.json(formatUser((req as any).user));
 });
 
+// Lightweight heartbeat — keeps lastSeenAt fresh (called every ~30s from frontend).
+router.post("/heartbeat", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  await db.update(usersTable).set({ lastSeenAt: new Date() }).where(eq(usersTable.id, u.id));
+  res.json({ ok: true });
+});
+
 export default router;

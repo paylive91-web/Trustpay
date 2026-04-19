@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useGetMe, useGetAppSettings } from "@workspace/api-client-react";
 import { useLocation, Link } from "wouter";
 import Layout from "@/components/layout";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, BookOpen, Clock, Copy, ShieldCheck, Upload } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle, Clock, Copy, ShieldCheck, Upload, Wifi } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
 
@@ -44,6 +44,16 @@ function fmtCountdown(ms: number) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+function isOnline(lastSeenAt?: string | null): boolean {
+  if (!lastSeenAt) return false;
+  return Date.now() - new Date(lastSeenAt).getTime() < 2 * 60 * 1000;
+}
+
+function makeQrUrl(upiId: string, amount: number): string {
+  const upiData = `upi://pay?pa=${encodeURIComponent(upiId)}&am=${amount}&tn=TrustPay&cu=INR`;
+  return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiData)}`;
+}
+
 export default function Buy() {
   const [, setLocation] = useLocation();
   const { data: user, isError } = useGetMe({ query: { retry: false } });
@@ -70,7 +80,7 @@ export default function Buy() {
 
   const lockMut = useMutation({
     mutationFn: (id: number) => api(`/p2p/lock/${id}`, { method: "POST" }),
-    onSuccess: () => { refetchBuy(); qc.invalidateQueries({ queryKey: ["p2p-queue"] }); toast({ title: "Chunk locked! Pay now." }); },
+    onSuccess: () => { refetchBuy(); qc.invalidateQueries({ queryKey: ["p2p-queue"] }); toast({ title: "Order locked! Pay now." }); },
     onError: (e: any) => toast({ title: "Failed to lock", description: e.message, variant: "destructive" }),
   });
 
@@ -105,12 +115,20 @@ export default function Buy() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-2 max-h-[60vh] overflow-y-auto auto-scroll-list">
+              <div className="space-y-2 max-h-[65vh] overflow-y-auto pr-0.5">
                 {queue.map((c) => (
-                  <Card key={c.id} className="hover:shadow-md">
+                  <Card key={c.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-3 flex items-center justify-between">
-                      <div>
-                        <div className="text-lg font-bold">₹{c.amount}</div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <div className="text-lg font-bold">₹{c.amount}</div>
+                          {c.seller?.lastSeenAt && isOnline(c.seller.lastSeenAt) && (
+                            <span className="flex items-center gap-1 text-green-600 text-xs">
+                              <span className="w-2 h-2 rounded-full bg-green-500 inline-block animate-pulse" />
+                              Online
+                            </span>
+                          )}
+                        </div>
                         <div className="text-xs text-green-600">+₹{c.rewardAmount} reward ({c.rewardPercent}%)</div>
                         <div className="text-xs text-muted-foreground mt-0.5">
                           Total credit: <span className="font-semibold">₹{c.totalAmount}</span>
@@ -126,6 +144,7 @@ export default function Buy() {
                         size="sm"
                         onClick={() => lockMut.mutate(c.id)}
                         disabled={lockMut.isPending}
+                        className="shrink-0"
                       >
                         Buy
                       </Button>
@@ -150,6 +169,7 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
   const [recordingUrl, setRecording] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState<"shot" | "rec" | null>(null);
+  const [qrError, setQrError] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -174,10 +194,19 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>, kind: "shot" | "rec") {
     const f = e.target.files?.[0];
     if (!f) return;
-    const limit = kind === "shot" ? 5 * 1024 * 1024 : 30 * 1024 * 1024;
+    const limit = kind === "shot" ? 5 * 1024 * 1024 : 50 * 1024 * 1024;
     if (f.size > limit) {
-      toast({ title: "File too large", variant: "destructive" });
+      toast({ title: "File too large", description: kind === "rec" ? "Max 50 MB" : "Max 5 MB", variant: "destructive" });
       return;
+    }
+    // Video: check duration >= 120s (2 min minimum)
+    if (kind === "rec" && f.type.startsWith("video/")) {
+      const ok = await checkVideoDuration(f, 120);
+      if (!ok) {
+        toast({ title: "Recording too short", description: "Screen recording must be at least 2 minutes long. Please record from before you initiate the payment.", variant: "destructive" });
+        e.target.value = "";
+        return;
+      }
     }
     setUploading(kind);
     try {
@@ -190,9 +219,10 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
     return (
       <Card>
         <CardContent className="p-5 text-center space-y-2">
-          <div className="text-amber-600 font-semibold">Waiting for seller confirmation</div>
+          <CheckCircle className="w-10 h-10 text-green-600 mx-auto" />
+          <div className="text-green-700 font-semibold">Payment submitted — waiting for seller</div>
           <div className="text-xs text-muted-foreground">Auto-confirms in {fmtCountdown(remaining)} if seller doesn't respond</div>
-          <div className="border-t pt-3 mt-2 text-left text-xs">
+          <div className="border-t pt-3 mt-2 text-left text-xs space-y-1">
             <div>Amount: <strong>₹{buy.amount}</strong></div>
             <div>UTR: <strong>{buy.utrNumber}</strong></div>
             <div>Reward: <strong>₹{buy.rewardAmount}</strong></div>
@@ -214,64 +244,122 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
     );
   }
 
+  const qrUrl = makeQrUrl(buy.upiId, buy.amount);
+
   return (
-    <Card>
-      <CardContent className="p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-2xl font-bold">₹{buy.amount}</div>
-            <div className="text-xs text-green-600">+₹{buy.rewardAmount} reward ({buy.rewardPercent}%)</div>
+    <div className="space-y-3">
+      {/* Scammer warning */}
+      <Card className="border-red-400 bg-red-50">
+        <CardContent className="p-3 flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
+          <div className="text-xs text-red-700 space-y-1">
+            <div className="font-semibold">Scam Alert — Read before paying</div>
+            <ul className="list-disc pl-3 space-y-0.5">
+              <li>Pay ONLY ₹{buy.amount} — no more, no less</li>
+              <li>Pay ONLY to the UPI below — not to any other number</li>
+              <li>NEVER share OTP, PIN, or password</li>
+              <li>If asked for extra payment, report immediately</li>
+            </ul>
           </div>
-          <div className={`flex items-center gap-1 text-sm ${expired ? "text-red-600" : remaining < 5 * 60 * 1000 ? "text-orange-600" : "text-primary"}`}>
-            <Clock className="h-4 w-4" />
-            <span className="font-mono font-semibold">{fmtCountdown(remaining)}</span>
-          </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        <div className="bg-muted/50 rounded-lg p-3 space-y-2 text-sm">
+      <Card>
+        <CardContent className="p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground text-xs">Pay to UPI:</span>
-            <button onClick={() => { navigator.clipboard.writeText(buy.upiId); toast({ title: "Copied!" }); }} className="text-primary text-xs flex items-center gap-1">
-              <Copy className="h-3 w-3" /> Copy
-            </button>
+            <div>
+              <div className="text-2xl font-bold">₹{buy.amount}</div>
+              <div className="text-xs text-green-600">+₹{buy.rewardAmount} reward ({buy.rewardPercent}%)</div>
+            </div>
+            <div className={`flex items-center gap-1 text-sm ${expired ? "text-red-600" : remaining < 5 * 60 * 1000 ? "text-orange-600" : "text-primary"}`}>
+              <Clock className="h-4 w-4" />
+              <span className="font-mono font-semibold">{fmtCountdown(remaining)}</span>
+            </div>
           </div>
-          <div className="font-mono font-semibold">{buy.upiId}</div>
-          <div className="text-xs text-muted-foreground">Holder: {buy.holderName || buy.upiName}</div>
-        </div>
 
-        {expired ? (
-          <Button variant="destructive" className="w-full" onClick={() => cancelMut.mutate()}>
-            Lock Expired — Release
-          </Button>
-        ) : (
-          <>
-            <div className="space-y-1.5">
-              <Label className="text-xs">UTR / Reference Number</Label>
-              <Input placeholder="12-digit UTR from your UPI app" value={utr} onChange={(e) => setUtr(e.target.value.trim())} />
+          {/* QR Code */}
+          {!qrError && (
+            <div className="flex flex-col items-center gap-2 py-2">
+              <img
+                src={qrUrl}
+                alt="UPI QR Code"
+                className="w-44 h-44 rounded-lg border"
+                onError={() => setQrError(true)}
+              />
+              <div className="text-xs text-muted-foreground">Scan with any UPI app</div>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Payment Screenshot</Label>
-              <input type="file" accept="image/*" onChange={(e) => handleFile(e, "shot")} className="text-xs" />
-              {screenshotUrl && <div className="text-xs text-green-600 flex items-center gap-1"><Upload className="h-3 w-3" /> Loaded</div>}
+          )}
+
+          <div className="bg-muted/50 rounded-lg p-3 space-y-2 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground text-xs">Pay to UPI:</span>
+              <button onClick={() => { navigator.clipboard.writeText(buy.upiId); toast({ title: "Copied!" }); }} className="text-primary text-xs flex items-center gap-1">
+                <Copy className="h-3 w-3" /> Copy
+              </button>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Screen Recording (mandatory)</Label>
-              <input type="file" accept="video/*" onChange={(e) => handleFile(e, "rec")} className="text-xs" />
-              {recordingUrl && <div className="text-xs text-green-600 flex items-center gap-1"><Upload className="h-3 w-3" /> Loaded</div>}
-            </div>
-            <Button
-              className="w-full"
-              disabled={!utr || !screenshotUrl || !recordingUrl || submitMut.isPending || !!uploading}
-              onClick={() => submitMut.mutate()}
-            >
-              {submitMut.isPending ? "Submitting..." : "Submit Payment Proof"}
+            <div className="font-mono font-semibold break-all">{buy.upiId}</div>
+            <div className="text-xs text-muted-foreground">Holder: {buy.holderName || buy.upiName}</div>
+          </div>
+
+          {expired ? (
+            <Button variant="destructive" className="w-full" onClick={() => cancelMut.mutate()}>
+              Lock Expired — Release
             </Button>
-            <Button variant="ghost" size="sm" className="w-full" onClick={() => cancelMut.mutate()}>
-              Cancel Buy
-            </Button>
-          </>
-        )}
-      </CardContent>
-    </Card>
+          ) : (
+            <>
+              <div className="space-y-1.5">
+                <Label className="text-xs">UTR / Reference Number</Label>
+                <Input placeholder="12-digit UTR from your UPI app" value={utr} onChange={(e) => setUtr(e.target.value.trim())} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Payment Screenshot</Label>
+                <input type="file" accept="image/*" onChange={(e) => handleFile(e, "shot")} className="text-xs w-full" />
+                {screenshotUrl && <div className="text-xs text-green-600 flex items-center gap-1"><Upload className="h-3 w-3" /> Loaded</div>}
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Screen Recording (min 2 min)</Label>
+                {/* Recording instructions */}
+                <div className="text-xs text-muted-foreground bg-muted/50 rounded p-2 space-y-1">
+                  <div className="font-medium">How to record:</div>
+                  <ol className="list-decimal pl-3 space-y-0.5">
+                    <li>Start screen recording BEFORE opening your UPI app</li>
+                    <li>Open UPI app → Enter UPI ID → Pay ₹{buy.amount}</li>
+                    <li>Show transaction success screen</li>
+                    <li>Stop recording (must be at least 2 minutes total)</li>
+                  </ol>
+                </div>
+                <input type="file" accept="video/*" onChange={(e) => handleFile(e, "rec")} className="text-xs w-full" />
+                {uploading === "rec" && <div className="text-xs text-blue-600">Checking duration...</div>}
+                {recordingUrl && <div className="text-xs text-green-600 flex items-center gap-1"><Upload className="h-3 w-3" /> Loaded</div>}
+              </div>
+              <Button
+                className="w-full"
+                disabled={!utr || !screenshotUrl || !recordingUrl || submitMut.isPending || !!uploading}
+                onClick={() => submitMut.mutate()}
+              >
+                {submitMut.isPending ? "Submitting..." : "Submit Payment Proof"}
+              </Button>
+              <Button variant="ghost" size="sm" className="w-full" onClick={() => cancelMut.mutate()}>
+                Cancel Buy
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
+}
+
+function checkVideoDuration(file: File, minSeconds: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.onloadedmetadata = () => {
+      URL.revokeObjectURL(url);
+      resolve(video.duration >= minSeconds);
+    };
+    video.onerror = () => { URL.revokeObjectURL(url); resolve(true); }; // allow on error
+    video.src = url;
+  });
 }

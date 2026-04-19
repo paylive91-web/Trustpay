@@ -41,11 +41,24 @@ Phone+password only. JWT (30d) signed with `SESSION_SECRET`. Admin login uses se
 
 `/api/auth/*`, `/api/upi`, `/api/p2p/*`, `/api/disputes/*`, `/api/orders/*`, `/api/transactions/*`, `/api/dashboard/*`, `/api/settings/*`, `/api/admin/*` (orders, users, fraud-alerts, settings, deposit-tasks, notify-all, stats).
 
-Frontend pages: `/`, `/login`, `/register`, `/buy`, `/sell`, `/orders`, `/transactions`, `/profile`, `/invite`, `/support`, `/admin`, `/admin/dashboard`, `/admin/orders`, `/admin/disputes`, `/admin/users`, `/admin/settings`, `/admin/deposit-tasks`.
+Frontend pages: `/`, `/login`, `/register`, `/buy`, `/sell`, `/orders`, `/transactions`, `/profile`, `/invite`, `/support`, `/upi`, `/admin`, `/admin/dashboard`, `/admin/orders`, `/admin/disputes`, `/admin/users`, `/admin/settings`, `/admin/deposit-tasks`.
 
 ## Migrations
 
 `drizzle-kit push` may hang on interactive prompts in this env. Apply additive schema changes via raw SQL in code_execution sandbox (`executeSql({ sqlQuery })`) — see `.local/tasks/task-1.md` for the migration that introduced the P2P tables.
+
+## Recent Changes (v2)
+
+- **₹1 commission per chunk**: Generated at chunk creation time. Seller debited ₹1, order shows (gross-1) to buyer. Counter in `platformCommissionTotal` settings key.
+- **Chunk range**: ₹100 min, ₹50,000 max (was ₹99-₹499).
+- **UPI Manage page** (`/upi`): Multi-UPI add/activate/delete. Home button links here instead of modal.
+- **Online presence**: `users.last_seen_at` column added. Heartbeat `POST /api/auth/heartbeat` called every 30s from home. Buy queue shows green dot for sellers active <2min ago.
+- **Buy page**: UPI QR code (via qrserver.com API), scammer warning banner, recording instructions, 2-min video duration check, auto-scroll queue.
+- **Sell page**: Sound notification (Web Audio API) when new pending confirmation arrives.
+- **Banner carousel**: Auto-advances every 4 seconds.
+- **PDF-only bank statements**: disputes validateProof updated.
+- **Auto-unfreeze**: Resolving last open fraud alert auto-unfreezes user.
+- **UPI disconnect**: Cancels all `available` chunks. Individual UPI delete/activate via `/api/upi/:id/activate` and `DELETE /api/upi/:id`.
 
 ## Outstanding TODO
 

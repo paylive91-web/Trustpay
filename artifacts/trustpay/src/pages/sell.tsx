@@ -12,6 +12,22 @@ import { getAuthToken } from "@/lib/auth";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.4, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.6);
+  } catch (_) {}
+}
+
 async function api(path: string, opts: RequestInit = {}) {
   const token = getAuthToken();
   const res = await fetch(`${API_BASE}${path}`, {
@@ -54,6 +70,16 @@ export default function Sell() {
   });
 
   useEffect(() => { if (isError) setLocation("/login"); }, [isError, setLocation]);
+
+  // Sound alert when new pending confirmation arrives
+  const prevPendingCount = React.useRef(0);
+  useEffect(() => {
+    const curr = pendingConfirms.length;
+    if (curr > prevPendingCount.current) {
+      playBeep();
+    }
+    prevPendingCount.current = curr;
+  }, [pendingConfirms.length]);
 
   const regenMut = useMutation({
     mutationFn: () => api("/p2p/regenerate-chunks", { method: "POST" }),

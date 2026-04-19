@@ -15,6 +15,7 @@ import Support from "@/pages/support";
 import Profile from "@/pages/profile";
 import Invite from "@/pages/invite";
 import Info from "@/pages/info";
+import UpiManage from "@/pages/upi-manage";
 
 import AdminLogin from "@/pages/admin/login";
 import AdminDashboard from "@/pages/admin/dashboard";
@@ -42,6 +43,7 @@ function Router() {
       <Route path="/profile" component={Profile} />
       <Route path="/invite" component={Invite} />
       <Route path="/info" component={Info} />
+      <Route path="/upi" component={UpiManage} />
 
       {/* Admin Routes */}
       <Route path="/admin" component={AdminLogin} />

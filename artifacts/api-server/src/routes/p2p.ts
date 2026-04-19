@@ -34,7 +34,12 @@ function f(o: any, sellerInfo?: any) {
     screenshotUrl: o.screenshotUrl,
     recordingUrl: o.recordingUrl,
     createdAt: o.createdAt,
-    seller: sellerInfo ? { id: sellerInfo.id, username: sellerInfo.username, trustScore: sellerInfo.trustScore } : undefined,
+    seller: sellerInfo ? {
+      id: sellerInfo.id,
+      username: sellerInfo.username,
+      trustScore: sellerInfo.trustScore,
+      lastSeenAt: sellerInfo.lastSeenAt,
+    } : undefined,
   };
 }
 
@@ -64,11 +69,17 @@ router.get("/queue", requireAuth, async (req, res) => {
     eq(ordersTable.status, "available"),
     ne(ordersTable.userId, u.id),
   )).orderBy(ordersTable.createdAt).limit(50);
+  // Fetch seller info for online-presence indicator
+  const sellerIds = [...new Set(chunks.map((c) => c.userId))];
+  const sellers = sellerIds.length > 0
+    ? await db.select().from(usersTable).where(inArray(usersTable.id, sellerIds))
+    : [];
+  const sellerMap = new Map(sellers.map((s) => [s.id, s]));
   const enriched = chunks.map((c) => {
     const a = parseFloat(c.amount);
     const rp = a >= 2001 ? 3 : a >= 1001 ? 4 : 5;
     const ra = parseFloat((a * rp / 100).toFixed(2));
-    return { ...f(c), rewardPercent: rp, rewardAmount: ra, totalAmount: parseFloat((a + ra).toFixed(2)) };
+    return { ...f(c, sellerMap.get(c.userId)), rewardPercent: rp, rewardAmount: ra, totalAmount: parseFloat((a + ra).toFixed(2)) };
   });
   res.json(enriched);
 });
