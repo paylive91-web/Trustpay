@@ -38,7 +38,7 @@ if (process.env.NODE_ENV === "production") {
   const distPath = path.resolve(process.cwd(), "artifacts/trustpay/dist/public");
   if (fs.existsSync(distPath)) {
     app.use(express.static(distPath));
-    app.get("*", (_req, res) => {
+    app.get(/(.*)/, (_req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
