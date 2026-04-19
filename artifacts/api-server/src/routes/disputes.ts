@@ -24,12 +24,19 @@ router.get("/my", requireAuth, async (req, res) => {
   })));
 });
 
-const ALLOWED_PROOF_MIME = /^data:(image\/(png|jpe?g|gif|webp|heic)|application\/pdf);base64,/i;
+// Bank statements must be PDF (image screenshots no longer accepted).
+// Other proof kinds (recordings, transaction screenshots) remain image-only.
+const PDF_PROOF_MIME = /^data:application\/pdf;base64,/i;
+const IMAGE_PROOF_MIME = /^data:image\/(png|jpe?g|gif|webp|heic);base64,/i;
 const MAX_PROOF_BYTES = 5 * 1024 * 1024; // 5 MB raw
-function validateProof(dataUrl: unknown, kind: "image" | "any"): string | null {
+function validateProof(dataUrl: unknown, kind: "image" | "pdf"): string | null {
   if (typeof dataUrl !== "string" || dataUrl.length < 32) return "Invalid file";
-  const ok = kind === "any" ? ALLOWED_PROOF_MIME : /^data:image\/(png|jpe?g|gif|webp|heic);base64,/i;
-  if (!ok.test(dataUrl)) return "Only PNG/JPG/WEBP/HEIC images" + (kind === "any" ? " or PDF allowed" : " allowed");
+  const ok = kind === "pdf" ? PDF_PROOF_MIME : IMAGE_PROOF_MIME;
+  if (!ok.test(dataUrl)) {
+    return kind === "pdf"
+      ? "Only PDF files allowed for bank statements"
+      : "Only PNG/JPG/WEBP/HEIC images allowed";
+  }
   // base64 expands by ~4/3; check decoded byte size <= MAX_PROOF_BYTES
   const b64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
   const bytes = Math.floor(b64.length * 3 / 4);
@@ -41,7 +48,7 @@ router.post("/buyer-proof/:id", requireAuth, async (req, res) => {
   const u = (req as any).user;
   const id = parseInt(req.params.id);
   const { bankStatementUrl } = req.body;
-  const err = validateProof(bankStatementUrl, "any");
+  const err = validateProof(bankStatementUrl, "pdf");
   if (err) { res.status(400).json({ error: err }); return; }
   const [d] = await db.select().from(disputesTable).where(eq(disputesTable.id, id)).limit(1);
   if (!d || d.buyerId !== u.id || d.status !== "open") {
@@ -59,7 +66,7 @@ router.post("/seller-proof/:id", requireAuth, async (req, res) => {
   const id = parseInt(req.params.id);
   const { bankStatementUrl, recordingUrl, lastTxnScreenshotUrl } = req.body;
   for (const [name, url, kind] of [
-    ["bank statement", bankStatementUrl, "any" as const],
+    ["bank statement", bankStatementUrl, "pdf" as const],
     ["screen recording", recordingUrl, "image" as const],
     ["last-transaction screenshot", lastTxnScreenshotUrl, "image" as const],
   ]) {

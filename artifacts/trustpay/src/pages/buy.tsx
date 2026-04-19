@@ -97,27 +97,15 @@ export default function Buy() {
           <ActiveBuyCard buy={myBuy} refetch={refetchBuy} />
         ) : (
           <>
-            <Card className="bg-primary/5 border-primary/20">
-              <CardContent className="p-4">
-                <h3 className="font-semibold text-primary mb-1">How it works</h3>
-                <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-4">
-                  <li>Pick any chunk below — you have 15 min to pay seller via UPI</li>
-                  <li>Submit UTR + screenshot + screen recording within the time limit</li>
-                  <li>Once seller confirms, balance + reward credited instantly</li>
-                  <li>Only ONE active buy at a time</li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <h2 className="font-semibold text-sm">Available Chunks ({queue.length})</h2>
+            <h2 className="font-semibold text-sm">Available Orders</h2>
             {queue.length === 0 ? (
               <Card>
                 <CardContent className="p-8 text-center text-muted-foreground">
-                  <p className="text-sm">No chunks available right now. Please wait — sellers are being matched continuously.</p>
+                  <p className="text-sm">No orders available right now. Please wait — sellers are being matched continuously.</p>
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-[60vh] overflow-y-auto auto-scroll-list">
                 {queue.map((c) => (
                   <Card key={c.id} className="hover:shadow-md">
                     <CardContent className="p-3 flex items-center justify-between">

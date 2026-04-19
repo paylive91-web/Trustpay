@@ -1,5 +1,5 @@
 import { db } from "@workspace/db";
-import { ordersTable, usersTable, userUpiIdsTable, disputesTable } from "@workspace/db";
+import { ordersTable, usersTable, userUpiIdsTable, disputesTable, transactionsTable, settingsTable } from "@workspace/db";
 import { eq, and, sql, or } from "drizzle-orm";
 import { getSettings } from "./settings.js";
 
@@ -25,7 +25,9 @@ export async function regenerateChunksForUser(userId: number) {
     .where(and(eq(userUpiIdsTable.userId, userId), eq(userUpiIdsTable.isActive, true))).limit(1);
   if (!upi) return;
 
-  // Available balance = balance - heldBalance - sum of in-queue chunks
+  // Available balance = balance - heldBalance - sum of in-queue chunks (held by
+  // gross amount, including the ₹1 platform fee that will be deducted at
+  // chunk-creation time below).
   const balance = parseFloat(user.balance);
   const held = parseFloat(user.heldBalance);
   const existingChunks = await db.select().from(ordersTable).where(and(
@@ -33,37 +35,71 @@ export async function regenerateChunksForUser(userId: number) {
     eq(ordersTable.type, "withdrawal"),
     sql`${ordersTable.status} IN ('available', 'locked', 'pending_confirmation', 'disputed')`,
   ));
-  const inQueueAmt = existingChunks.reduce((s, o) => s + parseFloat(o.amount), 0);
+  const settings = await getSettings([
+    "chunkMin", "chunkMax", "newUserChunkCap", "newUserTradeThreshold",
+    "platformCommissionPerChunk",
+  ]);
+  let chunkMin = parseInt(settings.chunkMin) || 100;
+  let chunkMax = parseInt(settings.chunkMax) || 50000;
+  const commission = parseInt(settings.platformCommissionPerChunk) || 1;
+  // For in-queue chunks: each consumed (amount + commission) of seller
+  // balance at creation (commission → admin, amount → buyer at settle).
+  const inQueueAmt = existingChunks.reduce((s, o) => s + parseFloat(o.amount) + commission, 0);
   let avail = balance - held - inQueueAmt;
-  if (avail < 99) return;
-
-  const settings = await getSettings(["chunkMin", "chunkMax", "newUserChunkCap", "newUserTradeThreshold"]);
-  let chunkMin = parseInt(settings.chunkMin) || 99;
-  let chunkMax = parseInt(settings.chunkMax) || 499;
   const newUserCap = parseInt(settings.newUserChunkCap) || 500;
   const tradeThreshold = parseInt(settings.newUserTradeThreshold) || 5;
   if ((user.successfulTrades || 0) < tradeThreshold) chunkMax = Math.min(chunkMax, newUserCap);
 
+  if (avail < chunkMin) return;
+
+  // Pick chunk gross amounts (each consumes `gross` from seller balance:
+  // ₹1 → admin, gross-1 → buyer).
   const chunks: number[] = [];
   while (avail >= chunkMin) {
     const size = Math.min(rand(chunkMin, chunkMax), avail);
+    if (size < chunkMin) break;
     chunks.push(size);
     avail -= size;
   }
   if (chunks.length === 0) return;
 
-  for (const amt of chunks) {
-    await db.insert(ordersTable).values({
-      userId,
-      type: "withdrawal",
-      amount: String(amt),
-      rewardPercent: "0",
-      rewardAmount: "0",
-      totalAmount: String(amt),
-      status: "available",
-      userUpiId: upi.upiId,
-      userUpiName: upi.holderName,
-      userName: upi.holderName,
+  for (const gross of chunks) {
+    const buyerAmount = gross - commission;
+    await db.transaction(async (tx) => {
+      // Debit ₹1 from seller balance immediately (platform fee). The remaining
+      // (gross - 1) stays on seller balance until lock time, when it moves to
+      // heldBalance.
+      await tx.update(usersTable).set({
+        balance: sql`${usersTable.balance} - ${commission}`,
+      }).where(eq(usersTable.id, userId));
+      await tx.insert(transactionsTable).values({
+        userId, type: "debit", amount: String(commission),
+        description: `Platform fee for new chunk (₹${gross})`,
+      });
+      // Atomic increment of platform commission counter via SQL upsert
+      // (avoids lost-update races under concurrent chunk creation).
+      await tx.insert(settingsTable).values({
+        key: "platformCommissionTotal",
+        value: String(commission),
+      }).onConflictDoUpdate({
+        target: settingsTable.key,
+        set: {
+          value: sql`(COALESCE(NULLIF(${settingsTable.value}, '')::numeric, 0) + ${commission})::text`,
+          updatedAt: new Date(),
+        },
+      });
+      await tx.insert(ordersTable).values({
+        userId,
+        type: "withdrawal",
+        amount: String(buyerAmount),
+        rewardPercent: "0",
+        rewardAmount: "0",
+        totalAmount: String(buyerAmount),
+        status: "available",
+        userUpiId: upi.upiId,
+        userUpiName: upi.holderName,
+        userName: upi.holderName,
+      });
     });
   }
 }

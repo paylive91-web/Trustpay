@@ -154,7 +154,20 @@ router.get("/fraud-alerts", requireAdmin, async (req, res) => {
 
 router.post("/fraud-alerts/:id/resolve", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
+  const [alert] = await db.select().from(fraudAlertsTable).where(eq(fraudAlertsTable.id, id)).limit(1);
   await db.update(fraudAlertsTable).set({ resolved: true }).where(eq(fraudAlertsTable.id, id));
+  // Auto-unfreeze the user when ALL of their alerts are resolved, so admins
+  // don't need a separate "Unfreeze" action. If other open alerts remain on
+  // the user, leave the freeze in place.
+  if (alert?.userId) {
+    const stillOpen = await db.select().from(fraudAlertsTable).where(and(
+      eq(fraudAlertsTable.userId, alert.userId),
+      eq(fraudAlertsTable.resolved, false),
+    )).limit(1);
+    if (stillOpen.length === 0) {
+      await db.update(usersTable).set({ isFrozen: false }).where(eq(usersTable.id, alert.userId));
+    }
+  }
   res.json({ success: true });
 });
 

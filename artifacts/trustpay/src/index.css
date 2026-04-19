@@ -156,3 +156,9 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+@keyframes auto-scroll-marquee {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
+.auto-scroll-list:hover { animation-play-state: paused; }

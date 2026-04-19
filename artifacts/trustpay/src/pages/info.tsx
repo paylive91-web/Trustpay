@@ -42,16 +42,6 @@ export default function Info() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base"><IndianRupee className="w-4 h-4" />High-Value Trades</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground space-y-1">
-            <p>Trades over <span className="font-semibold text-amber-600">₹5,000</span> are flagged for review.</p>
-            <p>Trades over <span className="font-semibold text-red-600">₹10,000</span> are critical and may be paused for verification.</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base"><AlertTriangle className="w-4 h-4 text-destructive" />Fraud Protection</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground space-y-1">

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { userUpiIdsTable, usersTable } from "@workspace/db";
+import { userUpiIdsTable, usersTable, ordersTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { requireAuth } from "../lib/auth.js";
 import { regenerateChunksForUser } from "../lib/matching.js";
@@ -39,9 +39,22 @@ router.post("/", requireAuth, async (req, res) => {
 
 router.post("/disconnect", requireAuth, async (req, res) => {
   const u = (req as any).user;
+  // Cancel all unsold (available) chunks belonging to this user. Locked /
+  // pending_confirmation / disputed chunks are left untouched (they are
+  // already in flight with another buyer). Cancelled chunks have their amount
+  // returned to the user's balance via a soft delete on the order row — they
+  // were never debited from `balance` (debit happens at lock time only), so
+  // we just remove them so the user's available balance recomputes correctly.
+  await db.update(ordersTable).set({
+    status: "cancelled",
+    updatedAt: new Date(),
+  }).where(and(
+    eq(ordersTable.userId, u.id),
+    eq(ordersTable.type, "withdrawal"),
+    eq(ordersTable.status, "available"),
+  ));
   await db.update(userUpiIdsTable).set({ isActive: false }).where(eq(userUpiIdsTable.userId, u.id));
   await db.update(usersTable).set({ autoSellEnabled: false }).where(eq(usersTable.id, u.id));
-  // chunks already in queue stay; new generation paused
   res.json({ success: true });
 });
 

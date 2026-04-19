@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { getAuthToken } from "@/lib/auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -184,7 +183,7 @@ export default function Home() {
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <h3 className="font-semibold text-secondary">My Sell Queue</h3>
-              <p className="text-sm text-muted-foreground">See active chunks &amp; pending confirmations</p>
+              <p className="text-sm text-muted-foreground">See active orders &amp; pending confirmations</p>
             </div>
             <Link href="/sell">
               <Button variant="outline" size="sm" className="rounded-full">Open</Button>
@@ -276,9 +275,6 @@ function UpiModal({
       <DialogContent className="max-w-[380px] rounded-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><LinkIcon className="w-5 h-5 text-primary" />UPI Connect</DialogTitle>
-          <DialogDescription>
-            Connecting your UPI activates Auto-Sell. Your balance will be split into random chunks (₹99-₹499) and matched to buyers automatically. Buyers pay UPI directly to you.
-          </DialogDescription>
         </DialogHeader>
 
         {hasUpi ? (
@@ -300,7 +296,7 @@ function UpiModal({
               onClick={() => disconnectMut.mutate()}
               disabled={disconnectMut.isPending}
             >
-              Disconnect UPI &amp; Pause Auto-Sell
+              Disconnect UPI & Pause Auto-Sell
             </Button>
           </div>
         ) : (
@@ -310,17 +306,8 @@ function UpiModal({
               <Input placeholder="yourname@paytm" value={upiId} onChange={(e) => setUpiId(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label>UPI App</Label>
-              <Select value={platform} onValueChange={setPlatform}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="PhonePe">PhonePe</SelectItem>
-                  <SelectItem value="Google Pay">Google Pay</SelectItem>
-                  <SelectItem value="Paytm">Paytm</SelectItem>
-                  <SelectItem value="BHIM">BHIM</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>UPI App / Platform</Label>
+              <Input placeholder="e.g. PhonePe, Google Pay, Paytm" value={platform} onChange={(e) => setPlatform(e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label>Bank Name</Label>
@@ -335,7 +322,7 @@ function UpiModal({
               onClick={() => addMut.mutate()}
               disabled={addMut.isPending || !upiId || !bankName || !holderName}
             >
-              {addMut.isPending ? "Connecting..." : "Connect &amp; Activate Auto-Sell"}
+              {addMut.isPending ? "Connecting..." : "Connect & Activate Auto-Sell"}
             </Button>
           </div>
         )}

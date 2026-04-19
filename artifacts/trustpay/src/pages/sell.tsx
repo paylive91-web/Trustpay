@@ -113,7 +113,7 @@ export default function Sell() {
             <TabsTrigger value="pending" className="flex-1">
               Pending {pendingConfirms.length > 0 && <span className="ml-1 px-1.5 bg-orange-500 text-white rounded-full text-xs">{pendingConfirms.length}</span>}
             </TabsTrigger>
-            <TabsTrigger value="chunks" className="flex-1">My Chunks</TabsTrigger>
+            <TabsTrigger value="chunks" className="flex-1">My Orders</TabsTrigger>
           </TabsList>
 
           <TabsContent value="pending" className="space-y-2 mt-3">
@@ -130,7 +130,7 @@ export default function Sell() {
             {chunks.length === 0 ? (
               <Card>
                 <CardContent className="p-6 text-center text-sm text-muted-foreground">
-                  No active chunks. Connect UPI on home page to start auto-sell.
+                  No active orders. Connect UPI on home page to start auto-sell.
                 </CardContent>
               </Card>
             ) : (
@@ -139,7 +139,7 @@ export default function Sell() {
                   <CardContent className="p-3 flex items-center justify-between">
                     <div>
                       <div className="font-bold">₹{c.amount}</div>
-                      <div className="text-xs text-muted-foreground">Chunk #{c.id}</div>
+                      <div className="text-xs text-muted-foreground">Order #{c.id}</div>
                     </div>
                     <span className={`text-xs px-2 py-1 rounded ${STATUS_COLOR[c.status] || "bg-muted"}`}>{c.status.replace(/_/g, " ")}</span>
                   </CardContent>
