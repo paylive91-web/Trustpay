@@ -73,6 +73,10 @@ export default function AdminDashboard() {
                 <div className="font-semibold text-sm">Update App Settings</div>
                 <div className="text-xs text-muted-foreground">Change UPI details or announcement popup</div>
               </a>
+              <a href="/admin/disputes" className="block p-3 bg-red-50 rounded-lg hover:bg-red-100 transition-colors border border-red-200">
+                <div className="font-semibold text-sm text-red-700">Review Disputes</div>
+                <div className="text-xs text-red-600">Resolve open cases and assign final winner</div>
+              </a>
             </CardContent>
           </Card>
         </div>

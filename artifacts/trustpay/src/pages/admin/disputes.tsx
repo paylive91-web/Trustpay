@@ -157,8 +157,8 @@ export default function AdminDisputes() {
           <div className="space-y-3 py-2">
             <p className="text-sm text-muted-foreground">
               {resolveOpen?.winner === "buyer"
-                ? "Buyer will be credited the chunk amount + reward. Seller will lose 10 trust points."
-                : "Chunk will be returned to seller's queue. Buyer will lose 10 trust points."}
+                ? "Buyer will be credited the chunk amount + reward. Seller may receive trust penalty after review."
+                : "Chunk will be returned to seller's queue. Buyer may receive trust penalty after review."}
             </p>
             <textarea className="w-full border rounded p-2 text-sm" rows={3} placeholder="Admin notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
