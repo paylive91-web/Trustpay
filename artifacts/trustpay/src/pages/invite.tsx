@@ -140,10 +140,10 @@ export default function Invite() {
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" onClick={handleCopyLink} className="rounded-xl">
+              <Button type="button" variant="outline" onClick={handleCopyLink} className="rounded-xl">
                 <Copy className="w-4 h-4 mr-2" /> Copy Link
               </Button>
-              <Button onClick={handleShare} className="rounded-xl">
+              <Button type="button" onClick={handleShare} className="rounded-xl">
                 <Share2 className="w-4 h-4 mr-2" /> Share
               </Button>
             </div>
@@ -198,7 +198,8 @@ export default function Invite() {
 
         <Card className="border-none shadow-sm">
           <CardContent className="p-4">
-            <button
+              <button
+                type="button"
               className="w-full flex items-center justify-between"
               onClick={() => window.open((settings as any)?.telegramLink || "/support", "_blank")}
             >
