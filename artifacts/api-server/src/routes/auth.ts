@@ -12,6 +12,16 @@ const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
 const PHONE_RE = /^[6-9]\d{9}$/;
 const ADMIN_REFERRAL_CODE = "TP000001";
 
+async function ensureAdminReferralCode() {
+  const [admin] = await db.select().from(usersTable).where(eq(usersTable.username, "admin")).limit(1);
+  if (!admin) return null;
+  if (admin.referralCode !== ADMIN_REFERRAL_CODE) {
+    await db.update(usersTable).set({ referralCode: ADMIN_REFERRAL_CODE }).where(eq(usersTable.id, admin.id));
+    admin.referralCode = ADMIN_REFERRAL_CODE;
+  }
+  return admin;
+}
+
 router.post("/register", async (req, res) => {
   const { username, phone, password, referralCode, deviceFingerprint } = req.body || {};
   if (!username || !phone || !password) {
@@ -111,6 +121,15 @@ router.post("/login", async (req, res) => {
 
   const token = signToken(user.id, user.role);
   res.json({ user: formatUser(user), token });
+});
+
+router.post("/admin/seed-referral-code", async (_req, res) => {
+  const admin = await ensureAdminReferralCode();
+  if (!admin) {
+    res.status(404).json({ error: "Admin user not found" });
+    return;
+  }
+  res.json({ success: true, referralCode: admin.referralCode });
 });
 
 router.post("/logout", (_req, res) => {
