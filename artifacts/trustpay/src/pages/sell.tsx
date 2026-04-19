@@ -3,6 +3,7 @@ import { useGetMe, useGetAppSettings } from "@workspace/api-client-react";
 import { useLocation, Link } from "wouter";
 import Layout from "@/components/layout";
 import DisputePauseBanner from "@/components/dispute-pause-banner";
+import SellerAlertsPopup from "@/components/seller-alerts-popup";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,27 +11,15 @@ import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, BookOpen, Clock, ShieldCheck, BellRing, CheckCircle2, Loader2,
   Pencil, Radio, Wallet, User as UserIcon, Sparkles, Wifi, WifiOff, Headset,
+  AlertTriangle,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { playAlarm } from "@/lib/alarm";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
-
-function playBeep() {
-  try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = 880;
-    gain.gain.setValueAtTime(0.4, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.6);
-  } catch (_) {}
-}
 
 async function api(path: string, opts: RequestInit = {}) {
   const token = getAuthToken();
@@ -65,7 +54,6 @@ export default function Sell() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [showRules, setShowRules] = useState(false);
-  const [confirmPopupOpen, setConfirmPopupOpen] = useState(false);
   const [now, setNow] = useState(Date.now());
 
   // 1-second tick drives the matching countdown.
@@ -91,18 +79,18 @@ export default function Sell() {
   const prevPending = useRef(0);
   useEffect(() => {
     const locked = matching?.locked || 0;
-    if (locked > prevLocked.current) playBeep();
+    if (locked > prevLocked.current) playAlarm();
     prevLocked.current = locked;
   }, [matching?.locked]);
   useEffect(() => {
-    if (pendingConfirms.length > prevPending.current) playBeep();
+    if (pendingConfirms.length > prevPending.current) playAlarm();
     prevPending.current = pendingConfirms.length;
   }, [pendingConfirms.length]);
 
   const startMut = useMutation({
     mutationFn: () => api("/p2p/start-matching", { method: "POST" }),
     onSuccess: () => {
-      toast({ title: "Matching shuru ho gayi", description: "15 minute tak online raho." });
+      toast({ title: "Matching started", description: "Stay online for the next 15 minutes." });
       refetchMatching(); refetchChunks(); refetchMe();
     },
     onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
@@ -111,7 +99,7 @@ export default function Sell() {
   const stopMut = useMutation({
     mutationFn: () => api("/p2p/stop-matching", { method: "POST" }),
     onSuccess: () => {
-      toast({ title: "Matching band kar di" });
+      toast({ title: "Matching stopped" });
       refetchMatching(); refetchChunks(); refetchMe();
     },
   });
@@ -128,6 +116,7 @@ export default function Sell() {
 
   return (
     <Layout>
+      <SellerAlertsPopup />
       <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-secondary via-secondary to-primary text-white">
         <Link href="/"><ArrowLeft className="cursor-pointer" /></Link>
         <span className="font-bold text-lg flex-1">Sell — Matching</span>
@@ -180,12 +169,12 @@ export default function Sell() {
                 <Sparkles className="w-3.5 h-3.5" /> Sell Matching
               </div>
               <div className="mt-3 text-3xl sm:text-4xl font-black tracking-tight">
-                {isMatching ? "Matching ho rahi hai…" : "Ready to sell?"}
+                {isMatching ? "Matching in progress…" : "Ready to sell?"}
               </div>
               <p className="mt-2 text-sm text-white/85 leading-relaxed max-w-md">
                 {isMatching
-                  ? "Wait karein — buyer milte hi aapko notification + sound aayegi. Online raho, app open rakho."
-                  : "Sell button dabate hi aapke chunks 15 minute ke liye buy queue me chale jayenge."}
+                  ? "Please wait — you will receive a notification and an alert sound the moment a buyer is matched. Keep this app open and stay online."
+                  : "Tap Start Selling and your chunks will go live in the buy queue for the next 15 minutes."}
               </p>
 
               {isMatching ? (
@@ -254,7 +243,7 @@ export default function Sell() {
               <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">No pending confirmations.</CardContent></Card>
             ) : (
               pendingConfirms.map((c) => (
-                <PendingConfirmCard key={c.id} chunk={c} onResolved={() => { refetchPending(); refetchChunks(); qc.invalidateQueries({ queryKey: ["me"] }); }} confirmPopupOpen={confirmPopupOpen} setConfirmPopupOpen={setConfirmPopupOpen} />
+                <PendingConfirmCard key={c.id} chunk={c} onResolved={() => { refetchPending(); refetchChunks(); qc.invalidateQueries({ queryKey: ["me"] }); }} />
               ))
             )}
           </TabsContent>
@@ -297,7 +286,7 @@ function MePanel({ user, onUpdated }: { user: any; onUpdated: () => void }) {
   useEffect(() => { setName(user.displayName || user.username || ""); }, [user.displayName, user.username]);
   const saveMut = useMutation({
     mutationFn: () => api("/auth/update-name", { method: "POST", body: JSON.stringify({ displayName: name }) }),
-    onSuccess: () => { toast({ title: "Naam update ho gaya" }); setEditing(false); onUpdated(); },
+    onSuccess: () => { toast({ title: "Display name updated" }); setEditing(false); onUpdated(); },
     onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
   });
   return (
@@ -345,10 +334,12 @@ function MePanel({ user, onUpdated }: { user: any; onUpdated: () => void }) {
   );
 }
 
-function PendingConfirmCard({ chunk, onResolved, confirmPopupOpen, setConfirmPopupOpen }: { chunk: any; onResolved: () => void; confirmPopupOpen: boolean; setConfirmPopupOpen: (v: boolean) => void; }) {
+function PendingConfirmCard({ chunk, onResolved }: { chunk: any; onResolved: () => void; }) {
   const { toast } = useToast();
   const [now, setNow] = useState(Date.now());
   const [showProof, setShowProof] = useState(false);
+  const [showDisputeWarning, setShowDisputeWarning] = useState(false);
+  const [confirmPopupOpen, setConfirmPopupOpen] = useState(false);
   const [reason, setReason] = useState("");
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
   const deadline = new Date(chunk.confirmDeadline).getTime();
@@ -404,7 +395,7 @@ function PendingConfirmCard({ chunk, onResolved, confirmPopupOpen, setConfirmPop
         )}
 
         <div className="text-xs text-muted-foreground">
-          Check your bank app for ₹{chunk.amount} from buyer's UPI. Confirm only if received.
+          Check your bank app for ₹{chunk.amount} credited from the buyer's UPI. Only confirm if you have received it.
         </div>
 
         {!showProof ? (
@@ -412,7 +403,7 @@ function PendingConfirmCard({ chunk, onResolved, confirmPopupOpen, setConfirmPop
             <Button size="lg" className="bg-green-600 hover:bg-green-700 h-12 text-base" disabled={confirmMut.isPending} onClick={() => setConfirmPopupOpen(true)}>
               YES — Received
             </Button>
-            <Button size="lg" variant="destructive" className="h-12 text-base" onClick={() => setShowProof(true)}>
+            <Button size="lg" variant="destructive" className="h-12 text-base" onClick={() => setShowDisputeWarning(true)}>
               NO — Not Received
             </Button>
           </div>
@@ -426,7 +417,7 @@ function PendingConfirmCard({ chunk, onResolved, confirmPopupOpen, setConfirmPop
               onChange={(e) => setReason(e.target.value)}
             />
             <div className="text-xs text-red-700">
-              ⚠ Opening a dispute will require you to upload bank statement, full screen recording, and last transaction screenshot within 24 hours.
+              ⚠ Opening a dispute will require you to upload your bank statement, a full screen recording and the last transaction screenshot within 24 hours.
             </div>
             <div className="grid grid-cols-2 gap-2">
               <Button variant="ghost" onClick={() => setShowProof(false)}>Back</Button>
@@ -437,25 +428,73 @@ function PendingConfirmCard({ chunk, onResolved, confirmPopupOpen, setConfirmPop
           </div>
         )}
         <div className="text-xs text-center text-muted-foreground">
-          Auto-confirms to buyer in {fmtCountdown(remaining)} if no action taken.
+          Auto-confirms to the buyer in {fmtCountdown(remaining)} if no action is taken.
         </div>
       </CardContent>
-      {confirmPopupOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <Card className="w-full max-w-sm">
-            <CardContent className="p-4 space-y-3">
-              <div className="text-base font-bold">Please check recent history</div>
-              <div className="text-sm text-muted-foreground leading-relaxed">
-                Please jo UPI ID aapne PhonePe / GPay / Paytm me add ki thi usme jaake ek baar Recent history check kar lo ki payment received hai ya nahi. Phir aap dobara confirm karo — isse scam ka chance kam hoga.
-              </div>
-              <div className="flex gap-2">
-                <Button className="flex-1" onClick={() => { setConfirmPopupOpen(false); confirmMut.mutate(); }}>Continue</Button>
-                <Button variant="outline" className="flex-1" onClick={() => setConfirmPopupOpen(false)}>Cancel</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+
+      <Dialog open={confirmPopupOpen} onOpenChange={setConfirmPopupOpen}>
+        <DialogContent className="max-w-[92vw] w-[420px] rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-700">
+              <AlertTriangle className="h-5 w-5" /> Please verify in your bank app first
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
+            <p>
+              Open the UPI app linked to this order (PhonePe, Google Pay, or Paytm) and check the recent transaction history. Confirm that ₹{chunk.amount} has actually credited to your account.
+            </p>
+            <p className="font-medium text-foreground">
+              Press Continue only after you have seen the credit in your statement. Once confirmed, the trade cannot be reversed.
+            </p>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button variant="outline" className="flex-1" onClick={() => setConfirmPopupOpen(false)}>
+              Go back
+            </Button>
+            <Button
+              className="flex-1 bg-green-600 hover:bg-green-700"
+              onClick={() => { setConfirmPopupOpen(false); confirmMut.mutate(); }}
+            >
+              Continue
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDisputeWarning} onOpenChange={setShowDisputeWarning}>
+        <DialogContent className="max-w-[92vw] w-[420px] rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-700">
+              <AlertTriangle className="h-5 w-5" /> Open dispute carefully
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
+            <p>
+              Before raising a dispute, open your UPI app (PhonePe, Google Pay, or Paytm) and re-check the recent history. Many UPI payments take a minute or two to reflect in the bank statement.
+            </p>
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-red-800 space-y-1">
+              <div className="font-semibold">If your dispute is found wrong:</div>
+              <ul className="list-disc list-inside text-[13px] leading-snug">
+                <li>−10 trust score per wrong dispute</li>
+                <li>Your account is automatically suspended once your trust score reaches −50</li>
+                <li>You must upload bank statement, screen recording and last-transaction screenshot within 24 hours</li>
+              </ul>
+            </div>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button variant="outline" className="flex-1" onClick={() => setShowDisputeWarning(false)}>
+              Re-check history
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={() => { setShowDisputeWarning(false); setShowProof(true); }}
+            >
+              Continue to dispute
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
