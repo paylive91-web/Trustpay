@@ -79,10 +79,9 @@ export async function regenerateChunksForUser(userId: number) {
       await tx.update(usersTable).set({
         balance: sql`${usersTable.balance} - ${commission}`,
       }).where(eq(usersTable.id, userId));
-      await tx.insert(transactionsTable).values({
-        userId, type: "debit", amount: String(commission),
-        description: `Platform fee for new chunk (₹${gross})`,
-      });
+      // NOTE: deliberately not inserting a seller-side transaction row for
+      // the platform fee — the deduction is silent so users don't see a
+      // ₹1 fee entry per chunk in their transaction history.
       // Credit the platform fee to the admin user's wallet so the money
       // physically lands in an account the operator controls.
       if (adminUser) {
