@@ -8,7 +8,7 @@ import NotificationsBell from "@/components/notifications-bell";
 import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_1776335785514.png";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowDownCircle, BookOpen, ChevronRight, HelpCircle, Link as LinkIcon, ShieldAlert, ShieldCheck, TrendingUp, User as UserIcon, Wallet } from "lucide-react";
+import { ArrowDownCircle, BookOpen, ChevronRight, HelpCircle, Link as LinkIcon, ShieldAlert, ShieldCheck, User as UserIcon, Wallet } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import useEmblaCarousel from "embla-carousel-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -98,14 +98,14 @@ export default function Home() {
       <AppStartupPopup />
       <div className="px-4 pt-3"><DisputePauseBanner /></div>
 
-      <div className="bg-gradient-to-r from-primary via-primary to-sky-600 text-primary-foreground px-4 pt-4 pb-5 shadow-lg">
+      <div className="bg-gradient-to-r from-primary via-primary to-sky-600 text-primary-foreground px-4 pt-3 pb-4 shadow-lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-white rounded-xl p-1.5 shadow-sm">
               <img src={logoPath} alt="TrustPay" className="w-8 h-8 rounded" />
             </div>
             <div>
-              <div className="font-bold text-xl leading-none">TrustPay</div>
+              <div className="font-bold text-[19px] leading-none">TrustPay</div>
               <div className="text-[11px] text-white/80 mt-1">Secure P2P UPI trading</div>
             </div>
           </div>
@@ -125,7 +125,7 @@ export default function Home() {
             <div className="flex">
               {settings.bannerImages.map((img, i) => (
                 <div className="flex-[0_0_100%] min-w-0 relative" key={i}>
-                  <img src={img} alt={`Banner ${i}`} className="w-full h-44 object-cover" />
+                  <img src={img} alt={`Banner ${i}`} className="w-full h-36 sm:h-44 object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-r from-black/25 via-transparent to-black/10" />
                 </div>
               ))}
@@ -134,7 +134,7 @@ export default function Home() {
         </div>
       )}
 
-      <div className="px-4 py-4 space-y-4">
+      <div className="px-3 sm:px-4 py-4 space-y-3 sm:space-y-4">
         {isFrozen && (
           <Card className="border-red-500/30 bg-gradient-to-r from-red-50 to-red-100 shadow-sm">
             <CardContent className="p-4 flex items-center gap-3">
@@ -148,13 +148,13 @@ export default function Home() {
 
         <Card className="shadow-xl border-none bg-gradient-to-br from-card via-white to-sky-50 overflow-hidden">
           <CardContent className="p-0">
-            <div className="p-5 pb-4 bg-gradient-to-r from-primary/5 to-sky-500/10">
-              <div className="flex items-center justify-between mb-4">
+            <div className="p-4 sm:p-5 pb-4 bg-gradient-to-r from-primary/5 to-sky-500/10">
+              <div className="flex items-center justify-between mb-4 gap-3">
                 <div>
                   <div className="text-muted-foreground text-sm">My Total Assets</div>
-                  <div className="text-3xl font-bold tracking-tight">₹ {user.balance.toFixed(2)}</div>
+                  <div className="text-3xl sm:text-4xl font-bold tracking-tight">₹ {user.balance.toFixed(2)}</div>
                 </div>
-                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                   <Wallet className="h-6 w-6 text-primary" />
                 </div>
               </div>
@@ -164,17 +164,17 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="p-5 pt-0">
-              <div className="grid grid-cols-2 gap-3">
+            <div className="p-4 sm:p-5 pt-0">
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
                 <Link href="/buy" className="w-full">
-                  <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-13 text-base rounded-2xl shadow-md">
+                  <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground min-h-12 sm:min-h-13 text-base rounded-2xl shadow-md">
                     <ArrowDownCircle className="mr-2 h-5 w-5" />
                     BUY
                   </Button>
                 </Link>
                 <Link href="/upi" className="w-full">
                   <Button
-                    className={`w-full h-13 text-base rounded-2xl shadow-md ${hasUpi ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-secondary hover:bg-secondary/90 text-secondary-foreground"}`}
+                    className={`w-full min-h-12 sm:min-h-13 text-base rounded-2xl shadow-md ${hasUpi ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-secondary hover:bg-secondary/90 text-secondary-foreground"}`}
                   >
                     <LinkIcon className="mr-2 h-5 w-5" />
                     {hasUpi ? "UPI Linked" : "Connect UPI"}
@@ -182,7 +182,7 @@ export default function Home() {
                 </Link>
               </div>
               {hasUpi && (
-                <div className="mt-4 rounded-2xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700 flex items-center justify-between">
+                <div className="mt-3 rounded-2xl bg-emerald-50 px-3 py-2 text-[11px] sm:text-xs text-emerald-700 flex items-center justify-between gap-2">
                   <span>Auto-Sell is ON</span>
                   <span className="font-medium truncate max-w-[170px]">{activeUpiList[0]?.upiId}</span>
                 </div>
@@ -191,7 +191,7 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-4 gap-2 py-1">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-2 py-1">
           <QuickAction icon={<BookOpen className="text-primary" />} label="Buy Rules" onClick={() => setShowBuyRules(true)} />
           <QuickAction icon={<ShieldAlert className="text-secondary" />} label="Sell Rules" onClick={() => setShowSellRules(true)} />
           <QuickAction icon={<HelpCircle className="text-primary" />} label="Help Center" onClick={handleHelpCenter} />
@@ -260,9 +260,9 @@ export default function Home() {
 
 function QuickAction({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick?: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 cursor-pointer" onClick={onClick}>
-      <div className="w-12 h-12 rounded-full bg-card shadow-sm border flex items-center justify-center">{icon}</div>
-      <span className="text-xs text-center font-medium">{label}</span>
+    <div className="flex flex-col items-center justify-center gap-2 cursor-pointer touch-manipulation" onClick={onClick}>
+      <div className="w-14 h-14 sm:w-12 sm:h-12 rounded-full bg-card shadow-sm border flex items-center justify-center">{icon}</div>
+      <span className="text-[12px] sm:text-xs text-center font-medium leading-tight">{label}</span>
     </div>
   );
 }
