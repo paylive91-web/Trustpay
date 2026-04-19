@@ -5,6 +5,7 @@ import path from "path";
 import fs from "fs";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { createProxyMiddleware } from "http-proxy-middleware";
 
 const app: Express = express();
 
@@ -41,6 +42,16 @@ if (process.env.NODE_ENV === "production") {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
+} else {
+  const vitePort = process.env.VITE_PORT || "5173";
+  app.use(
+    "/",
+    createProxyMiddleware({
+      target: `http://localhost:${vitePort}`,
+      changeOrigin: true,
+      ws: true,
+    }),
+  );
 }
 
 export default app;
