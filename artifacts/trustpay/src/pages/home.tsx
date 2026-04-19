@@ -187,7 +187,7 @@ export default function Home() {
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <h3 className="font-semibold text-primary">My Orders</h3>
-              <p className="text-sm text-muted-foreground">Buys, sells & disputes</p>
+              <p className="text-sm text-muted-foreground">Buy & sell rules</p>
             </div>
             <Link href="/orders">
               <Button variant="outline" size="sm" className="rounded-full gap-1">View <ChevronRight className="h-4 w-4" /></Button>
@@ -199,7 +199,7 @@ export default function Home() {
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <h3 className="font-semibold text-secondary">My Sell Queue</h3>
-              <p className="text-sm text-muted-foreground">See active orders & pending confirmations</p>
+              <p className="text-sm text-muted-foreground">Quick rules & support</p>
             </div>
             <Link href="/sell">
               <Button variant="outline" size="sm" className="rounded-full gap-1">Open <ChevronRight className="h-4 w-4" /></Button>
