@@ -69,14 +69,14 @@ export default function Buy() {
     queryKey: ["my-buy"],
     queryFn: () => api("/p2p/my-buy"),
     enabled: !!user,
-    refetchInterval: 5000,
+    refetchInterval: 2000,
   });
 
   const { data: queue = [] } = useQuery<any[]>({
     queryKey: ["p2p-queue"],
     queryFn: () => api("/p2p/queue"),
     enabled: !!user && !myBuy,
-    refetchInterval: 7000,
+    refetchInterval: 3000,
   });
 
   useEffect(() => { if (isError) setLocation("/login"); }, [isError, setLocation]);
@@ -282,7 +282,7 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
           <div className="border-t pt-3 mt-2 text-left text-xs space-y-1">
             <div>Amount: <strong>₹{buy.amount}</strong></div>
             <div>UTR: <strong>{buy.utrNumber}</strong></div>
-            <div>Reward: <strong>₹{buy.rewardAmount}</strong></div>
+            <div>Reward: <strong>₹{Number(buy.rewardAmount || 0).toFixed(2)}</strong></div>
           </div>
         </CardContent>
       </Card>
@@ -326,7 +326,7 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-2xl font-bold">₹{buy.amount}</div>
-              <div className="text-xs text-green-600">+₹{buy.rewardAmount} reward ({buy.rewardPercent}%)</div>
+              <div className="text-xs text-green-600">+₹{Number(buy.rewardAmount || 0).toFixed(2)} reward ({buy.rewardPercent}%)</div>
             </div>
             <div className={`flex items-center gap-1 text-sm ${expired ? "text-red-600" : remaining < 5 * 60 * 1000 ? "text-orange-600" : "text-primary"}`}>
               <Clock className="h-4 w-4" />
