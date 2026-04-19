@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useGetAppSettings } from "@workspace/api-client-react";
 import {
   Dialog,
@@ -38,6 +38,25 @@ async function api(path: string, opts: RequestInit = {}) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Request failed");
   return data;
+}
+
+// Audible alert when a new lock or pending-confirmation arrives. Uses
+// WebAudio so we don't ship an mp3 — works on every modern browser.
+function playAlertTone() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const tones = [880, 1320];
+    tones.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      const start = ctx.currentTime + i * 0.18;
+      gain.gain.setValueAtTime(0.4, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.45);
+      osc.start(start); osc.stop(start + 0.45);
+    });
+  } catch (_) {}
 }
 
 function fmtCountdown(ms: number) {
@@ -131,6 +150,23 @@ export default function AppStartupPopup() {
     if (!url) return;
     setProofViewer(url);
   };
+
+  // Audible alert when a brand-new lock or pending-confirmation arrives.
+  // Track the highest alert id we've seen so the tone fires once per arrival,
+  // not on every poll interval.
+  const lastAlertIdRef = useRef<number>(0);
+  useEffect(() => {
+    if (!alerts || alerts.length === 0) return;
+    const maxId = Math.max(...alerts.map((a) => a.id));
+    if (lastAlertIdRef.current === 0) {
+      lastAlertIdRef.current = maxId;
+      return;
+    }
+    if (maxId > lastAlertIdRef.current) {
+      playAlertTone();
+      lastAlertIdRef.current = maxId;
+    }
+  }, [alerts]);
 
   // Seller alerts take priority and are non-dismissable until resolved.
   const current = alerts[0];

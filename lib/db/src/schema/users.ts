@@ -24,8 +24,11 @@ export const usersTable = pgTable("users", {
   blockedReason: text("blocked_reason"),
   blockedAt: timestamp("blocked_at"),
   isFrozen: boolean("is_frozen").notNull().default(false),
+  fraudWarningCount: integer("fraud_warning_count").notNull().default(0),
   autoSellEnabled: boolean("auto_sell_enabled").notNull().default(false),
   lastSeenAt: timestamp("last_seen_at"),
+  matchingExpiresAt: timestamp("matching_expires_at"),
+  displayName: text("display_name"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

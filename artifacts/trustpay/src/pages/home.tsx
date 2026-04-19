@@ -8,7 +8,7 @@ import NotificationsBell from "@/components/notifications-bell";
 import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_1776335785514.png";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowDownCircle, ChevronRight, Download, Link as LinkIcon, ShieldAlert, ShieldCheck, Wallet } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, ChevronRight, Download, Link as LinkIcon, ShieldAlert, ShieldCheck, Wallet } from "lucide-react";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { Skeleton } from "@/components/ui/skeleton";
 import useEmblaCarousel from "embla-carousel-react";
@@ -53,14 +53,7 @@ export default function Home() {
     if (isError) setLocation("/login");
   }, [isError, setLocation]);
 
-  // Heartbeat: update lastSeenAt every 30s
-  useEffect(() => {
-    if (!user) return;
-    const ping = () => api("/auth/heartbeat", { method: "POST" }).catch(() => {});
-    ping();
-    const t = setInterval(ping, 30_000);
-    return () => clearInterval(t);
-  }, [user]);
+  // Heartbeat is now sent globally from <Layout /> on every authenticated page.
 
   // Auto-advance banner carousel every 4 seconds
   useEffect(() => {
@@ -179,20 +172,27 @@ export default function Home() {
                     BUY
                   </Button>
                 </Link>
-                <Link href="/upi" className="w-full">
+                <Link href="/sell" className="w-full">
                   <Button
-                    className={`w-full min-h-12 sm:min-h-13 text-base rounded-2xl shadow-md ${hasUpi ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-secondary hover:bg-secondary/90 text-secondary-foreground"}`}
+                    className="w-full min-h-12 sm:min-h-13 text-base rounded-2xl shadow-md bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white"
                   >
-                    <LinkIcon className="mr-2 h-5 w-5" />
-                    {hasUpi ? "UPI Linked" : "Connect UPI"}
+                    <ArrowUpCircle className="mr-2 h-5 w-5" />
+                    SELL
                   </Button>
                 </Link>
               </div>
-              {hasUpi && (
+              {hasUpi ? (
                 <div className="mt-3 rounded-2xl bg-emerald-50 px-3 py-2 text-[11px] sm:text-xs text-emerald-700 flex items-center justify-between gap-2">
-                  <span>Auto-Sell is ON</span>
-                  <span className="font-medium truncate max-w-[170px]">{activeUpiList[0]?.upiId}</span>
+                  <span>{activeUpiList.length} UPI linked & ready</span>
+                  <Link href="/upi" className="font-medium underline">Manage</Link>
                 </div>
+              ) : (
+                <Link href="/upi" className="block">
+                  <div className="mt-3 rounded-2xl bg-amber-50 border border-amber-200 px-3 py-2 text-[11px] sm:text-xs text-amber-800 flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-1.5"><LinkIcon className="w-3.5 h-3.5" /> No UPI linked yet</span>
+                    <span className="font-medium underline">Connect UPI</span>
+                  </div>
+                </Link>
               )}
             </div>
           </CardContent>

@@ -1,12 +1,16 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useGetMe, useGetAppSettings } from "@workspace/api-client-react";
 import { useLocation, Link } from "wouter";
 import Layout from "@/components/layout";
 import DisputePauseBanner from "@/components/dispute-pause-banner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, BookOpen, Clock, RefreshCw, ShieldCheck, BellRing, CheckCircle2 } from "lucide-react";
+import {
+  ArrowLeft, BookOpen, Clock, ShieldCheck, BellRing, CheckCircle2, Loader2,
+  Pencil, Radio, Wallet, User as UserIcon, Sparkles, Wifi, WifiOff,
+} from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -25,21 +29,6 @@ function playBeep() {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.6);
-  } catch (_) {}
-}
-
-function playNotify() {
-  try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = 1040;
-    gain.gain.setValueAtTime(0.35, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.25);
   } catch (_) {}
 }
 
@@ -71,14 +60,24 @@ const STATUS_COLOR: Record<string, string> = {
 
 export default function Sell() {
   const [, setLocation] = useLocation();
-  const { data: user, isError } = useGetMe({ query: { retry: false } });
+  const { data: user, isError, refetch: refetchMe } = useGetMe({ query: { retry: false } });
   const { data: settings } = useGetAppSettings();
   const { toast } = useToast();
   const qc = useQueryClient();
   const [showRules, setShowRules] = useState(false);
+  const [now, setNow] = useState(Date.now());
 
+  // 1-second tick drives the matching countdown.
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
+
+  const { data: matching, refetch: refetchMatching } = useQuery<any>({
+    queryKey: ["matching-status"],
+    queryFn: () => api("/p2p/matching-status"),
+    enabled: !!user,
+    refetchInterval: 3000,
+  });
   const { data: chunks = [], refetch: refetchChunks } = useQuery<any[]>({
-    queryKey: ["my-chunks"], queryFn: () => api("/p2p/my-chunks"), enabled: !!user, refetchInterval: 8000,
+    queryKey: ["my-chunks"], queryFn: () => api("/p2p/my-chunks"), enabled: !!user, refetchInterval: 5000,
   });
   const { data: pendingConfirms = [], refetch: refetchPending } = useQuery<any[]>({
     queryKey: ["pending-confirms"], queryFn: () => api("/p2p/my-pending-confirmations"), enabled: !!user, refetchInterval: 4000,
@@ -86,46 +85,53 @@ export default function Sell() {
 
   useEffect(() => { if (isError) setLocation("/login"); }, [isError, setLocation]);
 
-  // Sound alert when new pending confirmation arrives
-  const prevPendingCount = React.useRef(0);
-  const prevReadyCount = React.useRef(0);
+  // Sound when a new lock or pending-confirmation arrives.
+  const prevLocked = useRef(0);
+  const prevPending = useRef(0);
   useEffect(() => {
-    const curr = pendingConfirms.length;
-    if (curr > prevPendingCount.current) {
-      playBeep();
-      playNotify();
-    }
-    prevPendingCount.current = curr;
+    const locked = matching?.locked || 0;
+    if (locked > prevLocked.current) playBeep();
+    prevLocked.current = locked;
+  }, [matching?.locked]);
+  useEffect(() => {
+    if (pendingConfirms.length > prevPending.current) playBeep();
+    prevPending.current = pendingConfirms.length;
   }, [pendingConfirms.length]);
 
-  useEffect(() => {
-    const currReady = pendingConfirms.length;
-    if (currReady > prevReadyCount.current) {
-      playNotify();
-    }
-    prevReadyCount.current = currReady;
-  }, [pendingConfirms.length]);
+  const startMut = useMutation({
+    mutationFn: () => api("/p2p/start-matching", { method: "POST" }),
+    onSuccess: () => {
+      toast({ title: "Matching shuru ho gayi", description: "15 minute tak online raho." });
+      refetchMatching(); refetchChunks(); refetchMe();
+    },
+    onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
 
-  const regenMut = useMutation({
-    mutationFn: () => api("/p2p/regenerate-chunks", { method: "POST" }),
-    onSuccess: () => { toast({ title: "Chunks regenerated" }); refetchChunks(); },
+  const stopMut = useMutation({
+    mutationFn: () => api("/p2p/stop-matching", { method: "POST" }),
+    onSuccess: () => {
+      toast({ title: "Matching band kar di" });
+      refetchMatching(); refetchChunks(); refetchMe();
+    },
   });
 
   if (!user) return null;
+
+  const expiresAt = matching?.matchingExpiresAt ? new Date(matching.matchingExpiresAt).getTime() : 0;
+  const remaining = expiresAt - now;
+  const isMatching = !!matching?.isActive && remaining > 0;
   const trustScore = (user as any).trustScore ?? 0;
   const isFrozen = (user as any).isFrozen;
   const heldBalance = (user as any).heldBalance ?? 0;
+  const balance = Number((user as any).balance ?? 0);
 
   return (
     <Layout>
-      <div className="flex items-center gap-3 p-4 bg-secondary text-secondary-foreground">
+      <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-secondary via-secondary to-primary text-white">
         <Link href="/"><ArrowLeft className="cursor-pointer" /></Link>
-        <span className="font-bold text-lg flex-1">My Sell Queue</span>
-        <button onClick={() => setShowRules((v) => !v)} className="flex items-center gap-1 text-xs bg-secondary-foreground/15 px-2 py-1 rounded">
+        <span className="font-bold text-lg flex-1">Sell — Matching</span>
+        <button onClick={() => setShowRules((v) => !v)} className="flex items-center gap-1 text-xs bg-white/15 px-2.5 py-1.5 rounded-full">
           <BookOpen className="w-3.5 h-3.5" /> Rules
-        </button>
-        <button onClick={() => regenMut.mutate()} className="opacity-80 hover:opacity-100" title="Regenerate chunks">
-          <RefreshCw className="h-4 w-4" />
         </button>
       </div>
       {showRules && (settings as any)?.sellRules && (
@@ -135,29 +141,103 @@ export default function Sell() {
       )}
       <div className="px-4 pt-3"><DisputePauseBanner /></div>
 
+      {isFrozen && (
+        <div className="px-4 pt-3">
+          <Card className="border-red-400 bg-red-50">
+            <CardContent className="p-3 text-sm text-red-700">Account frozen — sells paused. Contact support.</CardContent>
+          </Card>
+        </div>
+      )}
+
       <div className="p-4 space-y-4">
-        <Card>
-          <CardContent className="p-4 grid grid-cols-3 gap-2 text-center text-xs">
-            <div>
-              <div className="text-muted-foreground">Balance</div>
-              <div className="text-base font-bold">₹{user.balance.toFixed(0)}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Held</div>
-              <div className="text-base font-bold">₹{Number(heldBalance).toFixed(0)}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground flex items-center gap-1 justify-center"><ShieldCheck className="h-3 w-3" /> Trust</div>
-              <div className={`text-base font-bold ${trustScore >= 0 ? "text-green-600" : "text-red-600"}`}>{trustScore}</div>
+        {/* Premium matching hero */}
+        <Card className="overflow-hidden border-none shadow-2xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 text-white">
+          <CardContent className="p-0">
+            <div className="p-5 relative">
+              <div className="absolute top-3 right-3">
+                {isMatching ? (
+                  <span className="flex items-center gap-1.5 text-xs bg-white/20 backdrop-blur px-2.5 py-1 rounded-full">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+                    </span>
+                    LIVE
+                  </span>
+                ) : (
+                  <span className="text-xs bg-white/15 px-2.5 py-1 rounded-full">Idle</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 text-white/80 text-xs uppercase tracking-widest">
+                <Sparkles className="w-3.5 h-3.5" /> Sell Matching
+              </div>
+              <div className="mt-3 text-3xl sm:text-4xl font-black tracking-tight">
+                {isMatching ? "Matching ho rahi hai…" : "Ready to sell?"}
+              </div>
+              <p className="mt-2 text-sm text-white/85 leading-relaxed max-w-md">
+                {isMatching
+                  ? "Wait karein — buyer milte hi aapko notification + sound aayegi. Online raho, app open rakho."
+                  : "Sell button dabate hi aapke chunks 15 minute ke liye buy queue me chale jayenge."}
+              </p>
+
+              {isMatching ? (
+                <div className="mt-5 grid grid-cols-3 gap-3">
+                  <div className="rounded-2xl bg-white/15 backdrop-blur p-3 text-center">
+                    <div className="text-[11px] uppercase tracking-wider text-white/75">Time left</div>
+                    <div className="font-mono text-2xl font-black mt-0.5">{fmtCountdown(remaining)}</div>
+                  </div>
+                  <div className="rounded-2xl bg-white/15 backdrop-blur p-3 text-center">
+                    <div className="text-[11px] uppercase tracking-wider text-white/75">In queue</div>
+                    <div className="text-2xl font-black mt-0.5">{matching?.available || 0}</div>
+                  </div>
+                  <div className="rounded-2xl bg-white/15 backdrop-blur p-3 text-center">
+                    <div className="text-[11px] uppercase tracking-wider text-white/75">Locked</div>
+                    <div className="text-2xl font-black mt-0.5">{matching?.locked || 0}</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-5 grid grid-cols-3 gap-3">
+                  <div className="rounded-2xl bg-white/15 backdrop-blur p-3 text-center">
+                    <Wallet className="w-4 h-4 mx-auto opacity-80" />
+                    <div className="text-[10px] uppercase tracking-wider text-white/75 mt-1">Balance</div>
+                    <div className="text-base font-bold">₹{balance.toFixed(0)}</div>
+                  </div>
+                  <div className="rounded-2xl bg-white/15 backdrop-blur p-3 text-center">
+                    <Clock className="w-4 h-4 mx-auto opacity-80" />
+                    <div className="text-[10px] uppercase tracking-wider text-white/75 mt-1">Held</div>
+                    <div className="text-base font-bold">₹{Number(heldBalance).toFixed(0)}</div>
+                  </div>
+                  <div className="rounded-2xl bg-white/15 backdrop-blur p-3 text-center">
+                    <ShieldCheck className="w-4 h-4 mx-auto opacity-80" />
+                    <div className="text-[10px] uppercase tracking-wider text-white/75 mt-1">Trust</div>
+                    <div className="text-base font-bold">{trustScore}</div>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-5">
+                {isMatching ? (
+                  <Button
+                    onClick={() => stopMut.mutate()}
+                    disabled={stopMut.isPending}
+                    className="w-full h-12 text-base font-bold rounded-2xl bg-white text-violet-700 hover:bg-white/90 shadow-lg"
+                  >
+                    {stopMut.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    Stop Matching
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => startMut.mutate()}
+                    disabled={startMut.isPending || isFrozen}
+                    className="w-full h-12 text-base font-bold rounded-2xl bg-white text-violet-700 hover:bg-white/90 shadow-lg"
+                  >
+                    {startMut.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Radio className="w-4 h-4 mr-2" />}
+                    Start Selling — 15 min
+                  </Button>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
-
-        {isFrozen && (
-          <Card className="border-red-400 bg-red-50">
-            <CardContent className="p-3 text-sm text-red-700">Account frozen — sells paused.</CardContent>
-          </Card>
-        )}
 
         <Tabs defaultValue="pending">
           <TabsList className="w-full">
@@ -165,6 +245,7 @@ export default function Sell() {
               Pending {pendingConfirms.length > 0 && <span className="ml-1 px-1.5 bg-orange-500 text-white rounded-full text-xs">{pendingConfirms.length}</span>}
             </TabsTrigger>
             <TabsTrigger value="chunks" className="flex-1">My Orders</TabsTrigger>
+            <TabsTrigger value="me" className="flex-1">Me</TabsTrigger>
           </TabsList>
 
           <TabsContent value="pending" className="space-y-2 mt-3">
@@ -181,7 +262,7 @@ export default function Sell() {
             {chunks.length === 0 ? (
               <Card>
                 <CardContent className="p-6 text-center text-sm text-muted-foreground">
-                  No active orders. Connect UPI on home page to start auto-sell.
+                  No active orders. Start matching above to push chunks into the buy queue.
                 </CardContent>
               </Card>
             ) : (
@@ -198,9 +279,68 @@ export default function Sell() {
               ))
             )}
           </TabsContent>
+
+          <TabsContent value="me" className="space-y-3 mt-3">
+            <MePanel user={user} onUpdated={() => refetchMe()} />
+          </TabsContent>
         </Tabs>
       </div>
     </Layout>
+  );
+}
+
+function MePanel({ user, onUpdated }: { user: any; onUpdated: () => void }) {
+  const { toast } = useToast();
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState<string>(user.displayName || user.username || "");
+  useEffect(() => { setName(user.displayName || user.username || ""); }, [user.displayName, user.username]);
+  const saveMut = useMutation({
+    mutationFn: () => api("/auth/update-name", { method: "POST", body: JSON.stringify({ displayName: name }) }),
+    onSuccess: () => { toast({ title: "Naam update ho gaya" }); setEditing(false); onUpdated(); },
+    onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+  return (
+    <Card>
+      <CardContent className="p-4 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center text-white">
+            <UserIcon className="w-6 h-6" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-xs text-muted-foreground">Display name</div>
+            {editing ? (
+              <div className="flex items-center gap-2 mt-1">
+                <Input value={name} onChange={(e) => setName(e.target.value)} maxLength={40} className="h-9" />
+                <Button size="sm" disabled={saveMut.isPending || name.trim().length < 2} onClick={() => saveMut.mutate()}>Save</Button>
+                <Button size="sm" variant="ghost" onClick={() => { setEditing(false); setName(user.displayName || user.username || ""); }}>Cancel</Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="font-semibold truncate">{user.displayName || user.username}</div>
+                <button onClick={() => setEditing(true)} className="text-primary text-xs flex items-center gap-1">
+                  <Pencil className="w-3 h-3" /> Edit
+                </button>
+              </div>
+            )}
+            <div className="text-[11px] text-muted-foreground">Login handle: {user.username}</div>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <div className="rounded-xl bg-muted/50 p-2">
+            <div className="text-muted-foreground">Trust</div>
+            <div className="font-bold text-base">{user.trustScore ?? 0}</div>
+          </div>
+          <div className="rounded-xl bg-muted/50 p-2">
+            <div className="text-muted-foreground">Trades</div>
+            <div className="font-bold text-base">{user.successfulTrades ?? 0}</div>
+          </div>
+          <div className="rounded-xl bg-muted/50 p-2">
+            <div className="text-muted-foreground">Warnings</div>
+            <div className={`font-bold text-base ${(user.fraudWarningCount ?? 0) >= 2 ? "text-red-600" : ""}`}>{user.fraudWarningCount ?? 0}/3</div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

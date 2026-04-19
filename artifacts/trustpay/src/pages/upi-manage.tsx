@@ -67,6 +67,16 @@ export default function UpiManage() {
     onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
   });
 
+  const deactivateMut = useMutation({
+    mutationFn: (id: number) => api(`/upi/${id}/deactivate`, { method: "POST" }),
+    onSuccess: () => {
+      toast({ title: "UPI deactivated" });
+      qc.invalidateQueries({ queryKey: ["upi-all"] });
+      qc.invalidateQueries({ queryKey: ["upi"] });
+    },
+    onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+
   const deleteMut = useMutation({
     mutationFn: (id: number) => api(`/upi/${id}`, { method: "DELETE" }),
     onSuccess: () => {
@@ -81,6 +91,7 @@ export default function UpiManage() {
   if (!user) return null;
   const activeList = (upiList as any[]).filter((u) => u.isActive);
   const inactiveList = (upiList as any[]).filter((u) => !u.isActive);
+  const wrap = (cb: (id: number) => void) => (id: number) => cb(id);
 
   return (
     <Layout>
@@ -140,13 +151,15 @@ export default function UpiManage() {
 
         {activeList.length > 0 && (
           <div className="space-y-2">
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">Active UPI</div>
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">Active UPIs ({activeList.length})</div>
             {activeList.map((u) => (
               <UpiCard
                 key={u.id}
                 u={u}
                 isActive
+                onDeactivate={() => deactivateMut.mutate(u.id)}
                 onDelete={() => deleteMut.mutate(u.id)}
+                deactivating={deactivateMut.isPending}
                 deleting={deleteMut.isPending}
               />
             ))}
@@ -171,17 +184,17 @@ export default function UpiManage() {
         )}
 
         <div className="text-xs text-muted-foreground text-center pt-2">
-          Only one UPI can be active at a time. Switching cancels your current sell queue and re-generates with the new UPI.
+          Multiple UPIs can be active at once. During matching, incoming chunks are split across all active UPIs round-robin.
         </div>
       </div>
     </Layout>
   );
 }
 
-function UpiCard({ u, isActive, onActivate, onDelete, activating, deleting }: {
+function UpiCard({ u, isActive, onActivate, onDeactivate, onDelete, activating, deactivating, deleting }: {
   u: any; isActive: boolean;
-  onActivate?: () => void; onDelete: () => void;
-  activating?: boolean; deleting?: boolean;
+  onActivate?: () => void; onDeactivate?: () => void; onDelete: () => void;
+  activating?: boolean; deactivating?: boolean; deleting?: boolean;
 }) {
   return (
     <Card className={isActive ? "border-green-400 bg-green-50" : ""}>
@@ -196,7 +209,12 @@ function UpiCard({ u, isActive, onActivate, onDelete, activating, deleting }: {
         <div className="flex items-center gap-1.5 shrink-0">
           {!isActive && onActivate && (
             <Button size="sm" variant="outline" className="h-7 text-xs" onClick={onActivate} disabled={activating}>
-              <CheckCircle className="w-3 h-3 mr-1" /> Set Active
+              <CheckCircle className="w-3 h-3 mr-1" /> Activate
+            </Button>
+          )}
+          {isActive && onDeactivate && (
+            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={onDeactivate} disabled={deactivating}>
+              Pause
             </Button>
           )}
           <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50" onClick={onDelete} disabled={deleting}>

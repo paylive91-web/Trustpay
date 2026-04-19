@@ -14,16 +14,24 @@ function rand(min: number, max: number): number {
  */
 export async function regenerateChunksForUser(userId: number) {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
-  if (!user || !user.autoSellEnabled || user.isBlocked || user.isFrozen) return;
+  if (!user || user.isBlocked || user.isFrozen) return;
+  // Admin liquidity is always-on. Regular sellers must have an active matching
+  // session (started by clicking "Sell" on the home page, valid for 15 min).
+  const isAdminSeller = user.role === "admin";
+  if (!isAdminSeller) {
+    if (!user.matchingExpiresAt || new Date(user.matchingExpiresAt).getTime() < Date.now()) return;
+  }
   // Pause auto-sell if user has any open dispute
   const [openDispute] = await db.select().from(disputesTable).where(and(
     or(eq(disputesTable.buyerId, userId), eq(disputesTable.sellerId, userId)),
     eq(disputesTable.status, "open"),
   )).limit(1);
   if (openDispute) return;
-  const [upi] = await db.select().from(userUpiIdsTable)
-    .where(and(eq(userUpiIdsTable.userId, userId), eq(userUpiIdsTable.isActive, true))).limit(1);
-  if (!upi) return;
+  // Pull EVERY active UPI for this seller — chunks are distributed across them
+  // round-robin so no single UPI bears all the inbound payment volume.
+  const upis = await db.select().from(userUpiIdsTable)
+    .where(and(eq(userUpiIdsTable.userId, userId), eq(userUpiIdsTable.isActive, true)));
+  if (upis.length === 0) return;
 
   // Available balance = balance - heldBalance - sum of in-queue chunks (held by
   // gross amount, including the ₹1 platform fee that will be deducted at
@@ -44,7 +52,6 @@ export async function regenerateChunksForUser(userId: number) {
   const commission = parseInt(settings.platformCommissionPerChunk) || 1;
   // Admin's own chunks are pushed into the buy queue as large-only amounts
   // so admin liquidity acts as bulk supply, not retail.
-  const isAdminSeller = user.role === "admin";
   if (isAdminSeller) {
     chunkMin = parseInt(settings.adminChunkMin) || 5000;
     chunkMax = parseInt(settings.adminChunkMax) || 50000;
@@ -79,7 +86,11 @@ export async function regenerateChunksForUser(userId: number) {
     .orderBy(usersTable.id)
     .limit(1);
 
-  for (const gross of chunks) {
+  for (let i = 0; i < chunks.length; i++) {
+    const gross = chunks[i];
+    // Round-robin distribute across every active UPI so payments aren't
+    // funneled to one account.
+    const upi = upis[i % upis.length];
     const buyerAmount = gross - commission;
     await db.transaction(async (tx) => {
       // Debit ₹1 from seller balance immediately (platform fee). The remaining

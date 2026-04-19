@@ -170,8 +170,16 @@ async function logAlert(userId: number | null, orderId: number | null, rule: str
     });
   }
 
-  if (severity === "critical" && userId) {
-    await db.update(usersTable).set({ isFrozen: true }).where(eq(usersTable.id, userId));
+  // Three-strikes policy: every warn/critical alert bumps the warning counter.
+  // Account is auto-frozen only after 3 warnings accumulate. info-severity
+  // alerts do not count toward the threshold.
+  if (userId && (severity === "warn" || severity === "critical")) {
+    const [u] = await db.update(usersTable).set({
+      fraudWarningCount: sql`${usersTable.fraudWarningCount} + 1`,
+    }).where(eq(usersTable.id, userId)).returning({ count: usersTable.fraudWarningCount });
+    if (u && (u.count ?? 0) >= 3) {
+      await db.update(usersTable).set({ isFrozen: true }).where(eq(usersTable.id, userId));
+    }
   }
 }
 

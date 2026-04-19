@@ -1,16 +1,18 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { Home, ListOrdered, Gift, Info, User } from "lucide-react";
+import { Home, ListOrdered, Plus, Gift, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function BottomNav() {
   const [location] = useLocation();
 
+  // Center "+" jumps straight to Connect UPI — the most common next-step
+  // after install, surfaced as the FAB so it's never more than one tap away.
   const links = [
     { href: "/", label: "Home", icon: Home },
     { href: "/orders", label: "Orders", icon: ListOrdered },
-    { href: "/invite", label: "Invite", icon: Gift, center: true },
-    { href: "/info", label: "Info", icon: Info },
+    { href: "/upi", label: "Connect", icon: Plus, center: true },
+    { href: "/invite", label: "Invite", icon: Gift },
     { href: "/profile", label: "Me", icon: User },
   ];
 

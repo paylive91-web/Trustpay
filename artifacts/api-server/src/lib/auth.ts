@@ -79,6 +79,9 @@ export function formatUser(user: any) {
     isFrozen: !!user.isFrozen,
     autoSellEnabled: !!user.autoSellEnabled,
     blockedReason: user.blockedReason,
+    matchingExpiresAt: user.matchingExpiresAt || null,
+    displayName: user.displayName || null,
+    fraudWarningCount: user.fraudWarningCount ?? 0,
     createdAt: user.createdAt,
   };
 }

@@ -14,14 +14,28 @@ import {
 
 const router = Router();
 
+function rewardForAmount(amount: number) {
+  // Tiered buyer reward: smaller chunks get a higher % to make them attractive
+  // even though the absolute payout is small. Mirrors the computation used
+  // when enriching the public queue.
+  const rp = amount >= 2001 ? 3 : amount >= 1001 ? 4 : 5;
+  const ra = parseFloat((amount * rp / 100).toFixed(2));
+  return { rewardPercent: rp, rewardAmount: ra };
+}
+
 function f(o: any, sellerInfo?: any) {
+  const amount = parseFloat(o.amount);
+  // Always compute reward dynamically: stored rewardAmount on chunk rows is
+  // 0 because matching.ts doesn't know which buyer will lock. Computing
+  // here guarantees the buyer's payment page never shows ₹0 reward.
+  const { rewardPercent, rewardAmount } = rewardForAmount(amount);
   return {
     id: o.id,
     sellerId: o.userId,
-    amount: parseFloat(o.amount),
-    rewardPercent: parseFloat(o.rewardPercent),
-    rewardAmount: parseFloat(o.rewardAmount),
-    totalAmount: parseFloat(o.totalAmount),
+    amount,
+    rewardPercent,
+    rewardAmount,
+    totalAmount: parseFloat((amount + rewardAmount).toFixed(2)),
     status: o.status,
     upiId: o.userUpiId,
     upiName: o.userUpiName,
@@ -314,6 +328,79 @@ router.post("/regenerate-chunks", requireAuth, async (req, res) => {
   const u = (req as any).user;
   await regenerateChunksForUser(u.id);
   res.json({ success: true });
+});
+
+// Start a 15-minute matching session: turns auto-sell on, sets the expiry,
+// and immediately tries to push chunks into the buy queue. Sellers must
+// stay online during the window or buyers can't submit payments to them.
+router.post("/start-matching", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  if (u.isFrozen) { res.status(403).json({ error: "Account frozen" }); return; }
+  if (u.isBlocked) { res.status(403).json({ error: "Account blocked" }); return; }
+  // Need at least one active UPI to receive payments.
+  const { userUpiIdsTable } = await import("@workspace/db");
+  const [upi] = await db.select().from(userUpiIdsTable).where(and(
+    eq(userUpiIdsTable.userId, u.id),
+    eq(userUpiIdsTable.isActive, true),
+  )).limit(1);
+  if (!upi) {
+    res.status(400).json({ error: "No active UPI. Add one before starting matching." });
+    return;
+  }
+  const settings = await getSettings(["matchingSessionMinutes"]);
+  const mins = parseInt(settings.matchingSessionMinutes) || 15;
+  const expires = new Date(Date.now() + mins * 60 * 1000);
+  await db.update(usersTable).set({
+    matchingExpiresAt: expires,
+    autoSellEnabled: true,
+    lastSeenAt: new Date(),
+  }).where(eq(usersTable.id, u.id));
+  await regenerateChunksForUser(u.id);
+  res.json({ success: true, matchingExpiresAt: expires });
+});
+
+router.post("/stop-matching", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  await db.update(usersTable).set({
+    matchingExpiresAt: null,
+    autoSellEnabled: false,
+  }).where(eq(usersTable.id, u.id));
+  // Cancel still-available chunks so they leave the buy queue. Locked /
+  // pending chunks stay because they're already mid-trade.
+  await db.update(ordersTable).set({
+    status: "cancelled",
+    updatedAt: new Date(),
+  }).where(and(
+    eq(ordersTable.userId, u.id),
+    eq(ordersTable.type, "withdrawal"),
+    eq(ordersTable.status, "available"),
+  ));
+  res.json({ success: true });
+});
+
+router.get("/matching-status", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, u.id)).limit(1);
+  const expiresAt = user?.matchingExpiresAt || null;
+  const isActive = !!expiresAt && new Date(expiresAt).getTime() > Date.now();
+  // Counts for the live status panel.
+  const counts = await db.select({
+    status: ordersTable.status,
+    c: sql<string>`COUNT(*)`,
+  }).from(ordersTable).where(and(
+    eq(ordersTable.userId, u.id),
+    eq(ordersTable.type, "withdrawal"),
+    inArray(ordersTable.status, ["available", "locked", "pending_confirmation"]),
+  )).groupBy(ordersTable.status);
+  const byStatus: Record<string, number> = {};
+  for (const r of counts) byStatus[r.status] = parseInt(String(r.c));
+  res.json({
+    isActive,
+    matchingExpiresAt: expiresAt,
+    available: byStatus.available || 0,
+    locked: byStatus.locked || 0,
+    pendingConfirmation: byStatus.pending_confirmation || 0,
+  });
 });
 
 export default router;

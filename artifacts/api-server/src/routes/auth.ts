@@ -147,4 +147,17 @@ router.post("/heartbeat", requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
+// Edit display name — shown on the matching page in the "me" panel and to
+// counterparties on trades. Username (login handle) is immutable.
+router.post("/update-name", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  const raw = String(req.body?.displayName ?? "").trim();
+  if (raw.length < 2 || raw.length > 40) {
+    res.status(400).json({ error: "Display name must be 2-40 characters" });
+    return;
+  }
+  await db.update(usersTable).set({ displayName: raw }).where(eq(usersTable.id, u.id));
+  res.json({ success: true, displayName: raw });
+});
+
 export default router;

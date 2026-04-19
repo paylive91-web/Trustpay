@@ -1,9 +1,8 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { userUpiIdsTable, usersTable, ordersTable, transactionsTable } from "@workspace/db";
+import { userUpiIdsTable, usersTable, ordersTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { requireAuth } from "../lib/auth.js";
-import { regenerateChunksForUser } from "../lib/matching.js";
 import { checkUpiReuse } from "../lib/fraud.js";
 
 const router = Router();
@@ -33,13 +32,13 @@ router.post("/", requireAuth, async (req, res) => {
   }).returning();
   // Fraud: detect UPI shared across accounts.
   await checkUpiReuse(upiId, u.id);
-  // enable auto-sell + chunk balance
-  await db.update(usersTable).set({ autoSellEnabled: true }).where(eq(usersTable.id, u.id));
-  await regenerateChunksForUser(u.id);
+  // NOTE: chunks are NOT auto-generated on UPI add anymore. Sellers must
+  // explicitly start a matching session from the home page (Sell button).
   res.json(row);
 });
 
-// Activate a specific UPI (deactivates all others)
+// Activate a specific UPI. Multiple UPIs may now be active simultaneously —
+// matching distributes incoming chunks round-robin across all active UPIs.
 router.post("/:id/activate", requireAuth, async (req, res) => {
   const u = (req as any).user;
   const id = parseInt(String(req.params.id));
@@ -47,15 +46,20 @@ router.post("/:id/activate", requireAuth, async (req, res) => {
     and(eq(userUpiIdsTable.id, id), eq(userUpiIdsTable.userId, u.id)),
   ).limit(1);
   if (!row) { res.status(404).json({ error: "Not found" }); return; }
-  // Deactivate all others, activate this one
-  await db.update(userUpiIdsTable).set({ isActive: false }).where(eq(userUpiIdsTable.userId, u.id));
   await db.update(userUpiIdsTable).set({ isActive: true }).where(eq(userUpiIdsTable.id, id));
-  await db.update(usersTable).set({ autoSellEnabled: true }).where(eq(usersTable.id, u.id));
-  // Cancel available chunks so they get re-generated with new UPI
-  await db.update(ordersTable).set({ status: "cancelled", updatedAt: new Date() }).where(and(
-    eq(ordersTable.userId, u.id), eq(ordersTable.type, "withdrawal"), eq(ordersTable.status, "available"),
-  ));
-  await regenerateChunksForUser(u.id);
+  res.json({ success: true });
+});
+
+// Deactivate a specific UPI without removing it. Doesn't disturb chunks
+// already in flight; only stops new chunks from being routed to this UPI.
+router.post("/:id/deactivate", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  const id = parseInt(String(req.params.id));
+  const [row] = await db.select().from(userUpiIdsTable).where(
+    and(eq(userUpiIdsTable.id, id), eq(userUpiIdsTable.userId, u.id)),
+  ).limit(1);
+  if (!row) { res.status(404).json({ error: "Not found" }); return; }
+  await db.update(userUpiIdsTable).set({ isActive: false }).where(eq(userUpiIdsTable.id, id));
   res.json({ success: true });
 });
 
@@ -70,7 +74,8 @@ router.get("/presence", requireAuth, async (req, res) => {
   res.json({ active });
 });
 
-// Delete a specific UPI (cannot delete if it's the only active one mid-trade)
+// Delete a specific UPI (soft — flips inactive). Does not cancel in-flight
+// chunks; those are tied to the snapshot of upiId stored on the order row.
 router.delete("/:id", requireAuth, async (req, res) => {
   const u = (req as any).user;
   const id = parseInt(String(req.params.id));
@@ -79,29 +84,14 @@ router.delete("/:id", requireAuth, async (req, res) => {
   ).limit(1);
   if (!row) { res.status(404).json({ error: "Not found" }); return; }
   await db.update(userUpiIdsTable).set({ isActive: false }).where(eq(userUpiIdsTable.id, id));
-  // If this was the active UPI, disable auto-sell and cancel available chunks
-  if (row.isActive) {
-    const remaining = await db.select().from(userUpiIdsTable).where(
-      and(eq(userUpiIdsTable.userId, u.id), eq(userUpiIdsTable.isActive, true)),
-    ).limit(1);
-    if (remaining.length === 0) {
-      await db.update(usersTable).set({ autoSellEnabled: false }).where(eq(usersTable.id, u.id));
-      await db.update(ordersTable).set({ status: "cancelled", updatedAt: new Date() }).where(and(
-        eq(ordersTable.userId, u.id), eq(ordersTable.type, "withdrawal"), eq(ordersTable.status, "available"),
-      ));
-    }
-  }
   res.json({ success: true });
 });
 
 router.post("/disconnect", requireAuth, async (req, res) => {
   const u = (req as any).user;
-  // Cancel all unsold (available) chunks belonging to this user. Locked /
-  // pending_confirmation / disputed chunks are left untouched (they are
-  // already in flight with another buyer). Cancelled chunks have their amount
-  // returned to the user's balance via a soft delete on the order row — they
-  // were never debited from `balance` (debit happens at lock time only), so
-  // we just remove them so the user's available balance recomputes correctly.
+  // Stop matching session, cancel all unsold (available) chunks, and turn off
+  // every active UPI. Locked / pending / disputed chunks are left untouched
+  // because they're already mid-trade with another buyer.
   await db.update(ordersTable).set({
     status: "cancelled",
     updatedAt: new Date(),
@@ -111,7 +101,10 @@ router.post("/disconnect", requireAuth, async (req, res) => {
     eq(ordersTable.status, "available"),
   ));
   await db.update(userUpiIdsTable).set({ isActive: false }).where(eq(userUpiIdsTable.userId, u.id));
-  await db.update(usersTable).set({ autoSellEnabled: false }).where(eq(usersTable.id, u.id));
+  await db.update(usersTable).set({
+    autoSellEnabled: false,
+    matchingExpiresAt: null,
+  }).where(eq(usersTable.id, u.id));
   res.json({ success: true });
 });
 
