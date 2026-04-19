@@ -26,7 +26,6 @@ import AdminSettings from "@/pages/admin/settings";
 import AdminDepositTasks from "@/pages/admin/deposit-tasks";
 import AdminFraudWatch from "@/pages/admin/fraud-watch";
 import AdminHighValue from "@/pages/admin/high-value";
-import InstallLock from "@/components/install-lock";
 
 const queryClient = new QueryClient();
 
@@ -46,7 +45,6 @@ function Router() {
       <Route path="/info" component={Info} />
       <Route path="/upi" component={UpiManage} />
 
-      {/* Admin Routes */}
       <Route path="/admin" component={AdminLogin} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/orders" component={AdminOrders} />
@@ -69,7 +67,6 @@ function App() {
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <Router />
         </WouterRouter>
-        <InstallLock />
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
