@@ -56,11 +56,14 @@ function makeQrUrl(upiId: string, amount: number): string {
 
 export default function Buy() {
   const [, setLocation] = useLocation();
-  const { data: user, isError } = useGetMe({ query: { retry: false } });
+  const { data: user, isError } = useGetMe({ query: { queryKey: ["me"], retry: false } });
   const { data: settings } = useGetAppSettings();
   const { toast } = useToast();
   const qc = useQueryClient();
   const [showRules, setShowRules] = useState(false);
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const autoScrollRef = useRef<number | null>(null);
+  const pauseUntilRef = useRef(0);
 
   const { data: myBuy, refetch: refetchBuy } = useQuery<any>({
     queryKey: ["my-buy"],
@@ -77,6 +80,41 @@ export default function Buy() {
   });
 
   useEffect(() => { if (isError) setLocation("/login"); }, [isError, setLocation]);
+
+  useEffect(() => {
+    if (myBuy) return;
+    const el = listRef.current;
+    if (!el || queue.length < 2) return;
+
+    const speedPerSecond = 120;
+    let last = performance.now();
+
+    const tick = (now: number) => {
+      const current = listRef.current;
+      if (!current) return;
+      const shouldPause = Date.now() < pauseUntilRef.current;
+      const maxScroll = current.scrollHeight - current.clientHeight;
+
+      if (!shouldPause && maxScroll > 0) {
+        const delta = ((now - last) / 1000) * speedPerSecond;
+        current.scrollTop += delta;
+        if (current.scrollTop >= maxScroll - 1) current.scrollTop = 0;
+      }
+
+      last = now;
+      autoScrollRef.current = window.requestAnimationFrame(tick);
+    };
+
+    autoScrollRef.current = window.requestAnimationFrame(tick);
+    return () => {
+      if (autoScrollRef.current) window.cancelAnimationFrame(autoScrollRef.current);
+      autoScrollRef.current = null;
+    };
+  }, [myBuy, queue.length]);
+
+  function pauseAutoScroll(ms = 1200) {
+    pauseUntilRef.current = Date.now() + ms;
+  }
 
   const lockMut = useMutation({
     mutationFn: (id: number) => api(`/p2p/lock/${id}`, { method: "POST" }),
@@ -118,7 +156,14 @@ export default function Buy() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-2 max-h-[65vh] overflow-y-auto pr-0.5">
+              <div
+                ref={listRef}
+                className="space-y-2 max-h-[65vh] overflow-y-auto pr-0.5"
+                onTouchStart={() => pauseAutoScroll(1600)}
+                onTouchEnd={() => pauseAutoScroll(800)}
+                onMouseEnter={() => pauseAutoScroll(2000)}
+                onWheel={() => pauseAutoScroll(1600)}
+              >
                 {queue.map((c) => (
                   <Card key={c.id} className="hover:shadow-md transition-shadow rounded-2xl">
                     <CardContent className="p-3 flex items-center justify-between gap-3">
