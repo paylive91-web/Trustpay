@@ -35,21 +35,46 @@ function isInsideApk(): boolean {
  * the browser doesn't bypass the lock — the only way to clear it is to open
  * the app from inside the installed APK.
  */
+const LOCK_EVENT = "trustpay:installlockchanged";
+
 export function markMustInstallApp() {
   try {
     localStorage.setItem(FLAG_KEY, "1");
   } catch {}
+  // Notify the already-mounted <InstallLock> in the same SPA tab so it
+  // re-evaluates immediately — without this the overlay would only appear
+  // after a full page reload.
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(LOCK_EVENT));
+  }
 }
 
 export function clearMustInstallApp() {
   try {
     localStorage.removeItem(FLAG_KEY);
   } catch {}
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(LOCK_EVENT));
+  }
 }
 
 export default function InstallLock() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [show, setShow] = useState(false);
+  // Bump on register/login so the effect below re-checks the lock state in
+  // the same SPA session (no full reload required).
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    const onChange = () => setTick((t) => t + 1);
+    window.addEventListener(LOCK_EVENT, onChange);
+    // Cross-tab sync: if another tab registers/clears, react here too.
+    window.addEventListener("storage", onChange);
+    return () => {
+      window.removeEventListener(LOCK_EVENT, onChange);
+      window.removeEventListener("storage", onChange);
+    };
+  }, []);
 
   useEffect(() => {
     // Inside the APK we never lock — clear any stale flag from a prior browser
@@ -96,7 +121,7 @@ export default function InstallLock() {
         if (wantsLock) setShow(true);
       });
     return () => { mounted = false; };
-  }, []);
+  }, [tick]);
 
   if (!show) return null;
 

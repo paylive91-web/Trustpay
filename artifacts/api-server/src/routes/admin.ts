@@ -337,8 +337,8 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
         return res.status(400).json({ error: "Each fee tier needs numeric min, max and fee" });
       }
       const cleaned = { min: Math.floor(min), max: Math.floor(max), fee: Math.max(0, Math.floor(fee)) };
-      if (cleaned.min < 0 || cleaned.max < cleaned.min) {
-        return res.status(400).json({ error: `Invalid fee tier range: ${cleaned.min}-${cleaned.max}` });
+      if (cleaned.min < 0 || cleaned.max <= cleaned.min) {
+        return res.status(400).json({ error: `Invalid fee tier range: min must be strictly less than max (got ${cleaned.min}-${cleaned.max})` });
       }
       // Guarantee buyerAmount = gross - fee > 0 for every chunk this tier
       // could match — i.e. fee must be strictly less than the smallest

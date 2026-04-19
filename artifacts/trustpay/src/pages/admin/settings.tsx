@@ -154,7 +154,7 @@ export default function AdminSettings() {
     const sorted = [...tiers].sort((a, b) => a.min - b.min);
     for (const t of sorted) {
       if (!Number.isFinite(t.min) || !Number.isFinite(t.max) || !Number.isFinite(t.fee)) return "Each tier needs Min, Max and Fee";
-      if (t.min < 0 || t.max < t.min) return `Invalid range: ${t.min}-${t.max}`;
+      if (t.min < 0 || t.max <= t.min) return `Invalid range: min must be strictly less than max (${t.min}-${t.max})`;
       if (t.fee < 0) return `Fee cannot be negative: ${t.fee}`;
     }
     for (let i = 1; i < sorted.length; i++) {
