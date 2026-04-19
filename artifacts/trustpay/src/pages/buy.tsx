@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle, Clock, Copy, Headset, ShieldCheck, Upload, Wifi } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
+import screenshotImg from "@assets/Screenshot_20260419_224354_1776618846292.jpg";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 async function api(path: string, opts: RequestInit = {}) {
@@ -141,6 +142,9 @@ export default function Buy() {
       <div className="px-4 pt-3"><DisputePauseBanner /></div>
 
       <div className="p-4 space-y-4">
+        <div className="overflow-hidden">
+          <img src={screenshotImg} alt="Buy preview" className="w-full rounded-2xl shadow-sm mb-2" />
+        </div>
         {myBuy ? (
           <ActiveBuyCard buy={myBuy} refetch={refetchBuy} />
         ) : (
