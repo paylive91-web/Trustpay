@@ -63,6 +63,13 @@ export async function regenerateChunksForUser(userId: number) {
   }
   if (chunks.length === 0) return;
 
+  // Resolve the admin account that receives the per-chunk platform fee.
+  // Pick the lowest-id admin so the destination is deterministic.
+  const [adminUser] = await db.select().from(usersTable)
+    .where(eq(usersTable.role, "admin"))
+    .orderBy(usersTable.id)
+    .limit(1);
+
   for (const gross of chunks) {
     const buyerAmount = gross - commission;
     await db.transaction(async (tx) => {
@@ -76,6 +83,17 @@ export async function regenerateChunksForUser(userId: number) {
         userId, type: "debit", amount: String(commission),
         description: `Platform fee for new chunk (₹${gross})`,
       });
+      // Credit the platform fee to the admin user's wallet so the money
+      // physically lands in an account the operator controls.
+      if (adminUser) {
+        await tx.update(usersTable).set({
+          balance: sql`${usersTable.balance} + ${commission}`,
+        }).where(eq(usersTable.id, adminUser.id));
+        await tx.insert(transactionsTable).values({
+          userId: adminUser.id, type: "credit", amount: String(commission),
+          description: `Platform fee from seller #${userId} (chunk ₹${gross})`,
+        });
+      }
       // Atomic increment of platform commission counter via SQL upsert
       // (avoids lost-update races under concurrent chunk creation).
       await tx.insert(settingsTable).values({
