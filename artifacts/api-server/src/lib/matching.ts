@@ -60,7 +60,7 @@ export async function regenerateChunksForUser(userId: number) {
   // balance at creation (commission → admin, amount → buyer at settle).
   const inQueueAmt = existingChunks.reduce((s, o) => s + parseFloat(o.amount) + commission, 0);
   let avail = balance - held - inQueueAmt;
-  const newUserCap = parseInt(settings.newUserChunkCap) || 500;
+  const newUserCap = parseInt(settings.newUserChunkCap) || 10000;
   const tradeThreshold = parseInt(settings.newUserTradeThreshold) || 5;
   if (!isAdminSeller && (user.successfulTrades || 0) < tradeThreshold) {
     chunkMax = Math.min(chunkMax, newUserCap);

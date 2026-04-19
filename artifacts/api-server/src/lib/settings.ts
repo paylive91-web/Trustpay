@@ -14,7 +14,7 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   adminPasswordHash: "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
   highValueThreshold: "5000",
   highValueCriticalThreshold: "10000",
-  newUserChunkCap: "500",
+  newUserChunkCap: "10000",
   newUserTradeThreshold: "5",
   chunkMin: "100",
   chunkMax: "50000",
