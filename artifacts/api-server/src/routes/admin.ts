@@ -1,8 +1,8 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db } from "@workspace/db";
-import { usersTable, ordersTable, transactionsTable, depositTasksTable, fraudAlertsTable, trustEventsTable, highValueEventsTable, userNotificationsTable } from "@workspace/db";
-import { eq, and, sql, inArray } from "drizzle-orm";
+import { usersTable, ordersTable, transactionsTable, depositTasksTable, fraudAlertsTable, trustEventsTable, highValueEventsTable, userNotificationsTable, deviceFingerprintsTable, userUpiIdsTable, disputesTable, utrIndexTable, imageHashesTable, referralsTable } from "@workspace/db";
+import { eq, and, sql, inArray, or } from "drizzle-orm";
 import { signToken, requireAdmin, formatUser } from "../lib/auth.js";
 import { getSetting, getAllSettings, setSetting } from "../lib/settings.js";
 import { listFraudRules, setFraudRuleEnabled } from "../lib/fraud.js";
@@ -140,7 +140,44 @@ router.delete("/users/:id", requireAdmin, async (req, res) => {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id)).limit(1);
   if (!user) { res.status(404).json({ error: "Not found" }); return; }
   if (user.role === "admin") { res.status(400).json({ error: "Admin users cannot be deleted" }); return; }
+
+  // Get all order IDs belonging to this user (as buyer or seller)
+  const userOrders = await db.select({ id: ordersTable.id }).from(ordersTable)
+    .where(or(eq(ordersTable.userId, id), eq(ordersTable.lockedByUserId, id)));
+  const orderIds = userOrders.map((o) => o.id);
+
+  // Delete records referencing orders first (deeper dependencies)
+  if (orderIds.length > 0) {
+    await db.delete(utrIndexTable).where(inArray(utrIndexTable.orderId, orderIds));
+    await db.delete(imageHashesTable).where(inArray(imageHashesTable.orderId, orderIds));
+    await db.delete(trustEventsTable).where(inArray(trustEventsTable.orderId, orderIds));
+    await db.delete(disputesTable).where(or(
+      inArray(disputesTable.orderId, orderIds),
+      eq(disputesTable.buyerId, id),
+      eq(disputesTable.sellerId, id),
+    ));
+    await db.delete(fraudAlertsTable).where(or(
+      inArray(fraudAlertsTable.orderId, orderIds),
+      eq(fraudAlertsTable.userId, id),
+    ));
+  } else {
+    await db.delete(trustEventsTable).where(eq(trustEventsTable.userId, id));
+    await db.delete(disputesTable).where(or(eq(disputesTable.buyerId, id), eq(disputesTable.sellerId, id)));
+    await db.delete(fraudAlertsTable).where(eq(fraudAlertsTable.userId, id));
+  }
+
+  // Delete records referencing user directly
+  await db.delete(userNotificationsTable).where(eq(userNotificationsTable.userId, id));
+  await db.delete(deviceFingerprintsTable).where(eq(deviceFingerprintsTable.userId, id));
+  await db.delete(highValueEventsTable).where(eq(highValueEventsTable.userId, id));
+  await db.delete(userUpiIdsTable).where(eq(userUpiIdsTable.userId, id));
+  await db.delete(referralsTable).where(or(eq(referralsTable.referrerId, id), eq(referralsTable.referredUserId, id)));
+  await db.delete(transactionsTable).where(eq(transactionsTable.userId, id));
+
+  // Now delete orders and finally the user
+  await db.delete(ordersTable).where(or(eq(ordersTable.userId, id), eq(ordersTable.lockedByUserId, id)));
   await db.delete(usersTable).where(eq(usersTable.id, id));
+
   res.json({ success: true });
 });
 
