@@ -46,10 +46,18 @@ export async function regenerateChunksForUser(userId: number) {
   const settings = await getSettings([
     "chunkMin", "chunkMax", "newUserChunkCap", "newUserTradeThreshold",
     "platformCommissionPerChunk", "adminChunkMin", "adminChunkMax",
+    "chunkSweetMin", "chunkSweetMax", "chunkSweetBias",
   ]);
   let chunkMin = parseInt(settings.chunkMin) || 100;
   let chunkMax = parseInt(settings.chunkMax) || 50000;
   const commission = parseInt(settings.platformCommissionPerChunk) || 1;
+  // Sweet-spot band: most chunks fall in this range so we maximize the
+  // per-chunk ₹1 platform fee while avoiding both tiny dust chunks and
+  // oversized single chunks. Bias = probability a chunk is drawn from the
+  // sweet band vs the full [chunkMin, chunkMax] tail range.
+  const sweetMin = parseInt(settings.chunkSweetMin) || 300;
+  const sweetMax = parseInt(settings.chunkSweetMax) || 1500;
+  const sweetBias = Math.min(1, Math.max(0, parseFloat(settings.chunkSweetBias) || 0.85));
   // Admin's own chunks are pushed into the buy queue as large-only amounts
   // so admin liquidity acts as bulk supply, not retail.
   if (isAdminSeller) {
@@ -69,11 +77,39 @@ export async function regenerateChunksForUser(userId: number) {
   if (avail < chunkMin) return;
 
   // Pick chunk gross amounts (each consumes `gross` from seller balance:
-  // ₹1 → admin, gross-1 → buyer).
+  // ₹1 → admin, gross-1 → buyer). Sweet-spot biased: most picks fall in
+  // [sweetMin, sweetMax] to maximize order count (= more ₹1 fees) while
+  // avoiding floods of tiny dust or single huge chunks.
+  const lo = Math.max(chunkMin, Math.min(sweetMin, chunkMax));
+  const hi = Math.max(lo, Math.min(sweetMax, chunkMax));
+  function pickSize(maxAvail: number): number {
+    const useSweet = Math.random() < sweetBias;
+    if (useSweet) {
+      const a = Math.min(lo, maxAvail);
+      const b = Math.min(hi, maxAvail);
+      if (b >= a && b >= chunkMin) return rand(a, b);
+    }
+    // Tail: anywhere in [chunkMin, chunkMax] for variety, capped by maxAvail.
+    const a = chunkMin;
+    const b = Math.min(chunkMax, maxAvail);
+    return rand(a, b);
+  }
   const chunks: number[] = [];
   while (avail >= chunkMin) {
-    const size = Math.min(rand(chunkMin, chunkMax), avail);
+    let size = pickSize(avail);
+    // Avoid leaving an unusable dust remainder smaller than chunkMin —
+    // either fold it into this chunk (if total still ≤ chunkMax) or trim
+    // size so the leftover stays ≥ chunkMin.
+    const remainder = avail - size;
+    if (remainder > 0 && remainder < chunkMin) {
+      if (size + remainder <= chunkMax) {
+        size = size + remainder;
+      } else {
+        size = Math.max(chunkMin, size - (chunkMin - remainder));
+      }
+    }
     if (size < chunkMin) break;
+    if (size > avail) size = avail;
     chunks.push(size);
     avail -= size;
   }
