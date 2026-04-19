@@ -87,8 +87,9 @@ export default function Buy() {
     const el = listRef.current;
     if (!el || queue.length < 2) return;
 
-    const speedPerSecond = 360;
+    const speedPerSecond = 720;
     let last = performance.now();
+    let target = 0;
 
     const tick = (now: number) => {
       const current = listRef.current;
@@ -98,7 +99,12 @@ export default function Buy() {
 
       if (!shouldPause && maxScroll > 0) {
         const delta = ((now - last) / 1000) * speedPerSecond;
-        current.scrollTop += delta;
+        current.scrollTop = Math.min(current.scrollTop + delta, maxScroll);
+        if (current.scrollTop >= target - 1) {
+          const next = current.querySelector<HTMLElement>(`[data-queue-item="${(target / 1)}"]`);
+          target = current.scrollTop + (next?.offsetHeight || 120);
+          if (target >= maxScroll) target = 0;
+        }
         if (current.scrollTop >= maxScroll - 1) current.scrollTop = 0;
       }
 
@@ -168,8 +174,13 @@ export default function Buy() {
                 onMouseEnter={() => pauseAutoScroll(2000)}
                 onWheel={() => pauseAutoScroll(1600)}
               >
-                {queue.map((c) => (
-                  <Card key={c.id} className="hover:shadow-md transition-shadow rounded-2xl animate-pulse">
+                {queue.map((c, index) => (
+                  <Card
+                    key={c.id}
+                    data-queue-item={index}
+                    className="hover:shadow-md transition-shadow rounded-2xl animate-pulse"
+                    style={{ animationDuration: "2s" }}
+                  >
                     <CardContent className="p-3 flex items-center justify-between gap-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
