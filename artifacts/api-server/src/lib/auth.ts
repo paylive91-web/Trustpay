@@ -39,6 +39,11 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     res.status(403).json({ error: "Account blocked", reason: user[0].blockedReason || "Contact support" });
     return;
   }
+  if (!user[0].referralCode) {
+    const code = "TP" + String(user[0].id).padStart(6, "0");
+    await db.update(usersTable).set({ referralCode: code }).where(eq(usersTable.id, user[0].id));
+    user[0].referralCode = code;
+  }
   (req as any).user = user[0];
   next();
 }

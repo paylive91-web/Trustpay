@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, ListOrdered, Settings, CreditCard, ShieldAlert, LogOut, Eye, AlertTriangle } from "lucide-react";
+import { LayoutDashboard, Users, ListOrdered, Settings, CreditCard, ShieldAlert, LogOut, Eye, AlertTriangle, Download } from "lucide-react";
+import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { useGetMe, useLogout } from "@workspace/api-client-react";
 import { clearAuthToken, getAuthToken } from "@/lib/auth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -50,6 +51,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     enabled: !!user && user.role === "admin",
   });
   const criticalOpen = criticalCountData?.count ?? 0;
+  const { isInstallable, handleInstall } = useInstallPrompt();
 
   const navItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, badge: 0 },
@@ -111,6 +113,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <img src={logoPath} alt="TrustPay" className="w-6 h-6" />
             <span className="font-bold">Admin</span>
           </div>
+          {isInstallable && (
+            <button
+              type="button"
+              aria-label="Install App"
+              onClick={handleInstall}
+              className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground"
+              title="Download App"
+            >
+              <Download className="h-5 w-5" />
+            </button>
+          )}
         </header>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">

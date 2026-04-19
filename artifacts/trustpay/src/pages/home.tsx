@@ -8,7 +8,8 @@ import NotificationsBell from "@/components/notifications-bell";
 import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_1776335785514.png";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowDownCircle, ChevronRight, Link as LinkIcon, ShieldAlert, ShieldCheck, Wallet } from "lucide-react";
+import { ArrowDownCircle, ChevronRight, Download, Link as LinkIcon, ShieldAlert, ShieldCheck, Wallet } from "lucide-react";
+import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { Skeleton } from "@/components/ui/skeleton";
 import useEmblaCarousel from "embla-carousel-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -39,6 +40,8 @@ export default function Home() {
   const { data: settings } = useGetAppSettings();
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
   const { toast } = useToast();
+
+  const { isInstallable, handleInstall } = useInstallPrompt();
 
   const { data: upiList = [] } = useQuery({
     queryKey: ["upi"],
@@ -106,6 +109,17 @@ export default function Home() {
               <div className="text-[11px] text-white/80">Hello,</div>
               <div className="text-sm font-semibold leading-none">{displayName}</div>
             </div>
+            {isInstallable && (
+              <button
+                type="button"
+                aria-label="Install App"
+                onClick={handleInstall}
+                className="relative p-2 rounded-full hover:bg-white/10 transition-colors"
+                title="Download App"
+              >
+                <Download className="h-5 w-5" />
+              </button>
+            )}
             <NotificationsBell />
           </div>
         </div>
