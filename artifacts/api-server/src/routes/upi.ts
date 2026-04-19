@@ -62,7 +62,11 @@ router.post("/:id/activate", requireAuth, async (req, res) => {
 router.get("/presence", requireAuth, async (req, res) => {
   const u = (req as any).user;
   const [row] = await db.select({ lastSeenAt: usersTable.lastSeenAt }).from(usersTable).where(eq(usersTable.id, u.id)).limit(1);
-  const active = !!row?.lastSeenAt && Date.now() - new Date(row.lastSeenAt).getTime() < 2 * 60 * 1000;
+  const [activeUpi] = await db.select({ id: userUpiIdsTable.id }).from(userUpiIdsTable).where(and(
+    eq(userUpiIdsTable.userId, u.id),
+    eq(userUpiIdsTable.isActive, true),
+  )).limit(1);
+  const active = !!row?.lastSeenAt && !!activeUpi && Date.now() - new Date(row.lastSeenAt).getTime() < 2 * 60 * 1000;
   res.json({ active });
 });
 
