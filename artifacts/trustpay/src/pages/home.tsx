@@ -8,7 +8,7 @@ import NotificationsBell from "@/components/notifications-bell";
 import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_1776335785514.png";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowDownCircle, BookOpen, ChevronRight, HelpCircle, Link as LinkIcon, ShieldAlert, ShieldCheck, User as UserIcon, Wallet } from "lucide-react";
+import { ArrowDownCircle, ChevronRight, Link as LinkIcon, ShieldAlert, ShieldCheck, Wallet } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import useEmblaCarousel from "embla-carousel-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -40,9 +40,6 @@ export default function Home() {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
   const { toast } = useToast();
 
-  const [showBuyRules, setShowBuyRules] = useState(false);
-  const [showSellRules, setShowSellRules] = useState(false);
-
   const { data: upiList = [] } = useQuery({
     queryKey: ["upi"],
     queryFn: () => api("/upi"),
@@ -68,11 +65,6 @@ export default function Home() {
     const t = setInterval(() => emblaApi.scrollNext(), 4000);
     return () => clearInterval(t);
   }, [emblaApi]);
-
-  const handleHelpCenter = () => {
-    const link = (settings as any)?.telegramLink;
-    if (link) window.open(link, "_blank");
-  };
 
   if (isLoading) {
     return (
@@ -191,15 +183,6 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-2 py-1">
-          <QuickAction icon={<BookOpen className="text-primary" />} label="Buy Rules" onClick={() => setShowBuyRules(true)} />
-          <QuickAction icon={<ShieldAlert className="text-secondary" />} label="Sell Rules" onClick={() => setShowSellRules(true)} />
-          <QuickAction icon={<HelpCircle className="text-primary" />} label="Help Center" onClick={handleHelpCenter} />
-          <Link href="/profile">
-            <QuickAction icon={<UserIcon className="text-secondary" />} label="Profile" />
-          </Link>
-        </div>
-
         <Card className="border-none shadow-sm bg-primary/5">
           <CardContent className="p-4 flex items-center justify-between">
             <div>
@@ -224,45 +207,6 @@ export default function Home() {
           </CardContent>
         </Card>
       </div>
-
-      <Dialog open={showBuyRules} onOpenChange={setShowBuyRules}>
-        <DialogContent className="max-w-[380px] rounded-xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><BookOpen className="w-5 h-5 text-primary" />Buy Rules</DialogTitle>
-          </DialogHeader>
-          <div className="py-2">
-            {(settings as any)?.buyRules ? (
-              <div className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{(settings as any).buyRules}</div>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">No buy rules configured yet.</p>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showSellRules} onOpenChange={setShowSellRules}>
-        <DialogContent className="max-w-[380px] rounded-xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><ShieldAlert className="w-5 h-5 text-secondary" />Sell Rules</DialogTitle>
-          </DialogHeader>
-          <div className="py-2">
-            {(settings as any)?.sellRules ? (
-              <div className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{(settings as any).sellRules}</div>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">No sell rules configured yet.</p>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </Layout>
-  );
-}
-
-function QuickAction({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick?: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-2 cursor-pointer touch-manipulation" onClick={onClick}>
-      <div className="w-14 h-14 sm:w-12 sm:h-12 rounded-full bg-card shadow-sm border flex items-center justify-center">{icon}</div>
-      <span className="text-[12px] sm:text-xs text-center font-medium leading-tight">{label}</span>
-    </div>
   );
 }
