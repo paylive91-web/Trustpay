@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle, Clock, Copy, ShieldCheck, Upload, Wifi } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle, Clock, Copy, ShieldCheck, Upload, Wifi, ChevronUp, ChevronDown } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
 
@@ -88,10 +88,10 @@ export default function Buy() {
 
   return (
     <Layout>
-      <div className="flex items-center gap-3 p-4 bg-primary text-primary-foreground">
+      <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-primary via-primary to-sky-600 text-primary-foreground">
         <Link href="/"><ArrowLeft className="cursor-pointer" /></Link>
         <span className="font-bold text-lg flex-1">Buy</span>
-        <button onClick={() => setShowRules((v) => !v)} className="flex items-center gap-1 text-xs bg-primary-foreground/15 px-2 py-1 rounded">
+        <button onClick={() => setShowRules((v) => !v)} className="flex items-center gap-1 text-xs bg-primary-foreground/15 px-2.5 py-1.5 rounded-full">
           <BookOpen className="w-3.5 h-3.5" /> Rules
         </button>
       </div>
@@ -107,7 +107,10 @@ export default function Buy() {
           <ActiveBuyCard buy={myBuy} refetch={refetchBuy} />
         ) : (
           <>
-            <h2 className="font-semibold text-sm">Available Orders</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-sm">Available Orders</h2>
+              <div className="text-xs text-muted-foreground">Swipe to browse more</div>
+            </div>
             {queue.length === 0 ? (
               <Card>
                 <CardContent className="p-8 text-center text-muted-foreground">
@@ -117,11 +120,12 @@ export default function Buy() {
             ) : (
               <div className="space-y-2 max-h-[65vh] overflow-y-auto pr-0.5">
                 {queue.map((c) => (
-                  <Card key={c.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-3 flex items-center justify-between">
+                  <Card key={c.id} className="hover:shadow-md transition-shadow rounded-2xl">
+                    <CardContent className="p-3 flex items-center justify-between gap-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <div className="text-lg font-bold">₹{c.amount}</div>
+                          <div className="text-xl font-black tracking-tight">₹{c.amount}</div>
+                          <span className="rounded-full bg-yellow-300 text-black text-xs font-semibold px-2 py-1">UPI</span>
                           {c.seller?.lastSeenAt && isOnline(c.seller.lastSeenAt) && (
                             <span className="flex items-center gap-1 text-green-600 text-xs">
                               <span className="w-2 h-2 rounded-full bg-green-500 inline-block animate-pulse" />
@@ -129,9 +133,17 @@ export default function Buy() {
                             </span>
                           )}
                         </div>
-                        <div className="text-xs text-green-600">+₹{c.rewardAmount} reward ({c.rewardPercent}%)</div>
-                        <div className="text-xs text-muted-foreground mt-0.5">
-                          Total credit: <span className="font-semibold">₹{c.totalAmount}</span>
+                        <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                          <div className="rounded-xl bg-muted/40 p-2">
+                            <div className="text-muted-foreground">Income</div>
+                            <div className="text-base font-bold text-primary">₹{c.rewardAmount}</div>
+                            <div className="text-[11px] text-muted-foreground">{c.rewardPercent}% reward</div>
+                          </div>
+                          <div className="rounded-xl bg-muted/40 p-2">
+                            <div className="text-muted-foreground">Quota</div>
+                            <div className="text-base font-bold">₹{c.totalAmount}</div>
+                            <div className="text-[11px] text-muted-foreground">Available</div>
+                          </div>
                         </div>
                         {c.seller && (
                           <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
@@ -144,7 +156,7 @@ export default function Buy() {
                         size="sm"
                         onClick={() => lockMut.mutate(c.id)}
                         disabled={lockMut.isPending}
-                        className="shrink-0"
+                        className="shrink-0 rounded-full px-5 h-10"
                       >
                         Buy
                       </Button>
@@ -249,7 +261,7 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
   return (
     <div className="space-y-3">
       {/* Scammer warning */}
-      <Card className="border-red-400 bg-red-50">
+      <Card className="border-red-400 bg-red-50 rounded-2xl">
         <CardContent className="p-3 flex items-start gap-2">
           <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
           <div className="text-xs text-red-700 space-y-1">
@@ -264,7 +276,7 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-2xl shadow-sm">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div>
@@ -290,7 +302,7 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
             </div>
           )}
 
-          <div className="bg-muted/50 rounded-lg p-3 space-y-2 text-sm">
+          <div className="bg-muted/50 rounded-xl p-3 space-y-2 text-sm">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground text-xs">Pay to UPI:</span>
               <button onClick={() => { navigator.clipboard.writeText(buy.upiId); toast({ title: "Copied!" }); }} className="text-primary text-xs flex items-center gap-1">
@@ -319,7 +331,7 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
               <div className="space-y-1.5">
                 <Label className="text-xs">Screen Recording (min 2 min)</Label>
                 {/* Recording instructions */}
-                <div className="text-xs text-muted-foreground bg-muted/50 rounded p-2 space-y-1">
+                <div className="text-xs text-muted-foreground bg-muted/50 rounded-xl p-2 space-y-1">
                   <div className="font-medium">How to record:</div>
                   <ol className="list-decimal pl-3 space-y-0.5">
                     <li>Start screen recording BEFORE opening your UPI app</li>
@@ -346,6 +358,23 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
           )}
         </CardContent>
       </Card>
+
+      <div className="fixed bottom-24 right-4 z-20 flex flex-col gap-2">
+        <button
+          type="button"
+          className="w-10 h-10 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center"
+          onClick={() => window.scrollBy({ top: -360, behavior: "smooth" })}
+        >
+          <ChevronUp className="h-5 w-5" />
+        </button>
+        <button
+          type="button"
+          className="w-10 h-10 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center"
+          onClick={() => window.scrollBy({ top: 360, behavior: "smooth" })}
+        >
+          <ChevronDown className="h-5 w-5" />
+        </button>
+      </div>
     </div>
   );
 }
