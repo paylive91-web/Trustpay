@@ -11,7 +11,7 @@ export default function Info() {
 
   return (
     <Layout>
-      <div className="p-4 space-y-4 pb-24">
+      <div className="p-4 space-y-4">
         <h1 className="text-xl font-bold">Info & Rules</h1>
 
         <Card>
