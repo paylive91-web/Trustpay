@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle, Clock, Copy, ShieldCheck, Upload, Wifi } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle, Clock, Copy, Headset, ShieldCheck, Upload, Wifi } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
 
@@ -391,6 +391,10 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
               </Button>
               <Button variant="ghost" size="sm" className="w-full" onClick={() => cancelMut.mutate()}>
                 Cancel Buy
+              </Button>
+              <Button variant="outline" size="sm" className="w-full" onClick={() => setLocation("/support")}>
+                <Headset className="mr-2 h-4 w-4" />
+                Customer Care
               </Button>
             </>
           )}
