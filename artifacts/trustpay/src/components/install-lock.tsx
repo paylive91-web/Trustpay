@@ -118,7 +118,10 @@ export default function InstallLock() {
         // Always require a download URL (admin-set OR /app.apk fallback);
         // never strand the user with no way out.
         const wantsLock = serverLock || !!s?.forceAppDownload || hasFlag;
-        if (wantsLock) setShow(true);
+        // Set explicitly (not just on truthy) so the overlay also disappears
+        // in-session when the lock is cleared (e.g. UA detection, server
+        // unlock, manual flag removal).
+        setShow(wantsLock);
       });
     return () => { mounted = false; };
   }, [tick]);
