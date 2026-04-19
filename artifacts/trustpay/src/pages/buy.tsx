@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle, Clock, Copy, ShieldCheck, Upload, Wifi, ChevronUp, ChevronDown } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle, Clock, Copy, ShieldCheck, Upload, Wifi } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
 
@@ -359,22 +359,6 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
         </CardContent>
       </Card>
 
-      <div className="fixed bottom-24 right-4 z-20 flex flex-col gap-2">
-        <button
-          type="button"
-          className="w-10 h-10 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center"
-          onClick={() => window.scrollBy({ top: -360, behavior: "smooth" })}
-        >
-          <ChevronUp className="h-5 w-5" />
-        </button>
-        <button
-          type="button"
-          className="w-10 h-10 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center"
-          onClick={() => window.scrollBy({ top: 360, behavior: "smooth" })}
-        >
-          <ChevronDown className="h-5 w-5" />
-        </button>
-      </div>
     </div>
   );
 }
