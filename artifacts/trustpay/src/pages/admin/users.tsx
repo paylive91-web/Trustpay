@@ -138,11 +138,19 @@ export default function AdminUsers() {
                             <Button size="sm" variant="outline" onClick={() => openEdit(user)}>
                               Edit Balance
                             </Button>
-                            {user.role !== "admin" && (
-                              <Button size="sm" variant="destructive" onClick={() => setDeleteUser(user)}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => {
+                                if (user.role === "admin") {
+                                  toast({ title: "Admin users cannot be deleted", variant: "destructive" });
+                                  return;
+                                }
+                                setDeleteUser(user);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
