@@ -82,12 +82,10 @@ router.get("/queue", requireAuth, async (req, res) => {
   const u = (req as any).user;
   await releaseExpiredLocks();
   await autoConfirmExpired();
-  const now = new Date();
   const chunks = await db.select().from(ordersTable).where(and(
     eq(ordersTable.type, "withdrawal"),
     eq(ordersTable.status, "available"),
     ne(ordersTable.userId, u.id),
-    sql`${ordersTable.createdAt} > ${new Date(Date.now() - 2 * 60 * 1000)}`,
   )).orderBy(ordersTable.createdAt).limit(50);
   // Fetch seller info for online-presence indicator
   const sellerIds = [...new Set(chunks.map((c) => c.userId))];
@@ -98,6 +96,7 @@ router.get("/queue", requireAuth, async (req, res) => {
   const enriched = chunks.map((c) => {
     const seller = sellerMap.get(c.userId);
     if (!seller?.lastSeenAt || Date.now() - new Date(seller.lastSeenAt).getTime() > 2 * 60 * 1000) return null;
+    if (!seller.matchingExpiresAt || new Date(seller.matchingExpiresAt).getTime() < Date.now()) return null;
     const a = parseFloat(c.amount);
     const rp = a >= 2001 ? 3 : a >= 1001 ? 4 : 5;
     const ra = parseFloat((a * rp / 100).toFixed(2));
