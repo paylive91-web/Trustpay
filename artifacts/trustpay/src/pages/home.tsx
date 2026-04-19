@@ -87,6 +87,7 @@ export default function Home() {
   const displayName = user.phone || user.username;
   const trustScore = (user as any).trustScore ?? 0;
   const isFrozen = (user as any).isFrozen;
+  const balance = Number((user as any)?.balance ?? 0);
 
   return (
     <Layout>
@@ -158,7 +159,7 @@ export default function Home() {
               <div className="flex items-center justify-between mb-4 gap-3">
                 <div>
                   <div className="text-muted-foreground text-sm">My Total Assets</div>
-                  <div className="text-3xl sm:text-4xl font-bold tracking-tight">₹ {user.balance.toFixed(2)}</div>
+                  <div className="text-3xl sm:text-4xl font-bold tracking-tight">₹ {balance.toFixed(2)}</div>
                 </div>
                 <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                   <Wallet className="h-6 w-6 text-primary" />
