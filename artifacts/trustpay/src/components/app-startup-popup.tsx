@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
-import { BellRing, ShieldAlert } from "lucide-react";
+import { BellRing } from "lucide-react";
 
 type PendingConfirmation = {
   id: number;
@@ -42,7 +42,6 @@ export default function AppStartupPopup() {
   const [queue, setQueue] = useState<any[]>([]);
   const [pending, setPending] = useState<PendingConfirmation[]>([]);
   const [proofViewer, setProofViewer] = useState<string | null>(null);
-  const [loadingPending, setLoadingPending] = useState(false);
   const { data: settings } = useGetAppSettings();
 
   const today = new Date().toDateString();
@@ -84,7 +83,6 @@ export default function AppStartupPopup() {
 
   useEffect(() => {
     let mounted = true;
-    setLoadingPending(true);
     api("/p2p/my-pending-confirmations")
       .then((rows) => {
         if (!mounted) return;
@@ -96,9 +94,7 @@ export default function AppStartupPopup() {
       .catch(() => {
         if (mounted) setPending([]);
       })
-      .finally(() => {
-        if (mounted) setLoadingPending(false);
-      });
+      .finally(() => {});
     return () => { mounted = false; };
   }, [pendingKey]);
 

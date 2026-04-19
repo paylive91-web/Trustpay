@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { userUpiIdsTable, usersTable, ordersTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { userUpiIdsTable, usersTable, ordersTable, transactionsTable } from "@workspace/db";
+import { eq, and, sql } from "drizzle-orm";
 import { requireAuth } from "../lib/auth.js";
 import { regenerateChunksForUser } from "../lib/matching.js";
 import { checkUpiReuse } from "../lib/fraud.js";
@@ -42,7 +42,7 @@ router.post("/", requireAuth, async (req, res) => {
 // Activate a specific UPI (deactivates all others)
 router.post("/:id/activate", requireAuth, async (req, res) => {
   const u = (req as any).user;
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id));
   const [row] = await db.select().from(userUpiIdsTable).where(
     and(eq(userUpiIdsTable.id, id), eq(userUpiIdsTable.userId, u.id)),
   ).limit(1);
@@ -59,10 +59,17 @@ router.post("/:id/activate", requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
+router.get("/presence", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  const [row] = await db.select({ lastSeenAt: usersTable.lastSeenAt }).from(usersTable).where(eq(usersTable.id, u.id)).limit(1);
+  const active = !!row?.lastSeenAt && Date.now() - new Date(row.lastSeenAt).getTime() < 2 * 60 * 1000;
+  res.json({ active });
+});
+
 // Delete a specific UPI (cannot delete if it's the only active one mid-trade)
 router.delete("/:id", requireAuth, async (req, res) => {
   const u = (req as any).user;
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id));
   const [row] = await db.select().from(userUpiIdsTable).where(
     and(eq(userUpiIdsTable.id, id), eq(userUpiIdsTable.userId, u.id)),
   ).limit(1);

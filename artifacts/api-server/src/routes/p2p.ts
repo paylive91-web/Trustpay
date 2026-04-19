@@ -171,6 +171,12 @@ router.post("/submit/:id", requireAuth, async (req, res) => {
     return;
   }
 
+  const [sellerPresence] = await db.select({ lastSeenAt: usersTable.lastSeenAt }).from(usersTable).where(eq(usersTable.id, chunk.userId)).limit(1);
+  if (!sellerPresence?.lastSeenAt || Date.now() - new Date(sellerPresence.lastSeenAt).getTime() > 2 * 60 * 1000) {
+    res.status(400).json({ error: "Seller is offline right now. Please wait until seller comes online." });
+    return;
+  }
+
   const utrIssues = await checkUtrFraud(utrNumber, u.id, id);
   await checkImageHash(screenshotUrl, u.id, id, "screenshot");
   if (recordingUrl) await checkImageHash(recordingUrl, u.id, id, "recording");
