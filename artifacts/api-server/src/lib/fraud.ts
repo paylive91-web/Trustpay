@@ -149,8 +149,8 @@ async function logAlert(userId: number | null, orderId: number | null, rule: str
   // Admin can disable individual rules from the Fraud Watch UI. When disabled,
   // skip the alert insert, the user notification, and any auto-freeze side effect.
   if (!(await isFraudRuleEnabled(rule))) return;
-  // Insert the alert; notify the user in-app for warn/critical (info is too noisy).
-  const shouldNotify = userId != null && (severity === "warn" || severity === "critical");
+  // Insert the alert; high-value alerts are admin-only and should not notify users.
+  const shouldNotify = userId != null && (severity === "warn" || severity === "critical") && rule !== "new_account_high_value";
   const [alert] = await db.insert(fraudAlertsTable).values({
     userId: userId ?? undefined,
     orderId: orderId ?? undefined,
