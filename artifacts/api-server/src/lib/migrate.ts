@@ -68,6 +68,12 @@ export async function ensureSchema(): Promise<void> {
       WHERE (username IS NULL OR username = '') AND phone IS NOT NULL AND phone <> ''
     `);
 
+    // users.must_install_app — gates the post-registration Android APK
+    // install lock. Default false so existing users aren't suddenly locked
+    // out; the register handler explicitly sets it true for new accounts and
+    // /auth/me clears it once the user signs in from inside the APK.
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS must_install_app BOOLEAN NOT NULL DEFAULT false`);
+
     // fraud_alerts — add notification tracking columns
     await db.execute(sql`ALTER TABLE fraud_alerts ADD COLUMN IF NOT EXISTS notified_at TIMESTAMP`);
     await db.execute(sql`ALTER TABLE fraud_alerts ADD COLUMN IF NOT EXISTS notified_by INTEGER`);

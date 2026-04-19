@@ -1,0 +1,15 @@
+Drop the signed release APK at this path (artifacts/trustpay/public/app.apk).
+Vite copies everything in /public verbatim, so the install lock can serve it
+from a relative URL like `<base>/app.apk`. Until a real APK is uploaded, set
+the APK_DOWNLOAD_URL env var (or Admin → Settings → Android App → APK
+Download URL) to point at an externally hosted release.
+
+To build:
+  pnpm --filter @workspace/trustpay exec cap add android   # one-time
+  pnpm --filter @workspace/trustpay run build
+  pnpm --filter @workspace/trustpay exec cap sync android
+  cd artifacts/trustpay/android && ./gradlew assembleRelease
+
+The signed APK lands in
+  artifacts/trustpay/android/app/build/outputs/apk/release/app-release.apk
+Copy it here and rename to `app.apk` (or upload elsewhere).

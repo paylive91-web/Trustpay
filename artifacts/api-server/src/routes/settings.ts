@@ -23,7 +23,10 @@ router.get("/app", async (req, res) => {
     appName: s.appName || "TrustPay",
     buyRules: s.buyRules || "",
     sellRules: s.sellRules || "",
-    apkDownloadUrl: s.apkDownloadUrl || "",
+    // APK URL precedence: env var (so a CI deploy can override without DB
+    // edits) > admin-configured value > empty string. Admin UI still wins
+    // when env is unset.
+    apkDownloadUrl: process.env.APK_DOWNLOAD_URL || s.apkDownloadUrl || "",
     apkVersion: s.apkVersion || "1.0.0",
     forceAppDownload: (s.forceAppDownload ?? "false") === "true",
     broadcastNotification,

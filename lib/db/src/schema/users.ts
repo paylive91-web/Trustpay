@@ -26,6 +26,12 @@ export const usersTable = pgTable("users", {
   isFrozen: boolean("is_frozen").notNull().default(false),
   fraudWarningCount: integer("fraud_warning_count").notNull().default(0),
   autoSellEnabled: boolean("auto_sell_enabled").notNull().default(false),
+  // True until the user logs in from a request whose User-Agent contains the
+  // Capacitor APK marker ("TrustPayAndroid"). Drives the post-registration
+  // install lock; flipped back to false on the first authenticated request
+  // from inside the APK so the lock disappears across all of the user's
+  // browsers.
+  mustInstallApp: boolean("must_install_app").notNull().default(false),
   lastSeenAt: timestamp("last_seen_at"),
   matchingExpiresAt: timestamp("matching_expires_at"),
   displayName: text("display_name"),

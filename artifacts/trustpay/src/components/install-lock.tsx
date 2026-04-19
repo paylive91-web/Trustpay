@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 import { Download, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getAuthToken } from "@/lib/auth";
 import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_1776335785514.png";
 
 const APK_UA_MARKER = "TrustPayAndroid";
 const FLAG_KEY = "trustpay:mustInstallApp";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+// When the admin hasn't pasted a hosted URL we fall back to the bundled
+// /app.apk asset (see public/app.apk.README.txt for the build pipeline).
+const FALLBACK_APK_URL = import.meta.env.BASE_URL.replace(/\/$/, "") + "/app.apk";
 
 type AppSettings = {
   apkDownloadUrl?: string;
@@ -61,28 +65,42 @@ export default function InstallLock() {
       return;
     }
     let mounted = true;
-    fetch(`${API_BASE}/settings/app`)
-      .then((r) => r.json())
-      .then((s) => {
+    const token = getAuthToken();
+    Promise.all([
+      fetch(`${API_BASE}/settings/app`).then((r) => r.json()).catch(() => null),
+      // Authoritative source for "does THIS user need to install the app?":
+      // the server-side mustInstallApp flag set on registration. Survives
+      // localStorage wipes and switching browsers, and is auto-cleared by
+      // /auth/me when it sees the APK User-Agent.
+      token
+        ? fetch(`${API_BASE}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
+            .then((r) => (r.ok ? r.json() : null))
+            .catch(() => null)
+        : Promise.resolve(null),
+    ]).then(([s, me]) => {
         if (!mounted) return;
         setSettings(s);
         const hasFlag = (() => { try { return localStorage.getItem(FLAG_KEY) === "1"; } catch { return false; } })();
-        // Show the lock only when (a) admin has globally enabled
-        // forceAppDownload OR this browser registered after the requirement
-        // was added, AND (b) the admin has actually uploaded an APK URL.
-        // Without an APK URL the lock would be unbypassable, so we silently
-        // skip — the admin will turn it on once distribution is ready.
-        const wantsLock = !!s?.forceAppDownload || hasFlag;
-        const hasUrl = !!s?.apkDownloadUrl?.trim();
-        if (wantsLock && hasUrl) setShow(true);
-      })
-      .catch(() => {});
+        const serverLock = !!me?.mustInstallApp;
+        // If the server says the user is cleared, drop the local flag too —
+        // they've already opened the app from inside the APK on at least one
+        // device, so we trust the server signal.
+        if (me && !me.mustInstallApp) clearMustInstallApp();
+        // Show the lock when ANY of the signals say "must install":
+        //  - server-side per-user flag (strongest, account-bound)
+        //  - admin's global forceAppDownload toggle
+        //  - per-browser localStorage flag from registration
+        // Always require a download URL (admin-set OR /app.apk fallback);
+        // never strand the user with no way out.
+        const wantsLock = serverLock || !!s?.forceAppDownload || hasFlag;
+        if (wantsLock) setShow(true);
+      });
     return () => { mounted = false; };
   }, []);
 
   if (!show) return null;
 
-  const apkUrl = settings?.apkDownloadUrl?.trim();
+  const apkUrl = settings?.apkDownloadUrl?.trim() || FALLBACK_APK_URL;
 
   return (
     <div

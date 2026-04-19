@@ -312,7 +312,7 @@ function fSettings(s: any) {
     highValueCriticalThreshold: parseInt(s.highValueCriticalThreshold || "10000"),
     platformCommissionPerChunk: parseInt(s.platformCommissionPerChunk || "1"),
     feeTiers,
-    apkDownloadUrl: s.apkDownloadUrl || "",
+    apkDownloadUrl: process.env.APK_DOWNLOAD_URL || s.apkDownloadUrl || "",
     apkVersion: s.apkVersion || "1.0.0",
     forceAppDownload: (s.forceAppDownload ?? "false") === "true",
     broadcastNotification,

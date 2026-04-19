@@ -62,11 +62,15 @@ router.post("/register", async (req, res) => {
   const referredById = referrer.id;
 
   const passwordHash = await bcrypt.hash(password, 10);
+  // Default mustInstallApp=true on registration: the lock stays on for this
+  // account until they sign in from inside the Android APK (UA marker check
+  // in /me clears it server-side).
   const [user] = await db.insert(usersTable).values({
     username,
     passwordHash,
     phone,
     referredBy: referredById || undefined,
+    mustInstallApp: true,
   }).returning();
 
   const code = "TP" + String(user.id).padStart(6, "0");
@@ -136,8 +140,17 @@ router.post("/logout", (_req, res) => {
   res.json({ message: "Logged out" });
 });
 
-router.get("/me", requireAuth, (req, res) => {
-  res.json(formatUser((req as any).user));
+router.get("/me", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  // Auto-clear the install lock the first time we see the user from inside
+  // the Capacitor APK shell. The wrapper appends "TrustPayAndroid/<ver>" to
+  // the User-Agent (see artifacts/trustpay/capacitor.config.ts).
+  const ua = (req.headers["user-agent"] as string) || "";
+  if (u.mustInstallApp && ua.includes("TrustPayAndroid")) {
+    await db.update(usersTable).set({ mustInstallApp: false }).where(eq(usersTable.id, u.id));
+    u.mustInstallApp = false;
+  }
+  res.json(formatUser(u));
 });
 
 router.get("/invitees", requireAuth, async (req, res) => {

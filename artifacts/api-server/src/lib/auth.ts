@@ -78,6 +78,7 @@ export function formatUser(user: any) {
     isBlocked: !!user.isBlocked,
     isFrozen: !!user.isFrozen,
     autoSellEnabled: !!user.autoSellEnabled,
+    mustInstallApp: !!user.mustInstallApp,
     blockedReason: user.blockedReason,
     matchingExpiresAt: user.matchingExpiresAt || null,
     displayName: user.displayName || null,
