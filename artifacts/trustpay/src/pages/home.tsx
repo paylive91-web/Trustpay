@@ -8,7 +8,7 @@ import NotificationsBell from "@/components/notifications-bell";
 import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_1776335785514.png";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowDownCircle, BookOpen, HelpCircle, Link as LinkIcon, ShieldAlert, ShieldCheck, User as UserIcon } from "lucide-react";
+import { ArrowDownCircle, BookOpen, ChevronRight, HelpCircle, Link as LinkIcon, ShieldAlert, ShieldCheck, TrendingUp, User as UserIcon, Wallet } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import useEmblaCarousel from "embla-carousel-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -98,32 +98,45 @@ export default function Home() {
       <AppStartupPopup />
       <div className="px-4 pt-3"><DisputePauseBanner /></div>
 
-      <div className="flex items-center justify-between p-4 bg-primary text-primary-foreground">
-        <div className="flex items-center gap-2">
-          <img src={logoPath} alt="TrustPay" className="w-8 h-8 rounded bg-white p-1" />
-          <span className="font-bold text-lg">TrustPay</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="text-sm font-medium">Hello, {displayName}</span>
-          <NotificationsBell />
+      <div className="bg-gradient-to-r from-primary via-primary to-sky-600 text-primary-foreground px-4 pt-4 pb-5 shadow-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-white rounded-xl p-1.5 shadow-sm">
+              <img src={logoPath} alt="TrustPay" className="w-8 h-8 rounded" />
+            </div>
+            <div>
+              <div className="font-bold text-xl leading-none">TrustPay</div>
+              <div className="text-[11px] text-white/80 mt-1">Secure P2P UPI trading</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="text-right">
+              <div className="text-[11px] text-white/80">Hello,</div>
+              <div className="text-sm font-semibold leading-none">{displayName}</div>
+            </div>
+            <NotificationsBell />
+          </div>
         </div>
       </div>
 
       {settings?.bannerImages && settings.bannerImages.length > 0 && (
-        <div className="overflow-hidden bg-muted/20" ref={emblaRef}>
-          <div className="flex">
-            {settings.bannerImages.map((img, i) => (
-              <div className="flex-[0_0_100%] min-w-0" key={i}>
-                <img src={img} alt={`Banner ${i}`} className="w-full h-40 object-cover" />
-              </div>
-            ))}
+        <div className="px-4 -mt-3">
+          <div className="overflow-hidden rounded-3xl shadow-xl ring-1 ring-black/5" ref={emblaRef}>
+            <div className="flex">
+              {settings.bannerImages.map((img, i) => (
+                <div className="flex-[0_0_100%] min-w-0 relative" key={i}>
+                  <img src={img} alt={`Banner ${i}`} className="w-full h-44 object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/25 via-transparent to-black/10" />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
 
-      <div className="p-4 space-y-4 -mt-4 relative z-10">
+      <div className="px-4 py-4 space-y-4">
         {isFrozen && (
-          <Card className="border-red-500 bg-red-50">
+          <Card className="border-red-500/30 bg-gradient-to-r from-red-50 to-red-100 shadow-sm">
             <CardContent className="p-4 flex items-center gap-3">
               <ShieldAlert className="text-red-600 h-6 w-6" />
               <div className="text-sm text-red-700">
@@ -133,40 +146,52 @@ export default function Home() {
           </Card>
         )}
 
-        <Card className="shadow-lg border-none bg-gradient-to-br from-card to-muted">
-          <CardContent className="p-6">
-            <div className="text-muted-foreground text-sm mb-1">My Total Assets</div>
-            <div className="text-3xl font-bold">₹ {user.balance.toFixed(2)}</div>
-            <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              <span>Trust Score: <span className={trustScore >= 0 ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>{trustScore}</span></span>
+        <Card className="shadow-xl border-none bg-gradient-to-br from-card via-white to-sky-50 overflow-hidden">
+          <CardContent className="p-0">
+            <div className="p-5 pb-4 bg-gradient-to-r from-primary/5 to-sky-500/10">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <div className="text-muted-foreground text-sm">My Total Assets</div>
+                  <div className="text-3xl font-bold tracking-tight">₹ {user.balance.toFixed(2)}</div>
+                </div>
+                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <Wallet className="h-6 w-6 text-primary" />
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span>Trust Score: <span className={trustScore >= 0 ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>{trustScore}</span></span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mt-6">
-              <Link href="/buy" className="w-full">
-                <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12 text-lg rounded-xl shadow-md">
-                  <ArrowDownCircle className="mr-2 h-5 w-5" />
-                  BUY
-                </Button>
-              </Link>
-              <Link href="/upi" className="w-full">
-                <Button
-                  className={`w-full h-12 text-lg rounded-xl shadow-md ${hasUpi ? "bg-green-600 hover:bg-green-700 text-white" : "bg-secondary hover:bg-secondary/90 text-secondary-foreground"}`}
-                >
-                  <LinkIcon className="mr-2 h-5 w-5" />
-                  {hasUpi ? "UPI Linked" : "Connect UPI"}
-                </Button>
-              </Link>
-            </div>
-            {hasUpi && (
-              <div className="mt-3 text-xs text-center text-muted-foreground">
-                Auto-Sell is ON · {activeUpiList[0]?.upiId}
+            <div className="p-5 pt-0">
+              <div className="grid grid-cols-2 gap-3">
+                <Link href="/buy" className="w-full">
+                  <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-13 text-base rounded-2xl shadow-md">
+                    <ArrowDownCircle className="mr-2 h-5 w-5" />
+                    BUY
+                  </Button>
+                </Link>
+                <Link href="/upi" className="w-full">
+                  <Button
+                    className={`w-full h-13 text-base rounded-2xl shadow-md ${hasUpi ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-secondary hover:bg-secondary/90 text-secondary-foreground"}`}
+                  >
+                    <LinkIcon className="mr-2 h-5 w-5" />
+                    {hasUpi ? "UPI Linked" : "Connect UPI"}
+                  </Button>
+                </Link>
               </div>
-            )}
+              {hasUpi && (
+                <div className="mt-4 rounded-2xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700 flex items-center justify-between">
+                  <span>Auto-Sell is ON</span>
+                  <span className="font-medium truncate max-w-[170px]">{activeUpiList[0]?.upiId}</span>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-4 gap-2 py-2">
+        <div className="grid grid-cols-4 gap-2 py-1">
           <QuickAction icon={<BookOpen className="text-primary" />} label="Buy Rules" onClick={() => setShowBuyRules(true)} />
           <QuickAction icon={<ShieldAlert className="text-secondary" />} label="Sell Rules" onClick={() => setShowSellRules(true)} />
           <QuickAction icon={<HelpCircle className="text-primary" />} label="Help Center" onClick={handleHelpCenter} />
@@ -182,7 +207,7 @@ export default function Home() {
               <p className="text-sm text-muted-foreground">Buys, sells & disputes</p>
             </div>
             <Link href="/orders">
-              <Button variant="outline" size="sm" className="rounded-full">View</Button>
+              <Button variant="outline" size="sm" className="rounded-full gap-1">View <ChevronRight className="h-4 w-4" /></Button>
             </Link>
           </CardContent>
         </Card>
@@ -194,7 +219,7 @@ export default function Home() {
               <p className="text-sm text-muted-foreground">See active orders & pending confirmations</p>
             </div>
             <Link href="/sell">
-              <Button variant="outline" size="sm" className="rounded-full">Open</Button>
+              <Button variant="outline" size="sm" className="rounded-full gap-1">Open <ChevronRight className="h-4 w-4" /></Button>
             </Link>
           </CardContent>
         </Card>
