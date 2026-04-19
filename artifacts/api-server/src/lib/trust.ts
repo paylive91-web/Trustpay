@@ -2,7 +2,7 @@ import { db } from "@workspace/db";
 import { usersTable, trustEventsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 
-export const TRUST_FREEZE_THRESHOLD = -80;
+export const TRUST_FREEZE_THRESHOLD = -50;
 export const TRUST_MAX = 100;
 
 export async function applyTrustDelta(userId: number, delta: number, reason: string, orderId?: number) {

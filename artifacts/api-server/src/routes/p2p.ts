@@ -192,6 +192,8 @@ router.post("/submit/:id", requireAuth, async (req, res) => {
     confirmDeadline: deadline,
     updatedAt: now,
   }).where(eq(ordersTable.id, id));
+  await applyTrustDelta(chunk.userId, -10, "buyer_submitted_proof", id);
+  await applyTrustDelta(u.id, -10, "buyer_submitted_proof", id);
   const [updated] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
   res.json(f(updated));
 });
@@ -248,6 +250,8 @@ router.post("/dispute/:id", requireAuth, async (req, res) => {
     buyerProofDeadline: proofDeadline,
     sellerProofDeadline: proofDeadline,
   });
+  await applyTrustDelta(chunk.lockedByUserId!, -10, "seller_denied_payment", id);
+  await applyTrustDelta(u.id, -10, "seller_denied_payment", id);
   res.json({ success: true });
 });
 

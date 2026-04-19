@@ -6,7 +6,7 @@ import DisputePauseBanner from "@/components/dispute-pause-banner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, BookOpen, Clock, RefreshCw, ShieldCheck } from "lucide-react";
+import { ArrowLeft, BookOpen, Clock, RefreshCw, ShieldCheck, BellRing, CheckCircle2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -25,6 +25,21 @@ function playBeep() {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.6);
+  } catch (_) {}
+}
+
+function playNotify() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 1040;
+    gain.gain.setValueAtTime(0.35, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.25);
   } catch (_) {}
 }
 
@@ -73,12 +88,22 @@ export default function Sell() {
 
   // Sound alert when new pending confirmation arrives
   const prevPendingCount = React.useRef(0);
+  const prevReadyCount = React.useRef(0);
   useEffect(() => {
     const curr = pendingConfirms.length;
     if (curr > prevPendingCount.current) {
       playBeep();
+      playNotify();
     }
     prevPendingCount.current = curr;
+  }, [pendingConfirms.length]);
+
+  useEffect(() => {
+    const currReady = pendingConfirms.length;
+    if (currReady > prevReadyCount.current) {
+      playNotify();
+    }
+    prevReadyCount.current = currReady;
   }, [pendingConfirms.length]);
 
   const regenMut = useMutation({
@@ -200,8 +225,22 @@ function PendingConfirmCard({ chunk, onResolved }: { chunk: any; onResolved: () 
   });
 
   return (
-    <Card className="border-orange-300">
+    <Card className="border-orange-300 shadow-lg">
       <CardContent className="p-4 space-y-3">
+        <div className="rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 text-white p-4 shadow-md">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="text-xs uppercase tracking-wide opacity-90">Payment coming soon</div>
+              <div className="text-lg font-bold mt-1">Be ready to confirm</div>
+              <div className="text-sm opacity-90 mt-1">Buyer has shared proof. Check your bank app now.</div>
+            </div>
+            <BellRing className="h-6 w-6 shrink-0 animate-pulse" />
+          </div>
+          <div className="mt-3 flex items-center gap-2 text-xs">
+            <CheckCircle2 className="h-4 w-4" />
+            Direct confirm option below
+          </div>
+        </div>
         <div className="flex items-center justify-between">
           <div>
             <div className="font-bold text-lg">₹{chunk.amount}</div>
@@ -213,14 +252,14 @@ function PendingConfirmCard({ chunk, onResolved }: { chunk: any; onResolved: () 
           </div>
         </div>
 
-        <div className="bg-muted/50 rounded p-2 text-xs space-y-1">
+        <div className="bg-muted/50 rounded-2xl p-3 text-sm space-y-2">
           <div>UTR: <span className="font-mono font-semibold">{chunk.utrNumber}</span></div>
         </div>
         {chunk.screenshotUrl && (
-          <a href={chunk.screenshotUrl} target="_blank" className="text-xs text-primary underline">View Screenshot</a>
+          <a href={chunk.screenshotUrl} target="_blank" className="text-sm text-primary underline font-medium">View Screenshot</a>
         )}{" "}
         {chunk.recordingUrl && (
-          <a href={chunk.recordingUrl} target="_blank" className="text-xs text-primary underline ml-2">View Recording</a>
+          <a href={chunk.recordingUrl} target="_blank" className="text-sm text-primary underline font-medium ml-2">View Recording</a>
         )}
 
         <div className="text-xs text-muted-foreground">
@@ -228,18 +267,18 @@ function PendingConfirmCard({ chunk, onResolved }: { chunk: any; onResolved: () 
         </div>
 
         {!showProof ? (
-          <div className="grid grid-cols-2 gap-2">
-            <Button className="bg-green-600 hover:bg-green-700" disabled={confirmMut.isPending} onClick={() => confirmMut.mutate()}>
+          <div className="grid grid-cols-2 gap-3">
+            <Button size="lg" className="bg-green-600 hover:bg-green-700 h-12 text-base" disabled={confirmMut.isPending} onClick={() => confirmMut.mutate()}>
               YES — Received
             </Button>
-            <Button variant="destructive" onClick={() => setShowProof(true)}>
+            <Button size="lg" variant="destructive" className="h-12 text-base" onClick={() => setShowProof(true)}>
               NO — Not Received
             </Button>
           </div>
         ) : (
           <div className="space-y-2">
             <textarea
-              className="w-full border rounded p-2 text-sm"
+              className="w-full border rounded-2xl p-3 text-sm"
               rows={2}
               placeholder="Reason (optional)"
               value={reason}

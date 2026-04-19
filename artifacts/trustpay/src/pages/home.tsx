@@ -82,7 +82,7 @@ export default function Home() {
   }
   if (!user) return null;
 
-  const activeUpiList = (upiList as any[]).filter((u: any) => u.isActive);
+  const activeUpiList = Array.isArray(upiList) ? (upiList as any[]).filter((u: any) => u.isActive) : [];
   const hasUpi = activeUpiList.length > 0;
   const displayName = user.phone || user.username;
   const trustScore = (user as any).trustScore ?? 0;
