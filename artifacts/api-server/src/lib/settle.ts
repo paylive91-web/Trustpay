@@ -111,8 +111,33 @@ export async function settleConfirmedTrade(chunkOrderId: number, isAutoConfirm =
     logger.error({ err, chunkOrderId, buyerId, sellerId }, "dispute-rate check failed");
   }
 
-  // Referral commissions
+  // Admin platform-wide override: admin always earns 1% of every settled
+  // trade (regardless of referral chain). Skipped when buyer IS the admin
+  // to avoid self-credit. This is on top of the per-chunk ₹1 platform fee
+  // and the normal user invite/earn referral system below.
   const [buyer] = await db.select().from(usersTable).where(eq(usersTable.id, buyerId)).limit(1);
+  try {
+    const [adminUser] = await db.select().from(usersTable)
+      .where(eq(usersTable.role, "admin"))
+      .orderBy(usersTable.id)
+      .limit(1);
+    if (adminUser && adminUser.id !== buyerId) {
+      const adminCut = parseFloat((amount * 0.01).toFixed(2));
+      if (adminCut > 0) {
+        await db.update(usersTable).set({
+          balance: sql`${usersTable.balance} + ${adminCut}`,
+        }).where(eq(usersTable.id, adminUser.id));
+        await db.insert(transactionsTable).values({
+          userId: adminUser.id, orderId: chunkOrderId, type: "credit",
+          amount: String(adminCut),
+          description: `Admin 1% override from buyer #${buyerId} (chunk #${chunkOrderId})`,
+        });
+      }
+    }
+  } catch (err) {
+    logger.error({ err, chunkOrderId, buyerId }, "admin override commission failed");
+  }
+
   if (buyer && buyer.referredBy) {
     const l1 = parseFloat((amount * 0.01).toFixed(2));
     if (l1 > 0) {

@@ -37,18 +37,27 @@ export async function regenerateChunksForUser(userId: number) {
   ));
   const settings = await getSettings([
     "chunkMin", "chunkMax", "newUserChunkCap", "newUserTradeThreshold",
-    "platformCommissionPerChunk",
+    "platformCommissionPerChunk", "adminChunkMin", "adminChunkMax",
   ]);
   let chunkMin = parseInt(settings.chunkMin) || 100;
   let chunkMax = parseInt(settings.chunkMax) || 50000;
   const commission = parseInt(settings.platformCommissionPerChunk) || 1;
+  // Admin's own chunks are pushed into the buy queue as large-only amounts
+  // so admin liquidity acts as bulk supply, not retail.
+  const isAdminSeller = user.role === "admin";
+  if (isAdminSeller) {
+    chunkMin = parseInt(settings.adminChunkMin) || 5000;
+    chunkMax = parseInt(settings.adminChunkMax) || 50000;
+  }
   // For in-queue chunks: each consumed (amount + commission) of seller
   // balance at creation (commission → admin, amount → buyer at settle).
   const inQueueAmt = existingChunks.reduce((s, o) => s + parseFloat(o.amount) + commission, 0);
   let avail = balance - held - inQueueAmt;
   const newUserCap = parseInt(settings.newUserChunkCap) || 500;
   const tradeThreshold = parseInt(settings.newUserTradeThreshold) || 5;
-  if ((user.successfulTrades || 0) < tradeThreshold) chunkMax = Math.min(chunkMax, newUserCap);
+  if (!isAdminSeller && (user.successfulTrades || 0) < tradeThreshold) {
+    chunkMax = Math.min(chunkMax, newUserCap);
+  }
 
   if (avail < chunkMin) return;
 
