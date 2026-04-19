@@ -17,7 +17,7 @@ export default function BottomNav() {
   ];
 
   return (
-    <div className="sticky bottom-0 w-full bg-card border-t shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-50">
+    <div className="fixed bottom-0 left-1/2 w-full max-w-[430px] -translate-x-1/2 bg-card border-t shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-50">
       <div className="flex items-center justify-around h-16 px-2 relative">
         {links.map((link) => {
           const isActive = location === link.href;
