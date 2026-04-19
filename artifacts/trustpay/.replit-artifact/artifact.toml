@@ -17,15 +17,6 @@ localPort = 24041
 [services.development]
 run = "pnpm --filter @workspace/trustpay run dev"
 
-[services.production]
-build = [ "pnpm", "--filter", "@workspace/trustpay", "run", "build" ]
-publicDir = "artifacts/trustpay/dist/public"
-serve = "static"
-
-[[services.production.rewrites]]
-from = "/*"
-to = "/index.html"
-
 [services.env]
 PORT = "24041"
 BASE_PATH = "/"
