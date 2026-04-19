@@ -223,6 +223,7 @@ export default function Buy() {
 function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const { data: settings } = useGetAppSettings();
   const [now, setNow] = useState(Date.now());
   const [utr, setUtr] = useState("");
   const [screenshotUrl, setScreenshot] = useState("");

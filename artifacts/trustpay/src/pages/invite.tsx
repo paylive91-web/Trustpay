@@ -71,7 +71,7 @@ export default function Invite() {
 
   return (
     <Layout>
-      <div className="p-4 space-y-4 pb-24">
+      <div className="p-4 space-y-4">
         {/* Hero */}
         <div className="bg-gradient-to-br from-primary to-primary/80 rounded-2xl p-6 text-primary-foreground text-center">
           <div className="w-16 h-16 bg-primary-foreground/20 rounded-full flex items-center justify-center mx-auto mb-4">

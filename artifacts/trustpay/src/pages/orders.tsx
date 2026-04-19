@@ -102,7 +102,7 @@ export default function Orders() {
 
   return (
     <Layout>
-      <div className="p-4 space-y-4 flex flex-col h-full">
+      <div className="p-4 space-y-4">
         <h1 className="text-xl font-bold">My Orders</h1>
 
         <Tabs value={filterType} onValueChange={(v) => setFilterType(v as any)} className="w-full">
@@ -118,7 +118,7 @@ export default function Orders() {
           </TabsList>
         </Tabs>
 
-        <div className="flex-1 space-y-3 pb-4">
+        <div className="space-y-3 pb-4">
           {filterType === "disputes" ? (
             loadingDisputes ? (
               Array(2).fill(0).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)
