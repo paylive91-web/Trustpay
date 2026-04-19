@@ -407,7 +407,7 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
               <Button variant="ghost" size="sm" className="w-full" onClick={() => cancelMut.mutate()}>
                 Cancel Buy
               </Button>
-      <Button variant="outline" size="sm" className="w-full" onClick={() => window.open((settings as any)?.telegramLink || "/support", "_blank")}>
+              <Button variant="outline" size="sm" className="w-full" onClick={() => window.open((settings as any)?.telegramLink || "/support", "_blank")}>
                 <Headset className="mr-2 h-4 w-4" />
                 Contact Support
               </Button>
