@@ -201,6 +201,24 @@ router.post("/submit/:id", requireAuth, async (req, res) => {
   res.json(f(updated));
 });
 
+router.get("/my-seller-alerts", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  await releaseExpiredLocks();
+  await autoConfirmExpired();
+  const rows = await db.select().from(ordersTable).where(and(
+    eq(ordersTable.userId, u.id),
+    eq(ordersTable.type, "withdrawal"),
+    inArray(ordersTable.status, ["locked", "pending_confirmation"]),
+  )).orderBy(ordersTable.confirmDeadline);
+  const buyerIds = [...new Set(rows.map((r) => r.lockedByUserId).filter(Boolean))] as number[];
+  const buyers = buyerIds.length ? await db.select().from(usersTable).where(inArray(usersTable.id, buyerIds)) : [];
+  const byId = new Map(buyers.map((b) => [b.id, b]));
+  res.json(rows.map((r) => ({
+    ...f(r),
+    buyer: byId.get(r.lockedByUserId!) ? { id: r.lockedByUserId, username: byId.get(r.lockedByUserId!)!.username, trustScore: byId.get(r.lockedByUserId!)!.trustScore } : undefined,
+  })));
+});
+
 router.get("/my-pending-confirmations", requireAuth, async (req, res) => {
   const u = (req as any).user;
   await autoConfirmExpired();
