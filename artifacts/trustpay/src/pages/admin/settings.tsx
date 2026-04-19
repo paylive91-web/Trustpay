@@ -65,6 +65,12 @@ interface Announcement {
   imageUrl?: string;
 }
 
+interface FeeTier {
+  min: number;
+  max: number;
+  fee: number;
+}
+
 export default function AdminSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -84,6 +90,10 @@ export default function AdminSettings() {
   const [adminPassword, setAdminPassword] = useState("");
   const [buyRules, setBuyRules] = useState("");
   const [sellRules, setSellRules] = useState("");
+  const [feeTiers, setFeeTiers] = useState<FeeTier[]>([]);
+  const [apkDownloadUrl, setApkDownloadUrl] = useState("");
+  const [apkVersion, setApkVersion] = useState("");
+  const [forceAppDownload, setForceAppDownload] = useState(true);
 
   useEffect(() => {
     if (settings) {
@@ -97,6 +107,11 @@ export default function AdminSettings() {
       setBannerImages(Array.isArray((settings as any).bannerImages) ? (settings as any).bannerImages : []);
       setBuyRules((settings as any).buyRules || "");
       setSellRules((settings as any).sellRules || "");
+      const tiers = Array.isArray((settings as any).feeTiers) ? (settings as any).feeTiers : [];
+      setFeeTiers(tiers.map((t: any) => ({ min: Number(t.min) || 0, max: Number(t.max) || 0, fee: Number(t.fee) || 0 })));
+      setApkDownloadUrl((settings as any).apkDownloadUrl || "");
+      setApkVersion((settings as any).apkVersion || "1.0.0");
+      setForceAppDownload((settings as any).forceAppDownload === true);
       setAdminPassword("");
     }
   }, [settings]);
@@ -124,8 +139,39 @@ export default function AdminSettings() {
     },
   });
 
+  const addFeeTier = () => setFeeTiers((prev) => {
+    // Default the new tier just after the last one to make it easy to extend
+    // the table without typing both bounds from scratch.
+    const last = prev[prev.length - 1];
+    const min = last ? last.max + 1 : 100;
+    return [...prev, { min, max: min + 499, fee: 1 }];
+  });
+  const removeFeeTier = (i: number) => setFeeTiers((prev) => prev.filter((_, idx) => idx !== i));
+  const updateFeeTier = (i: number, field: keyof FeeTier, val: number) =>
+    setFeeTiers((prev) => prev.map((t, idx) => idx === i ? { ...t, [field]: val } : t));
+
+  const validateFeeTiers = (tiers: FeeTier[]): string | null => {
+    const sorted = [...tiers].sort((a, b) => a.min - b.min);
+    for (const t of sorted) {
+      if (!Number.isFinite(t.min) || !Number.isFinite(t.max) || !Number.isFinite(t.fee)) return "Each tier needs Min, Max and Fee";
+      if (t.min < 0 || t.max < t.min) return `Invalid range: ${t.min}-${t.max}`;
+      if (t.fee < 0) return `Fee cannot be negative: ${t.fee}`;
+    }
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i].min <= sorted[i - 1].max) {
+        return `Tiers overlap: ${sorted[i - 1].min}-${sorted[i - 1].max} and ${sorted[i].min}-${sorted[i].max}`;
+      }
+    }
+    return null;
+  };
+
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const tierError = validateFeeTiers(feeTiers);
+    if (tierError) {
+      toast({ title: "Fee tiers error", description: tierError, variant: "destructive" });
+      return;
+    }
     const payload: any = {
       upiId,
       upiName,
@@ -137,6 +183,10 @@ export default function AdminSettings() {
       bannerImages,
       buyRules,
       sellRules,
+      feeTiers,
+      apkDownloadUrl,
+      apkVersion,
+      forceAppDownload,
     };
     if (adminPassword) payload.adminPassword = adminPassword;
     updateSettingsMut.mutate({ data: payload });
@@ -265,6 +315,110 @@ export default function AdminSettings() {
                   onChange={(e) => setSellRules(e.target.value)}
                   className="min-h-[120px]"
                 />
+              </CardContent>
+            </Card>
+
+            {/* Per-Chunk Fee Tiers */}
+            <Card data-testid="card-fee-tiers">
+              <CardHeader>
+                <CardTitle>Order Fee Tiers</CardTitle>
+                <CardDescription>
+                  Per-chunk platform fee charged to the seller based on the chunk's gross amount.
+                  Ranges must not overlap. The first matching tier is used.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-12 gap-2 text-xs font-medium text-muted-foreground px-1">
+                  <div className="col-span-4">Min (₹)</div>
+                  <div className="col-span-4">Max (₹)</div>
+                  <div className="col-span-3">Fee (₹)</div>
+                  <div className="col-span-1"></div>
+                </div>
+                {feeTiers.length === 0 && (
+                  <p className="text-sm text-muted-foreground italic">
+                    No tiers configured — falls back to flat per-chunk commission.
+                  </p>
+                )}
+                {feeTiers.map((tier, idx) => (
+                  <div key={idx} className="grid grid-cols-12 gap-2 items-center">
+                    <Input
+                      type="number"
+                      className="col-span-4"
+                      value={tier.min}
+                      onChange={(e) => updateFeeTier(idx, "min", parseInt(e.target.value) || 0)}
+                      data-testid={`input-tier-min-${idx}`}
+                    />
+                    <Input
+                      type="number"
+                      className="col-span-4"
+                      value={tier.max}
+                      onChange={(e) => updateFeeTier(idx, "max", parseInt(e.target.value) || 0)}
+                      data-testid={`input-tier-max-${idx}`}
+                    />
+                    <Input
+                      type="number"
+                      className="col-span-3"
+                      value={tier.fee}
+                      onChange={(e) => updateFeeTier(idx, "fee", parseInt(e.target.value) || 0)}
+                      data-testid={`input-tier-fee-${idx}`}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="col-span-1"
+                      onClick={() => removeFeeTier(idx)}
+                      data-testid={`button-remove-tier-${idx}`}
+                    >
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" onClick={addFeeTier} className="w-full" data-testid="button-add-tier">
+                  <Plus className="w-4 h-4 mr-2" /> Add Tier
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Android APK Distribution */}
+            <Card data-testid="card-apk-config">
+              <CardHeader>
+                <CardTitle>Android App (APK)</CardTitle>
+                <CardDescription>
+                  After registration, users see a full-screen lock until they install and open the
+                  Android APK. The lock auto-clears when the user is browsing from inside the APK.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>APK Download URL</Label>
+                  <Input
+                    type="url"
+                    placeholder="https://example.com/trustpay.apk"
+                    value={apkDownloadUrl}
+                    onChange={(e) => setApkDownloadUrl(e.target.value)}
+                    data-testid="input-apk-url"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>APK Version</Label>
+                  <Input
+                    placeholder="1.0.0"
+                    value={apkVersion}
+                    onChange={(e) => setApkVersion(e.target.value)}
+                    data-testid="input-apk-version"
+                  />
+                </div>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={forceAppDownload}
+                    onChange={(e) => setForceAppDownload(e.target.checked)}
+                    className="w-4 h-4"
+                    data-testid="checkbox-force-download"
+                  />
+                  <span className="text-sm">Force every web visitor to install the APK (not just newly registered users)</span>
+                </label>
               </CardContent>
             </Card>
 

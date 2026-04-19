@@ -1123,7 +1123,24 @@ components:
             type: string
         appName:
           type: string
+        apkDownloadUrl:
+          type: string
+        apkVersion:
+          type: string
+        forceAppDownload:
+          type: boolean
       required: [upiId, upiName, appName]
+
+    FeeTier:
+      type: object
+      properties:
+        min:
+          type: number
+        max:
+          type: number
+        fee:
+          type: number
+      required: [min, max, fee]
 
     AdminSettings:
       allOf:
@@ -1132,6 +1149,18 @@ components:
           properties:
             adminPassword:
               type: string
+            feeTiers:
+              type: array
+              items:
+                $ref: "#/components/schemas/FeeTier"
+            apkDownloadUrl:
+              type: string
+            apkVersion:
+              type: string
+            forceAppDownload:
+              type: boolean
+            platformCommissionPerChunk:
+              type: number
 
     AdminUpdateSettingsBody:
       type: object
@@ -1152,6 +1181,18 @@ components:
             type: string
         adminPassword:
           type: string
+        feeTiers:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeeTier"
+        apkDownloadUrl:
+          type: string
+        apkVersion:
+          type: string
+        forceAppDownload:
+          type: boolean
+        platformCommissionPerChunk:
+          type: number
 
     DailyStats:
       type: object

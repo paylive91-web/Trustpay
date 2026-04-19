@@ -23,6 +23,9 @@ router.get("/app", async (req, res) => {
     appName: s.appName || "TrustPay",
     buyRules: s.buyRules || "",
     sellRules: s.sellRules || "",
+    apkDownloadUrl: s.apkDownloadUrl || "",
+    apkVersion: s.apkVersion || "1.0.0",
+    forceAppDownload: (s.forceAppDownload ?? "false") === "true",
     broadcastNotification,
   });
 });

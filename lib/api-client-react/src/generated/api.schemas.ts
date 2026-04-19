@@ -167,10 +167,24 @@ export interface AppSettings {
   telegramLink?: string;
   bannerImages?: string[];
   appName: string;
+  apkDownloadUrl?: string;
+  apkVersion?: string;
+  forceAppDownload?: boolean;
+}
+
+export interface FeeTier {
+  min: number;
+  max: number;
+  fee: number;
 }
 
 export type AdminSettings = AppSettings & {
   adminPassword?: string;
+  feeTiers?: FeeTier[];
+  apkDownloadUrl?: string;
+  apkVersion?: string;
+  forceAppDownload?: boolean;
+  platformCommissionPerChunk?: number;
 };
 
 export interface AdminUpdateSettingsBody {
@@ -181,6 +195,11 @@ export interface AdminUpdateSettingsBody {
   telegramLink?: string;
   bannerImages?: string[];
   adminPassword?: string;
+  feeTiers?: FeeTier[];
+  apkDownloadUrl?: string;
+  apkVersion?: string;
+  forceAppDownload?: boolean;
+  platformCommissionPerChunk?: number;
 }
 
 export interface DailyStats {

@@ -14,4 +14,7 @@ export interface AppSettings {
   telegramLink?: string;
   bannerImages?: string[];
   appName: string;
+  apkDownloadUrl?: string;
+  apkVersion?: string;
+  forceAppDownload?: boolean;
 }

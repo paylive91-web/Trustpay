@@ -39,6 +39,7 @@ export * from "./disputeBase";
 export * from "./disputeBaseStatus";
 export * from "./disputeOrder";
 export * from "./errorResponse";
+export * from "./feeTier";
 export * from "./fraudAlert";
 export * from "./fraudAlertSeverity";
 export * from "./fraudRule";

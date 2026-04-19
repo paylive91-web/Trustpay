@@ -7,6 +7,39 @@ function rand(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+type FeeTier = { min: number; max: number; fee: number };
+
+/**
+ * Look up the per-chunk platform fee for a given gross chunk amount.
+ * Iterates the admin-configured tier list (loaded from settings.feeTiers)
+ * and returns the first tier whose [min, max] inclusive range contains the
+ * amount. Falls back to the legacy flat platformCommissionPerChunk value
+ * when no tier matches (or the tier list is empty / malformed).
+ */
+function feeForAmount(amount: number, tiers: FeeTier[], fallback: number): number {
+  if (Array.isArray(tiers)) {
+    for (const t of tiers) {
+      if (typeof t?.min !== "number" || typeof t?.max !== "number" || typeof t?.fee !== "number") continue;
+      if (amount >= t.min && amount <= t.max) {
+        return Math.max(0, Math.floor(t.fee));
+      }
+    }
+  }
+  return Math.max(0, Math.floor(fallback));
+}
+
+function parseFeeTiers(raw: string): FeeTier[] {
+  try {
+    const parsed = JSON.parse(raw || "[]");
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((t: any) => ({ min: Number(t?.min), max: Number(t?.max), fee: Number(t?.fee) }))
+      .filter((t) => Number.isFinite(t.min) && Number.isFinite(t.max) && Number.isFinite(t.fee) && t.min <= t.max);
+  } catch {
+    return [];
+  }
+}
+
 /**
  * Convert seller's available balance into random chunks (₹99-₹499) added to the buy queue.
  * Each chunk is an order row with type=withdrawal status=available.
@@ -46,11 +79,12 @@ export async function regenerateChunksForUser(userId: number) {
   const settings = await getSettings([
     "chunkMin", "chunkMax", "newUserChunkCap", "newUserTradeThreshold",
     "platformCommissionPerChunk", "adminChunkMin", "adminChunkMax",
-    "chunkSweetMin", "chunkSweetMax", "chunkSweetBias",
+    "chunkSweetMin", "chunkSweetMax", "chunkSweetBias", "feeTiers",
   ]);
   let chunkMin = parseInt(settings.chunkMin) || 100;
   let chunkMax = parseInt(settings.chunkMax) || 50000;
-  const commission = parseInt(settings.platformCommissionPerChunk) || 1;
+  const flatCommission = parseInt(settings.platformCommissionPerChunk) || 1;
+  const feeTiers = parseFeeTiers(settings.feeTiers);
   // Sweet-spot band: most chunks fall in this range so we maximize the
   // per-chunk ₹1 platform fee while avoiding both tiny dust chunks and
   // oversized single chunks. Bias = probability a chunk is drawn from the
@@ -64,9 +98,13 @@ export async function regenerateChunksForUser(userId: number) {
     chunkMin = parseInt(settings.adminChunkMin) || 5000;
     chunkMax = parseInt(settings.adminChunkMax) || 50000;
   }
-  // For in-queue chunks: each consumed (amount + commission) of seller
-  // balance at creation (commission → admin, amount → buyer at settle).
-  const inQueueAmt = existingChunks.reduce((s, o) => s + parseFloat(o.amount) + commission, 0);
+  // For in-queue chunks: each row stores `amount` = net buyer amount; the
+  // platform fee was deducted from seller balance at creation time. We don't
+  // store the fee on the row, so to keep `avail` *conservative* (and avoid
+  // over-generating new chunks) we add back the maximum tier fee currently
+  // configured — this can only over-count consumed balance, never under-count.
+  const maxTierFee = feeTiers.reduce((m, t) => Math.max(m, t.fee), flatCommission);
+  const inQueueAmt = existingChunks.reduce((s, o) => s + parseFloat(o.amount) + maxTierFee, 0);
   let avail = balance - held - inQueueAmt;
   const newUserCap = parseInt(settings.newUserChunkCap) || 10000;
   const tradeThreshold = parseInt(settings.newUserTradeThreshold) || 5;
@@ -127,40 +165,48 @@ export async function regenerateChunksForUser(userId: number) {
     // Round-robin distribute across every active UPI so payments aren't
     // funneled to one account.
     const upi = upis[i % upis.length];
-    const buyerAmount = gross - commission;
+    // Per-chunk tier fee: lookup once at creation time so all downstream
+    // accounting (seller debit, admin credit, commission counter, transaction
+    // description) uses the same number even if the admin edits tiers later.
+    const tierFee = feeForAmount(gross, feeTiers, flatCommission);
+    const buyerAmount = gross - tierFee;
     await db.transaction(async (tx) => {
-      // Debit ₹1 from seller balance immediately (platform fee). The remaining
-      // (gross - 1) stays on seller balance until lock time, when it moves to
-      // heldBalance.
-      await tx.update(usersTable).set({
-        balance: sql`${usersTable.balance} - ${commission}`,
-      }).where(eq(usersTable.id, userId));
+      // Debit the tier fee from seller balance immediately (platform fee). The
+      // remaining (gross - tierFee) stays on seller balance until lock time,
+      // when it moves to heldBalance.
+      if (tierFee > 0) {
+        await tx.update(usersTable).set({
+          balance: sql`${usersTable.balance} - ${tierFee}`,
+        }).where(eq(usersTable.id, userId));
+      }
       // NOTE: deliberately not inserting a seller-side transaction row for
       // the platform fee — the deduction is silent so users don't see a
-      // ₹1 fee entry per chunk in their transaction history.
+      // fee entry per chunk in their transaction history.
       // Credit the platform fee to the admin user's wallet so the money
       // physically lands in an account the operator controls.
-      if (adminUser) {
+      if (adminUser && tierFee > 0) {
         await tx.update(usersTable).set({
-          balance: sql`${usersTable.balance} + ${commission}`,
+          balance: sql`${usersTable.balance} + ${tierFee}`,
         }).where(eq(usersTable.id, adminUser.id));
         await tx.insert(transactionsTable).values({
-          userId: adminUser.id, type: "credit", amount: String(commission),
+          userId: adminUser.id, type: "credit", amount: String(tierFee),
           description: `Platform fee from seller #${userId} (chunk ₹${gross})`,
         });
       }
       // Atomic increment of platform commission counter via SQL upsert
       // (avoids lost-update races under concurrent chunk creation).
-      await tx.insert(settingsTable).values({
-        key: "platformCommissionTotal",
-        value: String(commission),
-      }).onConflictDoUpdate({
-        target: settingsTable.key,
-        set: {
-          value: sql`(COALESCE(NULLIF(${settingsTable.value}, '')::numeric, 0) + ${commission})::text`,
-          updatedAt: new Date(),
-        },
-      });
+      if (tierFee > 0) {
+        await tx.insert(settingsTable).values({
+          key: "platformCommissionTotal",
+          value: String(tierFee),
+        }).onConflictDoUpdate({
+          target: settingsTable.key,
+          set: {
+            value: sql`(COALESCE(NULLIF(${settingsTable.value}, '')::numeric, 0) + ${tierFee})::text`,
+            updatedAt: new Date(),
+          },
+        });
+      }
       await tx.insert(ordersTable).values({
         userId,
         type: "withdrawal",

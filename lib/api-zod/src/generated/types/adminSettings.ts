@@ -6,7 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AppSettings } from "./appSettings";
+import type { FeeTier } from "./feeTier";
 
 export type AdminSettings = AppSettings & {
   adminPassword?: string;
+  feeTiers?: FeeTier[];
+  apkDownloadUrl?: string;
+  apkVersion?: string;
+  forceAppDownload?: boolean;
+  platformCommissionPerChunk?: number;
 };

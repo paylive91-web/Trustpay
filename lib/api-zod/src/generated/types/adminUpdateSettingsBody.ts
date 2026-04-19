@@ -5,6 +5,7 @@
  * TrustPay API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { FeeTier } from "./feeTier";
 
 export interface AdminUpdateSettingsBody {
   upiId?: string;
@@ -14,4 +15,9 @@ export interface AdminUpdateSettingsBody {
   telegramLink?: string;
   bannerImages?: string[];
   adminPassword?: string;
+  feeTiers?: FeeTier[];
+  apkDownloadUrl?: string;
+  apkVersion?: string;
+  forceAppDownload?: boolean;
+  platformCommissionPerChunk?: number;
 }

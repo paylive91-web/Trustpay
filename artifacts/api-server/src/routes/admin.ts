@@ -280,6 +280,17 @@ function fSettings(s: any) {
   try { announcements = JSON.parse(s.announcements || "[]"); } catch {}
   let broadcastNotification: any = null;
   try { broadcastNotification = JSON.parse(s.broadcastNotification || "null"); } catch {}
+  // Fee tiers: admin-configured per-chunk fee bands. Stored as JSON, parsed
+  // here so the admin UI gets a typed array. Empty array = use legacy flat fee.
+  let feeTiers: Array<{ min: number; max: number; fee: number }> = [];
+  try {
+    const raw = JSON.parse(s.feeTiers || "[]");
+    if (Array.isArray(raw)) {
+      feeTiers = raw
+        .map((t: any) => ({ min: Number(t?.min), max: Number(t?.max), fee: Number(t?.fee) }))
+        .filter((t) => Number.isFinite(t.min) && Number.isFinite(t.max) && Number.isFinite(t.fee));
+    }
+  } catch {}
   return {
     upiId: s.upiId || "trustpay@upi",
     upiName: s.upiName || "TrustPay",
@@ -288,17 +299,22 @@ function fSettings(s: any) {
     bannerImages: JSON.parse(s.bannerImages || "[]"),
     appName: s.appName || "TrustPay",
     buyRules: s.buyRules || "", sellRules: s.sellRules || "",
-    chunkMin: parseInt(s.chunkMin || "99"),
-    chunkMax: parseInt(s.chunkMax || "499"),
+    chunkMin: parseInt(s.chunkMin || "100"),
+    chunkMax: parseInt(s.chunkMax || "50000"),
     adminChunkMin: parseInt(s.adminChunkMin || "5000"),
     adminChunkMax: parseInt(s.adminChunkMax || "50000"),
-    newUserChunkCap: parseInt(s.newUserChunkCap || "500"),
+    newUserChunkCap: parseInt(s.newUserChunkCap || "10000"),
     newUserTradeThreshold: parseInt(s.newUserTradeThreshold || "5"),
     buyLockMinutes: parseInt(s.buyLockMinutes || "15"),
     sellerConfirmMinutes: parseInt(s.sellerConfirmMinutes || "15"),
     disputeWindowHours: parseInt(s.disputeWindowHours || "24"),
     highValueThreshold: parseInt(s.highValueThreshold || "5000"),
     highValueCriticalThreshold: parseInt(s.highValueCriticalThreshold || "10000"),
+    platformCommissionPerChunk: parseInt(s.platformCommissionPerChunk || "1"),
+    feeTiers,
+    apkDownloadUrl: s.apkDownloadUrl || "",
+    apkVersion: s.apkVersion || "1.0.0",
+    forceAppDownload: (s.forceAppDownload ?? "false") === "true",
     broadcastNotification,
   };
 }
@@ -307,8 +323,38 @@ router.get("/settings", requireAdmin, async (_req, res) => {
   res.json(fSettings(await getAllSettings()));
 });
 
-router.put("/settings", requireAdmin, async (req, res) => {
+router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
   const b = req.body || {};
+  // VALIDATE FIRST, WRITE LATER — never persist a partial update if any
+  // section is invalid. Fee tiers are the only field with cross-row
+  // constraints (overlap-free, fee < min so buyerAmount stays positive).
+  let cleanedTiers: Array<{ min: number; max: number; fee: number }> | null = null;
+  if (Array.isArray(b.feeTiers)) {
+    cleanedTiers = [];
+    for (const t of b.feeTiers) {
+      const min = Number(t?.min), max = Number(t?.max), fee = Number(t?.fee);
+      if (!Number.isFinite(min) || !Number.isFinite(max) || !Number.isFinite(fee)) {
+        return res.status(400).json({ error: "Each fee tier needs numeric min, max and fee" });
+      }
+      const cleaned = { min: Math.floor(min), max: Math.floor(max), fee: Math.max(0, Math.floor(fee)) };
+      if (cleaned.min < 0 || cleaned.max < cleaned.min) {
+        return res.status(400).json({ error: `Invalid fee tier range: ${cleaned.min}-${cleaned.max}` });
+      }
+      // Guarantee buyerAmount = gross - fee > 0 for every chunk this tier
+      // could match — i.e. fee must be strictly less than the smallest
+      // gross in the band.
+      if (cleaned.fee >= cleaned.min) {
+        return res.status(400).json({ error: `Fee ₹${cleaned.fee} must be less than min ₹${cleaned.min} so buyer amount stays positive` });
+      }
+      cleanedTiers.push(cleaned);
+    }
+    cleanedTiers.sort((a, b) => a.min - b.min);
+    for (let i = 1; i < cleanedTiers.length; i++) {
+      if (cleanedTiers[i].min <= cleanedTiers[i - 1].max) {
+        return res.status(400).json({ error: `Fee tiers overlap: ${cleanedTiers[i - 1].min}-${cleanedTiers[i - 1].max} and ${cleanedTiers[i].min}-${cleanedTiers[i].max}` });
+      }
+    }
+  }
   const map: Record<string, any> = {
     upiId: b.upiId, upiName: b.upiName,
     popupMessage: b.popupMessage, popupImageUrl: b.popupImageUrl,
@@ -320,6 +366,9 @@ router.put("/settings", requireAdmin, async (req, res) => {
     buyLockMinutes: b.buyLockMinutes, sellerConfirmMinutes: b.sellerConfirmMinutes,
     disputeWindowHours: b.disputeWindowHours,
     highValueThreshold: b.highValueThreshold, highValueCriticalThreshold: b.highValueCriticalThreshold,
+    platformCommissionPerChunk: b.platformCommissionPerChunk,
+    apkDownloadUrl: b.apkDownloadUrl, apkVersion: b.apkVersion,
+    forceAppDownload: typeof b.forceAppDownload === "boolean" ? String(b.forceAppDownload) : b.forceAppDownload,
   };
   for (const [k, v] of Object.entries(map)) {
     if (v != null) await setSetting(k, String(v));
@@ -327,6 +376,9 @@ router.put("/settings", requireAdmin, async (req, res) => {
   if (b.multipleUpiIds != null) await setSetting("multipleUpiIds", JSON.stringify(b.multipleUpiIds));
   if (b.announcements != null) await setSetting("announcements", JSON.stringify(b.announcements));
   if (b.bannerImages != null) await setSetting("bannerImages", JSON.stringify(b.bannerImages));
+  if (cleanedTiers) {
+    await setSetting("feeTiers", JSON.stringify(cleanedTiers));
+  }
   if (b.adminPassword) {
     const hash = await bcrypt.hash(b.adminPassword, 10);
     await setSetting("adminPasswordHash", hash);

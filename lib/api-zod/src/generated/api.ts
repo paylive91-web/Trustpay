@@ -276,6 +276,9 @@ export const GetAppSettingsResponse = zod.object({
   telegramLink: zod.string().optional(),
   bannerImages: zod.array(zod.string()).optional(),
   appName: zod.string(),
+  apkDownloadUrl: zod.string().optional(),
+  apkVersion: zod.string().optional(),
+  forceAppDownload: zod.boolean().optional(),
 });
 
 /**
@@ -485,10 +488,26 @@ export const AdminGetSettingsResponse = zod
     telegramLink: zod.string().optional(),
     bannerImages: zod.array(zod.string()).optional(),
     appName: zod.string(),
+    apkDownloadUrl: zod.string().optional(),
+    apkVersion: zod.string().optional(),
+    forceAppDownload: zod.boolean().optional(),
   })
   .and(
     zod.object({
       adminPassword: zod.string().optional(),
+      feeTiers: zod
+        .array(
+          zod.object({
+            min: zod.number(),
+            max: zod.number(),
+            fee: zod.number(),
+          }),
+        )
+        .optional(),
+      apkDownloadUrl: zod.string().optional(),
+      apkVersion: zod.string().optional(),
+      forceAppDownload: zod.boolean().optional(),
+      platformCommissionPerChunk: zod.number().optional(),
     }),
   );
 
@@ -503,6 +522,19 @@ export const AdminUpdateSettingsBody = zod.object({
   telegramLink: zod.string().optional(),
   bannerImages: zod.array(zod.string()).optional(),
   adminPassword: zod.string().optional(),
+  feeTiers: zod
+    .array(
+      zod.object({
+        min: zod.number(),
+        max: zod.number(),
+        fee: zod.number(),
+      }),
+    )
+    .optional(),
+  apkDownloadUrl: zod.string().optional(),
+  apkVersion: zod.string().optional(),
+  forceAppDownload: zod.boolean().optional(),
+  platformCommissionPerChunk: zod.number().optional(),
 });
 
 export const AdminUpdateSettingsResponse = zod
@@ -514,10 +546,26 @@ export const AdminUpdateSettingsResponse = zod
     telegramLink: zod.string().optional(),
     bannerImages: zod.array(zod.string()).optional(),
     appName: zod.string(),
+    apkDownloadUrl: zod.string().optional(),
+    apkVersion: zod.string().optional(),
+    forceAppDownload: zod.boolean().optional(),
   })
   .and(
     zod.object({
       adminPassword: zod.string().optional(),
+      feeTiers: zod
+        .array(
+          zod.object({
+            min: zod.number(),
+            max: zod.number(),
+            fee: zod.number(),
+          }),
+        )
+        .optional(),
+      apkDownloadUrl: zod.string().optional(),
+      apkVersion: zod.string().optional(),
+      forceAppDownload: zod.boolean().optional(),
+      platformCommissionPerChunk: zod.number().optional(),
     }),
   );
 

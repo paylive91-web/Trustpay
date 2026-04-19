@@ -3,6 +3,7 @@ import { useGetMe } from "@workspace/api-client-react";
 import { useLocation, Link } from "wouter";
 import { setAuthToken } from "@/lib/auth";
 import { getDeviceFingerprint } from "@/lib/fingerprint";
+import { markMustInstallApp } from "@/components/install-lock";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -65,6 +66,10 @@ export default function Register() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Registration failed");
       setAuthToken(data.token);
+      // After registration we require the user to install the Android APK
+      // before continuing. The InstallLock overlay reads this flag and blocks
+      // the entire UI until the user opens the app from inside the APK.
+      markMustInstallApp();
       toast({ title: "Account created successfully!" });
       setLocation("/");
     } catch (err: any) {
