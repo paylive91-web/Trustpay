@@ -8,6 +8,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_1776335785514.png";
 import { cn } from "@/lib/utils";
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+const adminPath = (path: string) => `${BASE}${path}`;
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -21,7 +23,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   React.useEffect(() => {
     if (!isLoading && (!user || user.role !== "admin")) {
-      setLocation("/admin");
+      setLocation(adminPath("/admin"));
     }
   }, [user, isLoading, setLocation]);
 
@@ -34,7 +36,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       onSuccess: () => {
         clearAuthToken();
         queryClient.clear();
-        setLocation("/admin");
+        setLocation(adminPath("/admin"));
       }
     });
   };
@@ -42,7 +44,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { data: criticalCountData } = useQuery({
     queryKey: ["fraud-critical-open-count"],
     queryFn: async () => {
-      const r = await fetch("/api/admin/fraud-alerts?resolved=false", { headers: { Authorization: `Bearer ${getAuthToken()}` } });
+      const r = await fetch(`${BASE}/api/admin/fraud-alerts?resolved=false`, { headers: { Authorization: `Bearer ${getAuthToken()}` } });
       if (!r.ok) return { count: 0 };
       const rows = await r.json();
       return { count: Array.isArray(rows) ? rows.filter((a: any) => a.severity === "critical").length : 0 };
