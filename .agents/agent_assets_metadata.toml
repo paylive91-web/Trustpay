@@ -47,3 +47,9 @@ id = "aKr1lib_kX70Et9PMgLW0"
 uri = "file://screenshots/home-redesign-v5.jpg"
 type = "image"
 title = "Home — Compact Hero"
+
+[[outputs]]
+id = "JuCZxDHAFAV9adm0vmAIk"
+uri = "file://screenshots/home-redesign-v6.jpg"
+type = "image"
+title = "Home — Bigger banner, KYC strip"
