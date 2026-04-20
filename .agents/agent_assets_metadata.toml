@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "DQlJ_ODA0dtNrYEm-pp0i"
+uri = "file://artifacts/trustpay/public/registration-google-mock.png"
+type = "image"
+title = "Google auth registration screen"
