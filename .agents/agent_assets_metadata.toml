@@ -6,3 +6,9 @@ id = "DQlJ_ODA0dtNrYEm-pp0i"
 uri = "file://artifacts/trustpay/public/registration-google-mock.png"
 type = "image"
 title = "Google auth registration screen"
+
+[[generated]]
+id = "C9gY6HGP_GfninLT5MUhK"
+uri = "file://artifacts/trustpay/public/trustpay-registration-google-verification.png"
+type = "image"
+title = "Google verification registration"
