@@ -91,7 +91,7 @@ export default function Buy() {
   const lockMut = useMutation({
     mutationFn: (id: number) => api(`/p2p/lock/${id}`, { method: "POST" }),
     onSuccess: () => { refetchBuy(); qc.invalidateQueries({ queryKey: ["p2p-queue"] }); toast({ title: "Order locked! Pay now." }); },
-    onError: (e: any) => toast({ title: "Failed to lock", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: "This order may be bought by someone else", description: e.message, variant: "destructive" }),
   });
 
   if (!user) return null;
