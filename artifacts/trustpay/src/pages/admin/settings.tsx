@@ -195,8 +195,6 @@ export default function AdminSettings() {
       announcements: announcements.filter((a) => a.message.trim()),
       popupMessage,
       popupImageUrl,
-      telegramLink,
-      bannerImages,
       appName,
       appLogoUrl,
       popupSoundUrl,
@@ -564,47 +562,6 @@ export default function AdminSettings() {
                     onChange={(e) => setPopupMessage(e.target.value)}
                   />
                   <ImagePicker label="Popup Image (Optional)" value={popupImageUrl} onChange={setPopupImageUrl} />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Links & Media */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Links & Media</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Support Telegram Link</Label>
-                  <Input
-                    placeholder="https://t.me/..."
-                    value={telegramLink}
-                    onChange={(e) => setTelegramLink(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Home Banner Images</Label>
-                  <div className="space-y-3">
-                    {bannerImages.map((url, idx) => (
-                      <div key={idx} className="border rounded-lg p-4 bg-muted/30 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-sm font-semibold">Banner {idx + 1}</Label>
-                          <Button
-                            type="button" variant="outline" size="sm"
-                            onClick={() => setBannerImages((prev) => prev.filter((_, i) => i !== idx))}
-                          >Remove</Button>
-                        </div>
-                        <ImagePicker
-                          value={url}
-                          onChange={(v) => setBannerImages((prev) => prev.map((u, i) => i === idx ? v : u))}
-                        />
-                      </div>
-                    ))}
-                    <Button
-                      type="button" variant="outline" size="sm"
-                      onClick={() => setBannerImages((prev) => [...prev, ""])}
-                    ><Upload className="w-3 h-3 mr-1" /> Add Banner</Button>
-                  </div>
                 </div>
               </CardContent>
             </Card>
