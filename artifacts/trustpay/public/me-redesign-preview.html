@@ -1,141 +1,143 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>TrustPay — Me Preview</title>
+<title>TrustPay — Profile Preview</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <style>
   body{font-family:'Inter',system-ui,sans-serif;background:#eef2ff}
-  .glass{backdrop-filter:blur(14px)}
   .num{font-variant-numeric:tabular-nums;letter-spacing:-0.02em}
   .shadow-soft{box-shadow:0 20px 50px -20px rgba(30,41,99,.35)}
 </style></head>
 <body class="min-h-screen flex justify-center p-6">
 <div class="w-[420px] rounded-[36px] overflow-hidden bg-white shadow-2xl border border-slate-200/80">
 
-  <!-- HERO -->
-  <div class="relative pt-4 pb-24 px-5 text-white overflow-hidden"
-       style="background:radial-gradient(1200px 300px at -10% -20%,#10b981 0%,transparent 60%),radial-gradient(800px 300px at 110% 0%,#3b82f6 0%,transparent 55%),linear-gradient(135deg,#064e3b 0%,#1e3a8a 50%,#312e81 100%);">
-    <div class="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-emerald-400/25 blur-3xl"></div>
+  <!-- Profile header (matches real) -->
+  <div class="relative pt-10 pb-20 px-4 text-white overflow-hidden"
+       style="background:linear-gradient(135deg,#1e3a8a 0%,#312e81 45%,#0c4a6e 100%);">
+    <div class="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-sky-400/25 blur-3xl"></div>
 
-    <div class="relative flex items-center justify-between">
-      <div class="font-extrabold text-[18px]">My Account</div>
-      <button class="w-9 h-9 rounded-full bg-white/15 grid place-items-center">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      </button>
-    </div>
-
-    <!-- Profile -->
-    <div class="relative mt-4 flex items-center gap-4">
-      <div class="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-400 to-orange-500 grid place-items-center text-3xl font-black text-white shadow-lg ring-4 ring-white/20">A</div>
-      <div class="flex-1">
-        <div class="text-xl font-extrabold leading-tight">Aarav Sharma</div>
-        <div class="text-[11px] text-white/70 mt-0.5">aarav@okhdfcbank</div>
-        <div class="mt-2 flex gap-1.5 text-[10px] font-bold">
-          <span class="bg-emerald-400/20 text-emerald-200 px-2 py-1 rounded-full">✓ KYC</span>
-          <span class="bg-amber-400/20 text-amber-200 px-2 py-1 rounded-full">★ Trust 92</span>
-          <span class="bg-fuchsia-400/20 text-fuchsia-200 px-2 py-1 rounded-full">Elite</span>
+    <div class="relative flex items-center gap-4">
+      <div class="w-16 h-16 rounded-full border-2 border-white/30 bg-white/10 grid place-items-center text-2xl font-extrabold shadow-lg">98</div>
+      <div class="flex-1 min-w-0">
+        <h2 class="text-xl font-extrabold truncate">9876543210</h2>
+        <div class="flex items-center gap-1 text-white/80 text-sm mt-1">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.33 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z"/></svg>
+          <span>+91 9876543210</span>
+        </div>
+        <div class="flex items-center gap-2 mt-2">
+          <span class="text-[10px] bg-white/15 px-2 py-0.5 rounded-full">ID #142</span>
+          <span class="text-[10px] bg-emerald-500/30 px-2 py-0.5 rounded-full">Trust 92</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Wallet card overlap -->
-  <div class="px-4 -mt-16 relative z-10">
-    <div class="rounded-3xl shadow-soft p-5 text-white"
-         style="background:linear-gradient(120deg,#0f172a 0%,#3730a3 60%,#7c3aed 110%);">
-      <div class="flex items-center justify-between">
-        <div class="text-[10px] uppercase tracking-[0.18em] text-white/70">Wallet balance</div>
-        <span class="text-[10px] bg-white/15 px-2 py-0.5 rounded-full font-semibold">UPI</span>
-      </div>
-      <div class="text-3xl font-black num mt-1">₹ 24,580<span class="text-lg text-white/70">.00</span></div>
-      <div class="mt-4 grid grid-cols-2 gap-2.5">
-        <button class="py-2.5 rounded-xl bg-white text-indigo-700 text-xs font-extrabold">+ ADD</button>
-        <button class="py-2.5 rounded-xl bg-white/10 border border-white/30 text-white text-xs font-extrabold">WITHDRAW</button>
+  <!-- Account stats -->
+  <div class="px-4 -mt-12 relative z-10 space-y-4">
+    <div class="rounded-3xl bg-white shadow-soft border border-slate-100 p-4">
+      <div class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Account Statistics</div>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="rounded-xl border border-blue-100 bg-blue-50 p-3">
+          <div class="flex items-center gap-2 mb-1">
+            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1M16 12h5"/></svg>
+            <span class="text-[11px] font-semibold text-slate-600">Current Balance</span>
+          </div>
+          <div class="text-lg font-extrabold num text-slate-900">₹ 24,580.00</div>
+        </div>
+        <div class="rounded-xl border border-green-100 bg-green-50 p-3">
+          <div class="flex items-center gap-2 mb-1">
+            <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8m-4-4 4 4 4-4"/></svg>
+            <span class="text-[11px] font-semibold text-slate-600">Total Buy</span>
+          </div>
+          <div class="text-lg font-extrabold num text-slate-900">₹ 18,400.00</div>
+        </div>
+        <div class="rounded-xl border border-purple-100 bg-purple-50 p-3">
+          <div class="flex items-center gap-2 mb-1">
+            <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7"/></svg>
+            <span class="text-[11px] font-semibold text-slate-600">Invite L1</span>
+          </div>
+          <div class="text-lg font-extrabold num text-slate-900">₹ 9.00</div>
+        </div>
+        <div class="rounded-xl border border-red-100 bg-red-50 p-3">
+          <div class="flex items-center gap-2 mb-1">
+            <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16V8m-4 4 4-4 4 4"/></svg>
+            <span class="text-[11px] font-semibold text-slate-600">Total Sell</span>
+          </div>
+          <div class="text-lg font-extrabold num text-slate-900">₹ 6,200.00</div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Stats -->
-  <div class="px-4 mt-4 grid grid-cols-3 gap-2.5">
-    <div class="rounded-2xl bg-gradient-to-br from-sky-50 to-sky-100/60 border border-sky-100 p-3 text-center">
-      <div class="text-[10px] uppercase text-sky-700/80 font-semibold">Trades</div>
-      <div class="text-lg font-extrabold text-sky-800 num mt-1">42</div>
+    <!-- Referral code -->
+    <div class="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 flex items-center justify-between">
+      <div>
+        <div class="text-[11px] text-slate-500 mb-0.5">Your Referral Code</div>
+        <div class="text-xl font-extrabold tracking-widest text-indigo-600">AARAV2026</div>
+      </div>
+      <button class="px-3 py-2 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 flex items-center gap-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+        Copy
+      </button>
     </div>
-    <div class="rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100/60 border border-emerald-100 p-3 text-center">
-      <div class="text-[10px] uppercase text-emerald-700/80 font-semibold">Earned</div>
-      <div class="text-lg font-extrabold text-emerald-800 num mt-1">₹1,820</div>
-    </div>
-    <div class="rounded-2xl bg-gradient-to-br from-amber-50 to-orange-100/60 border border-amber-100 p-3 text-center">
-      <div class="text-[10px] uppercase text-amber-700/80 font-semibold">Streak</div>
-      <div class="text-lg font-extrabold text-amber-800 num mt-1">🔥 7d</div>
-    </div>
-  </div>
 
-  <!-- Menu list -->
-  <div class="px-4 mt-4 space-y-2">
-    <a class="flex items-center gap-3 p-3.5 rounded-2xl bg-white border border-slate-100 shadow-sm">
-      <div class="w-9 h-9 rounded-xl bg-indigo-50 grid place-items-center text-indigo-600">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 10h18M5 6h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></svg>
+    <!-- Google Verification -->
+    <div class="rounded-2xl bg-white border border-slate-100 shadow-sm p-4">
+      <div class="flex items-start gap-3 mb-3">
+        <div class="p-2 rounded-lg bg-amber-100 text-amber-600">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.5 8 11 4.6-1.5 8-6 8-11V5l-8-3Z"/></svg>
+        </div>
+        <div class="flex-1">
+          <div class="font-bold text-slate-800">Google Verification</div>
+          <div class="text-xs text-slate-500 mt-0.5">Apna Gmail bind karein — bhulne par password reset kar payenge.</div>
+        </div>
       </div>
-      <div class="flex-1">
-        <div class="text-sm font-bold text-slate-800">UPI accounts</div>
-        <div class="text-[11px] text-slate-500">2 linked</div>
+      <button class="w-full py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold">Verify with Google</button>
+    </div>
+
+    <!-- Menu list -->
+    <div class="rounded-2xl bg-white border border-slate-100 shadow-sm divide-y divide-slate-100">
+      <div class="flex items-center justify-between p-4">
+        <div class="flex items-center gap-3">
+          <div class="bg-slate-100 p-2 rounded-lg text-blue-500">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z"/></svg>
+          </div>
+          <span class="text-sm font-semibold text-slate-800">Contact Support</span>
+        </div>
+        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
       </div>
-      <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-    </a>
-    <a class="flex items-center gap-3 p-3.5 rounded-2xl bg-white border border-slate-100 shadow-sm">
-      <div class="w-9 h-9 rounded-xl bg-emerald-50 grid place-items-center text-emerald-600">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.5 8 11 4.6-1.5 8-6 8-11V5l-8-3Z"/></svg>
+      <div class="flex items-center justify-between p-4">
+        <div class="flex items-center gap-3">
+          <div class="bg-slate-100 p-2 rounded-lg text-purple-500">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 22V7"/></svg>
+          </div>
+          <span class="text-sm font-semibold text-slate-800">Invite &amp; Earn</span>
+        </div>
+        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
       </div>
-      <div class="flex-1">
-        <div class="text-sm font-bold text-slate-800">KYC & Security</div>
-        <div class="text-[11px] text-emerald-600 font-semibold">Verified</div>
-      </div>
-      <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-    </a>
-    <a class="flex items-center gap-3 p-3.5 rounded-2xl bg-white border border-slate-100 shadow-sm">
-      <div class="w-9 h-9 rounded-xl bg-amber-50 grid place-items-center text-amber-600">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1v22M5 5l14 14M19 5 5 19"/></svg>
-      </div>
-      <div class="flex-1">
-        <div class="text-sm font-bold text-slate-800">Rewards & Streaks</div>
-        <div class="text-[11px] text-slate-500">7-day streak active</div>
-      </div>
-      <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-    </a>
-    <a class="flex items-center gap-3 p-3.5 rounded-2xl bg-white border border-slate-100 shadow-sm">
-      <div class="w-9 h-9 rounded-xl bg-sky-50 grid place-items-center text-sky-600">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-      </div>
-      <div class="flex-1">
-        <div class="text-sm font-bold text-slate-800">Support & Help</div>
-        <div class="text-[11px] text-slate-500">24×7 dispute resolution</div>
-      </div>
-      <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-    </a>
-    <a class="flex items-center gap-3 p-3.5 rounded-2xl bg-rose-50 border border-rose-100 shadow-sm">
-      <div class="w-9 h-9 rounded-xl bg-rose-100 grid place-items-center text-rose-600">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-      </div>
-      <div class="flex-1">
-        <div class="text-sm font-bold text-rose-700">Logout</div>
-      </div>
-    </a>
+    </div>
+
+    <!-- Logout -->
+    <div class="rounded-2xl bg-white border border-slate-100 shadow-sm p-4">
+      <button class="w-full py-3 rounded-xl bg-rose-600 text-white text-sm font-bold flex items-center justify-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        Log Out
+      </button>
+    </div>
   </div>
 
   <div class="h-5"></div>
 
   <!-- Bottom nav -->
-  <div class="relative border-t border-slate-100 bg-white/90 glass pt-3 pb-3">
+  <div class="relative border-t border-slate-100 bg-white pt-3 pb-3">
     <div class="grid grid-cols-5 text-center text-[11px] font-medium">
       <div class="text-slate-500"><svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12 12 3l9 9M5 10v10h4v-6h6v6h4V10"/></svg><div class="mt-1">Home</div></div>
       <div class="text-slate-500"><svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 7h9M9 12h9M9 17h9"/><circle cx="5" cy="7" r=".7" fill="currentColor"/><circle cx="5" cy="12" r=".7" fill="currentColor"/><circle cx="5" cy="17" r=".7" fill="currentColor"/></svg><div class="mt-1">Orders</div></div>
       <div></div>
       <div class="text-slate-500"><svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 22V7"/></svg><div class="mt-1">Invite</div></div>
-      <div class="text-emerald-600"><svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><div class="mt-1 font-semibold">Me</div></div>
+      <div class="text-blue-600"><svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><div class="mt-1 font-semibold">Me</div></div>
     </div>
-    <button class="absolute left-1/2 -translate-x-1/2 -top-7 w-14 h-14 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white grid place-items-center shadow-xl ring-4 ring-white">
+    <button class="absolute left-1/2 -translate-x-1/2 -top-7 w-14 h-14 rounded-full bg-blue-600 text-white grid place-items-center shadow-xl ring-4 ring-white">
       <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
     </button>
   </div>

@@ -89,3 +89,39 @@ id = "aedk757DPqladhGSvUIOw"
 uri = "file://screenshots/me-redesign.jpg"
 type = "image"
 title = "Me / Profile Page — Redesign"
+
+[[outputs]]
+id = "8NLY-eJ1GKjyFP3ZxJXVt"
+uri = "file://screenshots/home-redesign-v8.jpg"
+type = "image"
+title = "Home (real features only)"
+
+[[outputs]]
+id = "CA5MJ-oLOlbl0YPxEYbUl"
+uri = "file://screenshots/buy-redesign-v2.jpg"
+type = "image"
+title = "Buy queue"
+
+[[outputs]]
+id = "jqtukD_QAwx1OVTJcpKxj"
+uri = "file://screenshots/sell-redesign-v2.jpg"
+type = "image"
+title = "Sell — matching + chunks"
+
+[[outputs]]
+id = "f2cfq-xCpucFtVQqohZLz"
+uri = "file://screenshots/orders-redesign-v2.jpg"
+type = "image"
+title = "Orders + Disputes"
+
+[[outputs]]
+id = "L_4diC0TM023mWeeJJExO"
+uri = "file://screenshots/invite-redesign-v2.jpg"
+type = "image"
+title = "Invite & Earn (L1/L2)"
+
+[[outputs]]
+id = "p5nfBZcapy3sM9gjSPrqD"
+uri = "file://screenshots/me-redesign-v2.jpg"
+type = "image"
+title = "Me / Profile"
