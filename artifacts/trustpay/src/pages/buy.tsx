@@ -323,7 +323,6 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
               {[
                 { key: "phonepe", label: "PhonePe" },
                 { key: "paytm", label: "Paytm" },
-                { key: "gpay", label: "GPay" },
               ].map((app) => (
                 <Button
                   key={app.key}
