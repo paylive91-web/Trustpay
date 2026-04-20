@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "DQlJ_ODA0dtNrYEm-pp0i"
@@ -18,3 +17,9 @@ id = "S2-fjF4GH89N3SWUl09SE"
 uri = "file://artifacts/trustpay/public/me-google-verification-mock.png"
 type = "image"
 title = "Me section Google verification"
+
+[[outputs]]
+id = "9i2SMWhGKDU824ilpyHpE"
+uri = "file://screenshots/home-redesign.jpg"
+type = "image"
+title = "Home Page — Redesign Preview"
