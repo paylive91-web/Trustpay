@@ -366,8 +366,8 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
  * Randomized queue: all orders stay visible, but their positions reshuffle
  * every few seconds so it feels like someone else may have purchased first.
  */
-const CARD_H = 110;
-const CARD_GAP = 8;
+const CARD_H = 128;
+const CARD_GAP = 10;
 
 function ChunkCarousel({ queue, onLock, disabled }: { queue: any[]; onLock: (id: number) => void; disabled: boolean }) {
   // `slots[i]` = which visual slot card at queue index i occupies
@@ -378,7 +378,7 @@ function ChunkCarousel({ queue, onLock, disabled }: { queue: any[]; onLock: (id:
     setSlots(queue.map((_, i) => i));
   }, [queue.length]);
 
-  // Every 2.2 s pick two random cards and swap their slots
+  // Every 1.6 s pick two random cards and swap their slots
   useEffect(() => {
     if (queue.length < 2) return;
     const timer = setInterval(() => {
@@ -390,7 +390,7 @@ function ChunkCarousel({ queue, onLock, disabled }: { queue: any[]; onLock: (id:
         [next[a], next[b]] = [next[b], next[a]];
         return next;
       });
-    }, 2200);
+    }, 1600);
     return () => clearInterval(timer);
   }, [queue.length]);
 
@@ -424,12 +424,12 @@ function ChunkCarousel({ queue, onLock, disabled }: { queue: any[]; onLock: (id:
 function ChunkCard({ chunk, onLock, disabled }: { chunk: any; onLock: () => void; disabled: boolean }) {
   const online = chunk.seller?.lastSeenAt && isOnline(chunk.seller.lastSeenAt);
   return (
-      <Card className="rounded-2xl shadow-sm border border-border/60 bg-card h-full overflow-hidden">
-      <CardContent className="p-2.5 h-full flex flex-col justify-between">
+      <Card className="rounded-[22px] shadow-sm border border-border/60 bg-card h-full overflow-hidden">
+      <CardContent className="p-3 h-full flex flex-col justify-between">
         {/* Row 1: amount + UPI badge + online */}
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-[20px] sm:text-[22px] font-black tracking-tight leading-none truncate">₹{chunk.amount}</span>
-          <span className="rounded-full bg-yellow-300 text-black text-[10px] font-bold px-2 py-0.5">UPI</span>
+          <span className="text-[23px] sm:text-[25px] font-black tracking-tight leading-none truncate">₹{chunk.amount}</span>
+          <span className="rounded-full bg-yellow-300 text-black text-[10px] font-bold px-3 py-1">UPI</span>
           {online && (
             <span className="flex items-center gap-1 text-green-600 text-[11px]">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block animate-pulse" />
@@ -438,21 +438,22 @@ function ChunkCard({ chunk, onLock, disabled }: { chunk: any; onLock: () => void
           )}
         </div>
         {/* Row 2: income + quota boxes + Buy button */}
-        <div className="flex items-center gap-2 mt-1.5 min-w-0">
-          <div className="flex-1 rounded-xl bg-muted/50 p-2 min-w-0">
-            <div className="text-[10px] text-muted-foreground">Income</div>
-            <div className="text-[13px] font-bold text-emerald-700 truncate">₹{chunk.rewardAmount}</div>
-            <div className="text-[9px] text-muted-foreground">{chunk.rewardPercent}% reward</div>
+        <div className="flex items-center gap-2 mt-2 min-w-0">
+          <div className="flex-1 rounded-2xl bg-muted/50 p-3 min-w-0">
+            <div className="text-[11px] text-muted-foreground font-medium">Income</div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="text-[18px] font-black text-emerald-700 truncate">₹{chunk.rewardAmount}</div>
+              <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-500 whitespace-nowrap">{chunk.rewardPercent}%+6</span>
+            </div>
           </div>
-          <div className="flex-1 rounded-xl bg-muted/50 p-2 min-w-0">
-            <div className="text-[10px] text-muted-foreground">Quota</div>
-            <div className="text-[13px] font-bold text-sky-700 truncate">₹{chunk.totalAmount}</div>
-            <div className="text-[9px] text-muted-foreground">Available</div>
+          <div className="flex-1 rounded-2xl bg-muted/50 p-3 min-w-0">
+            <div className="text-[11px] text-muted-foreground font-medium">Quota</div>
+            <div className="text-[18px] font-black text-slate-900 truncate">+ {chunk.totalAmount}</div>
           </div>
           <button
             onClick={onLock}
             disabled={disabled}
-            className="w-11 h-11 rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0 flex items-center justify-center shadow disabled:opacity-50 active:scale-95 transition-transform"
+            className="w-28 h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-bold shrink-0 flex items-center justify-center shadow disabled:opacity-50 active:scale-95 transition-transform"
           >
             Buy
           </button>
