@@ -370,13 +370,30 @@ const CARD_H = 128;
 const CARD_GAP = 10;
 
 function ChunkCarousel({ queue, onLock, disabled }: { queue: any[]; onLock: (id: number) => void; disabled: boolean }) {
-  // `slots[i]` = which visual slot card at queue index i occupies
-  const [slots, setSlots] = useState<number[]>(() => queue.map((_, i) => i));
+  // Build a "looped" display queue: repeat real orders enough times so the
+  // user always sees a long, busy list (>= 24 cards) even when only a few
+  // real chunks exist. Each repeat carries a unique key so React renders
+  // them as distinct cards.
+  const displayQueue = React.useMemo(() => {
+    if (queue.length === 0) return [] as Array<{ chunk: any; key: string }>;
+    const TARGET = 24;
+    const repeats = Math.max(1, Math.ceil(TARGET / queue.length));
+    const out: Array<{ chunk: any; key: string }> = [];
+    for (let r = 0; r < repeats; r++) {
+      for (const c of queue) {
+        out.push({ chunk: c, key: `${c.id}-${r}` });
+      }
+    }
+    return out;
+  }, [queue]);
 
-  // Re-sync slots when queue length changes (new order arrived / order gone)
+  // `slots[i]` = which visual slot card at displayQueue index i occupies
+  const [slots, setSlots] = useState<number[]>(() => displayQueue.map((_, i) => i));
+
+  // Re-sync slots when display length changes (new order arrived / order gone)
   useEffect(() => {
-    setSlots(queue.map((_, i) => i));
-  }, [queue.length]);
+    setSlots(displayQueue.map((_, i) => i));
+  }, [displayQueue.length]);
 
   // Helper: do `swaps` random pair-swaps in one shot so multiple cards
   // visibly move together each tick.
@@ -394,32 +411,32 @@ function ChunkCarousel({ queue, onLock, disabled }: { queue: any[]; onLock: (id:
 
   // Start reshuffling almost immediately after the queue appears.
   useEffect(() => {
-    if (queue.length < 2) return;
+    if (displayQueue.length < 2) return;
     const t = setTimeout(() => {
       setSlots((prev) => reshuffle(prev, Math.max(2, Math.floor(prev.length / 2))));
     }, 200);
     return () => clearTimeout(t);
-  }, [queue.length]);
+  }, [displayQueue.length]);
 
   // Every 600 ms swap multiple pairs so the whole list visibly shuffles.
   useEffect(() => {
-    if (queue.length < 2) return;
+    if (displayQueue.length < 2) return;
     const timer = setInterval(() => {
       setSlots((prev) => reshuffle(prev, Math.max(2, Math.floor(prev.length / 2))));
     }, 600);
     return () => clearInterval(timer);
-  }, [queue.length]);
+  }, [displayQueue.length]);
 
-  const containerH = queue.length * CARD_H + (queue.length - 1) * CARD_GAP;
+  const containerH = displayQueue.length * CARD_H + (displayQueue.length - 1) * CARD_GAP;
 
   return (
     <div style={{ position: "relative", height: containerH }}>
-      {queue.map((chunk, idx) => {
+      {displayQueue.map(({ chunk, key }, idx) => {
         const slot = slots[idx] ?? idx;
         const topPx = slot * (CARD_H + CARD_GAP);
         return (
           <div
-            key={chunk.id}
+            key={key}
             style={{
               position: "absolute",
               top: topPx,
