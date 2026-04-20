@@ -244,7 +244,7 @@ export default function AdminSettings() {
         ) : settingsError ? (
           <Card className="border-red-200 bg-red-50">
             <CardContent className="p-4 text-sm text-red-700">
-              Failed to load settings{settingsErr ?  : ""}.
+              Failed to load settings: {getErrorMessage(settingsErr)}
             </CardContent>
           </Card>
         ) : (
