@@ -22,6 +22,21 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const logoutMutation = useLogout();
   const queryClient = useQueryClient();
 
+  const isAdmin = !!user && user.role === "admin";
+
+  const { data: criticalCountData } = useQuery({
+    queryKey: ["fraud-critical-open-count"],
+    queryFn: async () => {
+      const r = await fetch(`${BASE}/api/admin/fraud-alerts?resolved=false`, { headers: { Authorization: `Bearer ${getAuthToken()}` } });
+      if (!r.ok) return { count: 0 };
+      const rows = await r.json();
+      return { count: Array.isArray(rows) ? rows.filter((a: any) => a.severity === "critical").length : 0 };
+    },
+    refetchInterval: 30000,
+    enabled: isAdmin,
+  });
+  const { isInstallable, handleInstall } = useInstallPrompt();
+
   React.useEffect(() => {
     if (!isLoading && (!user || user.role !== "admin")) {
       setLocation(adminPath("/admin"));
@@ -42,19 +57,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     });
   };
 
-  const { data: criticalCountData } = useQuery({
-    queryKey: ["fraud-critical-open-count"],
-    queryFn: async () => {
-      const r = await fetch(`${BASE}/api/admin/fraud-alerts?resolved=false`, { headers: { Authorization: `Bearer ${getAuthToken()}` } });
-      if (!r.ok) return { count: 0 };
-      const rows = await r.json();
-      return { count: Array.isArray(rows) ? rows.filter((a: any) => a.severity === "critical").length : 0 };
-    },
-    refetchInterval: 30000,
-    enabled: !!user && user.role === "admin",
-  });
   const criticalOpen = criticalCountData?.count ?? 0;
-  const { isInstallable, handleInstall } = useInstallPrompt();
 
   const navItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, badge: 0 },
