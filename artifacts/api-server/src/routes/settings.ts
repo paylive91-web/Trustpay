@@ -22,6 +22,8 @@ router.get("/app", async (req, res) => {
     telegramLink: s.telegramLink || "",
     bannerImages: JSON.parse(s.bannerImages || "[]"),
     appName: s.appName || "TrustPay",
+    appLogoUrl: s.appLogoUrl || "",
+    popupSoundUrl: s.popupSoundUrl || "",
     buyRules: s.buyRules || "",
     sellRules: s.sellRules || "",
     // APK URL precedence: env var (so a CI deploy can override without DB

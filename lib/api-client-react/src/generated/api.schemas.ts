@@ -169,6 +169,8 @@ export interface AppSettings {
   telegramLink?: string;
   bannerImages?: string[];
   appName: string;
+  appLogoUrl?: string;
+  popupSoundUrl?: string;
   apkDownloadUrl?: string;
   apkVersion?: string;
   forceAppDownload?: boolean;
@@ -206,6 +208,9 @@ export interface AdminUpdateSettingsBody {
   popupImageUrl?: string;
   telegramLink?: string;
   bannerImages?: string[];
+  appName?: string;
+  appLogoUrl?: string;
+  popupSoundUrl?: string;
   adminPassword?: string;
   feeTiers?: FeeTier[];
   apkDownloadUrl?: string;
@@ -459,6 +464,31 @@ export const AdminGetOrdersStatus = {
   approved: "approved",
   rejected: "rejected",
 } as const;
+
+export type AdminUpdateUserBody = {
+  username?: string;
+  displayName?: string;
+};
+
+export type AdminGetFeeTransactionsParams = {
+  limit?: number;
+};
+
+export type AdminGetFeeTransactions200ItemsItem = {
+  id?: number;
+  amount?: number;
+  description?: string;
+  orderId?: number | null;
+  createdAt?: string;
+};
+
+export type AdminGetFeeTransactions200 = {
+  totalAmount: number;
+  totalCount: number;
+  todayAmount: number;
+  todayCount: number;
+  items: AdminGetFeeTransactions200ItemsItem[];
+};
 
 export type AdminGetFraudAlertsParams = {
   resolved?: AdminGetFraudAlertsResolved;

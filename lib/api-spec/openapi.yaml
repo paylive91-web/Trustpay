@@ -487,6 +487,82 @@ paths:
                 items:
                   $ref: "#/components/schemas/User"
 
+  /admin/users/{id}:
+    put:
+      operationId: adminUpdateUser
+      tags: [admin]
+      summary: Update user (rename username / displayName)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                displayName:
+                  type: string
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /admin/fee-transactions:
+    get:
+      operationId: adminGetFeeTransactions
+      tags: [admin]
+      summary: Platform fee transactions
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Fee transactions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalAmount:
+                    type: number
+                  totalCount:
+                    type: integer
+                  todayAmount:
+                    type: number
+                  todayCount:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        amount:
+                          type: number
+                        description:
+                          type: string
+                        orderId:
+                          type: integer
+                          nullable: true
+                        createdAt:
+                          type: string
+                          format: date-time
+                required: [totalAmount, totalCount, todayAmount, todayCount, items]
+
   /admin/users/{id}/balance:
     put:
       operationId: adminUpdateUserBalance
@@ -1202,6 +1278,10 @@ components:
             type: string
         appName:
           type: string
+        appLogoUrl:
+          type: string
+        popupSoundUrl:
+          type: string
         apkDownloadUrl:
           type: string
         apkVersion:
@@ -1276,6 +1356,12 @@ components:
           type: array
           items:
             type: string
+        appName:
+          type: string
+        appLogoUrl:
+          type: string
+        popupSoundUrl:
+          type: string
         adminPassword:
           type: string
         feeTiers:

@@ -7,6 +7,8 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   upiName: "TrustPay",
   popupMessage: "Welcome to TrustPay! Start earning rewards today.",
   popupImageUrl: "",
+  appLogoUrl: "",
+  popupSoundUrl: "",
   telegramLink: "https://t.me/trustpay",
   bannerImages: JSON.stringify([]),
   appName: "TrustPay",

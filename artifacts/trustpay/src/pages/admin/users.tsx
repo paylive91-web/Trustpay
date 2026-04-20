@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import AdminLayout from "@/components/admin-layout";
-import { useAdminGetUsers, useAdminUpdateUserBalance } from "@workspace/api-client-react";
+import { useAdminGetUsers, useAdminUpdateUserBalance, useAdminUpdateUser } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,7 +12,7 @@ import { getAdminGetUsersQueryKey } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Trash2 } from "lucide-react";
+import { Trash2, Pencil } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
@@ -42,6 +42,10 @@ export default function AdminUsers() {
   const [newBalance, setNewBalance] = useState("");
   const [reason, setReason] = useState("");
   const [deleteUser, setDeleteUser] = useState<any>(null);
+  const [renameUser, setRenameUser] = useState<any>(null);
+  const [renameUsername, setRenameUsername] = useState("");
+  const [renameDisplayName, setRenameDisplayName] = useState("");
+  const updateUserMut = useAdminUpdateUser();
 
   const openEdit = (user: any) => {
     setEditUser(user);
@@ -66,6 +70,29 @@ export default function AdminUsers() {
       onError: (err) => {
         toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to update", variant: "destructive" });
       }
+    });
+  };
+
+  const openRename = (user: any) => {
+    setRenameUser(user);
+    setRenameUsername(user.username || "");
+    setRenameDisplayName(user.displayName || "");
+  };
+
+  const handleSaveRename = () => {
+    if (!renameUser) return;
+    updateUserMut.mutate({
+      id: renameUser.id,
+      data: { username: renameUsername.trim(), displayName: renameDisplayName.trim() },
+    }, {
+      onSuccess: () => {
+        toast({ title: "User renamed" });
+        setRenameUser(null);
+        queryClient.invalidateQueries({ queryKey: getAdminGetUsersQueryKey() });
+      },
+      onError: (err: any) => {
+        toast({ title: "Error", description: err?.message || "Rename failed", variant: "destructive" });
+      },
     });
   };
 
@@ -135,6 +162,9 @@ export default function AdminUsers() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
+                            <Button size="sm" variant="outline" onClick={() => openRename(user)}>
+                              <Pencil className="h-3.5 w-3.5 mr-1" /> Rename
+                            </Button>
                             <Button size="sm" variant="outline" onClick={() => openEdit(user)}>
                               Edit Balance
                             </Button>
@@ -194,6 +224,29 @@ export default function AdminUsers() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditUser(null)}>Cancel</Button>
             <Button onClick={handleSaveBalance} disabled={updateBalanceMutation.isPending}>Save Balance</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!renameUser} onOpenChange={(open) => !open && setRenameUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename {renameUser?.username}</DialogTitle>
+            <DialogDescription>Change username and/or display name. Username must be unique.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Username</label>
+              <Input value={renameUsername} onChange={(e) => setRenameUsername(e.target.value)} placeholder="username" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Display Name (optional)</label>
+              <Input value={renameDisplayName} onChange={(e) => setRenameDisplayName(e.target.value)} placeholder="Shown in chats and orders" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameUser(null)}>Cancel</Button>
+            <Button onClick={handleSaveRename} disabled={updateUserMut.isPending || !renameUsername.trim()}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

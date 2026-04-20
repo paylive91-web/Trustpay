@@ -91,10 +91,10 @@ export default function Home() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-white rounded-xl p-1.5 shadow-sm">
-              <img src={logoPath} alt="TrustPay" className="w-8 h-8 rounded" />
+              <img src={(settings as any)?.appLogoUrl || logoPath} alt={(settings as any)?.appName || "TrustPay"} className="w-8 h-8 rounded object-contain" />
             </div>
             <div>
-              <div className="font-bold text-[19px] leading-none">TrustPay</div>
+              <div className="font-bold text-[19px] leading-none">{(settings as any)?.appName || "TrustPay"}</div>
               <div className="text-[11px] text-white/80 mt-1">Secure P2P UPI trading</div>
             </div>
           </div>

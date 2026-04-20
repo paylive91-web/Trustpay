@@ -14,6 +14,9 @@ export interface AdminUpdateSettingsBody {
   popupImageUrl?: string;
   telegramLink?: string;
   bannerImages?: string[];
+  appName?: string;
+  appLogoUrl?: string;
+  popupSoundUrl?: string;
   adminPassword?: string;
   feeTiers?: FeeTier[];
   apkDownloadUrl?: string;

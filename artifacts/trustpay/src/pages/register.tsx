@@ -8,11 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_1776335785514.png";
+import { useGetAppSettings } from "@workspace/api-client-react";
 import Layout from "@/components/layout";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
 export default function Register() {
+  const { data: brandSettings } = useGetAppSettings();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { data: user, isLoading: isUserLoading } = useGetMe({ query: { retry: false } });
@@ -77,7 +79,8 @@ export default function Register() {
   return (
     <Layout showBottomNav={false}>
       <div className="flex flex-col items-center justify-center min-h-screen p-6">
-        <img src={logoPath} alt="TrustPay Logo" className="w-24 h-24 mb-8" />
+        <img src={(brandSettings as any)?.appLogoUrl || logoPath} alt={`${(brandSettings as any)?.appName || "TrustPay"} Logo`} className="w-24 h-24 mb-2 rounded-2xl object-contain" />
+        <div className="text-xl font-bold mb-6 text-primary">{(brandSettings as any)?.appName || "TrustPay"}</div>
         <h1 className="text-2xl font-bold mb-2">Create Account</h1>
         <p className="text-muted-foreground mb-8 text-center">Sign up with your mobile number</p>
         <form onSubmit={handleRegister} className="w-full space-y-4">

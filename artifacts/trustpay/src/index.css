@@ -162,3 +162,23 @@
   100% { transform: translateY(-50%); }
 }
 .auto-scroll-list:hover { animation-play-state: paused; }
+
+/* Hide scrollbar utility — used in the Buy queue and any other auto-cycling
+   list where the visible scrollbar would distract from the animation. */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+@keyframes chunk-slide-down {
+  0% { opacity: 0; transform: translateY(-20px) scale(0.97); }
+  12% { opacity: 1; transform: translateY(0) scale(1); }
+  88% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(20px) scale(0.97); }
+}
+@keyframes chunk-slide-up {
+  0% { opacity: 0; transform: translateY(20px) scale(0.97); }
+  12% { opacity: 1; transform: translateY(0) scale(1); }
+  88% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-20px) scale(0.97); }
+}
+.chunk-anim-down { animation: chunk-slide-down 2.4s ease-in-out forwards; }
+.chunk-anim-up { animation: chunk-slide-up 2.4s ease-in-out forwards; }

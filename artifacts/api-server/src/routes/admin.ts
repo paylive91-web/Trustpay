@@ -120,6 +120,32 @@ router.post("/users/:id/unfreeze", requireAdmin, async (req, res) => {
   res.json({ success: true });
 });
 
+// Rename a user (username + optional displayName). Username uniqueness is
+// enforced at the DB level — we surface a friendly error on conflict.
+router.put("/users/:id", requireAdmin, async (req, res): Promise<any> => {
+  const id = parseInt(req.params.id);
+  const { username, displayName } = req.body || {};
+  const patch: any = {};
+  if (typeof username === "string") {
+    const u = username.trim();
+    if (u.length < 3) return res.status(400).json({ error: "Username must be at least 3 characters" });
+    patch.username = u;
+  }
+  if (typeof displayName === "string") patch.displayName = displayName.trim() || null;
+  if (Object.keys(patch).length === 0) return res.status(400).json({ error: "Nothing to update" });
+  try {
+    await db.update(usersTable).set(patch).where(eq(usersTable.id, id));
+  } catch (e: any) {
+    if (String(e?.message || "").includes("duplicate")) {
+      return res.status(409).json({ error: "Username already taken" });
+    }
+    return res.status(400).json({ error: e?.message || "Update failed" });
+  }
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id)).limit(1);
+  if (!user) return res.status(404).json({ error: "Not found" });
+  res.json(formatUser(user));
+});
+
 router.put("/users/:id/balance", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
   const { balance, reason } = req.body || {};
@@ -298,6 +324,8 @@ function fSettings(s: any) {
     announcements, telegramLink: s.telegramLink || "",
     bannerImages: JSON.parse(s.bannerImages || "[]"),
     appName: s.appName || "TrustPay",
+    appLogoUrl: s.appLogoUrl || "",
+    popupSoundUrl: s.popupSoundUrl || "",
     buyRules: s.buyRules || "", sellRules: s.sellRules || "",
     chunkMin: parseInt(s.chunkMin || "100"),
     chunkMax: parseInt(s.chunkMax || "50000"),
@@ -359,7 +387,8 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
     upiId: b.upiId, upiName: b.upiName,
     popupMessage: b.popupMessage, popupImageUrl: b.popupImageUrl,
     telegramLink: b.telegramLink,
-    appName: b.appName, buyRules: b.buyRules, sellRules: b.sellRules,
+    appName: b.appName, appLogoUrl: b.appLogoUrl, popupSoundUrl: b.popupSoundUrl,
+    buyRules: b.buyRules, sellRules: b.sellRules,
     chunkMin: b.chunkMin, chunkMax: b.chunkMax,
     adminChunkMin: b.adminChunkMin, adminChunkMax: b.adminChunkMax,
     newUserChunkCap: b.newUserChunkCap, newUserTradeThreshold: b.newUserTradeThreshold,
@@ -384,6 +413,56 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
     await setSetting("adminPasswordHash", hash);
   }
   res.json(fSettings(await getAllSettings()));
+});
+
+// Platform-fee transactions (per-chunk fees credited to the admin user).
+// Returns a flat list ordered by recency along with running totals so the
+// admin dashboard can show "lifetime / today / N most-recent fee credits"
+// without further aggregation. Pagination is intentionally simple (limit
+// only — fees grow slowly).
+router.get("/fee-transactions", requireAdmin, async (req, res) => {
+  const parsed = parseInt(String(req.query.limit || "100"));
+  const limit = Math.min(500, Math.max(1, Number.isFinite(parsed) ? parsed : 100));
+  const adminId = (req as any).user?.id as number;
+  const rows = await db.select().from(transactionsTable).where(and(
+    eq(transactionsTable.userId, adminId),
+    eq(transactionsTable.type, "credit"),
+    sql`${transactionsTable.description} ILIKE 'Platform fee%'`,
+  )).orderBy(sql`${transactionsTable.createdAt} desc`).limit(limit);
+
+  const totals = await db.select({
+    sum: sql<string>`COALESCE(SUM(${transactionsTable.amount}), 0)`,
+    count: sql<string>`COUNT(*)`,
+  }).from(transactionsTable).where(and(
+    eq(transactionsTable.userId, adminId),
+    eq(transactionsTable.type, "credit"),
+    sql`${transactionsTable.description} ILIKE 'Platform fee%'`,
+  ));
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const todayTotals = await db.select({
+    sum: sql<string>`COALESCE(SUM(${transactionsTable.amount}), 0)`,
+    count: sql<string>`COUNT(*)`,
+  }).from(transactionsTable).where(and(
+    eq(transactionsTable.userId, adminId),
+    eq(transactionsTable.type, "credit"),
+    sql`${transactionsTable.description} ILIKE 'Platform fee%'`,
+    sql`${transactionsTable.createdAt} >= ${today}`,
+  ));
+
+  res.json({
+    totalAmount: parseFloat(totals[0]?.sum || "0"),
+    totalCount: parseInt(totals[0]?.count || "0"),
+    todayAmount: parseFloat(todayTotals[0]?.sum || "0"),
+    todayCount: parseInt(todayTotals[0]?.count || "0"),
+    items: rows.map((r) => ({
+      id: r.id,
+      amount: parseFloat(r.amount),
+      description: r.description,
+      orderId: r.orderId,
+      createdAt: r.createdAt,
+    })),
+  });
 });
 
 router.get("/stats/daily", requireAdmin, async (_req, res) => {

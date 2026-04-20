@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import AdminLayout from "@/components/admin-layout";
-import { useAdminGetSettings, useAdminUploadImage, useAdminNotifyAll, useAdminUpdateSettings } from "@workspace/api-client-react";
+import { useAdminGetSettings, useAdminUploadImage, useAdminNotifyAll, useAdminUpdateSettings, useAdminGetFeeTransactions } from "@workspace/api-client-react";
+import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQueryClient } from "@tanstack/react-query";
-import { getAdminGetSettingsQueryKey } from "@workspace/api-client-react";
+import { getAdminGetSettingsQueryKey, getGetAppSettingsQueryKey } from "@workspace/api-client-react";
 import { Plus, Trash2, Bell, Upload } from "lucide-react";
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -85,6 +86,13 @@ export default function AdminSettings() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [popupMessage, setPopupMessage] = useState("");
   const [popupImageUrl, setPopupImageUrl] = useState("");
+  const [appName, setAppName] = useState("");
+  const [appLogoUrl, setAppLogoUrl] = useState("");
+  const [popupSoundUrl, setPopupSoundUrl] = useState("");
+  const [chunkMin, setChunkMin] = useState<number>(100);
+  const [chunkMax, setChunkMax] = useState<number>(50000);
+  const [adminChunkMin, setAdminChunkMin] = useState<number>(5000);
+  const [adminChunkMax, setAdminChunkMax] = useState<number>(50000);
   const [telegramLink, setTelegramLink] = useState("");
   const [bannerImages, setBannerImages] = useState<string[]>([]);
   const [adminPassword, setAdminPassword] = useState("");
@@ -103,6 +111,13 @@ export default function AdminSettings() {
       setAnnouncements((settings as any).announcements || []);
       setPopupMessage((settings as any).popupMessage || "");
       setPopupImageUrl((settings as any).popupImageUrl || "");
+      setAppName((settings as any).appName || "TrustPay");
+      setAppLogoUrl((settings as any).appLogoUrl || "");
+      setPopupSoundUrl((settings as any).popupSoundUrl || "");
+      setChunkMin(Number((settings as any).chunkMin) || 100);
+      setChunkMax(Number((settings as any).chunkMax) || 50000);
+      setAdminChunkMin(Number((settings as any).adminChunkMin) || 5000);
+      setAdminChunkMax(Number((settings as any).adminChunkMax) || 50000);
       setTelegramLink((settings as any).telegramLink || "");
       setBannerImages(Array.isArray((settings as any).bannerImages) ? (settings as any).bannerImages : []);
       setBuyRules((settings as any).buyRules || "");
@@ -131,6 +146,7 @@ export default function AdminSettings() {
       onSuccess: () => {
         toast({ title: "Settings updated successfully" });
         queryClient.invalidateQueries({ queryKey: getAdminGetSettingsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetAppSettingsQueryKey() });
         setAdminPassword("");
       },
       onError: (err: any) => {
@@ -181,6 +197,13 @@ export default function AdminSettings() {
       popupImageUrl,
       telegramLink,
       bannerImages,
+      appName,
+      appLogoUrl,
+      popupSoundUrl,
+      chunkMin,
+      chunkMax,
+      adminChunkMin,
+      adminChunkMax,
       buyRules,
       sellRules,
       feeTiers,
@@ -220,6 +243,67 @@ export default function AdminSettings() {
           <Skeleton className="h-[500px] w-full rounded-xl" />
         ) : (
           <form onSubmit={onSubmit} className="space-y-6">
+
+            {/* App Branding */}
+            <Card>
+              <CardHeader>
+                <CardTitle>App Branding</CardTitle>
+                <CardDescription>App name + logo shown across the app, login and registration screens.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>App Name</Label>
+                  <Input placeholder="TrustPay" value={appName} onChange={(e) => setAppName(e.target.value)} />
+                </div>
+                <ImagePicker label="App Logo (square, ~256×256)" value={appLogoUrl} onChange={setAppLogoUrl} />
+              </CardContent>
+            </Card>
+
+            {/* Notification Sound */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Popup Notification Sound</CardTitle>
+                <CardDescription>
+                  Plays once when an announcement / broadcast popup appears for the user.
+                  Upload an MP3/OGG/WAV under 1 MB.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Input placeholder="https://... (audio URL)" value={popupSoundUrl} onChange={(e) => setPopupSoundUrl(e.target.value)} />
+                <SoundPicker value={popupSoundUrl} onChange={setPopupSoundUrl} />
+                {popupSoundUrl && (
+                  <audio src={popupSoundUrl} controls className="w-full h-10" />
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Chunk Sizes */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Chunk Size Control</CardTitle>
+                <CardDescription>
+                  Min/Max chunk size for normal sellers and admin liquidity. Buyers see these as available orders.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>User Chunk Min (₹)</Label>
+                  <Input type="number" value={chunkMin} onChange={(e) => setChunkMin(parseInt(e.target.value) || 0)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>User Chunk Max (₹)</Label>
+                  <Input type="number" value={chunkMax} onChange={(e) => setChunkMax(parseInt(e.target.value) || 0)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Admin Chunk Min (₹)</Label>
+                  <Input type="number" value={adminChunkMin} onChange={(e) => setAdminChunkMin(parseInt(e.target.value) || 0)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Admin Chunk Max (₹)</Label>
+                  <Input type="number" value={adminChunkMax} onChange={(e) => setAdminChunkMax(parseInt(e.target.value) || 0)} />
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Primary UPI */}
             <Card>
@@ -543,6 +627,8 @@ export default function AdminSettings() {
           </form>
         )}
 
+        <FeeTransactionsCard />
+
         {/* Broadcast Notification */}
         <Card className="border-blue-200">
           <CardHeader>
@@ -574,5 +660,74 @@ export default function AdminSettings() {
         </Card>
       </div>
     </AdminLayout>
+  );
+}
+
+function SoundPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { toast } = useToast();
+  const uploadMut = useAdminUploadImage();
+  const onPick = async (file: File | null) => {
+    if (!file) return;
+    if (file.size > 1024 * 1024) { toast({ title: "Sound must be under 1 MB", variant: "destructive" }); return; }
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      const d = await uploadMut.mutateAsync({ data: { dataUrl } });
+      onChange(d.url);
+      toast({ title: "Sound uploaded" });
+    } catch (e: any) {
+      toast({ title: "Upload failed", description: e.message, variant: "destructive" });
+    }
+  };
+  void value;
+  return (
+    <label className="inline-flex items-center gap-2 px-3 py-1.5 border rounded text-xs cursor-pointer hover:bg-muted">
+      <Upload className="w-3 h-3" /> {uploadMut.isPending ? "Uploading..." : "Upload sound from device"}
+      <input type="file" accept="audio/*" className="hidden" onChange={(e) => onPick(e.target.files?.[0] || null)} />
+    </label>
+  );
+}
+
+function FeeTransactionsCard() {
+  const { data, isLoading } = useAdminGetFeeTransactions({ limit: 100 });
+  const items = (data as any)?.items || [];
+  return (
+    <Card className="border-emerald-200">
+      <CardHeader>
+        <CardTitle className="text-emerald-700">Platform Fee Transactions</CardTitle>
+        <CardDescription>Per-chunk fees credited to the admin wallet.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-xl bg-emerald-50 p-3">
+            <div className="text-xs text-muted-foreground">Lifetime fees</div>
+            <div className="text-2xl font-bold text-emerald-700">₹{Number((data as any)?.totalAmount || 0).toFixed(2)}</div>
+            <div className="text-[11px] text-muted-foreground">{(data as any)?.totalCount ?? 0} transactions</div>
+          </div>
+          <div className="rounded-xl bg-sky-50 p-3">
+            <div className="text-xs text-muted-foreground">Today</div>
+            <div className="text-2xl font-bold text-sky-700">₹{Number((data as any)?.todayAmount || 0).toFixed(2)}</div>
+            <div className="text-[11px] text-muted-foreground">{(data as any)?.todayCount ?? 0} transactions</div>
+          </div>
+        </div>
+        <div className="border rounded-lg max-h-80 overflow-y-auto divide-y">
+          {isLoading ? (
+            <div className="p-3 text-sm text-muted-foreground">Loading...</div>
+          ) : items.length === 0 ? (
+            <div className="p-3 text-sm text-muted-foreground">No fee transactions yet.</div>
+          ) : items.map((t: any) => (
+            <div key={t.id} className="p-2.5 flex items-center justify-between text-xs gap-2">
+              <div className="flex-1 min-w-0">
+                <div className="truncate">{t.description}</div>
+                <div className="text-[10px] text-muted-foreground">
+                  {t.createdAt ? format(new Date(t.createdAt), "dd MMM yyyy, HH:mm") : ""}
+                  {t.orderId ? ` · order #${t.orderId}` : ""}
+                </div>
+              </div>
+              <div className="font-bold text-emerald-700">+₹{Number(t.amount).toFixed(2)}</div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

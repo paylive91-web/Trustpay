@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useGetMe, useGetAppSettings } from "@workspace/api-client-react";
 import { useLocation, Link } from "wouter";
 import Layout from "@/components/layout";
@@ -8,9 +8,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle, Clock, Copy, Headset, ShieldCheck, Upload, Wifi } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle, Clock, Copy, Headset, ShieldCheck, Upload } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 async function api(path: string, opts: RequestInit = {}) {
@@ -61,9 +71,6 @@ export default function Buy() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [showRules, setShowRules] = useState(false);
-  const listRef = useRef<HTMLDivElement | null>(null);
-  const autoScrollRef = useRef<number | null>(null);
-  const pauseUntilRef = useRef(0);
 
   const { data: myBuy, refetch: refetchBuy } = useQuery<any>({
     queryKey: ["my-buy"],
@@ -80,41 +87,6 @@ export default function Buy() {
   });
 
   useEffect(() => { if (isError) setLocation("/login"); }, [isError, setLocation]);
-
-  useEffect(() => {
-    if (myBuy) return;
-    const el = listRef.current;
-    if (!el || queue.length < 2) return;
-
-    const speedPerSecond = 360;
-    let last = performance.now();
-
-    const tick = (now: number) => {
-      const current = listRef.current;
-      if (!current) return;
-      const shouldPause = Date.now() < pauseUntilRef.current;
-      const maxScroll = current.scrollHeight - current.clientHeight;
-
-      if (!shouldPause && maxScroll > 0) {
-        const delta = ((now - last) / 1000) * speedPerSecond;
-        current.scrollTop = Math.min(current.scrollTop + delta, maxScroll);
-        if (current.scrollTop >= maxScroll - 1) current.scrollTop = maxScroll;
-      }
-
-      last = now;
-      autoScrollRef.current = window.requestAnimationFrame(tick);
-    };
-
-    autoScrollRef.current = window.requestAnimationFrame(tick);
-    return () => {
-      if (autoScrollRef.current) window.cancelAnimationFrame(autoScrollRef.current);
-      autoScrollRef.current = null;
-    };
-  }, [myBuy, queue.length]);
-
-  function pauseAutoScroll(ms = 1200) {
-    pauseUntilRef.current = Date.now() + ms;
-  }
 
   const lockMut = useMutation({
     mutationFn: (id: number) => api(`/p2p/lock/${id}`, { method: "POST" }),
@@ -156,62 +128,11 @@ export default function Buy() {
                 </CardContent>
               </Card>
             ) : (
-              <div
-                ref={listRef}
-                className="space-y-2 max-h-[65vh] overflow-y-auto pr-0.5"
-                onTouchStart={() => pauseAutoScroll(1600)}
-                onTouchEnd={() => pauseAutoScroll(800)}
-                onMouseEnter={() => pauseAutoScroll(2000)}
-                onWheel={() => pauseAutoScroll(1600)}
-              >
-                {queue.map((c) => (
-                  <Card
-                    key={c.id}
-                    className="hover:shadow-md transition-shadow rounded-2xl"
-                  >
-                    <CardContent className="p-3 flex items-center justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <div className="text-xl font-black tracking-tight">₹{c.amount}</div>
-                          <span className="rounded-full bg-yellow-300 text-black text-xs font-semibold px-2 py-1">UPI</span>
-                          {c.seller?.lastSeenAt && isOnline(c.seller.lastSeenAt) && (
-                            <span className="flex items-center gap-1 text-green-600 text-xs">
-                              <span className="w-2 h-2 rounded-full bg-green-500 inline-block animate-pulse" />
-                              Online
-                            </span>
-                          )}
-                        </div>
-                        <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                          <div className="rounded-xl bg-muted/40 p-2">
-                            <div className="text-muted-foreground">Income</div>
-                            <div className="text-base font-bold text-primary">₹{c.rewardAmount}</div>
-                            <div className="text-[11px] text-muted-foreground">{c.rewardPercent}% reward</div>
-                          </div>
-                          <div className="rounded-xl bg-muted/40 p-2">
-                            <div className="text-muted-foreground">Quota</div>
-                            <div className="text-base font-bold">₹{c.totalAmount}</div>
-                            <div className="text-[11px] text-muted-foreground">Available</div>
-                          </div>
-                        </div>
-                        {c.seller && (
-                          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                            <ShieldCheck className="h-3 w-3" />
-                            Seller trust: <span className={c.seller.trustScore >= 0 ? "text-green-600" : "text-red-600"}>{c.seller.trustScore}</span>
-                          </div>
-                        )}
-                      </div>
-                      <Button
-                        size="sm"
-                        onClick={() => lockMut.mutate(c.id)}
-                        disabled={lockMut.isPending}
-                        className="shrink-0 rounded-full px-5 h-10"
-                      >
-                        Buy
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              <ChunkCarousel
+                queue={queue}
+                onLock={(id) => lockMut.mutate(id)}
+                disabled={lockMut.isPending}
+              />
             )}
           </>
         )}
@@ -228,9 +149,9 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
   const [utr, setUtr] = useState("");
   const [screenshotUrl, setScreenshot] = useState("");
   const [recordingUrl, setRecording] = useState("");
-  const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState<"shot" | "rec" | null>(null);
   const [qrError, setQrError] = useState(false);
+  const [showWarning, setShowWarning] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -389,10 +310,42 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
               <Button
                 className="w-full h-12 text-base font-bold rounded-xl"
                 disabled={!utr || !screenshotUrl || submitMut.isPending || !!uploading}
-                onClick={() => submitMut.mutate()}
+                onClick={() => setShowWarning(true)}
               >
                 {submitMut.isPending ? "Submitting..." : "Submit Payment Proof"}
               </Button>
+              <AlertDialog open={showWarning} onOpenChange={setShowWarning}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-red-600 flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5" /> Confirm Payment Proof
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="text-left space-y-2 leading-relaxed">
+                      <span className="block">
+                        If you submit a fake payment, duplicate screenshot, wrong UTR, or
+                        repeat someone else's UTR, your account's trust score will decrease
+                        by <strong>10 points</strong>.
+                      </span>
+                      <span className="block">
+                        If it reaches <strong>-50</strong>, your account will be suspended.
+                      </span>
+                      <span className="block pt-1 text-foreground/80">
+                        Only proceed if you have actually paid <strong>₹{buy.amount}</strong>{" "}
+                        to <strong>{buy.upiId}</strong> and the UTR is correct.
+                      </span>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Go Back</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => { setShowWarning(false); submitMut.mutate(); }}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Yes, Submit
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
               <Button variant="ghost" size="sm" className="w-full" onClick={() => cancelMut.mutate()}>
                 Cancel Buy
               </Button>
@@ -405,6 +358,116 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
         </CardContent>
       </Card>
 
+    </div>
+  );
+}
+
+/**
+ * Single-chunk carousel: shows ONE order at a time with an alternating
+ * up/down slide animation. Cycles through the queue indefinitely (wraps to
+ * index 0 after the last item) so the buyer always has movement to watch
+ * even when only a couple chunks are available. No visible scrollbar.
+ */
+function ChunkCarousel({ queue, onLock, disabled }: { queue: any[]; onLock: (id: number) => void; disabled: boolean }) {
+  const [index, setIndex] = useState(0);
+  const [direction, setDirection] = useState<"down" | "up">("down");
+  const [paused, setPaused] = useState(false);
+
+  // Reset index whenever the queue shrinks below current index.
+  useEffect(() => {
+    if (index >= queue.length) setIndex(0);
+  }, [queue.length, index]);
+
+  // Advance every 2.4s (matches the keyframe duration so the new card slides
+  // in just as the previous one slides out). Pause on hover/touch so the
+  // buyer can read details without the card disappearing.
+  useEffect(() => {
+    if (paused || queue.length === 0) return;
+    const t = setInterval(() => {
+      setDirection((d) => (d === "down" ? "up" : "down"));
+      setIndex((i) => (queue.length > 0 ? (i + 1) % queue.length : 0));
+    }, 2400);
+    return () => clearInterval(t);
+  }, [paused, queue.length]);
+
+  const current = queue[index] || queue[0];
+  if (!current) return null;
+
+  return (
+    <div
+      className="relative h-[260px] no-scrollbar"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onTouchStart={() => setPaused(true)}
+      onTouchEnd={() => setPaused(false)}
+    >
+      <ChunkCard
+        key={`${current.id}-${index}-${direction}`}
+        chunk={current}
+        direction={direction}
+        onLock={() => onLock(current.id)}
+        disabled={disabled}
+      />
+      <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-1 pb-1">
+        {queue.slice(0, 8).map((_, i) => (
+          <span
+            key={i}
+            className={`h-1.5 w-1.5 rounded-full ${i === index % Math.min(queue.length, 8) ? "bg-primary" : "bg-muted"}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ChunkCard({ chunk, direction, onLock, disabled }: { chunk: any; direction: "down" | "up"; onLock: () => void; disabled: boolean }) {
+  return (
+    <div className={`absolute inset-0 ${direction === "down" ? "chunk-anim-down" : "chunk-anim-up"}`}>
+      <Card className="rounded-2xl shadow-lg border-primary/10 bg-gradient-to-br from-card via-white to-sky-50 h-full">
+        <CardContent className="p-4 h-full flex flex-col justify-between gap-3">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <div className="text-3xl font-black tracking-tight">₹{chunk.amount}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">Pay this amount via UPI</div>
+            </div>
+            <span className="rounded-full bg-yellow-300 text-black text-xs font-bold px-3 py-1.5 shadow-sm">UPI</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-xl bg-emerald-50 p-2.5">
+              <div className="text-[11px] text-muted-foreground">Income</div>
+              <div className="text-lg font-bold text-emerald-700">₹{chunk.rewardAmount}</div>
+              <div className="text-[10px] text-muted-foreground">{chunk.rewardPercent}% reward</div>
+            </div>
+            <div className="rounded-xl bg-sky-50 p-2.5">
+              <div className="text-[11px] text-muted-foreground">Quota</div>
+              <div className="text-lg font-bold text-sky-700">₹{chunk.totalAmount}</div>
+              <div className="text-[10px] text-muted-foreground">Available</div>
+            </div>
+          </div>
+          {chunk.seller && (
+            <div className="text-xs text-muted-foreground flex items-center gap-1">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Seller trust:{" "}
+              <span className={chunk.seller.trustScore >= 0 ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>
+                {chunk.seller.trustScore}
+              </span>
+              {chunk.seller.lastSeenAt && isOnline(chunk.seller.lastSeenAt) && (
+                <span className="ml-2 flex items-center gap-1 text-green-600">
+                  <span className="w-2 h-2 rounded-full bg-green-500 inline-block animate-pulse" />
+                  Online
+                </span>
+              )}
+            </div>
+          )}
+          <Button
+            onClick={onLock}
+            disabled={disabled}
+            className="w-full h-12 text-base font-bold rounded-xl shadow-md bg-gradient-to-r from-primary to-sky-600 hover:from-primary/90 hover:to-sky-600/90"
+          >
+            Buy Now
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

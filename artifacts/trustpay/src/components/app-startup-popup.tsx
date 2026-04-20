@@ -68,6 +68,22 @@ export default function AppStartupPopup() {
     setAnnOpen(false);
   };
 
+  // Play popup notification sound exactly once when the queue first opens.
+  // Uses the admin-configured popupSoundUrl. Failures are silent — autoplay
+  // can be blocked by the browser before the user interacts with the page.
+  useEffect(() => {
+    if (queue.length === 0) return;
+    const url = (settings as any)?.popupSoundUrl;
+    if (!url) return;
+    try {
+      const a = new Audio(url);
+      a.volume = 0.7;
+      a.play().catch(() => {});
+    } catch {
+      // ignore
+    }
+  }, [queue.length > 0, (settings as any)?.popupSoundUrl]);
+
   if (queue.length === 0) return null;
   const currentAnn = queue[currentIndex];
 
@@ -82,7 +98,16 @@ export default function AppStartupPopup() {
         </DialogHeader>
         <div className="p-4 max-h-[60vh] overflow-y-auto">
           {currentAnn?.imageUrl && (
-            <img src={currentAnn.imageUrl} alt="Announcement" className="w-full rounded-lg mb-4 object-cover" />
+            <div className="w-full mb-4 flex justify-center">
+              {/* Fixed standard popup image size: 320×180 (16:9). Keeps every
+                  announcement visually consistent regardless of source aspect
+                  ratio. `object-contain` preserves the original picture. */}
+              <img
+                src={currentAnn.imageUrl}
+                alt="Announcement"
+                className="w-[320px] h-[180px] rounded-lg object-contain bg-muted/40"
+              />
+            </div>
           )}
           <p className="text-sm text-foreground whitespace-pre-wrap">{currentAnn?.message || ""}</p>
         </div>

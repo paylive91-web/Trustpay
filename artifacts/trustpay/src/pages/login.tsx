@@ -17,6 +17,7 @@ const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 type LoginStep = "login" | "forgot_google";
 
 export default function Login() {
+  const { data: brandSettings } = useGetAppSettings();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { data: user, isLoading: isUserLoading } = useGetMe({ query: { retry: false } });
@@ -133,7 +134,8 @@ export default function Login() {
   return (
     <Layout showBottomNav={false}>
       <div className="flex flex-col items-center justify-center min-h-screen p-6">
-        <img src={logoPath} alt="TrustPay Logo" className="w-24 h-24 mb-8" />
+        <img src={(brandSettings as any)?.appLogoUrl || logoPath} alt={`${(brandSettings as any)?.appName || "TrustPay"} Logo`} className="w-24 h-24 mb-2 rounded-2xl object-contain" />
+        <div className="text-xl font-bold mb-6 text-primary">{(brandSettings as any)?.appName || "TrustPay"}</div>
 
         {step === "login" && (
           <>

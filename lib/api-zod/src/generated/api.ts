@@ -330,6 +330,8 @@ export const GetAppSettingsResponse = zod.object({
   telegramLink: zod.string().optional(),
   bannerImages: zod.array(zod.string()).optional(),
   appName: zod.string(),
+  appLogoUrl: zod.string().optional(),
+  popupSoundUrl: zod.string().optional(),
   apkDownloadUrl: zod.string().optional(),
   apkVersion: zod.string().optional(),
   forceAppDownload: zod.boolean().optional(),
@@ -515,6 +517,54 @@ export const AdminGetUsersResponseItem = zod.object({
 export const AdminGetUsersResponse = zod.array(AdminGetUsersResponseItem);
 
 /**
+ * @summary Update user (rename username / displayName)
+ */
+export const AdminUpdateUserParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AdminUpdateUserBody = zod.object({
+  username: zod.string().optional(),
+  displayName: zod.string().optional(),
+});
+
+export const AdminUpdateUserResponse = zod.object({
+  id: zod.number(),
+  username: zod.string(),
+  phone: zod.string().optional(),
+  balance: zod.number(),
+  totalDeposits: zod.number(),
+  totalWithdrawals: zod.number(),
+  role: zod.enum(["user", "admin"]),
+  email: zod.string().optional(),
+  googleVerified: zod.boolean().optional(),
+  createdAt: zod.string().optional(),
+});
+
+/**
+ * @summary Platform fee transactions
+ */
+export const AdminGetFeeTransactionsQueryParams = zod.object({
+  limit: zod.coerce.number().optional(),
+});
+
+export const AdminGetFeeTransactionsResponse = zod.object({
+  totalAmount: zod.number(),
+  totalCount: zod.number(),
+  todayAmount: zod.number(),
+  todayCount: zod.number(),
+  items: zod.array(
+    zod.object({
+      id: zod.number().optional(),
+      amount: zod.number().optional(),
+      description: zod.string().optional(),
+      orderId: zod.number().nullish(),
+      createdAt: zod.coerce.date().optional(),
+    }),
+  ),
+});
+
+/**
  * @summary Update user balance
  */
 export const AdminUpdateUserBalanceParams = zod.object({
@@ -551,6 +601,8 @@ export const AdminGetSettingsResponse = zod
     telegramLink: zod.string().optional(),
     bannerImages: zod.array(zod.string()).optional(),
     appName: zod.string(),
+    appLogoUrl: zod.string().optional(),
+    popupSoundUrl: zod.string().optional(),
     apkDownloadUrl: zod.string().optional(),
     apkVersion: zod.string().optional(),
     forceAppDownload: zod.boolean().optional(),
@@ -585,6 +637,9 @@ export const AdminUpdateSettingsBody = zod.object({
   popupImageUrl: zod.string().optional(),
   telegramLink: zod.string().optional(),
   bannerImages: zod.array(zod.string()).optional(),
+  appName: zod.string().optional(),
+  appLogoUrl: zod.string().optional(),
+  popupSoundUrl: zod.string().optional(),
   adminPassword: zod.string().optional(),
   feeTiers: zod
     .array(
@@ -610,6 +665,8 @@ export const AdminUpdateSettingsResponse = zod
     telegramLink: zod.string().optional(),
     bannerImages: zod.array(zod.string()).optional(),
     appName: zod.string(),
+    appLogoUrl: zod.string().optional(),
+    popupSoundUrl: zod.string().optional(),
     apkDownloadUrl: zod.string().optional(),
     apkVersion: zod.string().optional(),
     forceAppDownload: zod.boolean().optional(),

@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useLocation } from "wouter";
 import { LayoutDashboard, Users, ListOrdered, Settings, CreditCard, ShieldAlert, LogOut, Eye, AlertTriangle, Download } from "lucide-react";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
-import { useGetMe, useLogout } from "@workspace/api-client-react";
+import { useGetMe, useLogout, useGetAppSettings } from "@workspace/api-client-react";
 import { clearAuthToken, getAuthToken } from "@/lib/auth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [location, setLocation] = useLocation();
   const { data: user, isLoading } = useGetMe({ query: { retry: false } });
+  const { data: brandSettings } = useGetAppSettings();
   const logoutMutation = useLogout();
   const queryClient = useQueryClient();
 
@@ -71,8 +72,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       {/* Sidebar */}
       <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col shadow-xl z-10 hidden md:flex">
         <div className="p-4 flex items-center gap-3 border-b border-sidebar-border">
-          <img src={logoPath} alt="TrustPay Admin" className="w-8 h-8 bg-white p-1 rounded" />
-          <span className="font-bold text-lg">TrustPay Admin</span>
+          <img src={(brandSettings as any)?.appLogoUrl || logoPath} alt={(brandSettings as any)?.appName || "TrustPay"} className="w-8 h-8 bg-white p-1 rounded object-contain" />
+          <span className="font-bold text-lg">{(brandSettings as any)?.appName || "TrustPay"} Admin</span>
         </div>
         
         <nav className="flex-1 overflow-y-auto py-4">
@@ -112,8 +113,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         {/* Mobile Header */}
         <header className="h-16 bg-card border-b flex items-center justify-between px-4 md:hidden shadow-sm z-20">
           <div className="flex items-center gap-2">
-            <img src={logoPath} alt="TrustPay" className="w-6 h-6" />
-            <span className="font-bold">Admin</span>
+            <img src={(brandSettings as any)?.appLogoUrl || logoPath} alt={(brandSettings as any)?.appName || "TrustPay"} className="w-6 h-6 object-contain" />
+            <span className="font-bold">{(brandSettings as any)?.appName || "TrustPay"} Admin</span>
           </div>
           {isInstallable && (
             <button
