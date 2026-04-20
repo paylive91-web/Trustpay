@@ -29,3 +29,9 @@ id = "OpP4ww7ze6V0khGDvSa7J"
 uri = "file://screenshots/home-redesign-v2.jpg"
 type = "image"
 title = "Home Page — Premium Redesign v2"
+
+[[outputs]]
+id = "HAfv1EzfDM7pqFqloAxcV"
+uri = "file://screenshots/home-redesign-v3.jpg"
+type = "image"
+title = "Home Page — with Banner Carousel"
