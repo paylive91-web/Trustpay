@@ -182,3 +182,19 @@
 }
 .chunk-anim-down { animation: chunk-slide-down 2.4s ease-in-out forwards; }
 .chunk-anim-up { animation: chunk-slide-up 2.4s ease-in-out forwards; }
+
+/* Each chunk row bobs up and down on its own loop. Random per-card delay
+   (set via inline style) makes each card shift independently so the whole
+   list feels alive without the row moving as a single block. */
+@keyframes chunk-bob-up {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(-8px); }
+  100% { transform: translateY(0); }
+}
+@keyframes chunk-bob-down {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(8px); }
+  100% { transform: translateY(0); }
+}
+.chunk-bob-up   { animation: chunk-bob-up   2.6s ease-in-out infinite; }
+.chunk-bob-down { animation: chunk-bob-down 2.6s ease-in-out infinite; }

@@ -369,60 +369,34 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
  * even when only a couple chunks are available. No visible scrollbar.
  */
 function ChunkCarousel({ queue, onLock, disabled }: { queue: any[]; onLock: (id: number) => void; disabled: boolean }) {
-  const [index, setIndex] = useState(0);
-  const [direction, setDirection] = useState<"down" | "up">("down");
-  const [paused, setPaused] = useState(false);
-
-  // Reset index whenever the queue shrinks below current index.
-  useEffect(() => {
-    if (index >= queue.length) setIndex(0);
-  }, [queue.length, index]);
-
-  // Advance every 2.4s (matches the keyframe duration so the new card slides
-  // in just as the previous one slides out). Pause on hover/touch so the
-  // buyer can read details without the card disappearing.
-  useEffect(() => {
-    if (paused || queue.length === 0) return;
-    const t = setInterval(() => {
-      setDirection((d) => (d === "down" ? "up" : "down"));
-      setIndex((i) => (queue.length > 0 ? (i + 1) % queue.length : 0));
-    }, 2400);
-    return () => clearInterval(t);
-  }, [paused, queue.length]);
-
-  const current = queue[index] || queue[0];
-  if (!current) return null;
-
+  if (queue.length === 0) return null;
+  // Vertical list — each chunk row bobs up/down independently on its own
+  // loop. Direction + delay are derived deterministically from the chunk id
+  // so cards keep their personality across re-renders, and no card moves in
+  // sync with its neighbour (looks like the whole row is alive, not a
+  // single block sliding).
   return (
-    <div
-      className="relative h-[260px] no-scrollbar"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onTouchStart={() => setPaused(true)}
-      onTouchEnd={() => setPaused(false)}
-    >
-      <ChunkCard
-        key={`${current.id}-${index}-${direction}`}
-        chunk={current}
-        direction={direction}
-        onLock={() => onLock(current.id)}
-        disabled={disabled}
-      />
-      <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-1 pb-1">
-        {queue.slice(0, 8).map((_, i) => (
-          <span
-            key={i}
-            className={`h-1.5 w-1.5 rounded-full ${i === index % Math.min(queue.length, 8) ? "bg-primary" : "bg-muted"}`}
-          />
-        ))}
-      </div>
+    <div className="space-y-3 no-scrollbar">
+      {queue.map((chunk) => {
+        const dir = (chunk.id % 2 === 0 ? "up" : "down") as "up" | "down";
+        const delay = `${(chunk.id * 137) % 2400}ms`;
+        return (
+          <div
+            key={chunk.id}
+            className={dir === "up" ? "chunk-bob-up" : "chunk-bob-down"}
+            style={{ animationDelay: delay }}
+          >
+            <ChunkCard chunk={chunk} onLock={() => onLock(chunk.id)} disabled={disabled} />
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-function ChunkCard({ chunk, direction, onLock, disabled }: { chunk: any; direction: "down" | "up"; onLock: () => void; disabled: boolean }) {
+function ChunkCard({ chunk, onLock, disabled }: { chunk: any; onLock: () => void; disabled: boolean }) {
   return (
-    <div className={`absolute inset-0 ${direction === "down" ? "chunk-anim-down" : "chunk-anim-up"}`}>
+    <div>
       <Card className="rounded-2xl shadow-lg border-primary/10 bg-gradient-to-br from-card via-white to-sky-50 h-full">
         <CardContent className="p-4 h-full flex flex-col justify-between gap-3">
           <div className="flex items-center justify-between gap-2">
