@@ -1,5 +1,3 @@
-import { useEffect } from "react";
-
 export function markMustInstallApp() {}
 
 export function clearMustInstallApp() {}
