@@ -155,9 +155,9 @@ export async function regenerateChunksForUser(userId: number) {
 
   for (let i = 0; i < chunks.length; i++) {
     const gross = chunks[i];
-    // Round-robin distribute across every active UPI so payments aren't
-    // funneled to one account.
-    const upi = upis[i % upis.length];
+    // Assign each chunk to a random active UPI so chunks spread naturally
+    // across all active IDs instead of landing on the same one repeatedly.
+    const upi = upis[rand(0, upis.length - 1)];
     // Per-chunk tier fee: computed at creation time and STORED on the chunk
     // (feeAmount). The fee is NOT charged here — it is only deducted from
     // the seller and credited to admin when the chunk successfully settles
