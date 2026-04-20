@@ -153,72 +153,29 @@ export async function regenerateChunksForUser(userId: number) {
   }
   if (chunks.length === 0) return;
 
-  // Resolve the admin account that receives the per-chunk platform fee.
-  // Pick the lowest-id admin so the destination is deterministic.
-  const [adminUser] = await db.select().from(usersTable)
-    .where(eq(usersTable.role, "admin"))
-    .orderBy(usersTable.id)
-    .limit(1);
-
   for (let i = 0; i < chunks.length; i++) {
     const gross = chunks[i];
     // Round-robin distribute across every active UPI so payments aren't
     // funneled to one account.
     const upi = upis[i % upis.length];
-    // Per-chunk tier fee: lookup once at creation time so all downstream
-    // accounting (seller debit, admin credit, commission counter, transaction
-    // description) uses the same number even if the admin edits tiers later.
+    // Per-chunk tier fee: computed at creation time and STORED on the chunk
+    // (feeAmount). The fee is NOT charged here — it is only deducted from
+    // the seller and credited to admin when the chunk successfully settles
+    // (see settle.ts). If the chunk expires/cancels, no fee is ever charged.
     const tierFee = feeForAmount(gross, feeTiers, flatCommission);
     const buyerAmount = gross - tierFee;
-    await db.transaction(async (tx) => {
-      // Debit the tier fee from seller balance immediately (platform fee). The
-      // remaining (gross - tierFee) stays on seller balance until lock time,
-      // when it moves to heldBalance.
-      if (tierFee > 0) {
-        await tx.update(usersTable).set({
-          balance: sql`${usersTable.balance} - ${tierFee}`,
-        }).where(eq(usersTable.id, userId));
-      }
-      // NOTE: deliberately not inserting a seller-side transaction row for
-      // the platform fee — the deduction is silent so users don't see a
-      // fee entry per chunk in their transaction history.
-      // Credit the platform fee to the admin user's wallet so the money
-      // physically lands in an account the operator controls.
-      if (adminUser && tierFee > 0) {
-        await tx.update(usersTable).set({
-          balance: sql`${usersTable.balance} + ${tierFee}`,
-        }).where(eq(usersTable.id, adminUser.id));
-        await tx.insert(transactionsTable).values({
-          userId: adminUser.id, type: "credit", amount: String(tierFee),
-          description: `Platform fee from seller #${userId} (chunk ₹${gross})`,
-        });
-      }
-      // Atomic increment of platform commission counter via SQL upsert
-      // (avoids lost-update races under concurrent chunk creation).
-      if (tierFee > 0) {
-        await tx.insert(settingsTable).values({
-          key: "platformCommissionTotal",
-          value: String(tierFee),
-        }).onConflictDoUpdate({
-          target: settingsTable.key,
-          set: {
-            value: sql`(COALESCE(NULLIF(${settingsTable.value}, '')::numeric, 0) + ${tierFee})::text`,
-            updatedAt: new Date(),
-          },
-        });
-      }
-      await tx.insert(ordersTable).values({
-        userId,
-        type: "withdrawal",
-        amount: String(buyerAmount),
-        rewardPercent: "0",
-        rewardAmount: "0",
-        totalAmount: String(buyerAmount),
-        status: "available",
-        userUpiId: upi.upiId,
-        userUpiName: upi.holderName,
-        userName: upi.holderName,
-      });
+    await db.insert(ordersTable).values({
+      userId,
+      type: "withdrawal",
+      amount: String(buyerAmount),
+      feeAmount: String(tierFee),
+      rewardPercent: "0",
+      rewardAmount: "0",
+      totalAmount: String(buyerAmount),
+      status: "available",
+      userUpiId: upi.upiId,
+      userUpiName: upi.holderName,
+      userName: upi.holderName,
     });
   }
 }

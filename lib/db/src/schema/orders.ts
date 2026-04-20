@@ -44,6 +44,11 @@ export const ordersTable = pgTable("orders", {
   screenshotUrl: text("screenshot_url"),
   recordingUrl: text("recording_url"),
   notes: text("notes"),
+  // Per-chunk platform fee, computed from feeTiers at chunk creation. Only
+  // charged when the chunk successfully settles (status -> confirmed). If the
+  // chunk expires/cancels, no fee is charged. Stored on the order so admin
+  // tier-edits after creation don't change what gets charged at settle time.
+  feeAmount: numeric("fee_amount", { precision: 12, scale: 2 }).notNull().default("0"),
   // P2P chunk fields
   parentSellId: integer("parent_sell_id"),
   lockedAt: timestamp("locked_at"),

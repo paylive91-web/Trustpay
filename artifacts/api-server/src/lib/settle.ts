@@ -1,5 +1,5 @@
 import { db } from "@workspace/db";
-import { ordersTable, usersTable, transactionsTable, referralsTable, highValueEventsTable } from "@workspace/db";
+import { ordersTable, usersTable, transactionsTable, referralsTable, highValueEventsTable, settingsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { applyTrustDelta, bumpSuccessfulTrade } from "./trust.js";
 import { getSettings } from "./settings.js";
@@ -32,6 +32,10 @@ export async function settleConfirmedTrade(chunkOrderId: number, isAutoConfirm =
   // debit heldBalance for the previously-reserved amount.
   const heldDebit = parseFloat(chunk.heldAmount || "0");
   const balanceDebit = parseFloat((amount - heldDebit).toFixed(2));
+  // Platform fee stored on the chunk at creation time (matching.ts). The fee
+  // is NOT charged when the chunk is created — it's charged here, at
+  // successful settlement, so cancelled/expired chunks cost the seller nothing.
+  const platformFee = parseFloat(chunk.feeAmount || "0");
 
   const rewardPercent = getRewardPercent(amount);
   const rewardAmount = parseFloat((amount * rewardPercent / 100).toFixed(2));
@@ -74,6 +78,40 @@ export async function settleConfirmedTrade(chunkOrderId: number, isAutoConfirm =
       amount: String(amount),
       description: `Chunk sold to buyer #${buyerId} (chunk #${chunkOrderId})`,
     });
+
+    // Per-chunk platform fee: deferred from chunk-creation to here so the
+    // seller is only charged when the chunk actually settles. Debit seller,
+    // credit admin, log the admin transaction, and bump the cumulative
+    // platform-commission counter — all inside the same atomic settle tx.
+    if (platformFee > 0) {
+      const [adminUser] = await tx.select().from(usersTable)
+        .where(eq(usersTable.role, "admin"))
+        .orderBy(usersTable.id)
+        .limit(1);
+      if (adminUser && adminUser.id !== sellerId) {
+        await tx.update(usersTable).set({
+          balance: sql`${usersTable.balance} - ${platformFee}`,
+        }).where(eq(usersTable.id, sellerId));
+        await tx.update(usersTable).set({
+          balance: sql`${usersTable.balance} + ${platformFee}`,
+        }).where(eq(usersTable.id, adminUser.id));
+        await tx.insert(transactionsTable).values({
+          userId: adminUser.id, orderId: chunkOrderId, type: "credit",
+          amount: String(platformFee),
+          description: `Platform fee from seller #${sellerId} (chunk #${chunkOrderId})`,
+        });
+        await tx.insert(settingsTable).values({
+          key: "platformCommissionTotal",
+          value: String(platformFee),
+        }).onConflictDoUpdate({
+          target: settingsTable.key,
+          set: {
+            value: sql`(COALESCE(NULLIF(${settingsTable.value}, '')::numeric, 0) + ${platformFee})::text`,
+            updatedAt: new Date(),
+          },
+        });
+      }
+    }
   });
 
   if (isAutoConfirm) {

@@ -586,16 +586,18 @@ export default function AdminSettings() {
                   <Label>Home Banner Images</Label>
                   <div className="space-y-3">
                     {bannerImages.map((url, idx) => (
-                      <div key={idx} className="border rounded p-3 space-y-2">
+                      <div key={idx} className="border rounded-lg p-4 bg-muted/30 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-semibold">Banner {idx + 1}</Label>
+                          <Button
+                            type="button" variant="outline" size="sm"
+                            onClick={() => setBannerImages((prev) => prev.filter((_, i) => i !== idx))}
+                          >Remove</Button>
+                        </div>
                         <ImagePicker
-                          label={`Banner ${idx + 1}`}
                           value={url}
                           onChange={(v) => setBannerImages((prev) => prev.map((u, i) => i === idx ? v : u))}
                         />
-                        <Button
-                          type="button" variant="outline" size="sm"
-                          onClick={() => setBannerImages((prev) => prev.filter((_, i) => i !== idx))}
-                        >Remove</Button>
                       </div>
                     ))}
                     <Button
