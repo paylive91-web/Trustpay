@@ -41,3 +41,9 @@ id = "zakl-wjIqhmYDLb9KN6nu"
 uri = "file://screenshots/home-redesign-v4.jpg"
 type = "image"
 title = "Home Page — Simplified (no live orders)"
+
+[[outputs]]
+id = "aKr1lib_kX70Et9PMgLW0"
+uri = "file://screenshots/home-redesign-v5.jpg"
+type = "image"
+title = "Home — Compact Hero"
