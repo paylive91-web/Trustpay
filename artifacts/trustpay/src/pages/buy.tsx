@@ -318,8 +318,7 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
             <div className="text-xs text-muted-foreground">Holder: {buy.holderName || buy.upiName}</div>
           </div>
 
-          {activeUpis.length > 0 && (
-            <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
               {[
                 { key: "phonepe", label: "PhonePe" },
                 { key: "paytm", label: "Paytm" },
@@ -334,8 +333,7 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
                   {app.label}
                 </Button>
               ))}
-            </div>
-          )}
+          </div>
 
           {expired ? (
             <Button variant="destructive" className="w-full" onClick={() => cancelMut.mutate()}>
