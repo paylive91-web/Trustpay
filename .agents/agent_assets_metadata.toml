@@ -12,3 +12,9 @@ id = "C9gY6HGP_GfninLT5MUhK"
 uri = "file://artifacts/trustpay/public/trustpay-registration-google-verification.png"
 type = "image"
 title = "Google verification registration"
+
+[[generated]]
+id = "S2-fjF4GH89N3SWUl09SE"
+uri = "file://artifacts/trustpay/public/me-google-verification-mock.png"
+type = "image"
+title = "Me section Google verification"
