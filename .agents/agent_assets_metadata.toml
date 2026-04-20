@@ -35,3 +35,9 @@ id = "HAfv1EzfDM7pqFqloAxcV"
 uri = "file://screenshots/home-redesign-v3.jpg"
 type = "image"
 title = "Home Page — with Banner Carousel"
+
+[[outputs]]
+id = "zakl-wjIqhmYDLb9KN6nu"
+uri = "file://screenshots/home-redesign-v4.jpg"
+type = "image"
+title = "Home Page — Simplified (no live orders)"
