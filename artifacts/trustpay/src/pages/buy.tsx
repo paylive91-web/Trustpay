@@ -378,7 +378,23 @@ function ChunkCarousel({ queue, onLock, disabled }: { queue: any[]; onLock: (id:
     setSlots(queue.map((_, i) => i));
   }, [queue.length]);
 
-  // Every 1.6 s pick two random cards and swap their slots
+  // Start reshuffling almost immediately after the queue appears.
+  useEffect(() => {
+    if (queue.length < 2) return;
+    const timer = setTimeout(() => {
+      setSlots((prev) => {
+        const next = [...prev];
+        const a = Math.floor(Math.random() * next.length);
+        let b = Math.floor(Math.random() * (next.length - 1));
+        if (b >= a) b += 1;
+        [next[a], next[b]] = [next[b], next[a]];
+        return next;
+      });
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [queue.length]);
+
+  // Every 1.1 s pick two random cards and swap their slots
   useEffect(() => {
     if (queue.length < 2) return;
     const timer = setInterval(() => {
@@ -390,7 +406,7 @@ function ChunkCarousel({ queue, onLock, disabled }: { queue: any[]; onLock: (id:
         [next[a], next[b]] = [next[b], next[a]];
         return next;
       });
-    }, 1600);
+    }, 1100);
     return () => clearInterval(timer);
   }, [queue.length]);
 
