@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>TrustPay — Me Preview</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+  body{font-family:'Inter',system-ui,sans-serif;background:#eef2ff}
+  .glass{backdrop-filter:blur(14px)}
+  .num{font-variant-numeric:tabular-nums;letter-spacing:-0.02em}
+  .shadow-soft{box-shadow:0 20px 50px -20px rgba(30,41,99,.35)}
+</style></head>
+<body class="min-h-screen flex justify-center p-6">
+<div class="w-[420px] rounded-[36px] overflow-hidden bg-white shadow-2xl border border-slate-200/80">
+
+  <!-- HERO -->
+  <div class="relative pt-4 pb-24 px-5 text-white overflow-hidden"
+       style="background:radial-gradient(1200px 300px at -10% -20%,#10b981 0%,transparent 60%),radial-gradient(800px 300px at 110% 0%,#3b82f6 0%,transparent 55%),linear-gradient(135deg,#064e3b 0%,#1e3a8a 50%,#312e81 100%);">
+    <div class="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-emerald-400/25 blur-3xl"></div>
+
+    <div class="relative flex items-center justify-between">
+      <div class="font-extrabold text-[18px]">My Account</div>
+      <button class="w-9 h-9 rounded-full bg-white/15 grid place-items-center">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+
+    <!-- Profile -->
+    <div class="relative mt-4 flex items-center gap-4">
+      <div class="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-400 to-orange-500 grid place-items-center text-3xl font-black text-white shadow-lg ring-4 ring-white/20">A</div>
+      <div class="flex-1">
+        <div class="text-xl font-extrabold leading-tight">Aarav Sharma</div>
+        <div class="text-[11px] text-white/70 mt-0.5">aarav@okhdfcbank</div>
+        <div class="mt-2 flex gap-1.5 text-[10px] font-bold">
+          <span class="bg-emerald-400/20 text-emerald-200 px-2 py-1 rounded-full">✓ KYC</span>
+          <span class="bg-amber-400/20 text-amber-200 px-2 py-1 rounded-full">★ Trust 92</span>
+          <span class="bg-fuchsia-400/20 text-fuchsia-200 px-2 py-1 rounded-full">Elite</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wallet card overlap -->
+  <div class="px-4 -mt-16 relative z-10">
+    <div class="rounded-3xl shadow-soft p-5 text-white"
+         style="background:linear-gradient(120deg,#0f172a 0%,#3730a3 60%,#7c3aed 110%);">
+      <div class="flex items-center justify-between">
+        <div class="text-[10px] uppercase tracking-[0.18em] text-white/70">Wallet balance</div>
+        <span class="text-[10px] bg-white/15 px-2 py-0.5 rounded-full font-semibold">UPI</span>
+      </div>
+      <div class="text-3xl font-black num mt-1">₹ 24,580<span class="text-lg text-white/70">.00</span></div>
+      <div class="mt-4 grid grid-cols-2 gap-2.5">
+        <button class="py-2.5 rounded-xl bg-white text-indigo-700 text-xs font-extrabold">+ ADD</button>
+        <button class="py-2.5 rounded-xl bg-white/10 border border-white/30 text-white text-xs font-extrabold">WITHDRAW</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="px-4 mt-4 grid grid-cols-3 gap-2.5">
+    <div class="rounded-2xl bg-gradient-to-br from-sky-50 to-sky-100/60 border border-sky-100 p-3 text-center">
+      <div class="text-[10px] uppercase text-sky-700/80 font-semibold">Trades</div>
+      <div class="text-lg font-extrabold text-sky-800 num mt-1">42</div>
+    </div>
+    <div class="rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100/60 border border-emerald-100 p-3 text-center">
+      <div class="text-[10px] uppercase text-emerald-700/80 font-semibold">Earned</div>
+      <div class="text-lg font-extrabold text-emerald-800 num mt-1">₹1,820</div>
+    </div>
+    <div class="rounded-2xl bg-gradient-to-br from-amber-50 to-orange-100/60 border border-amber-100 p-3 text-center">
+      <div class="text-[10px] uppercase text-amber-700/80 font-semibold">Streak</div>
+      <div class="text-lg font-extrabold text-amber-800 num mt-1">🔥 7d</div>
+    </div>
+  </div>
+
+  <!-- Menu list -->
+  <div class="px-4 mt-4 space-y-2">
+    <a class="flex items-center gap-3 p-3.5 rounded-2xl bg-white border border-slate-100 shadow-sm">
+      <div class="w-9 h-9 rounded-xl bg-indigo-50 grid place-items-center text-indigo-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 10h18M5 6h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></svg>
+      </div>
+      <div class="flex-1">
+        <div class="text-sm font-bold text-slate-800">UPI accounts</div>
+        <div class="text-[11px] text-slate-500">2 linked</div>
+      </div>
+      <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+    <a class="flex items-center gap-3 p-3.5 rounded-2xl bg-white border border-slate-100 shadow-sm">
+      <div class="w-9 h-9 rounded-xl bg-emerald-50 grid place-items-center text-emerald-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.5 8 11 4.6-1.5 8-6 8-11V5l-8-3Z"/></svg>
+      </div>
+      <div class="flex-1">
+        <div class="text-sm font-bold text-slate-800">KYC & Security</div>
+        <div class="text-[11px] text-emerald-600 font-semibold">Verified</div>
+      </div>
+      <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+    <a class="flex items-center gap-3 p-3.5 rounded-2xl bg-white border border-slate-100 shadow-sm">
+      <div class="w-9 h-9 rounded-xl bg-amber-50 grid place-items-center text-amber-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1v22M5 5l14 14M19 5 5 19"/></svg>
+      </div>
+      <div class="flex-1">
+        <div class="text-sm font-bold text-slate-800">Rewards & Streaks</div>
+        <div class="text-[11px] text-slate-500">7-day streak active</div>
+      </div>
+      <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+    <a class="flex items-center gap-3 p-3.5 rounded-2xl bg-white border border-slate-100 shadow-sm">
+      <div class="w-9 h-9 rounded-xl bg-sky-50 grid place-items-center text-sky-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      </div>
+      <div class="flex-1">
+        <div class="text-sm font-bold text-slate-800">Support & Help</div>
+        <div class="text-[11px] text-slate-500">24×7 dispute resolution</div>
+      </div>
+      <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+    <a class="flex items-center gap-3 p-3.5 rounded-2xl bg-rose-50 border border-rose-100 shadow-sm">
+      <div class="w-9 h-9 rounded-xl bg-rose-100 grid place-items-center text-rose-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      </div>
+      <div class="flex-1">
+        <div class="text-sm font-bold text-rose-700">Logout</div>
+      </div>
+    </a>
+  </div>
+
+  <div class="h-5"></div>
+
+  <!-- Bottom nav -->
+  <div class="relative border-t border-slate-100 bg-white/90 glass pt-3 pb-3">
+    <div class="grid grid-cols-5 text-center text-[11px] font-medium">
+      <div class="text-slate-500"><svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12 12 3l9 9M5 10v10h4v-6h6v6h4V10"/></svg><div class="mt-1">Home</div></div>
+      <div class="text-slate-500"><svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 7h9M9 12h9M9 17h9"/><circle cx="5" cy="7" r=".7" fill="currentColor"/><circle cx="5" cy="12" r=".7" fill="currentColor"/><circle cx="5" cy="17" r=".7" fill="currentColor"/></svg><div class="mt-1">Orders</div></div>
+      <div></div>
+      <div class="text-slate-500"><svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 22V7"/></svg><div class="mt-1">Invite</div></div>
+      <div class="text-emerald-600"><svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><div class="mt-1 font-semibold">Me</div></div>
+    </div>
+    <button class="absolute left-1/2 -translate-x-1/2 -top-7 w-14 h-14 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white grid place-items-center shadow-xl ring-4 ring-white">
+      <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </div>
+</div></body></html>

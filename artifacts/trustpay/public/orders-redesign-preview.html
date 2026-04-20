@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>TrustPay — Orders Preview</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+  body{font-family:'Inter',system-ui,sans-serif;background:#eef2ff}
+  .glass{backdrop-filter:blur(14px)}
+  .num{font-variant-numeric:tabular-nums;letter-spacing:-0.02em}
+  .shadow-soft{box-shadow:0 20px 50px -20px rgba(30,41,99,.35)}
+</style></head>
+<body class="min-h-screen flex justify-center p-6">
+<div class="w-[420px] rounded-[36px] overflow-hidden bg-white shadow-2xl border border-slate-200/80">
+
+  <!-- HERO -->
+  <div class="relative pt-4 pb-16 px-5 text-white overflow-hidden"
+       style="background:radial-gradient(1200px 300px at -10% -20%,#0ea5e9 0%,transparent 60%),radial-gradient(800px 300px at 110% 0%,#6366f1 0%,transparent 55%),linear-gradient(135deg,#0c4a6e 0%,#1e3a8a 50%,#3730a3 100%);">
+    <div class="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-cyan-400/25 blur-3xl"></div>
+
+    <div class="relative flex items-center justify-between">
+      <div>
+        <div class="font-extrabold text-[18px] leading-none">My Orders</div>
+        <div class="text-[10px] text-white/70 mt-1 tracking-wide uppercase">All trades · Last 30 days</div>
+      </div>
+      <button class="w-9 h-9 rounded-full bg-white/15 grid place-items-center">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+      </button>
+    </div>
+
+    <div class="relative mt-5 grid grid-cols-3 gap-2 text-center">
+      <div class="bg-white/10 glass rounded-2xl p-2.5">
+        <div class="text-[9px] uppercase text-white/60">Total</div>
+        <div class="text-base font-extrabold num">42</div>
+      </div>
+      <div class="bg-emerald-400/15 rounded-2xl p-2.5">
+        <div class="text-[9px] uppercase text-emerald-200">Completed</div>
+        <div class="text-base font-extrabold num text-emerald-300">38</div>
+      </div>
+      <div class="bg-amber-400/15 rounded-2xl p-2.5">
+        <div class="text-[9px] uppercase text-amber-200">Pending</div>
+        <div class="text-base font-extrabold num text-amber-300">4</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="px-4 -mt-8 relative z-10">
+    <div class="rounded-2xl bg-white shadow-soft border border-slate-100 p-2 flex gap-1 text-xs font-semibold">
+      <button class="flex-1 py-2 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 text-white">All</button>
+      <button class="flex-1 py-2 rounded-xl text-slate-600">Buy</button>
+      <button class="flex-1 py-2 rounded-xl text-slate-600">Sell</button>
+      <button class="flex-1 py-2 rounded-xl text-slate-600">Disputes</button>
+    </div>
+  </div>
+
+  <!-- Order list -->
+  <div class="px-4 mt-4 space-y-2.5 pb-5">
+    <div class="rounded-2xl border border-slate-100 bg-white p-3.5 shadow-sm">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-50 grid place-items-center text-emerald-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg>
+          </div>
+          <div>
+            <div class="text-sm font-bold text-slate-900">Buy · ₹ 1,200</div>
+            <div class="text-[11px] text-slate-500">Paid to Rohit J · Today, 14:32</div>
+          </div>
+        </div>
+        <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-full">COMPLETED</span>
+      </div>
+      <div class="mt-2 pl-13 text-[11px] text-emerald-600 font-bold ml-13">+₹ 60 reward credited</div>
+    </div>
+
+    <div class="rounded-2xl border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-white p-3.5 shadow-sm">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-100 grid place-items-center text-amber-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          </div>
+          <div>
+            <div class="text-sm font-bold text-slate-900">Sell · ₹ 2,500</div>
+            <div class="text-[11px] text-slate-500">Awaiting buyer payment · 4 min ago</div>
+          </div>
+        </div>
+        <span class="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-1 rounded-full">PENDING</span>
+      </div>
+      <div class="mt-2 flex gap-2">
+        <button class="flex-1 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold">Track</button>
+        <button class="px-3 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold">Help</button>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-100 bg-white p-3.5 shadow-sm">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-50 grid place-items-center text-emerald-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg>
+          </div>
+          <div>
+            <div class="text-sm font-bold text-slate-900">Buy · ₹ 500</div>
+            <div class="text-[11px] text-slate-500">Paid to Priya K · Yesterday</div>
+          </div>
+        </div>
+        <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-full">COMPLETED</span>
+      </div>
+      <div class="mt-2 text-[11px] text-emerald-600 font-bold">+₹ 12 reward credited</div>
+    </div>
+
+    <div class="rounded-2xl border border-rose-100 bg-rose-50/50 p-3.5 shadow-sm">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-rose-100 grid place-items-center text-rose-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </div>
+          <div>
+            <div class="text-sm font-bold text-slate-900">Buy · ₹ 350</div>
+            <div class="text-[11px] text-slate-500">Cancelled · timeout</div>
+          </div>
+        </div>
+        <span class="text-[10px] font-bold text-rose-700 bg-rose-100 px-2 py-1 rounded-full">CANCELLED</span>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-100 bg-white p-3.5 shadow-sm">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-violet-50 grid place-items-center text-violet-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M12 19V5m-6 6 6-6 6 6"/></svg>
+          </div>
+          <div>
+            <div class="text-sm font-bold text-slate-900">Sell · ₹ 1,000</div>
+            <div class="text-[11px] text-slate-500">2 days ago</div>
+          </div>
+        </div>
+        <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-full">COMPLETED</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom nav -->
+  <div class="relative border-t border-slate-100 bg-white/90 glass pt-3 pb-3">
+    <div class="grid grid-cols-5 text-center text-[11px] font-medium">
+      <div class="text-slate-500"><svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12 12 3l9 9M5 10v10h4v-6h6v6h4V10"/></svg><div class="mt-1">Home</div></div>
+      <div class="text-blue-600"><svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 7h9M9 12h9M9 17h9"/><circle cx="5" cy="7" r=".7" fill="currentColor"/><circle cx="5" cy="12" r=".7" fill="currentColor"/><circle cx="5" cy="17" r=".7" fill="currentColor"/></svg><div class="mt-1 font-semibold">Orders</div></div>
+      <div></div>
+      <div class="text-slate-500"><svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 22V7"/></svg><div class="mt-1">Invite</div></div>
+      <div class="text-slate-500"><svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><div class="mt-1">Me</div></div>
+    </div>
+    <button class="absolute left-1/2 -translate-x-1/2 -top-7 w-14 h-14 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white grid place-items-center shadow-xl ring-4 ring-white">
+      <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </div>
+</div></body></html>

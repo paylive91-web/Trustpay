@@ -59,3 +59,33 @@ id = "jDyMHrakpyp5gq_Eu-rCi"
 uri = "file://screenshots/home-redesign-v7.jpg"
 type = "image"
 title = "Home — BUY/SELL pills + new bottom nav"
+
+[[outputs]]
+id = "Nfq3tDFFsy5FMHYfN0QqL"
+uri = "file://screenshots/buy-redesign.jpg"
+type = "image"
+title = "Buy Page — Redesign"
+
+[[outputs]]
+id = "jf7_FQWaR-3EBOpSYEFo7"
+uri = "file://screenshots/sell-redesign.jpg"
+type = "image"
+title = "Sell Page — Redesign"
+
+[[outputs]]
+id = "EGs0rWWfzoPXPIXzj6FAg"
+uri = "file://screenshots/orders-redesign.jpg"
+type = "image"
+title = "Orders Page — Redesign"
+
+[[outputs]]
+id = "s8CIbNLFiTxlqjbApjCKp"
+uri = "file://screenshots/invite-redesign.jpg"
+type = "image"
+title = "Invite Page — Redesign"
+
+[[outputs]]
+id = "aedk757DPqladhGSvUIOw"
+uri = "file://screenshots/me-redesign.jpg"
+type = "image"
+title = "Me / Profile Page — Redesign"

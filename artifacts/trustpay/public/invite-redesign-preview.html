@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>TrustPay — Invite Preview</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+  body{font-family:'Inter',system-ui,sans-serif;background:#eef2ff}
+  .glass{backdrop-filter:blur(14px)}
+  .num{font-variant-numeric:tabular-nums;letter-spacing:-0.02em}
+  .shadow-soft{box-shadow:0 20px 50px -20px rgba(30,41,99,.35)}
+</style></head>
+<body class="min-h-screen flex justify-center p-6">
+<div class="w-[420px] rounded-[36px] overflow-hidden bg-white shadow-2xl border border-slate-200/80">
+
+  <!-- HERO -->
+  <div class="relative pt-4 pb-24 px-5 text-white overflow-hidden text-center"
+       style="background:radial-gradient(1200px 300px at -10% -20%,#f97316 0%,transparent 60%),radial-gradient(800px 300px at 110% 0%,#db2777 0%,transparent 55%),linear-gradient(135deg,#7c2d12 0%,#9a3412 45%,#831843 100%);">
+    <div class="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-amber-400/30 blur-3xl"></div>
+    <div class="absolute -bottom-16 -left-16 w-72 h-72 rounded-full bg-pink-400/25 blur-3xl"></div>
+
+    <div class="relative flex items-center justify-between text-left">
+      <button class="w-9 h-9 rounded-full bg-white/15 grid place-items-center">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-semibold">Limited offer</span>
+    </div>
+
+    <div class="relative mt-4">
+      <div class="text-6xl">🎁</div>
+      <div class="text-[11px] uppercase tracking-[0.18em] text-amber-200 font-bold mt-3">Refer & earn</div>
+      <div class="text-3xl font-black mt-1">Earn ₹100 cash</div>
+      <div class="text-sm text-white/85 mt-1">on every friend's first trade</div>
+    </div>
+  </div>
+
+  <!-- Code card -->
+  <div class="px-4 -mt-16 relative z-10">
+    <div class="rounded-3xl bg-white shadow-soft border border-slate-100 p-5 text-center">
+      <div class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Your invite code</div>
+      <div class="mt-2 inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-dashed border-amber-300">
+        <span class="text-2xl font-black tracking-widest text-orange-600 num">AARAV2026</span>
+        <button class="ml-2 w-8 h-8 rounded-full bg-orange-500 text-white grid place-items-center">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+        </button>
+      </div>
+
+      <button class="mt-4 w-full py-3.5 rounded-full bg-gradient-to-r from-orange-500 to-pink-600 text-white font-extrabold tracking-wider shadow-soft flex items-center justify-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v14"/></svg>
+        SHARE WITH FRIENDS
+      </button>
+
+      <div class="mt-4 grid grid-cols-4 gap-2 text-[10px] font-semibold text-slate-600">
+        <button class="flex flex-col items-center gap-1 py-2 rounded-xl bg-emerald-50 text-emerald-700"><span class="text-lg">📱</span>WhatsApp</button>
+        <button class="flex flex-col items-center gap-1 py-2 rounded-xl bg-sky-50 text-sky-700"><span class="text-lg">✈️</span>Telegram</button>
+        <button class="flex flex-col items-center gap-1 py-2 rounded-xl bg-violet-50 text-violet-700"><span class="text-lg">💬</span>SMS</button>
+        <button class="flex flex-col items-center gap-1 py-2 rounded-xl bg-slate-100 text-slate-700"><span class="text-lg">🔗</span>Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Earnings stats -->
+  <div class="px-4 mt-4 grid grid-cols-3 gap-2.5">
+    <div class="rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100/60 border border-emerald-100 p-3 text-center">
+      <div class="text-[10px] uppercase text-emerald-700/80 font-semibold">Invited</div>
+      <div class="text-xl font-extrabold text-emerald-800 num mt-1">14</div>
+    </div>
+    <div class="rounded-2xl bg-gradient-to-br from-amber-50 to-orange-100/60 border border-amber-100 p-3 text-center">
+      <div class="text-[10px] uppercase text-amber-700/80 font-semibold">Joined</div>
+      <div class="text-xl font-extrabold text-amber-800 num mt-1">9</div>
+    </div>
+    <div class="rounded-2xl bg-gradient-to-br from-violet-50 to-fuchsia-100/60 border border-violet-100 p-3 text-center">
+      <div class="text-[10px] uppercase text-violet-700/80 font-semibold">Earned</div>
+      <div class="text-xl font-extrabold text-violet-800 num mt-1">₹900</div>
+    </div>
+  </div>
+
+  <!-- How it works -->
+  <div class="px-4 mt-5">
+    <div class="text-sm font-bold text-slate-800 mb-2">How it works</div>
+    <div class="space-y-2">
+      <div class="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-100">
+        <div class="w-8 h-8 rounded-full bg-orange-500 text-white grid place-items-center font-extrabold text-sm">1</div>
+        <div class="text-[12px] text-slate-700">Share your code with a friend</div>
+      </div>
+      <div class="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-100">
+        <div class="w-8 h-8 rounded-full bg-orange-500 text-white grid place-items-center font-extrabold text-sm">2</div>
+        <div class="text-[12px] text-slate-700">They sign up using your code</div>
+      </div>
+      <div class="flex items-center gap-3 p-3 rounded-2xl bg-emerald-50 border border-emerald-100">
+        <div class="w-8 h-8 rounded-full bg-emerald-500 text-white grid place-items-center font-extrabold text-sm">3</div>
+        <div class="text-[12px] text-slate-800 font-semibold">Both get <span class="text-emerald-700">₹100</span> on first trade</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="h-5"></div>
+
+  <!-- Bottom nav -->
+  <div class="relative border-t border-slate-100 bg-white/90 glass pt-3 pb-3">
+    <div class="grid grid-cols-5 text-center text-[11px] font-medium">
+      <div class="text-slate-500"><svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12 12 3l9 9M5 10v10h4v-6h6v6h4V10"/></svg><div class="mt-1">Home</div></div>
+      <div class="text-slate-500"><svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 7h9M9 12h9M9 17h9"/><circle cx="5" cy="7" r=".7" fill="currentColor"/><circle cx="5" cy="12" r=".7" fill="currentColor"/><circle cx="5" cy="17" r=".7" fill="currentColor"/></svg><div class="mt-1">Orders</div></div>
+      <div></div>
+      <div class="text-orange-600"><svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 22V7"/></svg><div class="mt-1 font-semibold">Invite</div></div>
+      <div class="text-slate-500"><svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><div class="mt-1">Me</div></div>
+    </div>
+    <button class="absolute left-1/2 -translate-x-1/2 -top-7 w-14 h-14 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white grid place-items-center shadow-xl ring-4 ring-white">
+      <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </div>
+</div></body></html>
