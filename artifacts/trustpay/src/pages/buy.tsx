@@ -23,6 +23,13 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+
+type UpiEntry = {
+  upiId: string;
+  upiName: string;
+  qrImageUrl?: string;
+};
+
 async function api(path: string, opts: RequestInit = {}) {
   const token = getAuthToken();
   const res = await fetch(`${API_BASE}${path}`, {
@@ -64,6 +71,24 @@ function makeQrUrl(upiId: string, amount: number): string {
   return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiData)}`;
 }
 
+function buildUpiPayUrl(upiId: string, amount: number) {
+  return `upi://pay?pa=${encodeURIComponent(upiId)}&pn=TrustPay&am=${encodeURIComponent(String(amount))}&cu=INR`;
+}
+
+function openUpiApp(upiId: string, amount: number, app: "phonepe" | "paytm" | "gpay") {
+  const base = buildUpiPayUrl(upiId, amount);
+  const scheme =
+    app === "phonepe"
+      ? `phonepe://pay?pa=${encodeURIComponent(upiId)}&pn=TrustPay&am=${encodeURIComponent(String(amount))}&cu=INR`
+      : app === "paytm"
+        ? `paytmmp://pay?pa=${encodeURIComponent(upiId)}&pn=TrustPay&am=${encodeURIComponent(String(amount))}&cu=INR`
+        : `tez://upi/pay?pa=${encodeURIComponent(upiId)}&pn=TrustPay&am=${encodeURIComponent(String(amount))}&cu=INR`;
+  window.location.href = scheme;
+  setTimeout(() => {
+    window.location.href = base;
+  }, 1200);
+}
+
 export default function Buy() {
   const [, setLocation] = useLocation();
   const { data: user, isError } = useGetMe({ query: { queryKey: ["me"], retry: false } });
@@ -71,6 +96,7 @@ export default function Buy() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [showRules, setShowRules] = useState(false);
+  const [activeUpis, setActiveUpis] = useState<UpiEntry[]>([]);
 
   const { data: myBuy, refetch: refetchBuy } = useQuery<any>({
     queryKey: ["my-buy"],
@@ -87,6 +113,15 @@ export default function Buy() {
   });
 
   useEffect(() => { if (isError) setLocation("/login"); }, [isError, setLocation]);
+  useEffect(() => {
+    const raw = (settings as any)?.multipleUpiIds;
+    const arr = Array.isArray(raw) ? raw : [];
+    setActiveUpis(arr.filter((u: any) => u?.upiId).map((u: any) => ({
+      upiId: String(u.upiId || "").trim(),
+      upiName: String(u.upiName || "").trim(),
+      qrImageUrl: String(u.qrImageUrl || "").trim(),
+    })));
+  }, [settings]);
 
   const lockMut = useMutation({
     mutationFn: (id: number) => api(`/p2p/lock/${id}`, { method: "POST" }),
@@ -282,6 +317,26 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
             <div className="font-mono font-semibold break-all">{buy.upiId}</div>
             <div className="text-xs text-muted-foreground">Holder: {buy.holderName || buy.upiName}</div>
           </div>
+
+          {activeUpis.length > 0 && (
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { key: "phonepe", label: "PhonePe" },
+                { key: "paytm", label: "Paytm" },
+                { key: "gpay", label: "GPay" },
+              ].map((app) => (
+                <Button
+                  key={app.key}
+                  type="button"
+                  variant="outline"
+                  className="h-11 rounded-xl text-xs font-semibold"
+                  onClick={() => openUpiApp(buy.upiId, buy.amount, app.key as any)}
+                >
+                  {app.label}
+                </Button>
+              ))}
+            </div>
+          )}
 
           {expired ? (
             <Button variant="destructive" className="w-full" onClick={() => cancelMut.mutate()}>
