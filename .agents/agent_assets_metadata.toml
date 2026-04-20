@@ -53,3 +53,9 @@ id = "JuCZxDHAFAV9adm0vmAIk"
 uri = "file://screenshots/home-redesign-v6.jpg"
 type = "image"
 title = "Home — Bigger banner, KYC strip"
+
+[[outputs]]
+id = "jDyMHrakpyp5gq_Eu-rCi"
+uri = "file://screenshots/home-redesign-v7.jpg"
+type = "image"
+title = "Home — BUY/SELL pills + new bottom nav"
