@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import AdminLayout from "@/components/admin-layout";
 import {
   useAdminGetSettings,
@@ -25,67 +25,11 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-function BannerImageEditor({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  const { toast } = useToast();
-  const uploadMut = useAdminUploadImage();
-  const onPick = async (file: File | null) => {
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "Image must be under 5 MB", variant: "destructive" });
-      return;
-    }
-    try {
-      const dataUrl = await fileToDataUrl(file);
-      const d = await uploadMut.mutateAsync({ data: { dataUrl } });
-      onChange(d.url);
-      toast({ title: "Image uploaded" });
-    } catch (e: any) {
-      toast({ title: "Upload failed", description: e.message, variant: "destructive" });
-    }
-  };
-  const busy = uploadMut.isPending;
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-3 items-start">
-      <div className="w-full md:w-40 h-24 rounded-md border bg-white flex items-center justify-center overflow-hidden shrink-0">
-        {value ? (
-          <img src={value} alt="banner preview" className="w-full h-full object-cover" />
-        ) : (
-          <div className="text-muted-foreground text-xs flex flex-col items-center gap-1">
-            <ImageIcon className="w-5 h-5" />
-            No image
-          </div>
-        )}
-      </div>
-      <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">Image URL</Label>
-        <Input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="https://… or upload below"
-        />
-        <label className="inline-flex items-center gap-2 px-3 py-1.5 border rounded text-xs cursor-pointer hover:bg-muted">
-          <Upload className="w-3 h-3" /> {busy ? "Uploading..." : "Upload from device"}
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => onPick(e.target.files?.[0] || null)}
-          />
-        </label>
-      </div>
-    </div>
-  );
-}
-
 export default function AdminLinksMedia() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const {
     data: settings,
     isLoading,
@@ -95,19 +39,19 @@ export default function AdminLinksMedia() {
   const [telegramLink, setTelegramLink] = useState("");
   const [bannerImages, setBannerImages] = useState<string[]>([]);
 
+  // Whenever fresh settings arrive, normalise & strip junk so UI is clean.
   useEffect(() => {
-    if (settings) {
-      setTelegramLink((settings as any).telegramLink || "");
-      const raw = (settings as any).bannerImages;
-      const arr = Array.isArray(raw) ? raw : [];
-      // Strip null/undefined/empty entries so the UI never shows ghost cards
-      const clean = arr
-        .map((u: unknown) => (typeof u === "string" ? u.trim() : ""))
-        .filter((u: string) => u.length > 0);
-      setBannerImages(clean);
-    }
+    if (!settings) return;
+    setTelegramLink((settings as any).telegramLink || "");
+    const raw = (settings as any).bannerImages;
+    const arr = Array.isArray(raw) ? raw : [];
+    const clean = arr
+      .map((u: unknown) => (typeof u === "string" ? u.trim() : ""))
+      .filter((u: string) => u.length > 0);
+    setBannerImages(clean);
   }, [settings]);
 
+  const uploadMut = useAdminUploadImage();
   const updateMut = useAdminUpdateSettings({
     mutation: {
       onSuccess: () => {
@@ -120,16 +64,35 @@ export default function AdminLinksMedia() {
     },
   });
 
+  const onPickBanner = async (file: File | null) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Image must be under 5 MB", variant: "destructive" });
+      return;
+    }
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      const d = await uploadMut.mutateAsync({ data: { dataUrl } });
+      setBannerImages((prev) => [...prev, d.url]);
+      toast({ title: "Banner added — remember to Save Changes" });
+    } catch (e: any) {
+      toast({ title: "Upload failed", description: e?.message, variant: "destructive" });
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const onSave = (e: React.FormEvent) => {
     e.preventDefault();
     updateMut.mutate({
       data: {
-        telegramLink,
-        // strip empty banners on save so DB only stores real images
+        telegramLink: telegramLink.trim(),
         bannerImages: bannerImages.map((u) => u.trim()).filter(Boolean),
       } as any,
     });
   };
+
+  const uploading = uploadMut.isPending;
 
   return (
     <AdminLayout>
@@ -157,6 +120,7 @@ export default function AdminLinksMedia() {
 
         {!isLoading && !isError && (
           <form onSubmit={onSave} className="space-y-6">
+            {/* Telegram link */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -179,6 +143,7 @@ export default function AdminLinksMedia() {
               </CardContent>
             </Card>
 
+            {/* Banner images */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -186,51 +151,81 @@ export default function AdminLinksMedia() {
                   Home Banner Images
                 </CardTitle>
                 <CardDescription>
-                  Banners shown in the carousel on the home screen. Recommended size 1200×400.
+                  Banners shown in the carousel on the home screen. Recommended
+                  size 1200×400. Click <b>Add Banner</b> to upload an image.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {bannerImages.length === 0 && (
-                  <div className="text-sm text-muted-foreground border border-dashed rounded-md p-6 text-center">
-                    No banners yet — click <b>Add Banner</b> below.
+                {bannerImages.length === 0 ? (
+                  <div className="text-sm text-muted-foreground border-2 border-dashed rounded-md p-8 text-center">
+                    No banners yet. Click <b>Add Banner</b> below to upload one.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {bannerImages.map((url, idx) => (
+                      <div
+                        key={`${idx}-${url}`}
+                        className="border rounded-lg overflow-hidden bg-white shadow-sm flex flex-col"
+                      >
+                        <div className="aspect-[3/1] bg-muted flex items-center justify-center overflow-hidden">
+                          {url ? (
+                            <img
+                              src={url}
+                              alt={`Banner ${idx + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="p-3 flex items-center justify-between gap-2">
+                          <div className="text-sm font-semibold">
+                            Banner {idx + 1}
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              setBannerImages((prev) =>
+                                prev.filter((_, i) => i !== idx)
+                              )
+                            }
+                          >
+                            <Trash2 className="w-3 h-3 mr-1" /> Remove
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
-                {bannerImages.map((url, idx) => (
-                  <div
-                    key={idx}
-                    className="border rounded-lg p-4 bg-muted/30 space-y-3"
+
+                <div className="pt-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => onPickBanner(e.target.files?.[0] || null)}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
                   >
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm font-semibold">Banner {idx + 1}</Label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          setBannerImages((prev) => prev.filter((_, i) => i !== idx))
-                        }
-                      >
-                        <Trash2 className="w-3 h-3 mr-1" /> Remove
-                      </Button>
-                    </div>
-                    <BannerImageEditor
-                      value={url}
-                      onChange={(v) =>
-                        setBannerImages((prev) =>
-                          prev.map((u, i) => (i === idx ? v : u))
-                        )
-                      }
-                    />
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setBannerImages((prev) => [...prev, ""])}
-                >
-                  <Plus className="w-3 h-3 mr-1" /> Add Banner
-                </Button>
+                    {uploading ? (
+                      <>
+                        <Upload className="w-4 h-4 mr-2 animate-pulse" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4 mr-2" /> Add Banner
+                      </>
+                    )}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
