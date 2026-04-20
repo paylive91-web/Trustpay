@@ -71,6 +71,18 @@ function makeQrUrl(upiId: string, amount: number): string {
   return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiData)}`;
 }
 
+function getOrderBucket(amount: number) {
+  if (amount < 1000) return "small";
+  if (amount < 5000) return "medium";
+  return "large";
+}
+
+function bucketLabel(bucket: string) {
+  if (bucket === "small") return "Small";
+  if (bucket === "medium") return "Medium";
+  return "Large";
+}
+
 function buildUpiPayUrl(upiId: string, amount: number) {
   return `upi://pay?pa=${encodeURIComponent(upiId)}&pn=TrustPay&am=${encodeURIComponent(String(amount))}&cu=INR`;
 }
@@ -443,6 +455,17 @@ function ChunkCarousel({ queue, onLock, disabled }: { queue: any[]; onLock: (id:
 
   // `slots[i]` = which visual slot card at displayQueue index i occupies
   const [slots, setSlots] = useState<number[]>(() => displayQueue.map((_, i) => i));
+  const visibleQueue = React.useMemo(() => {
+    const groups = {
+      small: [] as Array<{ chunk: any; key: string }>,
+      medium: [] as Array<{ chunk: any; key: string }>,
+      large: [] as Array<{ chunk: any; key: string }>,
+    };
+    displayQueue.forEach((item) => {
+      groups[getOrderBucket(item.chunk.amount)].push(item);
+    });
+    return groups;
+  }, [displayQueue]);
 
   // Re-sync slots when display length changes (new order arrived / order gone)
   useEffect(() => {
@@ -484,23 +507,41 @@ function ChunkCarousel({ queue, onLock, disabled }: { queue: any[]; onLock: (id:
   const containerH = displayQueue.length * CARD_H + (displayQueue.length - 1) * CARD_GAP;
 
   return (
-    <div style={{ position: "relative", height: containerH }}>
-      {displayQueue.map(({ chunk, key }, idx) => {
-        const slot = slots[idx] ?? idx;
-        const topPx = slot * (CARD_H + CARD_GAP);
+    <div className="space-y-4">
+      {(["small", "medium", "large"] as const).map((bucket) => {
+        const items = visibleQueue[bucket];
+        if (items.length === 0) return null;
         return (
-          <div
-            key={key}
-            style={{
-              position: "absolute",
-              top: topPx,
-              left: 0,
-              right: 0,
-              height: CARD_H,
-              transition: "top 0.45s cubic-bezier(0.4, 0, 0.2, 1)",
-            }}
-          >
-            <ChunkCard chunk={chunk} onLock={() => onLock(chunk.id)} disabled={disabled} />
+          <div key={bucket} className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {bucketLabel(bucket)} Orders
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                ₹{bucket === "small" ? "100–1000" : bucket === "medium" ? "1000–5000" : "5000–30000"}
+              </div>
+            </div>
+            <div style={{ position: "relative", height: Math.max(1, items.length) * CARD_H + (Math.max(1, items.length) - 1) * CARD_GAP }}>
+              {items.map(({ chunk, key }, idx) => {
+                const slot = slots[displayQueue.findIndex((x) => x.key === key)] ?? idx;
+                const topPx = slot * (CARD_H + CARD_GAP);
+                return (
+                  <div
+                    key={key}
+                    style={{
+                      position: "absolute",
+                      top: topPx,
+                      left: 0,
+                      right: 0,
+                      height: CARD_H,
+                      transition: "top 0.45s cubic-bezier(0.4, 0, 0.2, 1)",
+                    }}
+                  >
+                    <ChunkCard chunk={chunk} onLock={() => onLock(chunk.id)} disabled={disabled} />
+                  </div>
+                );
+              })}
+            </div>
           </div>
         );
       })}
