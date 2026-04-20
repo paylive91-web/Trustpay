@@ -23,3 +23,9 @@ id = "9i2SMWhGKDU824ilpyHpE"
 uri = "file://screenshots/home-redesign.jpg"
 type = "image"
 title = "Home Page — Redesign Preview"
+
+[[outputs]]
+id = "OpP4ww7ze6V0khGDvSa7J"
+uri = "file://screenshots/home-redesign-v2.jpg"
+type = "image"
+title = "Home Page — Premium Redesign v2"
