@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { getAllSettings } from "../lib/settings.js";
+import { googleClientId } from "../lib/google.js";
 
 const router = Router();
 
@@ -29,6 +30,11 @@ router.get("/app", async (req, res) => {
     apkDownloadUrl: process.env.APK_DOWNLOAD_URL || s.apkDownloadUrl || "",
     apkVersion: s.apkVersion || "1.0.0",
     forceAppDownload: (s.forceAppDownload ?? "false") === "true",
+    // Google OAuth Web Client ID — used by the frontend to render the
+    // "Verify with Google" button via Google Identity Services. Empty
+    // string means Google verification is disabled for the deployment;
+    // the UI will hide the button accordingly.
+    googleClientId: googleClientId(),
     broadcastNotification,
   });
 });

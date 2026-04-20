@@ -32,6 +32,8 @@ export const RegisterResponse = zod.object({
     totalDeposits: zod.number(),
     totalWithdrawals: zod.number(),
     role: zod.enum(["user", "admin"]),
+    email: zod.string().optional(),
+    googleVerified: zod.boolean().optional(),
     createdAt: zod.string().optional(),
   }),
   token: zod.string(),
@@ -54,6 +56,8 @@ export const LoginResponse = zod.object({
     totalDeposits: zod.number(),
     totalWithdrawals: zod.number(),
     role: zod.enum(["user", "admin"]),
+    email: zod.string().optional(),
+    googleVerified: zod.boolean().optional(),
     createdAt: zod.string().optional(),
   }),
   token: zod.string(),
@@ -77,7 +81,57 @@ export const GetMeResponse = zod.object({
   totalDeposits: zod.number(),
   totalWithdrawals: zod.number(),
   role: zod.enum(["user", "admin"]),
+  email: zod.string().optional(),
+  googleVerified: zod.boolean().optional(),
   createdAt: zod.string().optional(),
+});
+
+/**
+ * @summary Link Google account to current user
+ */
+export const GoogleLinkBody = zod.object({
+  idToken: zod.string(),
+});
+
+export const GoogleLinkResponse = zod.object({
+  id: zod.number(),
+  username: zod.string(),
+  phone: zod.string().optional(),
+  balance: zod.number(),
+  totalDeposits: zod.number(),
+  totalWithdrawals: zod.number(),
+  role: zod.enum(["user", "admin"]),
+  email: zod.string().optional(),
+  googleVerified: zod.boolean().optional(),
+  createdAt: zod.string().optional(),
+});
+
+/**
+ * @summary Unlink Google account from current user
+ */
+export const GoogleUnlinkResponse = zod.object({
+  id: zod.number(),
+  username: zod.string(),
+  phone: zod.string().optional(),
+  balance: zod.number(),
+  totalDeposits: zod.number(),
+  totalWithdrawals: zod.number(),
+  role: zod.enum(["user", "admin"]),
+  email: zod.string().optional(),
+  googleVerified: zod.boolean().optional(),
+  createdAt: zod.string().optional(),
+});
+
+/**
+ * @summary Reset password using a verified Google ID token
+ */
+export const GoogleResetPasswordBody = zod.object({
+  idToken: zod.string(),
+  newPassword: zod.string(),
+});
+
+export const GoogleResetPasswordResponse = zod.object({
+  message: zod.string(),
 });
 
 /**
@@ -279,6 +333,7 @@ export const GetAppSettingsResponse = zod.object({
   apkDownloadUrl: zod.string().optional(),
   apkVersion: zod.string().optional(),
   forceAppDownload: zod.boolean().optional(),
+  googleClientId: zod.string().optional(),
 });
 
 /**
@@ -298,6 +353,8 @@ export const AdminLoginResponse = zod.object({
     totalDeposits: zod.number(),
     totalWithdrawals: zod.number(),
     role: zod.enum(["user", "admin"]),
+    email: zod.string().optional(),
+    googleVerified: zod.boolean().optional(),
     createdAt: zod.string().optional(),
   }),
   token: zod.string(),
@@ -341,6 +398,8 @@ export const AdminGetOrdersResponseItem = zod
           totalDeposits: zod.number(),
           totalWithdrawals: zod.number(),
           role: zod.enum(["user", "admin"]),
+          email: zod.string().optional(),
+          googleVerified: zod.boolean().optional(),
           createdAt: zod.string().optional(),
         })
         .optional(),
@@ -449,6 +508,8 @@ export const AdminGetUsersResponseItem = zod.object({
   totalDeposits: zod.number(),
   totalWithdrawals: zod.number(),
   role: zod.enum(["user", "admin"]),
+  email: zod.string().optional(),
+  googleVerified: zod.boolean().optional(),
   createdAt: zod.string().optional(),
 });
 export const AdminGetUsersResponse = zod.array(AdminGetUsersResponseItem);
@@ -473,6 +534,8 @@ export const AdminUpdateUserBalanceResponse = zod.object({
   totalDeposits: zod.number(),
   totalWithdrawals: zod.number(),
   role: zod.enum(["user", "admin"]),
+  email: zod.string().optional(),
+  googleVerified: zod.boolean().optional(),
   createdAt: zod.string().optional(),
 });
 
@@ -491,6 +554,7 @@ export const AdminGetSettingsResponse = zod
     apkDownloadUrl: zod.string().optional(),
     apkVersion: zod.string().optional(),
     forceAppDownload: zod.boolean().optional(),
+    googleClientId: zod.string().optional(),
   })
   .and(
     zod.object({
@@ -549,6 +613,7 @@ export const AdminUpdateSettingsResponse = zod
     apkDownloadUrl: zod.string().optional(),
     apkVersion: zod.string().optional(),
     forceAppDownload: zod.boolean().optional(),
+    googleClientId: zod.string().optional(),
   })
   .and(
     zod.object({

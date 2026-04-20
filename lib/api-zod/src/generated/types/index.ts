@@ -47,6 +47,8 @@ export * from "./fraudRuleSeverity";
 export * from "./getOrdersParams";
 export * from "./getOrdersStatus";
 export * from "./getOrdersType";
+export * from "./googleIdTokenBody";
+export * from "./googleResetPasswordBody";
 export * from "./healthStatus";
 export * from "./highValueEvent";
 export * from "./highValueEventTier";

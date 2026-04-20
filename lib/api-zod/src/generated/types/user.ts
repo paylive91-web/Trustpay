@@ -15,5 +15,7 @@ export interface User {
   totalDeposits: number;
   totalWithdrawals: number;
   role: UserRole;
+  email?: string;
+  googleVerified?: boolean;
   createdAt?: string;
 }

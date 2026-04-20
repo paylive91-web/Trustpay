@@ -119,6 +119,81 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /auth/google/link:
+    post:
+      operationId: googleLink
+      tags: [auth]
+      summary: Link Google account to current user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoogleIdTokenBody"
+      responses:
+        "200":
+          description: Linked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Already linked to another user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/google/unlink:
+    post:
+      operationId: googleUnlink
+      tags: [auth]
+      summary: Unlink Google account from current user
+      responses:
+        "200":
+          description: Unlinked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /auth/google/reset-password:
+    post:
+      operationId: googleResetPassword
+      tags: [auth]
+      summary: Reset password using a verified Google ID token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoogleResetPasswordBody"
+      responses:
+        "200":
+          description: Password reset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: No account linked to this Google identity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /orders:
     get:
       operationId: getOrders
@@ -975,6 +1050,10 @@ components:
         role:
           type: string
           enum: [user, admin]
+        email:
+          type: string
+        googleVerified:
+          type: boolean
         createdAt:
           type: string
       required: [id, username, balance, totalDeposits, totalWithdrawals, role]
@@ -1129,7 +1208,25 @@ components:
           type: string
         forceAppDownload:
           type: boolean
+        googleClientId:
+          type: string
       required: [upiId, upiName, appName]
+
+    GoogleIdTokenBody:
+      type: object
+      properties:
+        idToken:
+          type: string
+      required: [idToken]
+
+    GoogleResetPasswordBody:
+      type: object
+      properties:
+        idToken:
+          type: string
+        newPassword:
+          type: string
+      required: [idToken, newPassword]
 
     FeeTier:
       type: object

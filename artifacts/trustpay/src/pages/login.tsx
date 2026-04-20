@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useGetMe } from "@workspace/api-client-react";
+import { useGetMe, useGetAppSettings } from "@workspace/api-client-react";
 import { useLocation, Link } from "wouter";
 import { setAuthToken } from "@/lib/auth";
 import { getDeviceFingerprint } from "@/lib/fingerprint";
@@ -7,17 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { ShieldCheck, Loader2 } from "lucide-react";
 import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_1776335785514.png";
 import Layout from "@/components/layout";
+import { getGoogleIdToken } from "@/lib/google-id";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
-type LoginStep = "login" | "forgot_phone" | "forgot_otp" | "forgot_newpass";
+type LoginStep = "login" | "forgot_google";
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { data: user, isLoading: isUserLoading } = useGetMe({ query: { retry: false } });
+  const { data: settings } = useGetAppSettings();
 
   const [step, setStep] = useState<LoginStep>("login");
   const [loading, setLoading] = useState(false);
@@ -26,12 +29,13 @@ export default function Login() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
 
-  // Forgot password state
-  const [resetPhone, setResetPhone] = useState("");
-  const [resetOtp, setResetOtp] = useState("");
-  const [sentOtp, setSentOtp] = useState("");
+  // Google forgot-password state
+  const [googleIdToken, setGoogleIdToken] = useState<string | null>(null);
+  const [verifiedHint, setVerifiedHint] = useState<string>("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
+
+  const googleClientId = (settings as any)?.googleClientId as string | undefined;
 
   useEffect(() => {
     if (user && !isUserLoading) {
@@ -64,46 +68,37 @@ export default function Login() {
     }
   };
 
-  const handleSendResetOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!/^[6-9]\d{9}$/.test(resetPhone)) {
-      toast({ title: "Enter a valid 10-digit mobile number", variant: "destructive" });
+  const handleVerifyWithGoogle = async () => {
+    if (!googleClientId) {
+      toast({ title: "Google verification configured nahi hai. Support se sampark karein.", variant: "destructive" });
       return;
     }
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/auth/send-reset-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: resetPhone }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to send OTP");
-      setSentOtp(data.otp || "");
-      toast({ title: "OTP sent!", description: data.otp ? `Demo OTP: ${data.otp}` : "Check your messages" });
-      setStep("forgot_otp");
+      const idToken = await getGoogleIdToken(googleClientId);
+      // Decode the email out of the JWT just for display ("Verified as
+      // user@gmail.com"). The server still re-verifies on submit.
+      let hint = "";
+      try {
+        const payload = JSON.parse(atob(idToken.split(".")[1]));
+        hint = payload?.email || "";
+      } catch {}
+      setGoogleIdToken(idToken);
+      setVerifiedHint(hint);
+      toast({ title: "Google verified", description: hint });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "Verification failed", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleVerifyResetOtp = (e: React.FormEvent) => {
+  const handleResetPasswordWithGoogle = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resetOtp || resetOtp.length !== 6) {
-      toast({ title: "Enter the 6-digit OTP", variant: "destructive" });
+    if (!googleIdToken) {
+      toast({ title: "Pehle Google verification karein", variant: "destructive" });
       return;
     }
-    if (resetOtp !== sentOtp && sentOtp) {
-      toast({ title: "Incorrect OTP", variant: "destructive" });
-      return;
-    }
-    setStep("forgot_newpass");
-  };
-
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
     if (newPassword.length < 6) {
       toast({ title: "Password must be at least 6 characters", variant: "destructive" });
       return;
@@ -114,16 +109,20 @@ export default function Login() {
     }
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/auth/reset-password`, {
+      const res = await fetch(`${API_BASE}/auth/google/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: resetPhone, otp: resetOtp, newPassword }),
+        body: JSON.stringify({ idToken: googleIdToken, newPassword }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to reset password");
-      toast({ title: "Password changed successfully!", description: "Please login with your new password." });
+      toast({ title: "Password badal diya!", description: "Ab naye password se login karein." });
       setStep("login");
       setPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setGoogleIdToken(null);
+      setVerifiedHint("");
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -163,7 +162,12 @@ export default function Login() {
                 <button
                   type="button"
                   className="text-sm text-primary font-medium"
-                  onClick={() => { setStep("forgot_phone"); setResetPhone(""); }}
+                  onClick={() => {
+                    setStep("forgot_google");
+                    setGoogleIdToken(null);
+                    setVerifiedHint("");
+                  }}
+                  data-testid="link-forgot-password"
                 >
                   Forgot Password?
                 </button>
@@ -178,64 +182,42 @@ export default function Login() {
           </>
         )}
 
-        {step === "forgot_phone" && (
+        {step === "forgot_google" && (
           <>
             <h1 className="text-2xl font-bold mb-2">Forgot Password</h1>
-            <p className="text-muted-foreground mb-8 text-center">Enter your registered mobile number</p>
-            <form onSubmit={handleSendResetOtp} className="w-full space-y-4">
-              <div className="space-y-2">
-                <Label>Mobile Number</Label>
-                <Input
-                  type="tel"
-                  placeholder="Enter 10-digit mobile number"
-                  value={resetPhone}
-                  onChange={(e) => setResetPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                  maxLength={10}
-                />
-              </div>
-              <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
-                {loading ? "Sending..." : "Send OTP"}
-              </Button>
-              <Button type="button" variant="ghost" className="w-full" onClick={() => setStep("login")}>
-                Back to Login
-              </Button>
-            </form>
-          </>
-        )}
-
-        {step === "forgot_otp" && (
-          <>
-            <h1 className="text-2xl font-bold mb-2">Enter OTP</h1>
-            <p className="text-muted-foreground mb-8 text-center">
-              OTP sent to +91 {resetPhone}
-              {sentOtp && <span className="block text-green-600 font-bold mt-2">Demo OTP: {sentOtp}</span>}
+            <p className="text-muted-foreground mb-6 text-center">
+              Apne bound Google account se verify karke naya password set karein.
             </p>
-            <form onSubmit={handleVerifyResetOtp} className="w-full space-y-4">
-              <div className="space-y-2">
-                <Label>6-digit OTP</Label>
-                <Input
-                  type="number"
-                  placeholder="Enter OTP"
-                  value={resetOtp}
-                  onChange={(e) => setResetOtp(e.target.value.slice(0, 6))}
-                  maxLength={6}
-                />
+            <form onSubmit={handleResetPasswordWithGoogle} className="w-full space-y-4">
+              <div className="rounded-xl border p-4 bg-muted/30">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className={`p-2 rounded-lg ${googleIdToken ? "bg-green-100 text-green-600" : "bg-amber-100 text-amber-600"}`}>
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold">Step 1 — Google Verification</div>
+                    {googleIdToken ? (
+                      <div className="text-xs text-green-700 mt-0.5 truncate">Verified: {verifiedHint || "OK"}</div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        Sirf wahi user reset kar sakta hai jo profile me Gmail bind kar chuka ho.
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant={googleIdToken ? "outline" : "default"}
+                  className="w-full"
+                  onClick={handleVerifyWithGoogle}
+                  disabled={loading}
+                  data-testid="button-google-forgot-verify"
+                >
+                  {loading && !googleIdToken ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  {googleIdToken ? "Re-verify with Google" : "Verify with Google"}
+                </Button>
               </div>
-              <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
-                Verify OTP
-              </Button>
-              <Button type="button" variant="ghost" className="w-full" onClick={() => setStep("forgot_phone")}>
-                Resend OTP
-              </Button>
-            </form>
-          </>
-        )}
 
-        {step === "forgot_newpass" && (
-          <>
-            <h1 className="text-2xl font-bold mb-2">New Password</h1>
-            <p className="text-muted-foreground mb-8 text-center">Set a new password for your account</p>
-            <form onSubmit={handleResetPassword} className="w-full space-y-4">
               <div className="space-y-2">
                 <Label>New Password</Label>
                 <Input
@@ -243,6 +225,7 @@ export default function Login() {
                   placeholder="At least 6 characters"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
+                  disabled={!googleIdToken}
                 />
               </div>
               <div className="space-y-2">
@@ -252,10 +235,19 @@ export default function Login() {
                   placeholder="Repeat new password"
                   value={confirmNewPassword}
                   onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  disabled={!googleIdToken}
                 />
               </div>
-              <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
+              <Button
+                type="submit"
+                className="w-full h-12 text-base"
+                disabled={loading || !googleIdToken}
+                data-testid="button-reset-password"
+              >
                 {loading ? "Saving..." : "Save New Password"}
+              </Button>
+              <Button type="button" variant="ghost" className="w-full" onClick={() => setStep("login")}>
+                Back to Login
               </Button>
             </form>
           </>

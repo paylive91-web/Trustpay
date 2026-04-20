@@ -7,9 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { clearAuthToken } from "@/lib/auth";
-import { Headset, LogOut, ChevronRight, TrendingUp, Wallet, ArrowDownCircle, ArrowUpCircle, Phone, Gift, Copy } from "lucide-react";
+import { Headset, LogOut, ChevronRight, TrendingUp, Wallet, ArrowDownCircle, ArrowUpCircle, Phone, Gift, Copy, ShieldCheck, Mail, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useState } from "react";
+import { getGoogleIdToken } from "@/lib/google-id";
+import { getAuthToken } from "@/lib/auth";
+
+const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
 export default function Profile() {
   const [, setLocation] = useLocation();
@@ -36,6 +41,52 @@ export default function Profile() {
       window.open(link, "_blank");
     } else {
       toast({ title: "Support link not available", variant: "destructive" });
+    }
+  };
+
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const googleClientId = (settings as any)?.googleClientId as string | undefined;
+  const googleVerified = !!(user as any)?.googleVerified;
+  const linkedEmail = (user as any)?.email as string | null | undefined;
+
+  const handleGoogleLink = async () => {
+    if (!googleClientId) {
+      toast({ title: "Google verification configured nahi hai", variant: "destructive" });
+      return;
+    }
+    setGoogleBusy(true);
+    try {
+      const idToken = await getGoogleIdToken(googleClientId);
+      const res = await fetch(`${API_BASE}/auth/google/link`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getAuthToken()}` },
+        body: JSON.stringify({ idToken }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Verification failed");
+      toast({ title: "Google verified!", description: data.email });
+      queryClient.invalidateQueries();
+    } catch (err: any) {
+      toast({ title: "Google verification failed", description: err.message, variant: "destructive" });
+    } finally {
+      setGoogleBusy(false);
+    }
+  };
+
+  const handleGoogleUnlink = async () => {
+    setGoogleBusy(true);
+    try {
+      const res = await fetch(`${API_BASE}/auth/google/unlink`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${getAuthToken()}` },
+      });
+      if (!res.ok) throw new Error("Unlink failed");
+      toast({ title: "Google unlinked" });
+      queryClient.invalidateQueries();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setGoogleBusy(false);
     }
   };
 
@@ -147,6 +198,54 @@ export default function Profile() {
                   <Copy className="w-4 h-4 mr-1" /> Copy
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Google Verification — bind a Gmail to enable self-serve forgot password */}
+        {googleClientId && (
+          <Card className="border-none shadow-md">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3 mb-3">
+                <div className={`p-2 rounded-lg ${googleVerified ? "bg-green-100 text-green-600" : "bg-amber-100 text-amber-600"}`}>
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold">Google Verification</div>
+                  {googleVerified ? (
+                    <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1 truncate">
+                      <Mail className="w-3 h-3 shrink-0" />
+                      <span className="truncate">{linkedEmail || "Linked"}</span>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      Apna Gmail bind karein — bhulne par password reset kar payenge.
+                    </div>
+                  )}
+                </div>
+              </div>
+              {googleVerified ? (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleGoogleUnlink}
+                  disabled={googleBusy}
+                  data-testid="button-google-unlink"
+                >
+                  {googleBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  Unlink Google
+                </Button>
+              ) : (
+                <Button
+                  className="w-full"
+                  onClick={handleGoogleLink}
+                  disabled={googleBusy}
+                  data-testid="button-google-verify"
+                >
+                  {googleBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  Verify with Google
+                </Button>
+              )}
             </CardContent>
           </Card>
         )}

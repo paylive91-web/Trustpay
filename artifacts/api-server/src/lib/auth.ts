@@ -79,6 +79,8 @@ export function formatUser(user: any) {
     isFrozen: !!user.isFrozen,
     autoSellEnabled: !!user.autoSellEnabled,
     mustInstallApp: !!user.mustInstallApp,
+    email: user.email || null,
+    googleVerified: !!user.googleSub,
     blockedReason: user.blockedReason,
     matchingExpiresAt: user.matchingExpiresAt || null,
     displayName: user.displayName || null,

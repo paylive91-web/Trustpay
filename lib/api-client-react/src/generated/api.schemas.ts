@@ -48,6 +48,8 @@ export interface User {
   totalDeposits: number;
   totalWithdrawals: number;
   role: UserRole;
+  email?: string;
+  googleVerified?: boolean;
   createdAt?: string;
 }
 
@@ -170,6 +172,16 @@ export interface AppSettings {
   apkDownloadUrl?: string;
   apkVersion?: string;
   forceAppDownload?: boolean;
+  googleClientId?: string;
+}
+
+export interface GoogleIdTokenBody {
+  idToken: string;
+}
+
+export interface GoogleResetPasswordBody {
+  idToken: string;
+  newPassword: string;
 }
 
 export interface FeeTier {

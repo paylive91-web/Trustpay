@@ -74,6 +74,15 @@ export async function ensureSchema(): Promise<void> {
     // /auth/me clears it once the user signs in from inside the APK.
     await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS must_install_app BOOLEAN NOT NULL DEFAULT false`);
 
+    // Google verification: bind the user account to a verified Gmail.
+    //  - email: verified address from Google ID token
+    //  - google_sub: Google's stable per-user subject id; UNIQUE so the same
+    //    Gmail can't bind to two TrustPay accounts.
+    // Forgot-password reset gates on a non-null google_sub (account "verified").
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT`);
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub TEXT`);
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS users_google_sub_unique ON users(google_sub) WHERE google_sub IS NOT NULL`);
+
     // fraud_alerts — add notification tracking columns
     await db.execute(sql`ALTER TABLE fraud_alerts ADD COLUMN IF NOT EXISTS notified_at TIMESTAMP`);
     await db.execute(sql`ALTER TABLE fraud_alerts ADD COLUMN IF NOT EXISTS notified_by INTEGER`);

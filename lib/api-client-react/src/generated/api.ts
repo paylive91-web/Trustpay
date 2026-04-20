@@ -40,6 +40,8 @@ import type {
   FraudAlert,
   FraudRule,
   GetOrdersParams,
+  GoogleIdTokenBody,
+  GoogleResetPasswordBody,
   HealthStatus,
   HighValueEvent,
   LoginBody,
@@ -459,6 +461,257 @@ export function useGetMe<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Link Google account to current user
+ */
+export const getGoogleLinkUrl = () => {
+  return `/api/auth/google/link`;
+};
+
+export const googleLink = async (
+  googleIdTokenBody: GoogleIdTokenBody,
+  options?: RequestInit,
+): Promise<User> => {
+  return customFetch<User>(getGoogleLinkUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(googleIdTokenBody),
+  });
+};
+
+export const getGoogleLinkMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof googleLink>>,
+    TError,
+    { data: BodyType<GoogleIdTokenBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof googleLink>>,
+  TError,
+  { data: BodyType<GoogleIdTokenBody> },
+  TContext
+> => {
+  const mutationKey = ["googleLink"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof googleLink>>,
+    { data: BodyType<GoogleIdTokenBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return googleLink(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GoogleLinkMutationResult = NonNullable<
+  Awaited<ReturnType<typeof googleLink>>
+>;
+export type GoogleLinkMutationBody = BodyType<GoogleIdTokenBody>;
+export type GoogleLinkMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Link Google account to current user
+ */
+export const useGoogleLink = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof googleLink>>,
+    TError,
+    { data: BodyType<GoogleIdTokenBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof googleLink>>,
+  TError,
+  { data: BodyType<GoogleIdTokenBody> },
+  TContext
+> => {
+  return useMutation(getGoogleLinkMutationOptions(options));
+};
+
+/**
+ * @summary Unlink Google account from current user
+ */
+export const getGoogleUnlinkUrl = () => {
+  return `/api/auth/google/unlink`;
+};
+
+export const googleUnlink = async (options?: RequestInit): Promise<User> => {
+  return customFetch<User>(getGoogleUnlinkUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getGoogleUnlinkMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof googleUnlink>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof googleUnlink>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["googleUnlink"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof googleUnlink>>,
+    void
+  > = () => {
+    return googleUnlink(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GoogleUnlinkMutationResult = NonNullable<
+  Awaited<ReturnType<typeof googleUnlink>>
+>;
+
+export type GoogleUnlinkMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Unlink Google account from current user
+ */
+export const useGoogleUnlink = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof googleUnlink>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof googleUnlink>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getGoogleUnlinkMutationOptions(options));
+};
+
+/**
+ * @summary Reset password using a verified Google ID token
+ */
+export const getGoogleResetPasswordUrl = () => {
+  return `/api/auth/google/reset-password`;
+};
+
+export const googleResetPassword = async (
+  googleResetPasswordBody: GoogleResetPasswordBody,
+  options?: RequestInit,
+): Promise<MessageResponse> => {
+  return customFetch<MessageResponse>(getGoogleResetPasswordUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(googleResetPasswordBody),
+  });
+};
+
+export const getGoogleResetPasswordMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof googleResetPassword>>,
+    TError,
+    { data: BodyType<GoogleResetPasswordBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof googleResetPassword>>,
+  TError,
+  { data: BodyType<GoogleResetPasswordBody> },
+  TContext
+> => {
+  const mutationKey = ["googleResetPassword"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof googleResetPassword>>,
+    { data: BodyType<GoogleResetPasswordBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return googleResetPassword(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GoogleResetPasswordMutationResult = NonNullable<
+  Awaited<ReturnType<typeof googleResetPassword>>
+>;
+export type GoogleResetPasswordMutationBody = BodyType<GoogleResetPasswordBody>;
+export type GoogleResetPasswordMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Reset password using a verified Google ID token
+ */
+export const useGoogleResetPassword = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof googleResetPassword>>,
+    TError,
+    { data: BodyType<GoogleResetPasswordBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof googleResetPassword>>,
+  TError,
+  { data: BodyType<GoogleResetPasswordBody> },
+  TContext
+> => {
+  return useMutation(getGoogleResetPasswordMutationOptions(options));
+};
 
 /**
  * @summary Get user orders

@@ -1,10 +1,11 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db } from "@workspace/db";
-import { usersTable, referralsTable } from "@workspace/db";
-import { eq, or, desc } from "drizzle-orm";
+import { usersTable, referralsTable, userNotificationsTable } from "@workspace/db";
+import { eq, or, desc, and } from "drizzle-orm";
 import { signToken, requireAuth, formatUser } from "../lib/auth.js";
 import { recordDeviceFingerprint, checkAccountFraud, checkReferralSelfLoop } from "../lib/fraud.js";
+import { verifyGoogleIdToken, googleConfigured } from "../lib/google.js";
 
 const router = Router();
 
@@ -62,20 +63,31 @@ router.post("/register", async (req, res) => {
   const referredById = referrer.id;
 
   const passwordHash = await bcrypt.hash(password, 10);
-  // Default mustInstallApp=true on registration: the lock stays on for this
-  // account until they sign in from inside the Android APK (UA marker check
-  // in /me clears it server-side).
+  // mustInstallApp default left as false (force-install flow disabled).
   const [user] = await db.insert(usersTable).values({
     username,
     passwordHash,
     phone,
     referredBy: referredById || undefined,
-    mustInstallApp: true,
   }).returning();
 
   const code = "TP" + String(user.id).padStart(6, "0");
   await db.update(usersTable).set({ referralCode: code }).where(eq(usersTable.id, user.id));
   user.referralCode = code;
+
+  // Nudge the user to bind a Google account so password recovery is possible.
+  // Without a verified Google email there is no self-serve "Forgot password".
+  if (googleConfigured()) {
+    try {
+      await db.insert(userNotificationsTable).values({
+        userId: user.id,
+        kind: "google_verification",
+        title: "Google verification kar lo",
+        body: "Apna Gmail bind karo — bhulne par password apne aap reset kar sakoge. Profile → Google Verification.",
+        severity: "info",
+      });
+    } catch {}
+  }
 
   // Capture device fingerprint
   const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || "";
@@ -182,6 +194,100 @@ router.post("/update-name", requireAuth, async (req, res) => {
   }
   await db.update(usersTable).set({ displayName: raw }).where(eq(usersTable.id, u.id));
   res.json({ success: true, displayName: raw });
+});
+
+// ---------------------------------------------------------------------------
+// Google verification flow
+// ---------------------------------------------------------------------------
+//
+// Two entry points, both consume a Google Identity Services credential
+// (`idToken`) issued for our web client.
+//
+//  1. POST /google/link  (auth required) — bind the verified Gmail to the
+//     currently logged-in user. Refuses to overwrite an existing binding,
+//     refuses if the same Google account is already bound to a different user.
+//
+//  2. POST /google/reset-password  (no auth) — verify the Google credential,
+//     find the matching user by google_sub, set a new password atomically.
+//     Replaces the old phone/SMS-OTP forgot-password flow for users who have
+//     completed Google verification.
+
+router.post("/google/link", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  const { idToken } = req.body || {};
+  let identity;
+  try {
+    identity = await verifyGoogleIdToken(idToken);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || "Google verification failed" });
+    return;
+  }
+
+  // Don't let one Gmail bind to multiple TrustPay accounts. The unique
+  // partial index on google_sub also guards this at the DB level.
+  const [other] = await db.select().from(usersTable).where(eq(usersTable.googleSub, identity.sub)).limit(1);
+  if (other && other.id !== u.id) {
+    res.status(409).json({ error: "Yeh Google account pehle se kisi aur user se bind hai" });
+    return;
+  }
+
+  await db.update(usersTable).set({
+    email: identity.email,
+    googleSub: identity.sub,
+  }).where(eq(usersTable.id, u.id));
+
+  // Mark the verification-nudge notification(s) as read so the bell stops
+  // pestering the user once they've completed it.
+  try {
+    await db.update(userNotificationsTable)
+      .set({ readAt: new Date() })
+      .where(and(
+        eq(userNotificationsTable.userId, u.id),
+        eq(userNotificationsTable.kind, "google_verification"),
+      ));
+  } catch {}
+
+  res.json({ success: true, email: identity.email });
+});
+
+router.post("/google/unlink", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  await db.update(usersTable).set({ email: null, googleSub: null }).where(eq(usersTable.id, u.id));
+  res.json({ success: true });
+});
+
+router.post("/google/reset-password", async (req, res) => {
+  const { idToken, newPassword } = req.body || {};
+  if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6) {
+    res.status(400).json({ error: "Naya password kam se kam 6 characters ka hona chahiye" });
+    return;
+  }
+  let identity;
+  try {
+    identity = await verifyGoogleIdToken(idToken);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || "Google verification failed" });
+    return;
+  }
+
+  // Lookup strictly by google_sub (stable Google user id). We deliberately
+  // don't fall back to email-only matching because email aliasing /
+  // re-assignment by Google for non-Workspace accounts is not guaranteed,
+  // and sub is what proves possession of the verified Google account.
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.googleSub, identity.sub)).limit(1);
+  if (!user) {
+    res.status(404).json({ error: "Is Gmail se koi account bind nahi hai. Pehle login karke Google verification karein." });
+    return;
+  }
+  if (user.isBlocked) {
+    res.status(403).json({ error: "Account blocked", reason: user.blockedReason || "Contact support" });
+    return;
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await db.update(usersTable).set({ passwordHash }).where(eq(usersTable.id, user.id));
+
+  res.json({ success: true });
 });
 
 export default router;

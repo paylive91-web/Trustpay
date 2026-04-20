@@ -17,4 +17,5 @@ export interface AppSettings {
   apkDownloadUrl?: string;
   apkVersion?: string;
   forceAppDownload?: boolean;
+  googleClientId?: string;
 }
