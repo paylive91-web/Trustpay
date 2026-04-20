@@ -477,7 +477,7 @@ function ChunkCarousel({ queue, onLock, disabled }: { queue: any[]; onLock: (id:
     if (displayQueue.length < 2) return;
     const timer = setInterval(() => {
       setSlots((prev) => reshuffle(prev, Math.max(2, Math.floor(prev.length / 2))));
-    }, 830);
+    }, 820);
     return () => clearInterval(timer);
   }, [displayQueue.length]);
 
