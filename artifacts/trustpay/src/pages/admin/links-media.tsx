@@ -98,9 +98,13 @@ export default function AdminLinksMedia() {
   useEffect(() => {
     if (settings) {
       setTelegramLink((settings as any).telegramLink || "");
-      setBannerImages(
-        Array.isArray((settings as any).bannerImages) ? (settings as any).bannerImages : []
-      );
+      const raw = (settings as any).bannerImages;
+      const arr = Array.isArray(raw) ? raw : [];
+      // Strip null/undefined/empty entries so the UI never shows ghost cards
+      const clean = arr
+        .map((u: unknown) => (typeof u === "string" ? u.trim() : ""))
+        .filter((u: string) => u.length > 0);
+      setBannerImages(clean);
     }
   }, [settings]);
 
