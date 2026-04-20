@@ -14,6 +14,22 @@ import {
 
 const router = Router();
 
+function parseMultipleUpiIds(raw: string | undefined) {
+  try {
+    const parsed = JSON.parse(raw || "[]");
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((u: any) => ({
+        upiId: String(u?.upiId || "").trim(),
+        upiName: String(u?.upiName || "").trim(),
+        qrImageUrl: String(u?.qrImageUrl || "").trim(),
+      }))
+      .filter((u) => u.upiId);
+  } catch {
+    return [];
+  }
+}
+
 function rewardForAmount(amount: number) {
   // Tiered buyer reward: smaller chunks get a higher % to make them attractive
   // even though the absolute payout is small. Mirrors the computation used
@@ -129,8 +145,9 @@ router.post("/lock/:id", requireAuth, async (req, res) => {
     return;
   }
 
-  const settings = await getSettings(["buyLockMinutes"]);
+  const settings = await getSettings(["buyLockMinutes", "multipleUpiIds"]);
   const lockMin = parseInt(settings.buyLockMinutes) || 15;
+  const activeUpis = parseMultipleUpiIds(settings.multipleUpiIds);
 
   const [chunk] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
   if (!chunk || chunk.status !== "available" || chunk.type !== "withdrawal") {
@@ -173,7 +190,17 @@ router.post("/lock/:id", requireAuth, async (req, res) => {
   await checkVelocity(u.id);
   await checkCancelRate(u.id);
   const [seller] = await db.select().from(usersTable).where(eq(usersTable.id, upd[0].userId)).limit(1);
-  res.json(f(upd[0], seller));
+  const base = f(upd[0], seller);
+  const response = activeUpis.length > 0
+    ? activeUpis.map((upi, idx) => ({
+        ...base,
+        id: `${base.id}-${idx + 1}`,
+        upiId: upi.upiId,
+        upiName: upi.upiName || base.upiName,
+        qrImageUrl: upi.qrImageUrl || base.qrImageUrl,
+      }))
+    : [base];
+  res.json(response);
 });
 
 router.post("/submit/:id", requireAuth, async (req, res) => {
