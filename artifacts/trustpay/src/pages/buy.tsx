@@ -378,35 +378,35 @@ function ChunkCarousel({ queue, onLock, disabled }: { queue: any[]; onLock: (id:
     setSlots(queue.map((_, i) => i));
   }, [queue.length]);
 
+  // Helper: do `swaps` random pair-swaps in one shot so multiple cards
+  // visibly move together each tick.
+  const reshuffle = (prev: number[], swaps: number) => {
+    const next = [...prev];
+    if (next.length < 2) return next;
+    for (let s = 0; s < swaps; s++) {
+      const a = Math.floor(Math.random() * next.length);
+      let b = Math.floor(Math.random() * (next.length - 1));
+      if (b >= a) b += 1;
+      [next[a], next[b]] = [next[b], next[a]];
+    }
+    return next;
+  };
+
   // Start reshuffling almost immediately after the queue appears.
   useEffect(() => {
     if (queue.length < 2) return;
-    const timer = setTimeout(() => {
-      setSlots((prev) => {
-        const next = [...prev];
-        const a = Math.floor(Math.random() * next.length);
-        let b = Math.floor(Math.random() * (next.length - 1));
-        if (b >= a) b += 1;
-        [next[a], next[b]] = [next[b], next[a]];
-        return next;
-      });
-    }, 250);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => {
+      setSlots((prev) => reshuffle(prev, Math.max(2, Math.floor(prev.length / 2))));
+    }, 200);
+    return () => clearTimeout(t);
   }, [queue.length]);
 
-  // Every 1.1 s pick two random cards and swap their slots
+  // Every 600 ms swap multiple pairs so the whole list visibly shuffles.
   useEffect(() => {
     if (queue.length < 2) return;
     const timer = setInterval(() => {
-      setSlots((prev) => {
-        const next = [...prev];
-        const a = Math.floor(Math.random() * next.length);
-        let b = Math.floor(Math.random() * (next.length - 1));
-        if (b >= a) b += 1;
-        [next[a], next[b]] = [next[b], next[a]];
-        return next;
-      });
-    }, 1100);
+      setSlots((prev) => reshuffle(prev, Math.max(2, Math.floor(prev.length / 2))));
+    }, 600);
     return () => clearInterval(timer);
   }, [queue.length]);
 
@@ -426,7 +426,7 @@ function ChunkCarousel({ queue, onLock, disabled }: { queue: any[]; onLock: (id:
               left: 0,
               right: 0,
               height: CARD_H,
-              transition: "top 0.65s cubic-bezier(0.4, 0, 0.2, 1)",
+              transition: "top 0.45s cubic-bezier(0.4, 0, 0.2, 1)",
             }}
           >
             <ChunkCard chunk={chunk} onLock={() => onLock(chunk.id)} disabled={disabled} />

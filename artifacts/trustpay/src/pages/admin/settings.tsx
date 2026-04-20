@@ -25,6 +25,7 @@ function fileToDataUrl(file: File): Promise<string> {
 function ImagePicker({ value, onChange, label }: { value: string; onChange: (v: string) => void; label?: string }) {
   const { toast } = useToast();
   const uploadMut = useAdminUploadImage();
+  const inputRef = React.useRef<HTMLInputElement | null>(null);
   const onPick = async (file: File | null) => {
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) { toast({ title: "Image must be under 5 MB", variant: "destructive" }); return; }
@@ -35,20 +36,44 @@ function ImagePicker({ value, onChange, label }: { value: string; onChange: (v: 
       toast({ title: "Image uploaded" });
     } catch (e: any) {
       toast({ title: "Upload failed", description: e.message, variant: "destructive" });
+    } finally {
+      if (inputRef.current) inputRef.current.value = "";
     }
   };
   const busy = uploadMut.isPending;
   return (
     <div className="space-y-2">
       {label && <Label className="text-xs">{label}</Label>}
-      <div className="flex items-center gap-2">
-        <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder="Image URL or upload below" />
-      </div>
-      <label className="inline-flex items-center gap-2 px-3 py-1.5 border rounded text-xs cursor-pointer hover:bg-muted">
-        <Upload className="w-3 h-3" /> {busy ? "Uploading..." : "Upload from device"}
-        <input type="file" accept="image/*" className="hidden" onChange={(e) => onPick(e.target.files?.[0] || null)} />
-      </label>
-      {value && <img src={value} alt="preview" className="w-24 h-24 object-contain border rounded" />}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => onPick(e.target.files?.[0] || null)}
+      />
+      {value ? (
+        <div className="flex items-center gap-3 border rounded-lg p-3 bg-muted/30">
+          <img src={value} alt="preview" className="w-20 h-20 object-cover border rounded bg-white" />
+          <div className="flex flex-col gap-2">
+            <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => inputRef.current?.click()}>
+              <Upload className="w-3 h-3 mr-1" /> {busy ? "Uploading..." : "Replace"}
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => onChange("")}>
+              <Trash2 className="w-3 h-3 mr-1" /> Remove
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => inputRef.current?.click()}
+          className="w-full flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded-lg py-5 text-xs text-muted-foreground hover:bg-muted/40 disabled:opacity-50"
+        >
+          <Upload className="w-4 h-4" />
+          {busy ? "Uploading..." : "Click to upload image"}
+        </button>
+      )}
     </div>
   );
 }
