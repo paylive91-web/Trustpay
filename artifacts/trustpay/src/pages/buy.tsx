@@ -89,6 +89,40 @@ function openUpiApp(upiId: string, amount: number, app: "phonepe" | "paytm" | "g
   }, 1200);
 }
 
+function PaymentActionDialog({ open, onOpenChange, onPayNow, onCancel, buy }: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onPayNow: () => void;
+  onCancel: () => void;
+  buy: any;
+}) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent className="rounded-2xl max-w-sm">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-base flex items-center gap-2">
+            <Clock className="h-5 w-5 text-primary" /> Payment confirmation
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-left space-y-2 leading-relaxed">
+            <span className="block">
+              You locked <strong>₹{buy.amount}</strong>. Now complete payment or cancel.
+            </span>
+            <span className="block text-foreground/80">
+              UPI: <strong>{buy.upiId}</strong>
+            </span>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="sm:justify-between gap-2">
+          <AlertDialogCancel onClick={onCancel}>Cancel Buy</AlertDialogCancel>
+          <AlertDialogAction onClick={onPayNow} className="bg-primary hover:bg-primary/90">
+            Pay Now
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 export default function Buy() {
   const [, setLocation] = useLocation();
   const { data: user, isError } = useGetMe({ query: { queryKey: ["me"], retry: false } });
@@ -187,6 +221,7 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
   const [uploading, setUploading] = useState<"shot" | "rec" | null>(null);
   const [qrError, setQrError] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(true);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -265,6 +300,16 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
 
   return (
     <div className="space-y-3">
+      <PaymentActionDialog
+        open={showPaymentDialog}
+        onOpenChange={setShowPaymentDialog}
+        buy={buy}
+        onPayNow={() => setShowPaymentDialog(false)}
+        onCancel={() => {
+          setShowPaymentDialog(false);
+          cancelMut.mutate();
+        }}
+      />
       {/* Scammer warning */}
       <Card className="border-red-400 bg-red-50 rounded-2xl">
         <CardContent className="p-3 flex items-start gap-2">
