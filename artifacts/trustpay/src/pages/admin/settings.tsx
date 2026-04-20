@@ -75,7 +75,7 @@ interface FeeTier {
 export default function AdminSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: settings, isLoading } = useAdminGetSettings();
+  const { data: settings, isLoading: settingsLoading, isError: settingsError, error: settingsErr } = useAdminGetSettings({ query: { retry: false, refetchOnWindowFocus: false } });
   const notifyMut = useAdminNotifyAll();
   const [broadcastTitle, setBroadcastTitle] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
@@ -239,8 +239,14 @@ export default function AdminSettings() {
           <p className="text-muted-foreground">Configure payment, rules, links, and announcements.</p>
         </div>
 
-        {isLoading ? (
+        {settingsLoading ? (
           <Skeleton className="h-[500px] w-full rounded-xl" />
+        ) : settingsError ? (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="p-4 text-sm text-red-700">
+              Failed to load settings{settingsErr ?  : ""}.
+            </CardContent>
+          </Card>
         ) : (
           <form onSubmit={onSubmit} className="space-y-6">
 
@@ -687,8 +693,10 @@ function SoundPicker({ value, onChange }: { value: string; onChange: (v: string)
   );
 }
 
+function getErrorMessage(err: any) { return err?.message || err?.error || "Unknown error"; }
+
 function FeeTransactionsCard() {
-  const { data, isLoading } = useAdminGetFeeTransactions({ limit: 100 });
+  const { data, isLoading } = useAdminGetFeeTransactions({ limit: 100, query: { retry: false, refetchOnWindowFocus: false } });
   const items = (data as any)?.items || [];
   return (
     <Card className="border-emerald-200">
