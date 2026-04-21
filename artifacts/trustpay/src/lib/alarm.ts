@@ -8,19 +8,19 @@ export function playAlarm() {
     const Ctx = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
     const ctx = new Ctx();
     const start = ctx.currentTime;
-    const beepCount = 4;
-    const beepDur = 0.32;
-    const gap = 0.08;
+    const beepCount = 2;
+    const beepDur = 0.22;
+    const gap = 0.12;
     for (let i = 0; i < beepCount; i++) {
       const t = start + i * (beepDur + gap);
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = "square";
-      osc.frequency.setValueAtTime(880, t);
-      osc.frequency.linearRampToValueAtTime(1480, t + beepDur);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(520, t);
+      osc.frequency.linearRampToValueAtTime(620, t + beepDur);
       gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.55, t + 0.02);
-      gain.gain.setValueAtTime(0.55, t + beepDur - 0.04);
+      gain.gain.linearRampToValueAtTime(0.14, t + 0.03);
+      gain.gain.setValueAtTime(0.14, t + beepDur - 0.03);
       gain.gain.exponentialRampToValueAtTime(0.0001, t + beepDur);
       osc.connect(gain);
       gain.connect(ctx.destination);
