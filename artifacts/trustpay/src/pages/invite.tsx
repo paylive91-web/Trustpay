@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, Copy, Share2, Users, TrendingUp, IndianRupee } from "lucide-react";
+import { Gift, Copy, Share2, Users, TrendingUp, IndianRupee, Award, Flame } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
 
@@ -18,6 +18,9 @@ export default function Invite() {
   const inviteEarnings = (user as any)?.inviteEarnings || 0;
   const inviteEarningsL2 = (user as any)?.inviteEarningsL2 || 0;
   const totalEarnings = inviteEarnings + inviteEarningsL2;
+  const { data: appSettings } = useGetAppSettings();
+  const agentTiers = Array.isArray((appSettings as any)?.agentTiers) ? (appSettings as any).agentTiers : [];
+  const todayActiveCount = invitees.filter((u: any) => Number(u.todayDeposits || 0) > 0).length;
 
   const shareUrl = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}/register?ref=${referralCode}`;
   const { data: invitees = [] } = useQuery<any[]>({
@@ -172,6 +175,54 @@ export default function Invite() {
                 </div>
               </div>
             ))}
+          </CardContent>
+        </Card>
+
+        <Card className="border-none shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Award className="w-4 h-4 text-primary" />
+              Agent Criteria
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl bg-primary/10 p-4">
+                <div className="text-xs text-muted-foreground">Today's active invite deposits</div>
+                <div className="text-2xl font-bold text-primary flex items-center gap-1">
+                  <Flame className="w-5 h-5" />
+                  {todayActiveCount}
+                </div>
+              </div>
+              <div className="rounded-2xl bg-emerald-50 p-4">
+                <div className="text-xs text-muted-foreground">Invitees with today deposit</div>
+                <div className="text-2xl font-bold text-emerald-700">{invitees.filter((u: any) => Number(u.todayDeposits || 0) > 0).length}</div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {agentTiers.length === 0 ? (
+                <div className="text-sm text-muted-foreground">Agent reward criteria currently not configured.</div>
+              ) : (
+                agentTiers.map((tier: any, idx: number) => {
+                  const isReached = todayActiveCount >= Number(tier.minActiveDeposits || 0);
+                  return (
+                    <div key={`${tier.minActiveDeposits}-${idx}`} className={`rounded-2xl border p-3 ${isReached ? "bg-emerald-50 border-emerald-200" : "bg-white border-muted"}`}>
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="font-semibold text-sm">{tier.label || `Tier ${idx + 1}`}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {tier.minActiveDeposits}+ active invite deposits today
+                          </div>
+                        </div>
+                        <div className={`text-sm font-bold ${isReached ? "text-emerald-700" : "text-slate-700"}`}>
+                          ₹{Number(tier.reward || 0).toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </CardContent>
         </Card>
 
