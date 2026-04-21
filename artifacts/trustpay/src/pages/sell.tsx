@@ -242,53 +242,136 @@ export default function Sell() {
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="pending">
-          <TabsList className="w-full">
-            <TabsTrigger value="pending" className="flex-1">
-              Pending {pendingConfirms.length > 0 && <span className="ml-1 px-1.5 bg-orange-500 text-white rounded-full text-xs">{pendingConfirms.length}</span>}
-            </TabsTrigger>
-            <TabsTrigger value="chunks" className="flex-1">My Orders</TabsTrigger>
-            <TabsTrigger value="me" className="flex-1">Me</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="pending" className="space-y-2 mt-3">
-            {pendingConfirms.length === 0 ? (
-              <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">No pending confirmations.</CardContent></Card>
-            ) : (
-              pendingConfirms.map((c) => (
-                <PendingConfirmCard key={c.id} chunk={c} onResolved={() => { refetchPending(); refetchChunks(); qc.invalidateQueries({ queryKey: ["me"] }); }} />
-              ))
-            )}
-          </TabsContent>
-
-          <TabsContent value="chunks" className="space-y-2 mt-3">
-            {chunks.length === 0 ? (
-              <Card>
-                <CardContent className="p-6 text-center text-sm text-muted-foreground">
-                  No active orders. Start matching above to push chunks into the buy queue.
-                </CardContent>
-              </Card>
-            ) : (
-              chunks.map((c) => (
-                <Card key={c.id}>
-                  <CardContent className="p-3 flex items-center justify-between">
-                    <div>
-                      <div className="font-bold">₹{c.amount}</div>
-                      <div className="text-xs text-muted-foreground">Order #{c.id}</div>
-                    </div>
-                    <span className={`text-xs px-2 py-1 rounded ${STATUS_COLOR[c.status] || "bg-muted"}`}>{c.status.replace(/_/g, " ")}</span>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </TabsContent>
-
-          <TabsContent value="me" className="space-y-3 mt-3">
-            <MePanel user={user} onUpdated={() => refetchMe()} />
-          </TabsContent>
-        </Tabs>
+        <LockedOrderTabs
+          chunks={chunks}
+          pendingConfirms={pendingConfirms}
+          user={user}
+          onRefetch={() => { refetchPending(); refetchChunks(); qc.invalidateQueries({ queryKey: ["me"] }); }}
+          onUpdated={() => refetchMe()}
+          now={now}
+        />
       </div>
     </Layout>
+  );
+}
+
+function LockedOrderTabs({
+  chunks, pendingConfirms, user, onRefetch, onUpdated, now,
+}: {
+  chunks: any[]; pendingConfirms: any[]; user: any; onRefetch: () => void; onUpdated: () => void; now: number;
+}) {
+  const lockedChunks = chunks.filter((c) => c.status === "locked" || c.status === "pending_confirmation");
+  const hasLocked = lockedChunks.length > 0;
+  const [tab, setTab] = useState<"pending" | "locked" | "chunks">(
+    pendingConfirms.length > 0 ? "pending" : hasLocked ? "locked" : "chunks"
+  );
+
+  useEffect(() => {
+    if (pendingConfirms.length > 0) setTab("pending");
+    else if (hasLocked) setTab("locked");
+  }, [pendingConfirms.length, hasLocked]);
+
+  return (
+    <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
+      <TabsList className="w-full">
+        <TabsTrigger value="pending" className="flex-1">
+          Pending {pendingConfirms.length > 0 && (
+            <span className="ml-1 px-1.5 bg-orange-500 text-white rounded-full text-xs">{pendingConfirms.length}</span>
+          )}
+        </TabsTrigger>
+        <TabsTrigger value="locked" className="flex-1">
+          Locked Order {lockedChunks.length > 0 && (
+            <span className="ml-1 px-1.5 bg-amber-500 text-white rounded-full text-xs">{lockedChunks.length}</span>
+          )}
+        </TabsTrigger>
+        <TabsTrigger value="chunks" className="flex-1">My Orders</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="pending" className="space-y-2 mt-3">
+        {pendingConfirms.length === 0 ? (
+          <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">No pending confirmations.</CardContent></Card>
+        ) : (
+          pendingConfirms.map((c) => (
+            <PendingConfirmCard key={c.id} chunk={c} onResolved={onRefetch} />
+          ))
+        )}
+      </TabsContent>
+
+      <TabsContent value="locked" className="space-y-3 mt-3">
+        {lockedChunks.length === 0 ? (
+          <Card>
+            <CardContent className="p-6 text-center text-sm text-muted-foreground">
+              Koi order abhi lock nahi hai.
+            </CardContent>
+          </Card>
+        ) : (
+          lockedChunks.map((c) => {
+            const expiresAt = c.confirmDeadline ? new Date(c.confirmDeadline).getTime() : 0;
+            const msLeft = Math.max(0, expiresAt - now);
+            const m = Math.floor(msLeft / 60000);
+            const s = Math.floor((msLeft % 60000) / 1000);
+            const countdown = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+            return (
+              <Card key={c.id} className="overflow-hidden border-amber-200">
+                <div className="h-1 bg-gradient-to-r from-amber-400 via-orange-400 to-fuchsia-500" />
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-xs text-muted-foreground">Amount</div>
+                      <div className="text-3xl font-black text-amber-700">₹{Number(c.amount).toFixed(2)}</div>
+                    </div>
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${STATUS_COLOR[c.status] || "bg-muted"}`}>
+                      {c.status.replace(/_/g, " ")}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="rounded-xl bg-muted/50 p-2">
+                      <div className="text-muted-foreground">Order #</div>
+                      <div className="font-semibold">{c.id}</div>
+                    </div>
+                    <div className="rounded-xl bg-muted/50 p-2">
+                      <div className="text-muted-foreground">Expires in</div>
+                      <div className="font-mono font-bold text-orange-600">{expiresAt ? countdown : "—"}</div>
+                    </div>
+                    {c.upiId && (
+                      <div className="rounded-xl bg-muted/50 p-2 col-span-2">
+                        <div className="text-muted-foreground">UPI ID</div>
+                        <div className="font-semibold truncate">{c.upiId}</div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="rounded-xl border border-dashed border-amber-300 bg-amber-50 p-3 text-xs text-amber-800 leading-relaxed">
+                    Buyer ne aapka order lock kar liya hai. Jab buyer payment proof bhejega, aapko confirm karna hoga.
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
+      </TabsContent>
+
+      <TabsContent value="chunks" className="space-y-2 mt-3">
+        {chunks.length === 0 ? (
+          <Card>
+            <CardContent className="p-6 text-center text-sm text-muted-foreground">
+              No active orders. Start matching above to push chunks into the buy queue.
+            </CardContent>
+          </Card>
+        ) : (
+          chunks.map((c) => (
+            <Card key={c.id}>
+              <CardContent className="p-3 flex items-center justify-between">
+                <div>
+                  <div className="font-bold">₹{c.amount}</div>
+                  <div className="text-xs text-muted-foreground">Order #{c.id}</div>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded ${STATUS_COLOR[c.status] || "bg-muted"}`}>{c.status.replace(/_/g, " ")}</span>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </TabsContent>
+    </Tabs>
   );
 }
 
