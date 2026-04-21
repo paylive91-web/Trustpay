@@ -109,15 +109,31 @@ router.get("/queue", requireAuth, async (req, res) => {
     ? await db.select().from(usersTable).where(inArray(usersTable.id, sellerIds))
     : [];
   const sellerMap = new Map(sellers.map((s) => [s.id, s]));
+  // Separate online vs offline chunks — cancel offline sellers' chunks immediately
+  const offlineChunkIds: number[] = [];
   const enriched = chunks.map((c) => {
     const seller = sellerMap.get(c.userId);
-    if (!seller?.lastSeenAt || Date.now() - new Date(seller.lastSeenAt).getTime() > 2 * 60 * 1000) return null;
-    if (!seller.matchingExpiresAt || new Date(seller.matchingExpiresAt).getTime() < Date.now()) return null;
+    const isOffline = !seller?.lastSeenAt || Date.now() - new Date(seller.lastSeenAt).getTime() > 2 * 60 * 1000;
+    const matchingExpired = !seller?.matchingExpiresAt || new Date(seller.matchingExpiresAt).getTime() < Date.now();
+    if (isOffline || matchingExpired) {
+      offlineChunkIds.push(c.id);
+      return null;
+    }
     const a = parseFloat(c.amount);
     const rp = a >= 2001 ? 3 : a >= 1001 ? 4 : 5;
     const ra = parseFloat((a * rp / 100).toFixed(2));
     return { ...f(c, seller), rewardPercent: rp, rewardAmount: ra, totalAmount: parseFloat((a + ra).toFixed(2)) };
   }).filter(Boolean);
+
+  // Cancel offline seller chunks so they're gone from DB, not just hidden
+  if (offlineChunkIds.length > 0) {
+    await db.update(ordersTable).set({ status: "cancelled", updatedAt: new Date() })
+      .where(and(
+        inArray(ordersTable.id, offlineChunkIds),
+        eq(ordersTable.status, "available"),
+      ));
+  }
+
   res.json(enriched);
 });
 
@@ -156,6 +172,17 @@ router.post("/lock/:id", requireAuth, async (req, res) => {
   }
   if (chunk.userId === u.id) {
     res.status(400).json({ error: "Cannot buy your own chunk" });
+    return;
+  }
+  // Seller must be online — reject lock if seller went offline
+  const [sellerNow] = await db.select({ lastSeenAt: usersTable.lastSeenAt, matchingExpiresAt: usersTable.matchingExpiresAt })
+    .from(usersTable).where(eq(usersTable.id, chunk.userId)).limit(1);
+  const sellerOffline = !sellerNow?.lastSeenAt || Date.now() - new Date(sellerNow.lastSeenAt).getTime() > 2 * 60 * 1000;
+  const sellerMatchingGone = !sellerNow?.matchingExpiresAt || new Date(sellerNow.matchingExpiresAt).getTime() < Date.now();
+  if (sellerOffline || sellerMatchingGone) {
+    // Cancel this chunk so it's cleaned up
+    await db.update(ordersTable).set({ status: "cancelled", updatedAt: new Date() }).where(and(eq(ordersTable.id, id), eq(ordersTable.status, "available")));
+    res.status(400).json({ error: "Seller is offline. This order has been removed." });
     return;
   }
 
