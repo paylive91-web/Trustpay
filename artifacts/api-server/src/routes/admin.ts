@@ -259,13 +259,17 @@ router.delete("/users/:id", requireAdmin, async (req, res) => {
       inArray(fraudAlertsTable.orderId, orderIds),
       eq(fraudAlertsTable.userId, id),
     ));
+    // referrals and transactions from ANY user that reference these orders must
+    // be removed before orders can be deleted (FK: orderId -> orders.id).
+    await db.delete(referralsTable).where(inArray(referralsTable.orderId, orderIds));
+    await db.delete(transactionsTable).where(inArray(transactionsTable.orderId, orderIds));
   } else {
     await db.delete(trustEventsTable).where(eq(trustEventsTable.userId, id));
     await db.delete(disputesTable).where(or(eq(disputesTable.buyerId, id), eq(disputesTable.sellerId, id)));
     await db.delete(fraudAlertsTable).where(eq(fraudAlertsTable.userId, id));
   }
 
-  // Delete records referencing user directly
+  // Delete records referencing user directly (remaining after order-scoped deletes above)
   await db.delete(userNotificationsTable).where(eq(userNotificationsTable.userId, id));
   await db.delete(deviceFingerprintsTable).where(eq(deviceFingerprintsTable.userId, id));
   await db.delete(highValueEventsTable).where(eq(highValueEventsTable.userId, id));
@@ -474,7 +478,7 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
   const map: Record<string, any> = {
     upiId: b.upiId, upiName: b.upiName,
     popupMessage: b.popupMessage, popupImageUrl: b.popupImageUrl,
-    telegramLink: b.telegramLink,
+    telegramLink: b.telegramLink, inviteShareImageUrl: b.inviteShareImageUrl,
     appName: b.appName, appLogoUrl: b.appLogoUrl, popupSoundUrl: b.popupSoundUrl,
     buyRules: b.buyRules, sellRules: b.sellRules,
     chunkMin: b.chunkMin, chunkMax: b.chunkMax,
