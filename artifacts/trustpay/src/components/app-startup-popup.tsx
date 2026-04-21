@@ -42,8 +42,10 @@ export default function AppStartupPopup() {
   useEffect(() => {
     if (!settings) return;
 
-    // Once-per-login-session guard — cleared on every login/logout
-    if (localStorage.getItem("popup_seen_session")) return;
+    // Show if: new login session OR new calendar day (whichever comes first)
+    const seenSession = localStorage.getItem("popup_seen_session");
+    const seenDate = localStorage.getItem("popup_seen_date");
+    if (seenSession && seenDate === today) return;
 
     const items: any[] = [];
     const announcements = (settings as any)?.announcements;
@@ -64,6 +66,7 @@ export default function AppStartupPopup() {
 
   const markSeenToday = () => {
     localStorage.setItem("popup_seen_session", "1");
+    localStorage.setItem("popup_seen_date", today);
   };
 
   const handleNext = () => {
