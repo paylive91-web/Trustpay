@@ -228,29 +228,23 @@ export default function Home() {
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-semibold">Buy Rules</h3>
-                <p className="text-sm text-muted-foreground">Tap to view full page</p>
+                <h3 className="font-semibold">Rules</h3>
+                <p className="text-sm text-muted-foreground">Buy and sell rules</p>
               </div>
-              <Link href="/info#buy">
+              <Link href="/info">
                 <Button variant="outline" size="sm" className="rounded-full gap-1">Open <ChevronRight className="h-4 w-4" /></Button>
               </Link>
             </div>
-            {buyRules && <div className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap">{buyRules}</div>}
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-sm">
-          <CardContent className="p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold">Sell Rules</h3>
-                <p className="text-sm text-muted-foreground">Tap to view full page</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div className="rounded-2xl bg-sky-50 p-3">
+                <div className="text-xs font-semibold text-sky-700 mb-1">Buy Rules</div>
+                <div className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap">{buyRules}</div>
               </div>
-              <Link href="/info#sell">
-                <Button variant="outline" size="sm" className="rounded-full gap-1">Open <ChevronRight className="h-4 w-4" /></Button>
-              </Link>
+              <div className="rounded-2xl bg-fuchsia-50 p-3">
+                <div className="text-xs font-semibold text-fuchsia-700 mb-1">Sell Rules</div>
+                <div className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap">{sellRules}</div>
+              </div>
             </div>
-            {sellRules && <div className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap">{sellRules}</div>}
           </CardContent>
         </Card>
       </div>
