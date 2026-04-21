@@ -48,7 +48,7 @@ const STATUS_COLOR: Record<string, string> = {
 
 export default function Sell() {
   const [, setLocation] = useLocation();
-  const { data: user, isError, refetch: refetchMe } = useGetMe({ query: { queryKey: ["me"], retry: false } });
+  const { data: user, isError, isLoading: userLoading, refetch: refetchMe } = useGetMe({ query: { queryKey: ["me"], retry: false } });
   const { data: settings } = useGetAppSettings();
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -100,6 +100,15 @@ export default function Sell() {
       refetchMatching(); refetchChunks(); refetchMe();
     },
   });
+
+  if (userLoading) return (
+    <Layout>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Loading...</p>
+      </div>
+    </Layout>
+  );
 
   if (!user) return null;
 
