@@ -28,6 +28,7 @@ export default function Profile() {
     logoutMutation.mutate(undefined, {
       onSuccess: () => {
         clearAuthToken();
+        localStorage.removeItem("popup_seen_session");
         queryClient.clear();
         toast({ title: "Logged out successfully" });
         setLocation("/login");

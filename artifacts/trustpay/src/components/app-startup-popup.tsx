@@ -42,9 +42,8 @@ export default function AppStartupPopup() {
   useEffect(() => {
     if (!settings) return;
 
-    // Once-per-day guard — if already shown today, skip entirely
-    const popupKey = `popup_seen_${today}`;
-    if (localStorage.getItem(popupKey)) return;
+    // Once-per-login-session guard — cleared on every login/logout
+    if (localStorage.getItem("popup_seen_session")) return;
 
     const items: any[] = [];
     const announcements = (settings as any)?.announcements;
@@ -64,8 +63,7 @@ export default function AppStartupPopup() {
   }, [JSON.stringify(settings)]);
 
   const markSeenToday = () => {
-    const popupKey = `popup_seen_${today}`;
-    localStorage.setItem(popupKey, "1");
+    localStorage.setItem("popup_seen_session", "1");
   };
 
   const handleNext = () => {

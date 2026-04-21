@@ -60,6 +60,7 @@ export default function Login() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Login failed");
       setAuthToken(data.token);
+      localStorage.removeItem("popup_seen_session");
       toast({ title: "Login successful" });
       setLocation("/");
     } catch (err: any) {
