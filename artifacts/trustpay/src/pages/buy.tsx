@@ -98,10 +98,11 @@ function PaymentActionDialog({ open, onOpenChange, onPayNow, onCancel, buy }: {
 }) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="rounded-3xl max-w-sm border-0 bg-gradient-to-br from-white via-sky-50 to-indigo-50 shadow-2xl">
+      <AlertDialogContent className="rounded-[28px] max-w-sm border border-white/60 bg-gradient-to-br from-white via-slate-50 to-indigo-50 shadow-[0_20px_70px_rgba(59,130,246,0.18)] overflow-hidden">
+        <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-fuchsia-500 via-sky-500 to-emerald-400" />
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-base flex items-center gap-2">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-fuchsia-500 flex items-center justify-center text-white shadow-lg">
+          <AlertDialogTitle className="text-base flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary via-sky-500 to-fuchsia-500 flex items-center justify-center text-white shadow-lg ring-4 ring-sky-100">
               <Clock className="h-5 w-5" />
             </div>
             <span className="font-bold">Payment pending</span>
@@ -115,9 +116,19 @@ function PaymentActionDialog({ open, onOpenChange, onPayNow, onCancel, buy }: {
             </span>
           </AlertDialogDescription>
         </AlertDialogHeader>
+        <div className="rounded-2xl bg-white/60 border border-white/70 p-3 space-y-2">
+          <div className="flex items-center justify-between text-xs text-slate-500">
+            <span>Amount</span>
+            <span className="font-semibold text-slate-800">₹{buy.amount}</span>
+          </div>
+          <div className="flex items-center justify-between text-xs text-slate-500">
+            <span>UPI</span>
+            <span className="font-semibold text-slate-800 break-all text-right">{buy.upiId}</span>
+          </div>
+        </div>
         <AlertDialogFooter className="sm:justify-between gap-2">
-          <AlertDialogCancel onClick={onCancel} className="rounded-full border-slate-300 bg-white/80">Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onPayNow} className="rounded-full bg-gradient-to-r from-primary to-fuchsia-500 hover:from-primary/90 hover:to-fuchsia-600 text-white shadow-lg">
+          <AlertDialogCancel onClick={onCancel} className="rounded-full border-slate-300 bg-white/80 shadow-sm">Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onPayNow} className="rounded-full bg-gradient-to-r from-primary via-sky-500 to-fuchsia-500 hover:from-primary/90 hover:via-sky-600 hover:to-fuchsia-600 text-white shadow-lg">
             Buy Now
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -331,14 +342,18 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
         </CardContent>
       </Card>
 
-      <Card className="rounded-3xl shadow-lg border-0 bg-gradient-to-br from-white via-sky-50 to-indigo-50">
+      <Card className="rounded-[28px] shadow-xl border border-white/70 bg-gradient-to-br from-white via-sky-50 to-indigo-50 overflow-hidden">
         <CardContent className="p-4 space-y-4">
+          <div className="absolute inset-x-4 top-4 h-px bg-gradient-to-r from-transparent via-sky-300 to-transparent" />
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-2xl font-bold">₹{buy.amount}</div>
-              <div className="text-xs text-green-600">+₹{Number(buy.rewardAmount || 0).toFixed(2)} reward ({buy.rewardPercent}%)</div>
+              <div className="text-2xl font-black tracking-tight">₹{buy.amount}</div>
+              <div className="inline-flex items-center gap-1 mt-1 text-xs text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                +₹{Number(buy.rewardAmount || 0).toFixed(2)} reward ({buy.rewardPercent}%)
+              </div>
             </div>
-            <div className={`flex items-center gap-2 text-sm px-3 py-2 rounded-full ${expired ? "bg-red-100 text-red-600" : remaining < 5 * 60 * 1000 ? "bg-orange-100 text-orange-600" : "bg-sky-100 text-sky-700"}`}>
+            <div className={`flex items-center gap-2 text-sm px-3 py-2 rounded-full border ${expired ? "bg-red-50 text-red-600 border-red-100" : remaining < 5 * 60 * 1000 ? "bg-orange-50 text-orange-600 border-orange-100" : "bg-sky-50 text-sky-700 border-sky-100"}`}>
               <Clock className="h-4 w-4" />
               <span className="font-mono font-semibold">{fmtCountdown(remaining)}</span>
             </div>
@@ -347,7 +362,7 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
           {/* QR Code */}
           {!qrError && (
             <div className="flex flex-col items-center gap-2 py-2">
-              <div className="p-3 rounded-3xl bg-white shadow-inner border border-slate-200">
+              <div className="p-4 rounded-[24px] bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] border border-slate-200">
                 <img
                   src={qrUrl}
                   alt="UPI QR Code"
@@ -359,14 +374,14 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
             </div>
           )}
 
-          <div className="rounded-2xl p-3 space-y-2 text-sm bg-gradient-to-r from-slate-50 to-indigo-50 border border-slate-200">
+          <div className="rounded-[24px] p-3 space-y-2 text-sm bg-gradient-to-r from-slate-50 via-white to-indigo-50 border border-slate-200 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground text-xs">Pay to UPI:</span>
-              <button onClick={() => { navigator.clipboard.writeText(buy.upiId); toast({ title: "Copied!" }); }} className="text-primary text-xs flex items-center gap-1">
+              <button onClick={() => { navigator.clipboard.writeText(buy.upiId); toast({ title: "Copied!" }); }} className="text-primary text-xs flex items-center gap-1 font-semibold">
                 <Copy className="h-3 w-3" /> Copy
               </button>
             </div>
-            <div className="font-mono font-semibold break-all">{buy.upiId}</div>
+            <div className="font-mono font-semibold break-all text-slate-900">{buy.upiId}</div>
             <div className="text-xs text-muted-foreground">Holder: {buy.holderName || buy.upiName}</div>
           </div>
 
@@ -379,7 +394,7 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
                   key={app.key}
                   type="button"
                   variant="outline"
-                  className="h-11 rounded-2xl text-xs font-semibold border-slate-300 bg-white shadow-sm"
+                  className="h-11 rounded-2xl text-xs font-semibold border-slate-300 bg-white shadow-sm hover:bg-slate-50"
                   onClick={() => openUpiApp(buy.upiId, buy.amount, app.key as any)}
                 >
                   {app.label}
@@ -412,7 +427,7 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
                 Optional: also record your screen while paying. You'll need it only if a dispute opens later.
               </div>
               <Button
-                className="w-full h-12 text-base font-bold rounded-xl"
+                className="w-full h-12 text-base font-bold rounded-2xl bg-gradient-to-r from-primary via-sky-600 to-fuchsia-600 shadow-lg"
                 disabled={!utr || !screenshotUrl || submitMut.isPending || !!uploading}
                 onClick={() => setShowWarning(true)}
               >
