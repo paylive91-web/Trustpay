@@ -166,8 +166,8 @@ function BuyRulesDialog({ open, onOpenChange, onConfirm, buy, rules }: {
         </AlertDialogHeader>
         <div className="rounded-2xl bg-white/70 border border-white/80 p-4 max-h-[45vh] overflow-y-auto">
           <ul className="space-y-2 text-sm text-slate-700 list-disc pl-5">
-            <li>Pay ONLY ₹{buy.amount} — no more, no less</li>
-            <li>Pay ONLY to the UPI below — not to any other number</li>
+              <li>Pay Only ₹{buy.amount} — no more, no less</li>
+              <li>Pay Only to the UPI below — not to any other number</li>
             {lines.length > 0 ? (
               lines.map((line, idx) => <li key={idx}>{line}</li>)
             ) : (
