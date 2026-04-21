@@ -416,7 +416,8 @@ router.get("/matching-status", requireAuth, async (req, res) => {
   const u = (req as any).user;
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, u.id)).limit(1);
   const expiresAt = user?.matchingExpiresAt || null;
-  const isActive = !!expiresAt && new Date(expiresAt).getTime() > Date.now();
+  const isOnline = !!user?.lastSeenAt && Date.now() - new Date(user.lastSeenAt).getTime() < 2 * 60 * 1000;
+  const isActive = !!expiresAt && new Date(expiresAt).getTime() > Date.now() && isOnline;
   // Counts for the live status panel.
   const counts = await db.select({
     status: ordersTable.status,

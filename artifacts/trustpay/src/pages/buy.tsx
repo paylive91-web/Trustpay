@@ -199,10 +199,6 @@ export default function Buy() {
           <ActiveBuyCard buy={myBuy} refetch={refetchBuy} />
         ) : (
           <>
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-sm">Available Orders</h2>
-              <div className="text-xs text-muted-foreground">Swipe to browse more</div>
-            </div>
             {queue.length === 0 ? (
               <Card>
                 <CardContent className="p-8 text-center text-muted-foreground">
@@ -462,93 +458,99 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
 }
 
 /**
- * Randomized queue: all orders stay visible, but their positions reshuffle
- * every few seconds so it feels like someone else may have purchased first.
+ * Single-chunk spotlight carousel: one order at a time, auto-cycles every 3 s.
+ * Alternates slide direction on each advance for a lively feel.
+ * No scrollbar. Navigation arrows + dot indicators.
  */
-const CARD_H = 128;
-const CARD_GAP = 10;
-
 function ChunkCarousel({ queue, onLock, disabled }: { queue: any[]; onLock: (id: number) => void; disabled: boolean }) {
-  // Build a "looped" display queue: repeat real orders enough times so the
-  // user always sees a long, busy list (>= 24 cards) even when only a few
-  // real chunks exist. Each repeat carries a unique key so React renders
-  // them as distinct cards.
-  const displayQueue = React.useMemo(() => {
-    if (queue.length === 0) return [] as Array<{ chunk: any; key: string }>;
-    const TARGET = 24;
-    const repeats = Math.max(1, Math.ceil(TARGET / queue.length));
-    const out: Array<{ chunk: any; key: string }> = [];
-    for (let r = 0; r < repeats; r++) {
-      for (const c of queue) {
-        out.push({ chunk: c, key: `${c.id}-${r}` });
-      }
-    }
-    return out;
-  }, [queue]);
+  const [idx, setIdx] = useState(0);
+  // "dir" tracks which side the new card slides in from: +1 = from right, -1 = from left
+  const [dir, setDir] = useState(1);
+  const [animKey, setAnimKey] = useState(0);
 
-  // `slots[i]` = which visual slot card at displayQueue index i occupies
-  const [slots, setSlots] = useState<number[]>(() => displayQueue.map((_, i) => i));
+  const n = queue.length;
 
-  // Re-sync slots when display length changes (new order arrived / order gone)
-  useEffect(() => {
-    setSlots(displayQueue.map((_, i) => i));
-  }, [displayQueue.length]);
-
-  // Helper: do `swaps` random pair-swaps in one shot so multiple cards
-  // visibly move together each tick.
-  const reshuffle = (prev: number[], swaps: number) => {
-    const next = [...prev];
-    if (next.length < 2) return next;
-    for (let s = 0; s < swaps; s++) {
-      const a = Math.floor(Math.random() * next.length);
-      let b = Math.floor(Math.random() * (next.length - 1));
-      if (b >= a) b += 1;
-      [next[a], next[b]] = [next[b], next[a]];
-    }
-    return next;
+  const go = (next: number, direction: number) => {
+    setDir(direction);
+    setAnimKey((k) => k + 1);
+    setIdx(((next % n) + n) % n);
   };
 
-  // Start reshuffling almost immediately after the queue appears.
+  // Auto-cycle every 3 s, alternating direction each time
+  const autoDir = React.useRef(1);
   useEffect(() => {
-    if (displayQueue.length < 2) return;
-    const t = setTimeout(() => {
-      setSlots((prev) => reshuffle(prev, Math.max(2, Math.floor(prev.length / 2))));
-    }, 200);
-    return () => clearTimeout(t);
-  }, [displayQueue.length]);
+    if (n < 2) return;
+    const t = setInterval(() => {
+      autoDir.current *= -1;
+      setDir(autoDir.current);
+      setAnimKey((k) => k + 1);
+      setIdx((i) => ((i + 1) % n));
+    }, 3200);
+    return () => clearInterval(t);
+  }, [n]);
 
-  // Every 600 ms swap multiple pairs so the whole list visibly shuffles.
-  useEffect(() => {
-    if (displayQueue.length < 2) return;
-    const timer = setInterval(() => {
-      setSlots((prev) => reshuffle(prev, Math.max(2, Math.floor(prev.length / 2))));
-    }, 850);
-    return () => clearInterval(timer);
-  }, [displayQueue.length]);
+  // Reset to first when queue changes
+  useEffect(() => { setIdx(0); }, [n]);
 
-  const containerH = displayQueue.length * CARD_H + (displayQueue.length - 1) * CARD_GAP;
+  if (n === 0) return null;
+  const chunk = queue[idx];
+
+  const slideIn = dir > 0 ? "slideInRight" : "slideInLeft";
 
   return (
-    <div style={{ position: "relative", height: displayQueue.length * CARD_H + (displayQueue.length - 1) * CARD_GAP }}>
-      {displayQueue.map(({ chunk, key }, idx) => {
-        const slot = slots[idx] ?? idx;
-        const topPx = slot * (CARD_H + CARD_GAP);
-        return (
-          <div
-            key={key}
-            style={{
-              position: "absolute",
-              top: topPx,
-              left: 0,
-              right: 0,
-              height: CARD_H,
-              transition: "top 0.45s cubic-bezier(0.4, 0, 0.2, 1)",
-            }}
+    <div className="space-y-4">
+      {/* Counter */}
+      <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+        <span className="font-medium">{n} order{n !== 1 ? "s" : ""} available</span>
+        <span>{idx + 1} / {n}</span>
+      </div>
+
+      {/* Card stage — fixed height, overflow hidden = no scrollbar */}
+      <div className="relative overflow-hidden rounded-[28px]" style={{ minHeight: 180 }}>
+        <style>{`
+          @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+          @keyframes slideInLeft  { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+          .slide-in-right { animation: slideInRight 0.38s cubic-bezier(0.22,1,0.36,1) both; }
+          .slide-in-left  { animation: slideInLeft  0.38s cubic-bezier(0.22,1,0.36,1) both; }
+        `}</style>
+        <div
+          key={animKey}
+          className={slideIn === "slideInRight" ? "slide-in-right" : "slide-in-left"}
+        >
+          <ChunkCard chunk={chunk} onLock={() => onLock(chunk.id)} disabled={disabled} />
+        </div>
+      </div>
+
+      {/* Dot indicators */}
+      {n > 1 && (
+        <div className="flex justify-center gap-1.5">
+          {queue.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => go(i, i > idx ? 1 : -1)}
+              className={`rounded-full transition-all ${i === idx ? "w-5 h-2 bg-primary" : "w-2 h-2 bg-muted-foreground/30"}`}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Prev / Next arrows (only when multiple items) */}
+      {n > 1 && (
+        <div className="flex gap-3 justify-center">
+          <button
+            onClick={() => go(idx - 1, -1)}
+            className="flex-1 max-w-[140px] h-10 rounded-2xl border border-border/60 bg-muted/40 text-sm font-medium hover:bg-muted transition-colors"
           >
-            <ChunkCard chunk={chunk} onLock={() => onLock(chunk.id)} disabled={disabled} />
-          </div>
-        );
-      })}
+            ← Prev
+          </button>
+          <button
+            onClick={() => go(idx + 1, 1)}
+            className="flex-1 max-w-[140px] h-10 rounded-2xl border border-border/60 bg-muted/40 text-sm font-medium hover:bg-muted transition-colors"
+          >
+            Next →
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -556,50 +558,53 @@ function ChunkCarousel({ queue, onLock, disabled }: { queue: any[]; onLock: (id:
 function ChunkCard({ chunk, onLock, disabled }: { chunk: any; onLock: () => void; disabled: boolean }) {
   const online = chunk.seller?.lastSeenAt && isOnline(chunk.seller.lastSeenAt);
   return (
-      <Card className="rounded-[22px] shadow-sm border border-border/60 bg-card h-full overflow-hidden">
-      <CardContent className="p-3 h-full flex flex-col justify-between">
-        {/* Row 1: amount + UPI badge + online */}
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-[23px] sm:text-[25px] font-black tracking-tight leading-none truncate">₹{chunk.amount}</span>
-          <span className="rounded-full bg-yellow-300 text-black text-[10px] font-bold px-3 py-1">UPI</span>
-          {online && (
-            <span className="flex items-center gap-1 text-green-600 text-[11px]">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block animate-pulse" />
-              Online
-            </span>
-          )}
+    <Card className="rounded-[28px] shadow-2xl border border-white/70 bg-gradient-to-br from-white via-sky-50 to-indigo-50 overflow-hidden">
+      <div className="h-1 bg-gradient-to-r from-fuchsia-500 via-sky-500 to-emerald-400" />
+      <CardContent className="p-5 space-y-4">
+        {/* Top: amount + badges */}
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <div className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide mb-1">Order Amount</div>
+            <div className="text-5xl font-black tracking-tight text-slate-900">₹{chunk.amount}</div>
+          </div>
+          <div className="flex flex-col items-end gap-1.5">
+            <span className="rounded-full bg-yellow-300 text-black text-[10px] font-bold px-3 py-1">UPI</span>
+            {online && (
+              <span className="flex items-center gap-1 text-green-700 bg-green-100 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block animate-pulse" />
+                Seller Online
+              </span>
+            )}
+          </div>
         </div>
-        {/* Row 2: income + quota boxes + Buy button */}
-        <div className="flex items-center gap-2 mt-2 min-w-0">
-          <div className="flex-1 rounded-2xl bg-muted/50 p-3 min-w-0">
-            <div className="text-[11px] text-muted-foreground font-medium">Income</div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="text-[18px] font-black text-emerald-700 truncate">₹{chunk.rewardAmount}</div>
-              <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-500 whitespace-nowrap">{chunk.rewardPercent}%+6</span>
-            </div>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-3">
+            <div className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wide mb-1">You Earn</div>
+            <div className="text-2xl font-black text-emerald-700">₹{Number(chunk.rewardAmount || 0).toFixed(2)}</div>
+            <div className="text-[10px] text-emerald-500 font-medium mt-0.5">{chunk.rewardPercent}% reward</div>
           </div>
-          <div className="flex-1 rounded-2xl bg-muted/50 p-3 min-w-0">
-            <div className="text-[11px] text-muted-foreground font-medium">Quota</div>
-            <div className="text-[18px] font-black text-slate-900 truncate">+ {chunk.totalAmount}</div>
+          <div className="rounded-2xl bg-sky-50 border border-sky-100 p-3">
+            <div className="text-[10px] text-sky-600 font-semibold uppercase tracking-wide mb-1">Total Receive</div>
+            <div className="text-2xl font-black text-sky-700">₹{Number(chunk.totalAmount || 0).toFixed(2)}</div>
+            {chunk.seller && (
+              <div className="flex items-center gap-1 text-[10px] text-sky-400 font-medium mt-0.5">
+                <ShieldCheck className="h-3 w-3" />
+                Trust {chunk.seller.trustScore ?? "N/A"}
+              </div>
+            )}
           </div>
-          <button
-            onClick={onLock}
-            disabled={disabled}
-            className="w-28 h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-bold shrink-0 flex items-center justify-center shadow disabled:opacity-50 active:scale-95 transition-transform"
-          >
-            Buy
-          </button>
         </div>
-        {/* Row 3: seller trust */}
-        {chunk.seller && (
-          <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-1 leading-none">
-            <ShieldCheck className="h-3 w-3" />
-            Seller trust:{" "}
-            <span className={chunk.seller.trustScore >= 0 ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>
-              {chunk.seller.trustScore}
-            </span>
-          </div>
-        )}
+
+        {/* Buy button */}
+        <button
+          onClick={onLock}
+          disabled={disabled}
+          className="w-full h-14 rounded-2xl bg-gradient-to-r from-primary via-sky-500 to-fuchsia-500 text-white text-base font-bold shadow-lg disabled:opacity-50 active:scale-[0.98] transition-transform"
+        >
+          {disabled ? "Locking..." : "Buy Now"}
+        </button>
       </CardContent>
     </Card>
   );
