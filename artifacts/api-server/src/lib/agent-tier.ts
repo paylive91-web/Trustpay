@@ -50,19 +50,27 @@ export async function evaluateAgentTier(agentId: number): Promise<void> {
   // conditional update to avoid client/server clock-skew races.
   const today = new Date().toISOString().slice(0, 10);
 
-  // Distinct invitees who CONFIRMED at least one buy-chunk today. We count
-  // by confirmed_at (the timestamp the chunk transitioned to "confirmed"),
-  // not created_at — a chunk created yesterday but confirmed today still
-  // legitimately counts as today's active deposit. Falls back to updated_at
-  // for legacy chunks where confirmed_at was never set.
-  const rows = await db.execute(sql`
-    SELECT COUNT(DISTINCT o.locked_by_user_id)::int AS active_count
-    FROM orders o
-    JOIN users u ON u.id = o.locked_by_user_id
-    WHERE u.referred_by = ${agentId}
-      AND o.status = 'confirmed'
-      AND COALESCE(o.confirmed_at, o.updated_at) >= CURRENT_DATE
-  `);
+  // For admin accounts, every user who confirms a deposit on the platform
+  // today counts — no referral filter needed. For regular agents, only their
+  // own invitees (referredBy = agentId) count.
+  const isAdmin = agent.role === "admin";
+  const rows = await db.execute(
+    isAdmin
+      ? sql`
+          SELECT COUNT(DISTINCT o.locked_by_user_id)::int AS active_count
+          FROM orders o
+          WHERE o.status = 'confirmed'
+            AND COALESCE(o.confirmed_at, o.updated_at) >= CURRENT_DATE
+        `
+      : sql`
+          SELECT COUNT(DISTINCT o.locked_by_user_id)::int AS active_count
+          FROM orders o
+          JOIN users u ON u.id = o.locked_by_user_id
+          WHERE u.referred_by = ${agentId}
+            AND o.status = 'confirmed'
+            AND COALESCE(o.confirmed_at, o.updated_at) >= CURRENT_DATE
+        `
+  );
   const activeCount: number = Number((rows as any).rows?.[0]?.active_count || 0);
 
   // Highest tier index reached (0-indexed). tiers are stored 1-indexed in

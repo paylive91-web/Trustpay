@@ -219,6 +219,22 @@ export async function settleConfirmedTrade(chunkOrderId: number, isAutoConfirm =
     }
   }
 
+  // Admin agent-tier evaluation — runs on every settlement so that every
+  // platform deposit (regardless of referral) counts toward the admin's
+  // daily active-deposit total.
+  try {
+    const { evaluateAgentTier } = await import("./agent-tier.js");
+    const adminUsers = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.role, "admin"));
+    for (const admin of adminUsers) {
+      await evaluateAgentTier(admin.id);
+    }
+  } catch (err) {
+    logger.error({ err }, "admin evaluateAgentTier failed");
+  }
+
   const { regenerateChunksForUser } = await import("./matching.js");
   await regenerateChunksForUser(buyerId);
 }
