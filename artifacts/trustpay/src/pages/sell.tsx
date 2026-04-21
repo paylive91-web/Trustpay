@@ -47,13 +47,17 @@ const STATUS_COLOR: Record<string, string> = {
   disputed: "bg-red-100 text-red-700",
 };
 
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export default function Sell() {
   const [, setLocation] = useLocation();
   const { data: user, isError, refetch: refetchMe } = useGetMe({ query: { queryKey: ["me"], retry: false } });
   const { data: settings } = useGetAppSettings();
   const { toast } = useToast();
   const qc = useQueryClient();
-  const [showRules, setShowRules] = useState(false);
+  const [showRulesPopup, setShowRulesPopup] = useState(false);
   const [now, setNow] = useState(Date.now());
 
   // 1-second tick drives the matching countdown.
@@ -73,6 +77,10 @@ export default function Sell() {
   });
 
   useEffect(() => { if (isError) setLocation("/login"); }, [isError, setLocation]);
+  useEffect(() => {
+    const key = `sell_rules_seen_${todayKey()}`;
+    setShowRulesPopup(!localStorage.getItem(key));
+  }, []);
 
   // Sound when a new lock or pending-confirmation arrives.
   const prevLocked = useRef(0);
@@ -120,15 +128,25 @@ export default function Sell() {
       <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-secondary via-secondary to-primary text-white">
         <Link href="/"><ArrowLeft className="cursor-pointer" /></Link>
         <span className="font-bold text-lg flex-1">Sell — Matching</span>
-        <button onClick={() => setShowRules((v) => !v)} className="flex items-center gap-1 text-xs bg-white/15 px-2.5 py-1.5 rounded-full">
+        <button onClick={() => setShowRulesPopup(true)} className="flex items-center gap-1 text-xs bg-white/15 px-2.5 py-1.5 rounded-full">
           <BookOpen className="w-3.5 h-3.5" /> Rules
         </button>
       </div>
-      {showRules && (settings as any)?.sellRules && (
-        <div className="p-4 bg-secondary/5 border-b border-secondary/20 text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-          {(settings as any).sellRules}
-        </div>
-      )}
+      <Dialog open={showRulesPopup} onOpenChange={(v) => { setShowRulesPopup(v); if (!v) localStorage.setItem(`sell_rules_seen_${todayKey()}`, "1"); }}>
+        <DialogContent className="max-w-md rounded-[28px] border border-white/60 bg-gradient-to-br from-white via-slate-50 to-indigo-50 shadow-[0_20px_70px_rgba(59,130,246,0.18)] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="font-bold">Sell rules</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="rounded-2xl bg-sky-50/80 border border-sky-100 p-3 text-sm text-slate-700">Keep app open.<br />Stay online.<br />Confirm only after payment proof matches.</div>
+            <div className="rounded-2xl bg-fuchsia-50/80 border border-fuchsia-100 p-3 text-sm text-slate-700">App open rakho.<br />Online raho.<br />Payment proof match hone ke baad hi confirm karo.</div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => { setShowRulesPopup(false); localStorage.setItem(`sell_rules_seen_${todayKey()}`, "1"); }}>Cancel</Button>
+            <Button onClick={() => { setShowRulesPopup(false); localStorage.setItem(`sell_rules_seen_${todayKey()}`, "1"); }}>I understand, continue</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <div className="px-4 pt-3"><DisputePauseBanner /></div>
 
       {isFrozen && (
