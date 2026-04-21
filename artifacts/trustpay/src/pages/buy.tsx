@@ -225,7 +225,6 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
   const [uploading, setUploading] = useState<"shot" | "rec" | null>(null);
   const [qrError, setQrError] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -363,27 +362,6 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
                 </Button>
               ))}
           </div>
-
-          {!showPaymentDialog && (
-            <Button
-              className="w-full rounded-2xl"
-              onClick={() => setShowPaymentDialog(true)}
-            >
-              Show payment confirmation
-            </Button>
-          )}
-          {showPaymentDialog && (
-            <PaymentActionDialog
-              open={showPaymentDialog}
-              onOpenChange={setShowPaymentDialog}
-              buy={buy}
-              onPayNow={() => setShowPaymentDialog(false)}
-              onCancel={() => {
-                setShowPaymentDialog(false);
-                cancelMut.mutate();
-              }}
-            />
-          )}
 
           {expired ? (
             <Button variant="destructive" className="w-full" onClick={() => cancelMut.mutate()}>
