@@ -85,7 +85,7 @@ export function formatUser(user: any) {
     matchingExpiresAt: user.matchingExpiresAt || null,
     displayName: user.displayName || null,
     fraudWarningCount: user.fraudWarningCount ?? 0,
-    isVerifiedAgent: !!user.isVerifiedAgent,
+    isVerifiedAgent: user.agentTierAwardedDate === new Date().toISOString().slice(0, 10),
     createdAt: user.createdAt,
   };
 }
