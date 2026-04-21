@@ -217,13 +217,9 @@ export default function Buy() {
 
   useEffect(() => { if (isError) setLocation("/login"); }, [isError, setLocation]);
   useEffect(() => {
-    if (myBuy?.status === "locked") {
-      setShowBuyRulesDialog(true);
-      setShowPaymentDialog(false);
-    } else {
-      setShowBuyRulesDialog(false);
-      setShowPaymentDialog(false);
-    }
+    if (myBuy?.status === "locked") setShowBuyRulesDialog(true);
+    else setShowBuyRulesDialog(false);
+    setShowPaymentDialog(false);
   }, [myBuy?.status]);
   useEffect(() => {
     const raw = (settings as any)?.multipleUpiIds;
@@ -265,7 +261,7 @@ export default function Buy() {
         rules={(settings as any)?.buyRules || ""}
         onConfirm={() => {
           setShowBuyRulesDialog(false);
-          setShowPaymentDialog(true);
+          setLocation("/home");
         }}
       />
 
