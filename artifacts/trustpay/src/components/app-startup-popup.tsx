@@ -26,21 +26,17 @@ export default function AppStartupPopup() {
     const broadcast = (settings as any)?.broadcastNotification;
     if (broadcast?.message) {
       const broadcastKey = `broadcast_seen_${broadcast.sentAt}`;
-      if (!localStorage.getItem(broadcastKey)) {
-        items.push({ _key: broadcastKey, title: broadcast.title || "TrustPay", message: broadcast.message });
-      }
+      items.push({ _key: broadcastKey, title: broadcast.title || "TrustPay", message: broadcast.message });
     }
 
     const popupKey = `popup_seen_${today}`;
-    if (!localStorage.getItem(popupKey)) {
-      const announcements = (settings as any)?.announcements;
-      if (announcements?.length) {
-        announcements.forEach((ann: any) => {
-          if (ann.message) items.push({ _key: popupKey, _sharedKey: true, title: ann.title || "Announcement", message: ann.message, imageUrl: ann.imageUrl });
-        });
-      } else if (settings?.popupMessage) {
-        items.push({ _key: popupKey, _sharedKey: true, title: "Announcement", message: settings.popupMessage, imageUrl: (settings as any)?.popupImageUrl });
-      }
+    const announcements = (settings as any)?.announcements;
+    if (announcements?.length) {
+      announcements.forEach((ann: any) => {
+        if (ann.message) items.push({ _key: popupKey, _sharedKey: true, title: ann.title || "Announcement", message: ann.message, imageUrl: ann.imageUrl });
+      });
+    } else if (settings?.popupMessage) {
+      items.push({ _key: popupKey, _sharedKey: true, title: "Announcement", message: settings.popupMessage, imageUrl: (settings as any)?.popupImageUrl });
     }
 
     if (items.length > 0) {
@@ -54,17 +50,11 @@ export default function AppStartupPopup() {
     if (currentIndex < queue.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      const sharedKey = `popup_seen_${today}`;
-      localStorage.setItem(sharedKey, "1");
-      queue.forEach((item: any) => localStorage.setItem(item._key, "1"));
       setAnnOpen(false);
     }
   };
 
   const handleSkipAll = () => {
-    queue.forEach((item: any) => localStorage.setItem(item._key, "1"));
-    const sharedKey = `popup_seen_${today}`;
-    localStorage.setItem(sharedKey, "1");
     setAnnOpen(false);
   };
 
