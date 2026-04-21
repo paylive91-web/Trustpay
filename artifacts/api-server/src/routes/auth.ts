@@ -50,8 +50,21 @@ router.post("/register", async (req, res) => {
   }
   const existingPhone = await db.select().from(usersTable).where(eq(usersTable.phone, phone)).limit(1);
   if (existingPhone[0]) {
-    res.status(400).json({ error: "Mobile number already registered" });
+    res.status(400).json({ error: "Only 1 account is allowed per mobile number. Please login to your existing account." });
     return;
+  }
+
+  // Strict 1 device = 1 registration. Reject if this device fingerprint
+  // already belongs to another user. Logging into another account from the
+  // same phone is still allowed — only a brand new registration is blocked.
+  if (deviceFingerprint) {
+    const { deviceFingerprintsTable } = await import("@workspace/db");
+    const existingDevice = await db.select().from(deviceFingerprintsTable)
+      .where(eq(deviceFingerprintsTable.fingerprint, deviceFingerprint)).limit(1);
+    if (existingDevice[0]) {
+      res.status(400).json({ error: "Only 1 account is allowed per mobile device. Please login to your existing account." });
+      return;
+    }
   }
 
   const normalizedReferralCode = String(referralCode || "").trim().toUpperCase() || ADMIN_REFERRAL_CODE;
@@ -167,13 +180,70 @@ router.get("/me", requireAuth, async (req, res) => {
 
 router.get("/invitees", requireAuth, async (req, res) => {
   const u = (req as any).user;
-  const rows = await db.select({
+  // Direct (L1) invitees: users whose referredBy = me. We pull aggregated
+  // deposit + commission stats so the invite page can show a per-user
+  // breakdown (today + lifetime).
+  const directInvitees = await db.select({
     id: usersTable.id,
     username: usersTable.username,
     displayName: usersTable.displayName,
     createdAt: usersTable.createdAt,
-  }).from(referralsTable).innerJoin(usersTable, eq(referralsTable.referredUserId, usersTable.id)).where(eq(referralsTable.referrerId, u.id)).orderBy(desc(usersTable.createdAt));
-  res.json(rows);
+    totalDeposits: usersTable.totalDeposits,
+  }).from(usersTable).where(eq(usersTable.referredBy, u.id)).orderBy(desc(usersTable.createdAt));
+
+  if (directInvitees.length === 0) {
+    res.json([]);
+    return;
+  }
+
+  const inviteeIds = directInvitees.map((i) => i.id);
+
+  // Lifetime + today commission per invitee from referralsTable (level 1).
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const commissionRows = await db.select({
+    referredUserId: referralsTable.referredUserId,
+    lifetime: sql<string>`COALESCE(SUM(${referralsTable.commissionAmount}), 0)`,
+  }).from(referralsTable).where(and(
+    eq(referralsTable.referrerId, u.id),
+    eq(referralsTable.level, 1),
+  )).groupBy(referralsTable.referredUserId);
+
+  const todayCommissionRows = await db.select({
+    referredUserId: referralsTable.referredUserId,
+    today: sql<string>`COALESCE(SUM(${referralsTable.commissionAmount}), 0)`,
+  }).from(referralsTable).where(and(
+    eq(referralsTable.referrerId, u.id),
+    eq(referralsTable.level, 1),
+    sql`${referralsTable.createdAt} >= ${startOfDay}`,
+  )).groupBy(referralsTable.referredUserId);
+
+  // Today's deposit per invitee (sum of confirmed buy-side chunks where they
+  // were the buyer, i.e. lockedByUserId = invitee.id).
+  const todayDepositRows = await db.select({
+    buyerId: ordersTable.lockedByUserId,
+    today: sql<string>`COALESCE(SUM(${ordersTable.amount}), 0)`,
+  }).from(ordersTable).where(and(
+    eq(ordersTable.status, "confirmed"),
+    sql`${ordersTable.lockedByUserId} IN ${inviteeIds}`,
+    sql`${ordersTable.createdAt} >= ${startOfDay}`,
+  )).groupBy(ordersTable.lockedByUserId);
+
+  const lifetimeMap = new Map(commissionRows.map((r) => [r.referredUserId, parseFloat(String(r.lifetime || "0"))]));
+  const todayCommissionMap = new Map(todayCommissionRows.map((r) => [r.referredUserId, parseFloat(String(r.today || "0"))]));
+  const todayDepositMap = new Map(todayDepositRows.map((r) => [r.buyerId, parseFloat(String(r.today || "0"))]));
+
+  res.json(directInvitees.map((i) => ({
+    id: i.id,
+    username: i.username,
+    displayName: i.displayName,
+    createdAt: i.createdAt,
+    totalDeposits: parseFloat(i.totalDeposits || "0"),
+    todayDeposits: todayDepositMap.get(i.id) || 0,
+    lifetimeCommission: lifetimeMap.get(i.id) || 0,
+    todayCommission: todayCommissionMap.get(i.id) || 0,
+  })));
 });
 
 // Lightweight heartbeat — keeps lastSeenAt fresh (called every ~30s from frontend).

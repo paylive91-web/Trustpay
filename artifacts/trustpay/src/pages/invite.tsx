@@ -184,12 +184,36 @@ export default function Invite() {
               <div className="text-sm text-muted-foreground text-center py-4">No one has joined with your invite yet.</div>
             ) : (
               invitees.map((u: any) => (
-                <div key={u.id} className="flex items-center justify-between rounded-xl bg-muted/50 p-3">
-                  <div>
-                    <div className="font-medium text-sm">{u.displayName || u.username}</div>
-                    <div className="text-xs text-muted-foreground">Joined with your code</div>
+                <div key={u.id} className="rounded-2xl border border-muted bg-white p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                        <Users className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-semibold text-sm truncate">{u.displayName || u.username}</div>
+                        <div className="text-[11px] text-muted-foreground">Joined with your code</div>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Today commission</div>
+                      <div className="text-sm font-bold text-green-600">₹{Number(u.todayCommission || 0).toFixed(2)}</div>
+                    </div>
                   </div>
-                  <Users className="w-4 h-4 text-primary" />
+                  <div className="grid grid-cols-3 gap-2 pt-1">
+                    <div className="rounded-lg bg-blue-50 p-2 text-center">
+                      <div className="text-[10px] text-blue-600 uppercase">Today Deposit</div>
+                      <div className="text-xs font-bold text-blue-700">₹{Number(u.todayDeposits || 0).toFixed(2)}</div>
+                    </div>
+                    <div className="rounded-lg bg-emerald-50 p-2 text-center">
+                      <div className="text-[10px] text-emerald-600 uppercase">Total Deposit</div>
+                      <div className="text-xs font-bold text-emerald-700">₹{Number(u.totalDeposits || 0).toFixed(2)}</div>
+                    </div>
+                    <div className="rounded-lg bg-purple-50 p-2 text-center">
+                      <div className="text-[10px] text-purple-600 uppercase">Total Commission</div>
+                      <div className="text-xs font-bold text-purple-700">₹{Number(u.lifetimeCommission || 0).toFixed(2)}</div>
+                    </div>
+                  </div>
                 </div>
               ))
             )}
