@@ -347,20 +347,32 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-              {[
-                { key: "phonepe", label: "PhonePe", className: "bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white border-emerald-300 shadow-md hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600" },
-                { key: "paytm", label: "Paytm", className: "bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 text-white border-blue-300 shadow-md hover:from-blue-600 hover:via-indigo-600 hover:to-violet-600" },
-              ].map((app) => (
-                <Button
-                  key={app.key}
-                  type="button"
-                  variant="outline"
-                  className={`h-11 rounded-2xl text-xs font-semibold border ${app.className}`}
-                  onClick={() => openUpiApp(buy.upiId, buy.amount, app.key as any)}
-                >
-                  {app.label}
-                </Button>
-              ))}
+            <Button
+              type="button"
+              variant="outline"
+              className="h-12 rounded-2xl font-semibold border bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 text-white border-purple-400 shadow-md hover:from-purple-700 hover:to-indigo-700 flex items-center justify-center gap-2"
+              onClick={() => openUpiApp(buy.upiId, buy.amount, "phonepe")}
+            >
+              <svg width="20" height="20" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="100" height="100" rx="22" fill="white"/>
+                <path d="M72 28H54L34 55h12l-8 17 36-32H60l12-12z" fill="#5f259f"/>
+              </svg>
+              PhonePe
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-12 rounded-2xl font-semibold border bg-gradient-to-r from-sky-400 via-blue-500 to-cyan-500 text-white border-sky-300 shadow-md hover:from-sky-500 hover:to-blue-600 flex items-center justify-center gap-2"
+              onClick={() => openUpiApp(buy.upiId, buy.amount, "paytm")}
+            >
+              <svg width="22" height="22" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="100" height="100" rx="18" fill="white"/>
+                <path d="M15 38h22v8H23v4h14v8H15V38z" fill="#00b9f1"/>
+                <path d="M40 38h8v28h-8V38z" fill="#00b9f1"/>
+                <path d="M52 38h22v8H60v4h14v8H52V38z" fill="#00b9f1"/>
+              </svg>
+              Paytm
+            </Button>
           </div>
 
           {expired ? (
