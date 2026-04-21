@@ -65,10 +65,10 @@ function PWAInstallPopup({ onDone, appName, logoUrl }: { onDone: () => void; app
           </div>
 
           <h2 className="text-[24px] font-extrabold text-white tracking-tight text-center drop-shadow">
-            {appName} App
+            {appName}
           </h2>
           <p className="mt-1 text-indigo-200 text-[13px] text-center font-medium">
-            Install karo &amp; instant access pao
+            Secure P2P UPI Trading
           </p>
         </div>
 
@@ -86,10 +86,6 @@ function PWAInstallPopup({ onDone, appName, logoUrl }: { onDone: () => void; app
               </div>
             ))}
           </div>
-
-          <p className="text-[13px] text-slate-500 text-center mb-5 leading-relaxed">
-            Home screen pe add karo — ek tap mein open, bilkul native app jaisa
-          </p>
 
           {/* Download button */}
           <button
@@ -113,13 +109,6 @@ function PWAInstallPopup({ onDone, appName, logoUrl }: { onDone: () => void; app
             <span className="relative z-10">{installing ? "Installing..." : "Download Now"}</span>
           </button>
 
-          {/* Skip */}
-          <button
-            onClick={onDone}
-            className="w-full mt-3 py-2.5 text-[13px] text-slate-400 hover:text-slate-600 transition-colors font-medium"
-          >
-            Skip for now
-          </button>
         </div>
       </div>
 
