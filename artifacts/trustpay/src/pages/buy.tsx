@@ -163,6 +163,9 @@ export default function Buy() {
 
   useEffect(() => { if (isError) setLocation("/login"); }, [isError, setLocation]);
   useEffect(() => {
+    if (myBuy?.status === "locked") setShowPaymentDialog(true);
+  }, [myBuy?.status]);
+  useEffect(() => {
     const raw = (settings as any)?.multipleUpiIds;
     const arr = Array.isArray(raw) ? raw : [];
     setActiveUpis(arr.filter((u: any) => u?.upiId).map((u: any) => ({
@@ -336,8 +339,10 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
             <ul className="list-disc pl-3 space-y-0.5">
               <li>Pay ONLY ₹{buy.amount} — no more, no less</li>
               <li>Pay ONLY to the UPI below — not to any other number</li>
-              <li>NEVER share OTP, PIN, or password</li>
-              <li>If asked for extra payment, report immediately</li>
+              <li>
+                Agar aapki UPI ID me aapka number show ho raha hai to scammer call karke payment confirmation ke liye force kar sakte hain.
+                Isliye payment tabhi confirm karein jab amount aapke account me aa jaye, aur aisi UPI ID use karein jisme aapka number show na ho.
+              </li>
             </ul>
           </div>
         </CardContent>
