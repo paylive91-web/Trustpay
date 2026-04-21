@@ -98,10 +98,13 @@ function PaymentActionDialog({ open, onOpenChange, onPayNow, onCancel, buy }: {
 }) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="rounded-2xl max-w-sm">
+      <AlertDialogContent className="rounded-3xl max-w-sm border-0 bg-gradient-to-br from-white via-sky-50 to-indigo-50 shadow-2xl">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-base flex items-center gap-2">
-            <Clock className="h-5 w-5 text-primary" /> Payment pending
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-fuchsia-500 flex items-center justify-center text-white shadow-lg">
+              <Clock className="h-5 w-5" />
+            </div>
+            <span className="font-bold">Payment pending</span>
           </AlertDialogTitle>
           <AlertDialogDescription className="text-left space-y-2 leading-relaxed">
             <span className="block">
@@ -113,8 +116,8 @@ function PaymentActionDialog({ open, onOpenChange, onPayNow, onCancel, buy }: {
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="sm:justify-between gap-2">
-          <AlertDialogCancel onClick={onCancel}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onPayNow} className="bg-primary hover:bg-primary/90">
+          <AlertDialogCancel onClick={onCancel} className="rounded-full border-slate-300 bg-white/80">Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onPayNow} className="rounded-full bg-gradient-to-r from-primary to-fuchsia-500 hover:from-primary/90 hover:to-fuchsia-600 text-white shadow-lg">
             Buy Now
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -311,9 +314,11 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
         }}
       />
       {/* Scammer warning */}
-      <Card className="border-red-400 bg-red-50 rounded-2xl">
+      <Card className="border-0 bg-gradient-to-r from-rose-50 via-red-50 to-orange-50 rounded-3xl shadow-sm">
         <CardContent className="p-3 flex items-start gap-2">
-          <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
+          <div className="w-8 h-8 rounded-2xl bg-gradient-to-br from-rose-500 to-orange-400 flex items-center justify-center text-white shrink-0 shadow">
+            <AlertTriangle className="w-4 h-4" />
+          </div>
           <div className="text-xs text-red-700 space-y-1">
             <div className="font-semibold">Scam Alert — Read before paying</div>
             <ul className="list-disc pl-3 space-y-0.5">
@@ -326,14 +331,14 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
         </CardContent>
       </Card>
 
-      <Card className="rounded-2xl shadow-sm">
-        <CardContent className="p-4 space-y-3">
+      <Card className="rounded-3xl shadow-lg border-0 bg-gradient-to-br from-white via-sky-50 to-indigo-50">
+        <CardContent className="p-4 space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-2xl font-bold">₹{buy.amount}</div>
               <div className="text-xs text-green-600">+₹{Number(buy.rewardAmount || 0).toFixed(2)} reward ({buy.rewardPercent}%)</div>
             </div>
-            <div className={`flex items-center gap-1 text-sm ${expired ? "text-red-600" : remaining < 5 * 60 * 1000 ? "text-orange-600" : "text-primary"}`}>
+            <div className={`flex items-center gap-2 text-sm px-3 py-2 rounded-full ${expired ? "bg-red-100 text-red-600" : remaining < 5 * 60 * 1000 ? "bg-orange-100 text-orange-600" : "bg-sky-100 text-sky-700"}`}>
               <Clock className="h-4 w-4" />
               <span className="font-mono font-semibold">{fmtCountdown(remaining)}</span>
             </div>
@@ -342,17 +347,19 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
           {/* QR Code */}
           {!qrError && (
             <div className="flex flex-col items-center gap-2 py-2">
-              <img
-                src={qrUrl}
-                alt="UPI QR Code"
-                className="w-44 h-44 rounded-lg border"
-                onError={() => setQrError(true)}
-              />
-              <div className="text-xs text-muted-foreground">Scan with any UPI app</div>
+              <div className="p-3 rounded-3xl bg-white shadow-inner border border-slate-200">
+                <img
+                  src={qrUrl}
+                  alt="UPI QR Code"
+                  className="w-44 h-44 rounded-2xl"
+                  onError={() => setQrError(true)}
+                />
+              </div>
+              <div className="text-xs text-slate-500">Scan with any UPI app</div>
             </div>
           )}
 
-          <div className="bg-muted/50 rounded-xl p-3 space-y-2 text-sm">
+          <div className="rounded-2xl p-3 space-y-2 text-sm bg-gradient-to-r from-slate-50 to-indigo-50 border border-slate-200">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground text-xs">Pay to UPI:</span>
               <button onClick={() => { navigator.clipboard.writeText(buy.upiId); toast({ title: "Copied!" }); }} className="text-primary text-xs flex items-center gap-1">
@@ -372,7 +379,7 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
                   key={app.key}
                   type="button"
                   variant="outline"
-                  className="h-11 rounded-xl text-xs font-semibold"
+                  className="h-11 rounded-2xl text-xs font-semibold border-slate-300 bg-white shadow-sm"
                   onClick={() => openUpiApp(buy.upiId, buy.amount, app.key as any)}
                 >
                   {app.label}
