@@ -1,17 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useGetAppSettings } from "@workspace/api-client-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { X, ChevronRight } from "lucide-react";
 
-// Home-page popup. Handles broadcast notifications and daily announcements
-// only. Seller-side order alerts (locked / pending_confirmation) live in
-// <SellerAlertsPopup /> and are mounted on the sell page.
 export default function AppStartupPopup() {
   const [annOpen, setAnnOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -20,10 +11,6 @@ export default function AppStartupPopup() {
 
   const today = new Date().toDateString();
 
-  // Broadcast notifications are delivered via the browser's system
-  // notification API (no longer shown as an in-app popup). We dispatch the
-  // notification once per `sentAt` value so the same broadcast doesn't fire
-  // repeatedly across reloads.
   useEffect(() => {
     if (!settings) return;
     const broadcast = (settings as any)?.broadcastNotification;
@@ -37,11 +24,8 @@ export default function AppStartupPopup() {
           body: broadcast.message,
           icon: (settings as any)?.appLogoUrl || (broadcast.imageUrl || undefined),
         });
-        // Auto-close after 8s so it doesn't pile up.
         setTimeout(() => { try { n.close(); } catch {} }, 8000);
-      } catch {
-        // ignore — environment without Notification support
-      }
+      } catch {}
       localStorage.setItem(seenKey, "1");
     };
 
@@ -57,16 +41,19 @@ export default function AppStartupPopup() {
 
   useEffect(() => {
     if (!settings) return;
-    const items: any[] = [];
 
+    // Once-per-day guard — if already shown today, skip entirely
     const popupKey = `popup_seen_${today}`;
+    if (localStorage.getItem(popupKey)) return;
+
+    const items: any[] = [];
     const announcements = (settings as any)?.announcements;
     if (announcements?.length) {
       announcements.forEach((ann: any) => {
-        if (ann.message) items.push({ _key: popupKey, _sharedKey: true, title: ann.title || "Announcement", message: ann.message, imageUrl: ann.imageUrl });
+        if (ann.message) items.push({ title: ann.title || "Announcement", message: ann.message, imageUrl: ann.imageUrl });
       });
     } else if (settings?.popupMessage) {
-      items.push({ _key: popupKey, _sharedKey: true, title: "Announcement", message: settings.popupMessage, imageUrl: (settings as any)?.popupImageUrl });
+      items.push({ title: "Announcement", message: settings.popupMessage, imageUrl: (settings as any)?.popupImageUrl });
     }
 
     if (items.length > 0) {
@@ -76,21 +63,25 @@ export default function AppStartupPopup() {
     }
   }, [JSON.stringify(settings)]);
 
+  const markSeenToday = () => {
+    const popupKey = `popup_seen_${today}`;
+    localStorage.setItem(popupKey, "1");
+  };
+
   const handleNext = () => {
     if (currentIndex < queue.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
+      markSeenToday();
       setAnnOpen(false);
     }
   };
 
   const handleSkipAll = () => {
+    markSeenToday();
     setAnnOpen(false);
   };
 
-  // Play popup notification sound exactly once when the queue first opens.
-  // Uses the admin-configured popupSoundUrl. Failures are silent — autoplay
-  // can be blocked by the browser before the user interacts with the page.
   useEffect(() => {
     if (queue.length === 0) return;
     const url = (settings as any)?.popupSoundUrl;
@@ -99,63 +90,105 @@ export default function AppStartupPopup() {
       const a = new Audio(url);
       a.volume = 0.7;
       a.play().catch(() => {});
-    } catch {
-      // ignore
-    }
+    } catch {}
   }, [queue.length > 0, (settings as any)?.popupSoundUrl]);
 
-  if (queue.length === 0) return null;
+  if (!annOpen || queue.length === 0) return null;
   const currentAnn = queue[currentIndex];
 
   return (
-    <Dialog open={annOpen} onOpenChange={(open) => !open && handleSkipAll()}>
-      <DialogContent className="w-[min(92vw,440px)] rounded-[28px] border-0 p-0 overflow-hidden shadow-[0_24px_80px_rgba(15,23,42,0.28)] bg-gradient-to-b from-white via-slate-50 to-white">
-        <DialogHeader className="relative px-5 pt-5 pb-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={handleSkipAll}
+      />
+
+      {/* Dialog */}
+      <div className="relative w-[min(92vw,420px)] rounded-[32px] overflow-hidden shadow-[0_32px_100px_rgba(79,70,229,0.45)] animate-in fade-in zoom-in-95 duration-300">
+
+        {/* Glow ring */}
+        <div className="absolute inset-0 rounded-[32px] ring-1 ring-inset ring-white/20 pointer-events-none z-10" />
+
+        {/* Header */}
+        <div className="relative bg-gradient-to-br from-[#4f46e5] via-[#6d28d9] to-[#7c3aed] px-5 pt-6 pb-5 overflow-hidden">
+          {/* Decorative orbs */}
+          <div className="absolute -top-6 -left-6 w-28 h-28 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-4 -right-4 w-24 h-24 rounded-full bg-indigo-400/20 blur-xl pointer-events-none" />
+          {/* Shimmer line */}
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+
+          {/* Close button */}
           <button
             type="button"
             onClick={handleSkipAll}
-            className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25"
+            className="absolute right-4 top-4 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-white/25 bg-white/15 text-white backdrop-blur-sm transition hover:bg-white/30 active:scale-95"
           >
             <X className="h-4 w-4" />
           </button>
-          <DialogTitle className="text-center text-[22px] font-bold tracking-tight">
+
+          <p className="text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-200 mb-1">
+            TrustPay
+          </p>
+          <h2 className="text-center text-[22px] font-extrabold tracking-tight text-white drop-shadow-sm">
             {currentAnn?.title || "Announcement"}
-          </DialogTitle>
+          </h2>
           {queue.length > 1 && (
-            <p className="mt-1 text-center text-xs font-medium text-white/80">
-              {currentIndex + 1} / {queue.length}
-            </p>
+            <div className="mt-2 flex justify-center gap-1.5">
+              {queue.map((_: any, i: number) => (
+                <div
+                  key={i}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${i === currentIndex ? "w-5 bg-white" : "w-1.5 bg-white/35"}`}
+                />
+              ))}
+            </div>
           )}
-        </DialogHeader>
-        <div className="px-5 py-5 max-h-[62vh] overflow-y-auto">
+        </div>
+
+        {/* Body */}
+        <div className="bg-white px-5 pt-5 pb-1 max-h-[54vh] overflow-y-auto">
           {currentAnn?.imageUrl && (
-            <div className="mb-4 rounded-[22px] bg-slate-100 p-3 shadow-inner">
+            <div className="mb-4 rounded-[22px] overflow-hidden ring-1 ring-slate-100 shadow-md">
               <img
                 src={currentAnn.imageUrl}
                 alt="Announcement"
-                className="w-full h-auto max-h-[46vh] rounded-[18px] object-contain"
+                className="w-full h-auto max-h-[42vh] object-contain"
               />
             </div>
           )}
-          <p className="text-[15px] leading-6 text-slate-700 whitespace-pre-wrap">{currentAnn?.message || ""}</p>
+          <p className="text-[15px] leading-[1.65] text-slate-600 whitespace-pre-wrap pb-1">
+            {currentAnn?.message || ""}
+          </p>
         </div>
-        <div className="px-5 pb-5 flex gap-3">
+
+        {/* Footer */}
+        <div className="bg-white px-5 pt-3 pb-6">
           {queue.length > 1 && currentIndex < queue.length - 1 ? (
-            <>
-              <Button variant="outline" onClick={handleSkipAll} className="flex-1 rounded-2xl border-slate-200 bg-white/90 text-slate-700 hover:bg-slate-50">
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={handleSkipAll}
+                className="flex-1 h-12 rounded-2xl border-slate-200 text-slate-500 hover:bg-slate-50 font-semibold"
+              >
                 Skip All
               </Button>
-              <Button onClick={handleNext} className="flex-1 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white shadow-lg shadow-blue-600/20 hover:opacity-95">
-                Next ({currentIndex + 1}/{queue.length})
+              <Button
+                onClick={handleNext}
+                className="flex-1 h-12 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold shadow-lg shadow-indigo-500/30 hover:opacity-95 active:scale-[0.98] transition-all"
+              >
+                Next <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
-            </>
+            </div>
           ) : (
-            <Button onClick={handleNext} className="w-full rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white shadow-lg shadow-blue-600/20 hover:opacity-95">
+            <Button
+              onClick={handleNext}
+              className="w-full h-12 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-[16px] font-bold shadow-lg shadow-indigo-500/30 hover:opacity-95 active:scale-[0.98] transition-all"
+            >
               Got it
             </Button>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
