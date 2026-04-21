@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { ChevronDown, ShieldAlert, X } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { playAlarm } from "@/lib/alarm";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
@@ -30,10 +31,19 @@ export default function PaymentLockBanner() {
     refetchInterval: 3000,
   });
   const [minimized, setMinimized] = useState(false);
+  const prevOrderIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (myBuy?.status !== "locked" && myBuy?.status !== "pending_confirmation") setMinimized(false);
   }, [myBuy?.status]);
+
+  // Play alarm sound when a new locked order arrives (same sound as seller order lock)
+  useEffect(() => {
+    if (myBuy?.status === "locked" && myBuy?.id !== prevOrderIdRef.current) {
+      playAlarm();
+    }
+    if (myBuy?.id) prevOrderIdRef.current = myBuy.id;
+  }, [myBuy?.id, myBuy?.status]);
 
   if (location === "/buy") return null;
   if (!myBuy || !["locked", "pending_confirmation"].includes(myBuy.status)) return null;
