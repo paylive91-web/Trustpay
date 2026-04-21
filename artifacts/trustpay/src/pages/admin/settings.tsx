@@ -122,8 +122,8 @@ export default function AdminSettings() {
   const [telegramLink, setTelegramLink] = useState("");
   const [bannerImages, setBannerImages] = useState<string[]>([]);
   const [adminPassword, setAdminPassword] = useState("");
-  const [buyRules, setBuyRules] = useState("");
-  const [sellRules, setSellRules] = useState("");
+  const [buyRulesImageUrl, setBuyRulesImageUrl] = useState("");
+  const [sellRulesImageUrl, setSellRulesImageUrl] = useState("");
   const [feeTiers, setFeeTiers] = useState<FeeTier[]>([]);
   const [apkDownloadUrl, setApkDownloadUrl] = useState("");
   const [apkVersion, setApkVersion] = useState("");
@@ -147,8 +147,8 @@ export default function AdminSettings() {
       setAdminChunkMax(Number((settings as any).adminChunkMax) || 50000);
       setTelegramLink((settings as any).telegramLink || "");
       setBannerImages(Array.isArray((settings as any).bannerImages) ? (settings as any).bannerImages : []);
-      setBuyRules((settings as any).buyRules || "");
-      setSellRules((settings as any).sellRules || "");
+      setBuyRulesImageUrl((settings as any).buyRulesImageUrl || "");
+      setSellRulesImageUrl((settings as any).sellRulesImageUrl || "");
       const tiers = Array.isArray((settings as any).feeTiers) ? (settings as any).feeTiers : [];
       setFeeTiers(tiers.map((t: any) => ({ min: Number(t.min) || 0, max: Number(t.max) || 0, fee: Number(t.fee) || 0 })));
       setApkDownloadUrl((settings as any).apkDownloadUrl || "");
@@ -229,8 +229,8 @@ export default function AdminSettings() {
       chunkMax,
       adminChunkMin,
       adminChunkMax,
-      buyRules,
-      sellRules,
+      buyRulesImageUrl,
+      sellRulesImageUrl,
       feeTiers,
       apkDownloadUrl,
       apkVersion,
@@ -408,13 +408,8 @@ export default function AdminSettings() {
                 <CardTitle>Buy Rules</CardTitle>
                 <CardDescription>Rules displayed to users on the home screen under "Buy Rules".</CardDescription>
               </CardHeader>
-              <CardContent>
-                <Textarea
-                  placeholder="1. Minimum deposit is ₹100&#10;2. Deposits are processed within 10 minutes&#10;3. ..."
-                  value={buyRules}
-                  onChange={(e) => setBuyRules(e.target.value)}
-                  className="min-h-[120px]"
-                />
+              <CardContent className="space-y-3">
+                <ImagePicker label="Buy Rules Image" value={buyRulesImageUrl} onChange={setBuyRulesImageUrl} />
               </CardContent>
             </Card>
 
@@ -424,13 +419,8 @@ export default function AdminSettings() {
                 <CardTitle>Sell Rules</CardTitle>
                 <CardDescription>Rules displayed to users on the home screen under "Sell Rules".</CardDescription>
               </CardHeader>
-              <CardContent>
-                <Textarea
-                  placeholder="1. Minimum withdrawal is ₹100&#10;2. Withdrawals are processed within 24 hours&#10;3. ..."
-                  value={sellRules}
-                  onChange={(e) => setSellRules(e.target.value)}
-                  className="min-h-[120px]"
-                />
+              <CardContent className="space-y-3">
+                <ImagePicker label="Sell Rules Image" value={sellRulesImageUrl} onChange={setSellRulesImageUrl} />
               </CardContent>
             </Card>
 
