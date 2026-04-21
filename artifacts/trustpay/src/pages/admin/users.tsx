@@ -134,15 +134,18 @@ export default function AdminUsers() {
 
         {/* Suspended Users Section */}
         {suspendedUsers.length > 0 && (
-          <Card className="border-red-300 bg-red-50">
+          <Card className="border-red-300 bg-red-50 shadow-sm">
             <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <ShieldOff className="h-5 w-5 text-red-600" />
-                <h2 className="font-bold text-red-700 text-lg">Suspended Users ({suspendedUsers.length})</h2>
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div className="flex items-center gap-2">
+                  <ShieldOff className="h-5 w-5 text-red-600" />
+                  <h2 className="font-bold text-red-700 text-lg">Suspended Users ({suspendedUsers.length})</h2>
+                </div>
+                <Badge className="bg-red-600 hover:bg-red-600">Needs action</Badge>
               </div>
               <div className="space-y-2">
                 {suspendedUsers.map((user: any) => (
-                  <div key={user.id} className="flex items-center justify-between bg-white border border-red-200 rounded-xl px-4 py-3">
+                  <div key={user.id} className="flex items-center justify-between gap-3 bg-white border border-red-200 rounded-2xl px-4 py-3">
                     <div>
                       <div className="font-semibold text-sm">{user.username}</div>
                       <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
@@ -154,7 +157,7 @@ export default function AdminUsers() {
                     </div>
                     <Button
                       size="sm"
-                      className="bg-green-600 hover:bg-green-700 text-white rounded-xl"
+                      className="bg-green-600 hover:bg-green-700 text-white rounded-xl px-4"
                       onClick={() => setUnsuspendUser(user)}
                     >
                       <ShieldCheck className="h-3.5 w-3.5 mr-1" /> Unsuspend
@@ -219,6 +222,27 @@ export default function AdminUsers() {
                             <Button size="sm" variant="outline" onClick={() => openRename(user)}>
                               <Pencil className="h-3.5 w-3.5 mr-1" /> Rename
                             </Button>
+                            {user.isFrozen ? (
+                              <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => setUnsuspendUser(user)}>
+                                <ShieldCheck className="h-3.5 w-3.5 mr-1" /> Unsuspend
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={async () => {
+                                  try {
+                                    await api(`/admin/users/${user.id}/freeze`, { method: "POST" });
+                                    toast({ title: `${user.username} suspended` });
+                                    queryClient.invalidateQueries({ queryKey: getAdminGetUsersQueryKey() });
+                                  } catch (err: any) {
+                                    toast({ title: "Error", description: err.message, variant: "destructive" });
+                                  }
+                                }}
+                              >
+                                <ShieldOff className="h-3.5 w-3.5 mr-1" /> Suspend
+                              </Button>
+                            )}
                             <Button size="sm" variant="outline" onClick={() => openEdit(user)}>
                               Edit Balance
                             </Button>
