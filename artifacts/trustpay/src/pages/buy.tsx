@@ -335,10 +335,10 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
             </div>
           )}
 
-          <div className="rounded-[24px] p-3 space-y-2 text-sm bg-gradient-to-r from-slate-50 via-white to-indigo-50 border border-slate-200 shadow-sm">
+            <div className="rounded-[24px] p-3 space-y-2 text-sm bg-gradient-to-r from-sky-50 via-white to-fuchsia-50 border border-sky-200 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground text-xs">Pay to UPI:</span>
-              <button onClick={() => { navigator.clipboard.writeText(buy.upiId); toast({ title: "Copied!" }); }} className="text-primary text-xs flex items-center gap-1 font-semibold">
+              <button onClick={() => { navigator.clipboard.writeText(buy.upiId); toast({ title: "Copied!" }); }} className="text-fuchsia-700 text-xs flex items-center gap-1 font-semibold">
                 <Copy className="h-3 w-3" /> Copy
               </button>
             </div>
@@ -348,14 +348,14 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
 
           <div className="grid grid-cols-2 gap-2">
               {[
-                { key: "phonepe", label: "PhonePe" },
-                { key: "paytm", label: "Paytm" },
+                { key: "phonepe", label: "PhonePe", className: "bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white border-emerald-300 shadow-md hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600" },
+                { key: "paytm", label: "Paytm", className: "bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 text-white border-blue-300 shadow-md hover:from-blue-600 hover:via-indigo-600 hover:to-violet-600" },
               ].map((app) => (
                 <Button
                   key={app.key}
                   type="button"
                   variant="outline"
-                  className="h-11 rounded-2xl text-xs font-semibold border-slate-300 bg-white shadow-sm hover:bg-slate-50"
+                  className={`h-11 rounded-2xl text-xs font-semibold border ${app.className}`}
                   onClick={() => openUpiApp(buy.upiId, buy.amount, app.key as any)}
                 >
                   {app.label}
@@ -371,12 +371,12 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
             <>
               <div className="space-y-1.5">
                 <Label className="text-xs">UTR / Reference Number</Label>
-                <Input placeholder="12-digit UTR from your UPI app" value={utr} onChange={(e) => setUtr(e.target.value.trim())} />
+                <Input className="border-fuchsia-200 bg-fuchsia-50/40 focus-visible:ring-fuchsia-300" placeholder="12-digit UTR from your UPI app" value={utr} onChange={(e) => setUtr(e.target.value.trim())} />
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">Payment Screenshot <span className="text-red-600">*</span></Label>
-                <label className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed ${screenshotUrl ? "border-green-400 bg-green-50" : "border-primary/50 bg-primary/5"} rounded-2xl p-5 cursor-pointer hover:bg-primary/10 transition-colors`}>
-                  <Upload className={`w-8 h-8 ${screenshotUrl ? "text-green-600" : "text-primary"}`} />
+                <label className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed ${screenshotUrl ? "border-emerald-400 bg-emerald-50" : "border-sky-300 bg-sky-50/70"} rounded-2xl p-5 cursor-pointer hover:bg-sky-100 transition-colors`}>
+                  <Upload className={`w-8 h-8 ${screenshotUrl ? "text-emerald-600" : "text-sky-600"}`} />
                   <div className="text-sm font-semibold">
                     {screenshotUrl ? "Screenshot uploaded ✓" : "Tap to upload screenshot"}
                   </div>
