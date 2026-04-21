@@ -323,19 +323,19 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
           {/* QR Code */}
           {!qrError && (
             <div className="flex flex-col items-center gap-2 py-2">
-              <div className="p-4 rounded-[24px] bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] border border-slate-200">
+              <div className="p-4 rounded-[28px] bg-gradient-to-br from-white via-sky-50 to-fuchsia-50 shadow-[0_18px_50px_rgba(59,130,246,0.12)] border border-sky-200/70">
                 <img
                   src={qrUrl}
                   alt="UPI QR Code"
-                  className="w-44 h-44 rounded-2xl"
+                  className="w-44 h-44 rounded-2xl ring-4 ring-white/80 shadow-md"
                   onError={() => setQrError(true)}
                 />
               </div>
-              <div className="text-xs text-slate-500">Scan with any UPI app</div>
+              <div className="text-xs text-slate-500 font-medium">Scan with any UPI app</div>
             </div>
           )}
 
-            <div className="rounded-[24px] p-3 space-y-2 text-sm bg-gradient-to-r from-sky-50 via-white to-fuchsia-50 border border-sky-200 shadow-sm">
+          <div className="rounded-[24px] p-3 space-y-2 text-sm bg-gradient-to-r from-sky-50 via-white to-fuchsia-50 border border-sky-200 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground text-xs">Pay to UPI:</span>
               <button onClick={() => { navigator.clipboard.writeText(buy.upiId); toast({ title: "Copied!" }); }} className="text-fuchsia-700 text-xs flex items-center gap-1 font-semibold">
@@ -384,7 +384,7 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
                   <input type="file" accept="image/*" onChange={(e) => handleFile(e, "shot")} className="hidden" />
                 </label>
               </div>
-              <div className="text-[11px] text-muted-foreground bg-muted/40 rounded-lg p-2 leading-snug">
+              <div className="text-[11px] text-muted-foreground bg-gradient-to-r from-slate-50 to-rose-50 rounded-xl p-2.5 leading-snug border border-rose-100">
                 Optional: also record your screen while paying. You'll need it only if a dispute opens later.
               </div>
               <Button
@@ -426,7 +426,7 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
-              <Button variant="ghost" size="sm" className="w-full rounded-2xl border border-slate-200 bg-white/80 text-slate-700 hover:bg-rose-50 hover:text-rose-700" onClick={() => cancelMut.mutate()}>
+              <Button variant="ghost" size="sm" className="w-full rounded-2xl border border-rose-200 bg-gradient-to-r from-white to-rose-50 text-rose-700 hover:from-rose-50 hover:to-rose-100 shadow-sm" onClick={() => cancelMut.mutate()}>
                 Cancel Buy
               </Button>
               <Button variant="outline" size="sm" className="w-full rounded-2xl border-fuchsia-200 bg-gradient-to-r from-fuchsia-50 to-sky-50 text-fuchsia-700 shadow-sm hover:from-fuchsia-100 hover:to-sky-100" onClick={() => window.open((settings as any)?.telegramLink || "/support", "_blank")}>
