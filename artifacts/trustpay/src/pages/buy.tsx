@@ -152,7 +152,8 @@ function BuyRulesDialog({ open, onOpenChange, onConfirm, buy, rules }: {
     .filter(Boolean);
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="max-w-md rounded-[28px] border border-white/60 bg-gradient-to-br from-white via-slate-50 to-indigo-50 shadow-[0_20px_70px_rgba(59,130,246,0.18)]">
+      <AlertDialogContent className="max-w-md rounded-[28px] border border-white/60 bg-gradient-to-br from-white via-slate-50 to-indigo-50 shadow-[0_20px_70px_rgba(59,130,246,0.18)] overflow-hidden">
+        <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-fuchsia-500 via-sky-500 to-emerald-400" />
         <AlertDialogHeader>
           <AlertDialogTitle className="text-base flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-rose-500 via-orange-400 to-amber-300 flex items-center justify-center text-white shadow-lg ring-4 ring-rose-100">
@@ -164,10 +165,14 @@ function BuyRulesDialog({ open, onOpenChange, onConfirm, buy, rules }: {
             <div className="text-sm text-slate-700">Payment start karne se pehle ye rules dhyan se padh lo:</div>
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <div className="rounded-2xl bg-white/70 border border-white/80 p-4 max-h-[45vh] overflow-y-auto">
+        <div className="rounded-2xl bg-white/70 border border-white/80 p-4 max-h-[45vh] overflow-y-auto space-y-3">
+          <div className="rounded-2xl bg-gradient-to-r from-sky-50 to-fuchsia-50 border border-sky-100 p-3">
+            <div className="text-xs text-sky-700 font-semibold">Order Amount</div>
+            <div className="text-lg font-black text-slate-900">₹{buy.amount}</div>
+          </div>
           <ul className="space-y-2 text-sm text-slate-700 list-disc pl-5">
-              <li>Pay Only ₹{buy.amount} — no more, no less</li>
-              <li>Pay Only to the UPI below — not to any other number</li>
+            <li>Pay Only ₹{buy.amount} — no more, no less</li>
+            <li>Pay Only to the UPI below — not to any other number</li>
             {lines.length > 0 ? (
               lines.map((line, idx) => <li key={idx}>{line}</li>)
             ) : (
