@@ -43,6 +43,16 @@ const DEFAULT_SETTINGS: Record<string, string> = {
     { min: 2001, max: 5000, fee: 8 },
     { min: 5001, max: 50000, fee: 15 },
   ]),
+  // Agent reward tiers. "minActiveDeposits" = distinct invitees of this
+  // agent who confirmed at least one deposit today. Reward in ₹ is credited
+  // to the agent's wallet (and they're flagged Verified Agent forever) the
+  // first time the threshold is reached on a given day.
+  agentTiers: JSON.stringify([
+    { minActiveDeposits: 20, reward: 50, label: "Bronze Agent" },
+    { minActiveDeposits: 50, reward: 200, label: "Silver Agent" },
+    { minActiveDeposits: 100, reward: 600, label: "Gold Agent" },
+    { minActiveDeposits: 150, reward: 1200, label: "Platinum Agent" },
+  ]),
   apkDownloadUrl: "",
   apkVersion: "1.0.0",
   forceAppDownload: "false",

@@ -191,6 +191,13 @@ export async function settleConfirmedTrade(chunkOrderId: number, isAutoConfirm =
         userId: buyer.referredBy, orderId: chunkOrderId, type: "credit",
         amount: String(l1), description: `Invite L1 1% from #${buyer.id}`,
       });
+      // Agent reward tier check — fire-and-forget; never block settlement.
+      try {
+        const { evaluateAgentTier } = await import("./agent-tier.js");
+        await evaluateAgentTier(buyer.referredBy);
+      } catch (err) {
+        logger.error({ err, agentId: buyer.referredBy }, "evaluateAgentTier failed");
+      }
       const [l1Ref] = await db.select().from(usersTable).where(eq(usersTable.id, buyer.referredBy)).limit(1);
       if (l1Ref && l1Ref.referredBy) {
         const l2 = parseFloat((amount * 0.001).toFixed(2));

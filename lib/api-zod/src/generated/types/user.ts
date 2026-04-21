@@ -17,5 +17,6 @@ export interface User {
   role: UserRole;
   email?: string;
   googleVerified?: boolean;
+  isVerifiedAgent?: boolean;
   createdAt?: string;
 }

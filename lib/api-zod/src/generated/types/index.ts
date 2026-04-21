@@ -30,6 +30,7 @@ export * from "./adminUpdateOrderBody";
 export * from "./adminUpdateOrderBodyStatus";
 export * from "./adminUpdateSettingsBody";
 export * from "./adminUpdateUserBody";
+export * from "./agentTier";
 export * from "./appSettings";
 export * from "./authResponse";
 export * from "./buyerProofBody";

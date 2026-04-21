@@ -50,6 +50,7 @@ export interface User {
   role: UserRole;
   email?: string;
   googleVerified?: boolean;
+  isVerifiedAgent?: boolean;
   createdAt?: string;
 }
 
@@ -192,9 +193,16 @@ export interface FeeTier {
   fee: number;
 }
 
+export interface AgentTier {
+  minActiveDeposits: number;
+  reward: number;
+  label: string;
+}
+
 export type AdminSettings = AppSettings & {
   adminPassword?: string;
   feeTiers?: FeeTier[];
+  agentTiers?: AgentTier[];
   apkDownloadUrl?: string;
   apkVersion?: string;
   forceAppDownload?: boolean;
@@ -213,6 +221,7 @@ export interface AdminUpdateSettingsBody {
   popupSoundUrl?: string;
   adminPassword?: string;
   feeTiers?: FeeTier[];
+  agentTiers?: AgentTier[];
   apkDownloadUrl?: string;
   apkVersion?: string;
   forceAppDownload?: boolean;

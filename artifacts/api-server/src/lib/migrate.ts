@@ -104,6 +104,11 @@ export async function ensureSchema(): Promise<void> {
     await db.execute(sql`CREATE INDEX IF NOT EXISTS user_notifications_user_idx ON user_notifications(user_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS user_notifications_read_idx ON user_notifications(user_id, read_at)`);
 
+    // Agent reward tiers — must match users.ts schema additions.
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified_agent BOOLEAN NOT NULL DEFAULT false`);
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS agent_tier_awarded_date DATE`);
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS agent_tier_awarded_level INTEGER NOT NULL DEFAULT 0`);
+
     logger.info("ensureSchema OK");
   } catch (err) {
     logger.error({ err }, "ensureSchema failed");

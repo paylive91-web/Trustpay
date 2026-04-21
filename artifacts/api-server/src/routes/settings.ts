@@ -12,6 +12,19 @@ router.get("/app", async (req, res) => {
   try { announcements = JSON.parse(s.announcements || "[]"); } catch {}
   let broadcastNotification = null;
   try { broadcastNotification = JSON.parse(s.broadcastNotification || "null"); } catch {}
+  let agentTiers: Array<{ minActiveDeposits: number; reward: number; label: string }> = [];
+  try {
+    const raw = JSON.parse(s.agentTiers || "[]");
+    if (Array.isArray(raw)) {
+      agentTiers = raw
+        .map((t: any) => ({
+          minActiveDeposits: Number(t?.minActiveDeposits),
+          reward: Number(t?.reward),
+          label: String(t?.label || ""),
+        }))
+        .filter((t) => Number.isFinite(t.minActiveDeposits) && Number.isFinite(t.reward));
+    }
+  } catch {}
   res.json({
     upiId: s.upiId || "trustpay@upi",
     upiName: s.upiName || "TrustPay",
@@ -38,6 +51,7 @@ router.get("/app", async (req, res) => {
     // the UI will hide the button accordingly.
     googleClientId: googleClientId(),
     broadcastNotification,
+    agentTiers,
   });
 });
 

@@ -5,12 +5,14 @@
  * TrustPay API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentTier } from "./agentTier";
 import type { AppSettings } from "./appSettings";
 import type { FeeTier } from "./feeTier";
 
 export type AdminSettings = AppSettings & {
   adminPassword?: string;
   feeTiers?: FeeTier[];
+  agentTiers?: AgentTier[];
   apkDownloadUrl?: string;
   apkVersion?: string;
   forceAppDownload?: boolean;

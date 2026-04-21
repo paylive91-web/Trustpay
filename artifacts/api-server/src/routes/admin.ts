@@ -317,6 +317,20 @@ function fSettings(s: any) {
         .filter((t) => Number.isFinite(t.min) && Number.isFinite(t.max) && Number.isFinite(t.fee));
     }
   } catch {}
+  // Agent reward tiers (parsed for both admin + public app settings consumers).
+  let agentTiers: Array<{ minActiveDeposits: number; reward: number; label: string }> = [];
+  try {
+    const raw = JSON.parse(s.agentTiers || "[]");
+    if (Array.isArray(raw)) {
+      agentTiers = raw
+        .map((t: any) => ({
+          minActiveDeposits: Number(t?.minActiveDeposits),
+          reward: Number(t?.reward),
+          label: String(t?.label || ""),
+        }))
+        .filter((t) => Number.isFinite(t.minActiveDeposits) && Number.isFinite(t.reward));
+    }
+  } catch {}
   return {
     upiId: s.upiId || "trustpay@upi",
     upiName: s.upiName || "TrustPay",
@@ -340,6 +354,7 @@ function fSettings(s: any) {
     highValueCriticalThreshold: parseInt(s.highValueCriticalThreshold || "10000"),
     platformCommissionPerChunk: parseInt(s.platformCommissionPerChunk || "1"),
     feeTiers,
+    agentTiers,
     apkDownloadUrl: process.env.APK_DOWNLOAD_URL || s.apkDownloadUrl || "",
     apkVersion: s.apkVersion || "1.0.0",
     forceAppDownload: (s.forceAppDownload ?? "false") === "true",
@@ -407,6 +422,30 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
   if (b.bannerImages != null) await setSetting("bannerImages", JSON.stringify(b.bannerImages));
   if (cleanedTiers) {
     await setSetting("feeTiers", JSON.stringify(cleanedTiers));
+  }
+  if (Array.isArray(b.agentTiers)) {
+    const cleanedAgent: Array<{ minActiveDeposits: number; reward: number; label: string }> = [];
+    for (const t of b.agentTiers) {
+      const minActiveDeposits = Math.max(1, Math.floor(Number(t?.minActiveDeposits) || 0));
+      const reward = Math.max(0, Number(t?.reward) || 0);
+      const label = String(t?.label || "").trim() || `Agent ${minActiveDeposits}`;
+      if (!Number.isFinite(minActiveDeposits) || minActiveDeposits <= 0) {
+        return res.status(400).json({ error: "Each agent tier needs a positive minActiveDeposits" });
+      }
+      if (reward < 0) {
+        return res.status(400).json({ error: "Agent tier reward cannot be negative" });
+      }
+      cleanedAgent.push({ minActiveDeposits, reward, label });
+    }
+    cleanedAgent.sort((a, b) => a.minActiveDeposits - b.minActiveDeposits);
+    // Reject duplicate or non-strictly-increasing thresholds so tier
+    // semantics stay deterministic (one tier per active-deposit count).
+    for (let i = 1; i < cleanedAgent.length; i++) {
+      if (cleanedAgent[i].minActiveDeposits <= cleanedAgent[i - 1].minActiveDeposits) {
+        return res.status(400).json({ error: `Agent tier thresholds must be strictly increasing (got ${cleanedAgent[i - 1].minActiveDeposits} and ${cleanedAgent[i].minActiveDeposits})` });
+      }
+    }
+    await setSetting("agentTiers", JSON.stringify(cleanedAgent));
   }
   if (b.adminPassword) {
     const hash = await bcrypt.hash(b.adminPassword, 10);

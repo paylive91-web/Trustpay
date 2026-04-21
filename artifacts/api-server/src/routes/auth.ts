@@ -2,7 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db } from "@workspace/db";
 import { usersTable, referralsTable, userNotificationsTable, ordersTable } from "@workspace/db";
-import { eq, or, desc, and } from "drizzle-orm";
+import { eq, or, desc, and, sql, inArray } from "drizzle-orm";
 import { signToken, requireAuth, formatUser } from "../lib/auth.js";
 import { recordDeviceFingerprint, checkAccountFraud, checkReferralSelfLoop } from "../lib/fraud.js";
 import { verifyGoogleIdToken, googleConfigured } from "../lib/google.js";
@@ -226,7 +226,7 @@ router.get("/invitees", requireAuth, async (req, res) => {
     today: sql<string>`COALESCE(SUM(${ordersTable.amount}), 0)`,
   }).from(ordersTable).where(and(
     eq(ordersTable.status, "confirmed"),
-    sql`${ordersTable.lockedByUserId} IN ${inviteeIds}`,
+    inArray(ordersTable.lockedByUserId, inviteeIds),
     sql`${ordersTable.createdAt} >= ${startOfDay}`,
   )).groupBy(ordersTable.lockedByUserId);
 

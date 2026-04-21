@@ -5,6 +5,7 @@
  * TrustPay API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentTier } from "./agentTier";
 import type { FeeTier } from "./feeTier";
 
 export interface AdminUpdateSettingsBody {
@@ -19,6 +20,7 @@ export interface AdminUpdateSettingsBody {
   popupSoundUrl?: string;
   adminPassword?: string;
   feeTiers?: FeeTier[];
+  agentTiers?: AgentTier[];
   apkDownloadUrl?: string;
   apkVersion?: string;
   forceAppDownload?: boolean;

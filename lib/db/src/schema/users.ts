@@ -1,4 +1,4 @@
-import { pgTable, serial, text, numeric, timestamp, pgEnum, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, numeric, timestamp, pgEnum, integer, boolean, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -37,6 +37,14 @@ export const usersTable = pgTable("users", {
   lastSeenAt: timestamp("last_seen_at"),
   matchingExpiresAt: timestamp("matching_expires_at"),
   displayName: text("display_name"),
+  // Agent reward tier system. isVerifiedAgent stays true once any tier has
+  // ever been earned (drives the red "Verified Agent" badge on home).
+  // The "awarded" pair is reset at the top of each day so an agent can
+  // claim a higher tier as their daily active-deposit count grows, but
+  // can't double-claim the same tier within a single day.
+  isVerifiedAgent: boolean("is_verified_agent").notNull().default(false),
+  agentTierAwardedDate: date("agent_tier_awarded_date"),
+  agentTierAwardedLevel: integer("agent_tier_awarded_level").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

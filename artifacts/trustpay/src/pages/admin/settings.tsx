@@ -97,6 +97,12 @@ interface FeeTier {
   fee: number;
 }
 
+interface AgentTier {
+  minActiveDeposits: number;
+  reward: number;
+  label: string;
+}
+
 export default function AdminSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -125,6 +131,7 @@ export default function AdminSettings() {
   const [buyRulesImageUrl, setBuyRulesImageUrl] = useState("");
   const [sellRulesImageUrl, setSellRulesImageUrl] = useState("");
   const [feeTiers, setFeeTiers] = useState<FeeTier[]>([]);
+  const [agentTiers, setAgentTiers] = useState<AgentTier[]>([]);
   const [apkDownloadUrl, setApkDownloadUrl] = useState("");
   const [apkVersion, setApkVersion] = useState("");
   const [forceAppDownload, setForceAppDownload] = useState(true);
@@ -151,6 +158,12 @@ export default function AdminSettings() {
       setSellRulesImageUrl((settings as any).sellRulesImageUrl || "");
       const tiers = Array.isArray((settings as any).feeTiers) ? (settings as any).feeTiers : [];
       setFeeTiers(tiers.map((t: any) => ({ min: Number(t.min) || 0, max: Number(t.max) || 0, fee: Number(t.fee) || 0 })));
+      const aTiers = Array.isArray((settings as any).agentTiers) ? (settings as any).agentTiers : [];
+      setAgentTiers(aTiers.map((t: any) => ({
+        minActiveDeposits: Number(t.minActiveDeposits) || 0,
+        reward: Number(t.reward) || 0,
+        label: String(t.label || ""),
+      })));
       setApkDownloadUrl((settings as any).apkDownloadUrl || "");
       setApkVersion((settings as any).apkVersion || "1.0.0");
       setForceAppDownload((settings as any).forceAppDownload === true);
@@ -181,6 +194,15 @@ export default function AdminSettings() {
       },
     },
   });
+
+  const addAgentTier = () => setAgentTiers((prev) => {
+    const last = prev[prev.length - 1];
+    const minActiveDeposits = last ? last.minActiveDeposits + 25 : 20;
+    return [...prev, { minActiveDeposits, reward: 50, label: `Tier ${prev.length + 1}` }];
+  });
+  const removeAgentTier = (i: number) => setAgentTiers((prev) => prev.filter((_, idx) => idx !== i));
+  const updateAgentTier = (i: number, field: keyof AgentTier, val: any) =>
+    setAgentTiers((prev) => prev.map((t, idx) => idx === i ? { ...t, [field]: val } : t));
 
   const addFeeTier = () => setFeeTiers((prev) => {
     // Default the new tier just after the last one to make it easy to extend
@@ -232,6 +254,7 @@ export default function AdminSettings() {
       buyRulesImageUrl,
       sellRulesImageUrl,
       feeTiers,
+      agentTiers,
       apkDownloadUrl,
       apkVersion,
       forceAppDownload,
@@ -482,6 +505,70 @@ export default function AdminSettings() {
                 ))}
                 <Button type="button" variant="outline" onClick={addFeeTier} className="w-full" data-testid="button-add-tier">
                   <Plus className="w-4 h-4 mr-2" /> Add Tier
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Agent Reward Tiers */}
+            <Card data-testid="card-agent-tiers">
+              <CardHeader>
+                <CardTitle>Agent Reward Tiers</CardTitle>
+                <CardDescription>
+                  Daily reward slabs based on the number of distinct invitees of an agent who confirm at
+                  least one deposit on a given day. The agent gets the highest tier they reach, plus the
+                  red "Verified Agent" badge on their home screen forever after the first time they qualify.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-12 gap-2 text-xs font-medium text-muted-foreground px-1">
+                  <div className="col-span-3">Min Active Deposits</div>
+                  <div className="col-span-3">Reward (₹)</div>
+                  <div className="col-span-5">Label</div>
+                  <div className="col-span-1"></div>
+                </div>
+                {agentTiers.length === 0 && (
+                  <p className="text-sm text-muted-foreground italic">
+                    No agent tiers configured.
+                  </p>
+                )}
+                {agentTiers.map((tier, idx) => (
+                  <div key={idx} className="grid grid-cols-12 gap-2 items-center">
+                    <Input
+                      type="number"
+                      className="col-span-3"
+                      value={tier.minActiveDeposits}
+                      onChange={(e) => updateAgentTier(idx, "minActiveDeposits", parseInt(e.target.value) || 0)}
+                      data-testid={`input-agent-tier-min-${idx}`}
+                    />
+                    <Input
+                      type="number"
+                      className="col-span-3"
+                      value={tier.reward}
+                      onChange={(e) => updateAgentTier(idx, "reward", parseFloat(e.target.value) || 0)}
+                      data-testid={`input-agent-tier-reward-${idx}`}
+                    />
+                    <Input
+                      type="text"
+                      className="col-span-5"
+                      placeholder="e.g. Bronze Agent"
+                      value={tier.label}
+                      onChange={(e) => updateAgentTier(idx, "label", e.target.value)}
+                      data-testid={`input-agent-tier-label-${idx}`}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="col-span-1"
+                      onClick={() => removeAgentTier(idx)}
+                      data-testid={`button-remove-agent-tier-${idx}`}
+                    >
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" onClick={addAgentTier} className="w-full" data-testid="button-add-agent-tier">
+                  <Plus className="w-4 h-4 mr-2" /> Add Agent Tier
                 </Button>
               </CardContent>
             </Card>

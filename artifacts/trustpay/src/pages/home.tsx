@@ -96,7 +96,17 @@ export default function Home() {
               <img src={(settings as any)?.appLogoUrl || logoPath} alt={(settings as any)?.appName || "TrustPay"} className="w-8 h-8 rounded object-contain" />
             </div>
             <div>
-              <div className="font-bold text-[19px] leading-none">{(settings as any)?.appName || "TrustPay"}</div>
+              <div className="font-bold text-[19px] leading-none flex items-center gap-2">
+                {(settings as any)?.appName || "TrustPay"}
+                {(user as any)?.isVerifiedAgent && (
+                  <span
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-red-600 text-white shadow-sm border border-red-400"
+                    title="Verified Agent"
+                  >
+                    <ShieldCheck className="w-3 h-3" /> Verified Agent
+                  </span>
+                )}
+              </div>
               <div className="text-[11px] text-white/80 mt-1">Secure P2P UPI trading</div>
             </div>
           </div>

@@ -1130,6 +1130,8 @@ components:
           type: string
         googleVerified:
           type: boolean
+        isVerifiedAgent:
+          type: boolean
         createdAt:
           type: string
       required: [id, username, balance, totalDeposits, totalWithdrawals, role]
@@ -1319,6 +1321,17 @@ components:
           type: number
       required: [min, max, fee]
 
+    AgentTier:
+      type: object
+      properties:
+        minActiveDeposits:
+          type: number
+        reward:
+          type: number
+        label:
+          type: string
+      required: [minActiveDeposits, reward, label]
+
     AdminSettings:
       allOf:
         - $ref: "#/components/schemas/AppSettings"
@@ -1330,6 +1343,10 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/FeeTier"
+            agentTiers:
+              type: array
+              items:
+                $ref: "#/components/schemas/AgentTier"
             apkDownloadUrl:
               type: string
             apkVersion:
@@ -1368,6 +1385,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/FeeTier"
+        agentTiers:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentTier"
         apkDownloadUrl:
           type: string
         apkVersion:

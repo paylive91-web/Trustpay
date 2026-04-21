@@ -34,6 +34,7 @@ export const RegisterResponse = zod.object({
     role: zod.enum(["user", "admin"]),
     email: zod.string().optional(),
     googleVerified: zod.boolean().optional(),
+    isVerifiedAgent: zod.boolean().optional(),
     createdAt: zod.string().optional(),
   }),
   token: zod.string(),
@@ -58,6 +59,7 @@ export const LoginResponse = zod.object({
     role: zod.enum(["user", "admin"]),
     email: zod.string().optional(),
     googleVerified: zod.boolean().optional(),
+    isVerifiedAgent: zod.boolean().optional(),
     createdAt: zod.string().optional(),
   }),
   token: zod.string(),
@@ -83,6 +85,7 @@ export const GetMeResponse = zod.object({
   role: zod.enum(["user", "admin"]),
   email: zod.string().optional(),
   googleVerified: zod.boolean().optional(),
+  isVerifiedAgent: zod.boolean().optional(),
   createdAt: zod.string().optional(),
 });
 
@@ -103,6 +106,7 @@ export const GoogleLinkResponse = zod.object({
   role: zod.enum(["user", "admin"]),
   email: zod.string().optional(),
   googleVerified: zod.boolean().optional(),
+  isVerifiedAgent: zod.boolean().optional(),
   createdAt: zod.string().optional(),
 });
 
@@ -119,6 +123,7 @@ export const GoogleUnlinkResponse = zod.object({
   role: zod.enum(["user", "admin"]),
   email: zod.string().optional(),
   googleVerified: zod.boolean().optional(),
+  isVerifiedAgent: zod.boolean().optional(),
   createdAt: zod.string().optional(),
 });
 
@@ -357,6 +362,7 @@ export const AdminLoginResponse = zod.object({
     role: zod.enum(["user", "admin"]),
     email: zod.string().optional(),
     googleVerified: zod.boolean().optional(),
+    isVerifiedAgent: zod.boolean().optional(),
     createdAt: zod.string().optional(),
   }),
   token: zod.string(),
@@ -402,6 +408,7 @@ export const AdminGetOrdersResponseItem = zod
           role: zod.enum(["user", "admin"]),
           email: zod.string().optional(),
           googleVerified: zod.boolean().optional(),
+          isVerifiedAgent: zod.boolean().optional(),
           createdAt: zod.string().optional(),
         })
         .optional(),
@@ -512,6 +519,7 @@ export const AdminGetUsersResponseItem = zod.object({
   role: zod.enum(["user", "admin"]),
   email: zod.string().optional(),
   googleVerified: zod.boolean().optional(),
+  isVerifiedAgent: zod.boolean().optional(),
   createdAt: zod.string().optional(),
 });
 export const AdminGetUsersResponse = zod.array(AdminGetUsersResponseItem);
@@ -538,6 +546,7 @@ export const AdminUpdateUserResponse = zod.object({
   role: zod.enum(["user", "admin"]),
   email: zod.string().optional(),
   googleVerified: zod.boolean().optional(),
+  isVerifiedAgent: zod.boolean().optional(),
   createdAt: zod.string().optional(),
 });
 
@@ -586,6 +595,7 @@ export const AdminUpdateUserBalanceResponse = zod.object({
   role: zod.enum(["user", "admin"]),
   email: zod.string().optional(),
   googleVerified: zod.boolean().optional(),
+  isVerifiedAgent: zod.boolean().optional(),
   createdAt: zod.string().optional(),
 });
 
@@ -620,6 +630,15 @@ export const AdminGetSettingsResponse = zod
           }),
         )
         .optional(),
+      agentTiers: zod
+        .array(
+          zod.object({
+            minActiveDeposits: zod.number(),
+            reward: zod.number(),
+            label: zod.string(),
+          }),
+        )
+        .optional(),
       apkDownloadUrl: zod.string().optional(),
       apkVersion: zod.string().optional(),
       forceAppDownload: zod.boolean().optional(),
@@ -647,6 +666,15 @@ export const AdminUpdateSettingsBody = zod.object({
         min: zod.number(),
         max: zod.number(),
         fee: zod.number(),
+      }),
+    )
+    .optional(),
+  agentTiers: zod
+    .array(
+      zod.object({
+        minActiveDeposits: zod.number(),
+        reward: zod.number(),
+        label: zod.string(),
       }),
     )
     .optional(),
@@ -681,6 +709,15 @@ export const AdminUpdateSettingsResponse = zod
             min: zod.number(),
             max: zod.number(),
             fee: zod.number(),
+          }),
+        )
+        .optional(),
+      agentTiers: zod
+        .array(
+          zod.object({
+            minActiveDeposits: zod.number(),
+            reward: zod.number(),
+            label: zod.string(),
           }),
         )
         .optional(),
