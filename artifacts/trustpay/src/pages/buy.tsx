@@ -101,11 +101,11 @@ function PaymentActionDialog({ open, onOpenChange, onPayNow, onCancel, buy }: {
       <AlertDialogContent className="rounded-2xl max-w-sm">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-base flex items-center gap-2">
-            <Clock className="h-5 w-5 text-primary" /> Payment confirmation
+            <Clock className="h-5 w-5 text-primary" /> Payment pending
           </AlertDialogTitle>
           <AlertDialogDescription className="text-left space-y-2 leading-relaxed">
             <span className="block">
-              You locked <strong>₹{buy.amount}</strong>. Now complete payment or cancel.
+              You locked <strong>₹{buy.amount}</strong>. Please pay now or cancel this buy.
             </span>
             <span className="block text-foreground/80">
               UPI: <strong>{buy.upiId}</strong>
@@ -113,9 +113,9 @@ function PaymentActionDialog({ open, onOpenChange, onPayNow, onCancel, buy }: {
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="sm:justify-between gap-2">
-          <AlertDialogCancel onClick={onCancel}>Cancel Buy</AlertDialogCancel>
+          <AlertDialogCancel onClick={onCancel}>Cancel</AlertDialogCancel>
           <AlertDialogAction onClick={onPayNow} className="bg-primary hover:bg-primary/90">
-            Pay Now
+            Buy Now
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
