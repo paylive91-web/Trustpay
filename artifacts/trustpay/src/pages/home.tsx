@@ -81,6 +81,8 @@ export default function Home() {
   const trustScore = (user as any).trustScore ?? 0;
   const isFrozen = (user as any).isFrozen;
   const balance = Number((user as any)?.balance ?? 0);
+  const buyRules = (settings as any)?.buyRules || "";
+  const sellRules = (settings as any)?.sellRules || "";
 
   return (
     <Layout>
@@ -219,6 +221,36 @@ export default function Home() {
             <Link href="/sell">
               <Button variant="outline" size="sm" className="rounded-full gap-1">Open <ChevronRight className="h-4 w-4" /></Button>
             </Link>
+          </CardContent>
+        </Card>
+
+        <Card className="border-none shadow-sm">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold">Buy Rules</h3>
+                <p className="text-sm text-muted-foreground">Tap to view full page</p>
+              </div>
+              <Link href="/info#buy">
+                <Button variant="outline" size="sm" className="rounded-full gap-1">Open <ChevronRight className="h-4 w-4" /></Button>
+              </Link>
+            </div>
+            {buyRules && <div className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap">{buyRules}</div>}
+          </CardContent>
+        </Card>
+
+        <Card className="border-none shadow-sm">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold">Sell Rules</h3>
+                <p className="text-sm text-muted-foreground">Tap to view full page</p>
+              </div>
+              <Link href="/info#sell">
+                <Button variant="outline" size="sm" className="rounded-full gap-1">Open <ChevronRight className="h-4 w-4" /></Button>
+              </Link>
+            </div>
+            {sellRules && <div className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap">{sellRules}</div>}
           </CardContent>
         </Card>
       </div>

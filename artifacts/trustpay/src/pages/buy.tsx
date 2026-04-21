@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useGetMe, useGetAppSettings, useGetMyDisputes } from "@workspace/api-client-react";
+import { useGetMe, useGetAppSettings } from "@workspace/api-client-react";
 import { useLocation, Link } from "wouter";
 import Layout from "@/components/layout";
 import DisputePauseBanner from "@/components/dispute-pause-banner";
@@ -138,71 +138,13 @@ function PaymentActionDialog({ open, onOpenChange, onPayNow, onCancel, buy }: {
   );
 }
 
-function BuyRulesDialog({ open, onOpenChange, onConfirm, buy, rules }: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  onConfirm: () => void;
-  buy: any;
-  rules: string;
-}) {
-  if (!buy) return null;
-  const lines = (rules || "").split("\n").map((line) => line.trim()).filter(Boolean);
-  return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="max-w-md rounded-[28px] border border-white/60 bg-gradient-to-br from-white via-slate-50 to-indigo-50 shadow-[0_20px_70px_rgba(59,130,246,0.18)] overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-fuchsia-500 via-sky-500 to-emerald-400" />
-        <AlertDialogHeader>
-          <AlertDialogTitle className="text-base flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-rose-500 via-orange-400 to-amber-300 flex items-center justify-center text-white shadow-lg ring-4 ring-rose-100">
-              <AlertTriangle className="h-5 w-5" />
-            </div>
-            <span className="font-bold">Buy confirm karo</span>
-          </AlertDialogTitle>
-          <AlertDialogDescription className="text-left leading-relaxed">
-            <div className="text-sm text-slate-700">Payment start karne se pehle ye rules dhyan se padh lo:</div>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <div className="rounded-2xl bg-white/70 border border-white/80 p-4 max-h-[45vh] overflow-y-auto space-y-3">
-          <div className="rounded-2xl bg-gradient-to-r from-sky-50 to-fuchsia-50 border border-sky-100 p-3">
-            <div className="text-xs text-sky-700 font-semibold">Order Amount</div>
-            <div className="text-lg font-black text-slate-900">₹{buy.amount}</div>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="rounded-2xl bg-sky-50/80 border border-sky-100 p-3">
-              <div className="text-xs font-semibold text-sky-700 mb-2">English</div>
-              <ul className="space-y-2 text-sm text-slate-700 list-disc pl-5">
-                {(lines.length ? lines : ["Pay only exact amount.", "Only to the UPI shown on screen.", "If you submit a fake payment, duplicate screenshot, wrong UTR, or repeat someone else's UTR, your account's trust score will decrease by -10 points.", "If it reaches -50, your account will be suspended."]).map((line, idx) => <li key={idx}>{line}</li>)}
-              </ul>
-            </div>
-            <div className="rounded-2xl bg-fuchsia-50/80 border border-fuchsia-100 p-3">
-              <div className="text-xs font-semibold text-fuchsia-700 mb-2">Hindi</div>
-              <ul className="space-y-2 text-sm text-slate-700 list-disc pl-5">
-                {["Sirf exact amount pay karo.", "Sirf screen par dikh raha UPI use karo.", "Kisi aur number par payment mat karo.", "Agar UPI ID me aapka number dikh raha hai to scam call ka risk hai."].map((line, idx) => <li key={idx}>{line}</li>)}
-              </ul>
-            </div>
-          </div>
-        </div>
-        <AlertDialogFooter className="sm:justify-between gap-2">
-          <AlertDialogCancel className="rounded-full border-slate-300 bg-white/80 shadow-sm">Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} className="rounded-full bg-gradient-to-r from-primary via-sky-500 to-fuchsia-500 text-white shadow-lg">
-            I understand, continue
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
-
 export default function Buy() {
   const [, setLocation] = useLocation();
   const { data: user, isError } = useGetMe({ query: { queryKey: ["me"], retry: false } });
   const { data: settings } = useGetAppSettings();
   const { toast } = useToast();
   const qc = useQueryClient();
-  const [showBuyRulesDialog, setShowBuyRulesDialog] = useState(false);
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [activeUpis, setActiveUpis] = useState<UpiEntry[]>([]);
-  const [showDailyRules, setShowDailyRules] = useState(false);
 
   const { data: myBuy, refetch: refetchBuy } = useQuery<any>({
     queryKey: ["my-buy"],
@@ -220,11 +162,6 @@ export default function Buy() {
 
   useEffect(() => { if (isError) setLocation("/login"); }, [isError, setLocation]);
   useEffect(() => {
-    if (myBuy?.status === "locked") setShowBuyRulesDialog(true);
-    else setShowBuyRulesDialog(false);
-    setShowPaymentDialog(false);
-  }, [myBuy?.status]);
-  useEffect(() => {
     const raw = (settings as any)?.multipleUpiIds;
     const arr = Array.isArray(raw) ? raw : [];
     setActiveUpis(arr.filter((u: any) => u?.upiId).map((u: any) => ({
@@ -233,13 +170,6 @@ export default function Buy() {
       qrImageUrl: String(u.qrImageUrl || "").trim(),
     })));
   }, [settings]);
-  useEffect(() => {
-    const key = `buy_rules_seen_${new Date().toISOString().slice(0, 10)}`;
-    setShowDailyRules(!localStorage.getItem(key));
-  }, []);
-
-  const { data: disputesData } = useGetMyDisputes();
-  const openDisputes = (disputesData || []).filter((d: any) => d.status === "open").length;
   const lockMut = useMutation({
     mutationFn: (id: number) => api(`/p2p/lock/${id}`, { method: "POST" }),
     onSuccess: () => { refetchBuy(); qc.invalidateQueries({ queryKey: ["p2p-queue"] }); toast({ title: "Order locked! Pay now." }); },
@@ -250,48 +180,11 @@ export default function Buy() {
 
   return (
     <Layout>
-      {openDisputes > 0 && (
-        <div className="px-4 pt-3">
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            {openDisputes} order{openDisputes > 1 ? "s" : ""} dispute me hai — aap naye orders continue kar sakte ho.
-          </div>
-        </div>
-      )}
       <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-primary via-primary to-sky-600 text-primary-foreground">
         <Link href="/"><ArrowLeft className="cursor-pointer" /></Link>
         <span className="font-bold text-lg flex-1">Buy</span>
-        <button onClick={() => setShowDailyRules(true)} className="flex items-center gap-1 text-xs bg-primary-foreground/15 px-2.5 py-1.5 rounded-full">
-          <BookOpen className="w-3.5 h-3.5" /> Rules
-        </button>
       </div>
       <div className="px-4 pt-3"><DisputePauseBanner /></div>
-      <AlertDialog open={showDailyRules} onOpenChange={(v) => { setShowDailyRules(v); if (!v) localStorage.setItem(`buy_rules_seen_${new Date().toISOString().slice(0, 10)}`, "1"); }}>
-        <AlertDialogContent className="max-w-md rounded-[28px] border border-white/60 bg-gradient-to-br from-white via-slate-50 to-indigo-50 shadow-[0_20px_70px_rgba(59,130,246,0.18)] overflow-hidden">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="font-bold">Buy rules</AlertDialogTitle>
-            <AlertDialogDescription>Hindi aur English dono me rules check kar lo.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="rounded-2xl bg-sky-50/80 border border-sky-100 p-3 text-sm text-slate-700">Pay only exact amount.<br />Only to the UPI shown on screen.<br />If you submit a fake payment, duplicate screenshot, wrong UTR, or repeat someone else's UTR, your account's trust score will decrease by -10 points.<br />If it reaches -50, your account will be suspended.</div>
-            <div className="rounded-2xl bg-fuchsia-50/80 border border-fuchsia-100 p-3 text-sm text-slate-700">Sirf exact amount pay karo.<br />Sirf screen par dikh raha UPI use karo.<br />Fake payment, duplicate screenshot, wrong UTR, ya kisi aur ka UTR repeat karne par trust score -10 hoga.<br />-50 par account suspend ho jayega.</div>
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => { setShowDailyRules(false); localStorage.setItem(`buy_rules_seen_${new Date().toISOString().slice(0, 10)}`, "1"); }}>Cancel</Button>
-            <Button onClick={() => { setShowDailyRules(false); localStorage.setItem(`buy_rules_seen_${new Date().toISOString().slice(0, 10)}`, "1"); }}>I understand, continue</Button>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
-      <BuyRulesDialog
-        open={showBuyRulesDialog}
-        onOpenChange={setShowBuyRulesDialog}
-        buy={myBuy}
-        rules={(settings as any)?.buyRules || ""}
-        onConfirm={() => {
-          setShowBuyRulesDialog(false);
-          setLocation("/home");
-        }}
-      />
-
       <div className="p-4 space-y-4">
         {myBuy ? (
           <ActiveBuyCard buy={myBuy} refetch={refetchBuy} />

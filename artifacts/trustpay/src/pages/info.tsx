@@ -2,7 +2,7 @@ import React from "react";
 import Layout from "@/components/layout";
 import { useGetAppSettings } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, ShieldAlert, AlertTriangle, IndianRupee } from "lucide-react";
+import { BookOpen, ShieldAlert, AlertTriangle } from "lucide-react";
 
 export default function Info() {
   const { data: settings } = useGetAppSettings();
@@ -14,7 +14,7 @@ export default function Info() {
       <div className="p-4 space-y-4">
         <h1 className="text-xl font-bold">Info & Rules</h1>
 
-        <Card>
+        <Card id="buy">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base"><BookOpen className="w-4 h-4 text-primary" />Buy Rules</CardTitle>
           </CardHeader>
@@ -27,7 +27,7 @@ export default function Info() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card id="sell">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base"><ShieldAlert className="w-4 h-4 text-secondary" />Sell Rules</CardTitle>
           </CardHeader>
