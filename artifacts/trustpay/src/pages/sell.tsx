@@ -71,12 +71,6 @@ export default function Sell() {
   });
 
   useEffect(() => { if (isError) setLocation("/login"); }, [isError, setLocation]);
-
-  useEffect(() => {
-    const handler = () => { refetchMatching(); refetchChunks(); };
-    window.addEventListener("matching-stopped", handler);
-    return () => window.removeEventListener("matching-stopped", handler);
-  }, []);
   // Sound when a new lock or pending-confirmation arrives.
   const prevLocked = useRef(0);
   const prevPending = useRef(0);
@@ -199,7 +193,7 @@ export default function Sell() {
               </div>
               <p className="mt-2 text-sm text-white/85 leading-relaxed max-w-md">
                 {isMatching
-                  ? "Keep this app open and stay online. You will receive an alert sound and notification the moment a buyer is matched to your order. If you close the app or go offline, your matching session will stop automatically — only online sellers are matched with buyers."
+                  ? "Please wait — you will receive a notification and an alert sound the moment a buyer is matched. Keep this app open and stay online."
                   : "Tap Start Selling and your chunks will go live in the buy queue for the next 15 minutes."}
               </p>
 

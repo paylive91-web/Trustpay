@@ -20,19 +20,11 @@ function useHeartbeat() {
   useEffect(() => {
     const token = getAuthToken();
     if (!token) return;
-    const ping = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/auth/heartbeat`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json().catch(() => ({}));
-        if (data?.matchingStopped) {
-          // Seller went offline — matching auto-stopped, refresh status
-          window.dispatchEvent(new Event("matching-stopped"));
-        }
-      } catch {}
-    };
+    const ping = () =>
+      fetch(`${API_BASE}/auth/heartbeat`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {});
     ping();
     const t = setInterval(ping, 30_000);
     return () => clearInterval(t);
