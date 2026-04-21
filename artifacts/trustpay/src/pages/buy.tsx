@@ -96,6 +96,7 @@ function PaymentActionDialog({ open, onOpenChange, onPayNow, onCancel, buy }: {
   onCancel: () => void;
   buy: any;
 }) {
+  if (!buy) return null;
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent className="rounded-[28px] max-w-sm border border-white/60 bg-gradient-to-br from-white via-slate-50 to-indigo-50 shadow-[0_20px_70px_rgba(59,130,246,0.18)] overflow-hidden">
@@ -343,8 +344,8 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
       </Card>
 
       <Card className="rounded-[28px] shadow-xl border border-white/70 bg-gradient-to-br from-white via-sky-50 to-indigo-50 overflow-hidden">
-        <CardContent className="p-4 space-y-4">
-          <div className="absolute inset-x-4 top-4 h-px bg-gradient-to-r from-transparent via-sky-300 to-transparent" />
+        <CardContent className="p-4 space-y-4 relative">
+          <div className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-sky-300 to-transparent" />
           <div className="flex items-center justify-between">
             <div>
               <div className="text-2xl font-black tracking-tight">₹{buy.amount}</div>
