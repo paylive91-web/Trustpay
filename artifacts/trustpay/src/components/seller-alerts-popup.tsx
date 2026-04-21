@@ -51,6 +51,7 @@ function fmtCountdown(ms: number) {
 export default function SellerAlertsPopup() {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const token = getAuthToken();
   const [proofViewer, setProofViewer] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
   const [showHistoryWarning, setShowHistoryWarning] = useState(false);
@@ -63,6 +64,7 @@ export default function SellerAlertsPopup() {
     queryKey: ["seller-alerts"],
     queryFn: () => api("/p2p/my-seller-alerts"),
     refetchInterval: 4000,
+    enabled: !!token,
   });
 
   useEffect(() => {
