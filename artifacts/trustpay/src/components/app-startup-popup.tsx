@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 
 // Home-page popup. Handles broadcast notifications and daily announcements
 // only. Seller-side order alerts (locked / pending_confirmation) live in
@@ -108,36 +109,50 @@ export default function AppStartupPopup() {
 
   return (
     <Dialog open={annOpen} onOpenChange={(open) => !open && handleSkipAll()}>
-      <DialogContent className="max-w-[90%] w-[380px] rounded-xl p-0 overflow-hidden">
-        <DialogHeader className="p-4 border-b bg-muted/30">
-          <DialogTitle className="text-center">{currentAnn?.title || "Announcement"}</DialogTitle>
+      <DialogContent className="w-[min(92vw,440px)] rounded-[28px] border-0 p-0 overflow-hidden shadow-[0_24px_80px_rgba(15,23,42,0.28)] bg-gradient-to-b from-white via-slate-50 to-white">
+        <DialogHeader className="relative px-5 pt-5 pb-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white">
+          <button
+            type="button"
+            onClick={handleSkipAll}
+            className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <DialogTitle className="text-center text-[22px] font-bold tracking-tight">
+            {currentAnn?.title || "Announcement"}
+          </DialogTitle>
           {queue.length > 1 && (
-            <p className="text-xs text-center text-muted-foreground">{currentIndex + 1} / {queue.length}</p>
+            <p className="mt-1 text-center text-xs font-medium text-white/80">
+              {currentIndex + 1} / {queue.length}
+            </p>
           )}
         </DialogHeader>
-        <div className="p-4 max-h-[60vh] overflow-y-auto">
+        <div className="px-5 py-5 max-h-[62vh] overflow-y-auto">
           {currentAnn?.imageUrl && (
-            <div className="w-full mb-4 flex justify-center">
-              {/* Fixed standard popup image size: 320×180 (16:9). Keeps every
-                  announcement visually consistent regardless of source aspect
-                  ratio. `object-contain` preserves the original picture. */}
+            <div className="mb-4 rounded-[22px] bg-slate-100 p-3 shadow-inner">
               <img
                 src={currentAnn.imageUrl}
                 alt="Announcement"
-                className="w-[320px] h-[180px] rounded-lg object-contain bg-muted/40"
+                className="w-full h-auto max-h-[46vh] rounded-[18px] object-contain"
               />
             </div>
           )}
-          <p className="text-sm text-foreground whitespace-pre-wrap">{currentAnn?.message || ""}</p>
+          <p className="text-[15px] leading-6 text-slate-700 whitespace-pre-wrap">{currentAnn?.message || ""}</p>
         </div>
-        <div className="p-4 border-t bg-muted/30 flex gap-2">
+        <div className="px-5 pb-5 flex gap-3">
           {queue.length > 1 && currentIndex < queue.length - 1 ? (
             <>
-              <Button variant="outline" onClick={handleSkipAll} className="flex-1">Skip All</Button>
-              <Button onClick={handleNext} className="flex-1">Next ({currentIndex + 1}/{queue.length})</Button>
+              <Button variant="outline" onClick={handleSkipAll} className="flex-1 rounded-2xl border-slate-200 bg-white/90 text-slate-700 hover:bg-slate-50">
+                Skip All
+              </Button>
+              <Button onClick={handleNext} className="flex-1 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white shadow-lg shadow-blue-600/20 hover:opacity-95">
+                Next ({currentIndex + 1}/{queue.length})
+              </Button>
             </>
           ) : (
-            <Button onClick={handleNext} className="w-full">Got it</Button>
+            <Button onClick={handleNext} className="w-full rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white shadow-lg shadow-blue-600/20 hover:opacity-95">
+              Got it
+            </Button>
           )}
         </div>
       </DialogContent>
