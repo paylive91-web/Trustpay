@@ -138,6 +138,58 @@ function PaymentActionDialog({ open, onOpenChange, onPayNow, onCancel, buy }: {
   );
 }
 
+function BuyRulesDialog({ open, onOpenChange, onConfirm, buy, rules }: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onConfirm: () => void;
+  buy: any;
+  rules: string;
+}) {
+  if (!buy) return null;
+  const lines = (rules || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent className="max-w-md rounded-[28px] border border-white/60 bg-gradient-to-br from-white via-slate-50 to-indigo-50 shadow-[0_20px_70px_rgba(59,130,246,0.18)]">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-base flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-rose-500 via-orange-400 to-amber-300 flex items-center justify-center text-white shadow-lg ring-4 ring-rose-100">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <span className="font-bold">Buy confirm karo</span>
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-left leading-relaxed">
+            <div className="text-sm text-slate-700">Payment start karne se pehle ye rules dhyan se padh lo:</div>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="rounded-2xl bg-white/70 border border-white/80 p-4 max-h-[45vh] overflow-y-auto">
+          <ul className="space-y-2 text-sm text-slate-700 list-disc pl-5">
+            <li>Pay ONLY ₹{buy.amount} — no more, no less</li>
+            <li>Pay ONLY to the UPI below — not to any other number</li>
+            {lines.length > 0 ? (
+              lines.map((line, idx) => <li key={idx}>{line}</li>)
+            ) : (
+              <>
+                <li>Agar aapki UPI ID me aapka number show ho raha hai to scammer call karke payment confirmation ke liye force kar sakte hain.</li>
+                <li>Isliye payment tabhi confirm karein jab amount aapke account me aa jaye.</li>
+                <li>Aisi UPI ID use karein jisme aapka number show na ho.</li>
+              </>
+            )}
+          </ul>
+        </div>
+        <AlertDialogFooter className="sm:justify-between gap-2">
+          <AlertDialogCancel className="rounded-full border-slate-300 bg-white/80 shadow-sm">Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm} className="rounded-full bg-gradient-to-r from-primary via-sky-500 to-fuchsia-500 text-white shadow-lg">
+            I understand, continue
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 export default function Buy() {
   const [, setLocation] = useLocation();
   const { data: user, isError } = useGetMe({ query: { queryKey: ["me"], retry: false } });
@@ -145,6 +197,8 @@ export default function Buy() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [showRules, setShowRules] = useState(false);
+  const [showBuyRulesDialog, setShowBuyRulesDialog] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [activeUpis, setActiveUpis] = useState<UpiEntry[]>([]);
 
   const { data: myBuy, refetch: refetchBuy } = useQuery<any>({
@@ -163,7 +217,13 @@ export default function Buy() {
 
   useEffect(() => { if (isError) setLocation("/login"); }, [isError, setLocation]);
   useEffect(() => {
-    if (myBuy?.status === "locked") setShowPaymentDialog(true);
+    if (myBuy?.status === "locked") {
+      setShowBuyRulesDialog(true);
+      setShowPaymentDialog(false);
+    } else {
+      setShowBuyRulesDialog(false);
+      setShowPaymentDialog(false);
+    }
   }, [myBuy?.status]);
   useEffect(() => {
     const raw = (settings as any)?.multipleUpiIds;
@@ -198,6 +258,16 @@ export default function Buy() {
         </div>
       )}
       <div className="px-4 pt-3"><DisputePauseBanner /></div>
+      <BuyRulesDialog
+        open={showBuyRulesDialog}
+        onOpenChange={setShowBuyRulesDialog}
+        buy={myBuy}
+        rules={(settings as any)?.buyRules || ""}
+        onConfirm={() => {
+          setShowBuyRulesDialog(false);
+          setShowPaymentDialog(true);
+        }}
+      />
 
       <div className="p-4 space-y-4">
         {myBuy ? (
@@ -328,26 +398,6 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
           cancelMut.mutate();
         }}
       />
-      {/* Scammer warning */}
-      <Card className="border-0 bg-gradient-to-r from-rose-50 via-red-50 to-orange-50 rounded-3xl shadow-sm">
-        <CardContent className="p-3 flex items-start gap-2">
-          <div className="w-8 h-8 rounded-2xl bg-gradient-to-br from-rose-500 to-orange-400 flex items-center justify-center text-white shrink-0 shadow">
-            <AlertTriangle className="w-4 h-4" />
-          </div>
-          <div className="text-xs text-red-700 space-y-1">
-            <div className="font-semibold">Scam Alert — Read before paying</div>
-            <ul className="list-disc pl-3 space-y-0.5">
-              <li>Pay ONLY ₹{buy.amount} — no more, no less</li>
-              <li>Pay ONLY to the UPI below — not to any other number</li>
-              <li>
-                Agar aapki UPI ID me aapka number show ho raha hai to scammer call karke payment confirmation ke liye force kar sakte hain.
-                Isliye payment tabhi confirm karein jab amount aapke account me aa jaye, aur aisi UPI ID use karein jisme aapka number show na ho.
-              </li>
-            </ul>
-          </div>
-        </CardContent>
-      </Card>
-
       <Card className="rounded-[28px] shadow-xl border border-white/70 bg-gradient-to-br from-white via-sky-50 to-indigo-50 overflow-hidden">
         <CardContent className="p-4 space-y-4 relative">
           <div className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-sky-300 to-transparent" />
