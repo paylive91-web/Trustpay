@@ -11,7 +11,7 @@ import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_177633578551
 import { useGetAppSettings } from "@workspace/api-client-react";
 import Layout from "@/components/layout";
 import { getPWAInstallPrompt, clearPWAInstallPrompt } from "@/lib/pwa-install";
-import { Download, ShieldCheck, Zap, Star } from "lucide-react";
+import { Download, ShieldCheck, Zap, Star, ShieldAlert, LogIn } from "lucide-react";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
@@ -135,6 +135,7 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [referralCode, setReferralCode] = useState("");
   const [showInstallPopup, setShowInstallPopup] = useState(false);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
 
   const appName = (brandSettings as any)?.appName || "TrustPay";
   const logoUrl = (brandSettings as any)?.appLogoUrl || logoPath;
@@ -184,7 +185,11 @@ export default function Register() {
         setLocation("/");
       }
     } catch (err: any) {
-      toast({ title: "Registration failed", description: err.message, variant: "destructive" });
+      if (err.message && err.message.includes("1 account is allowed")) {
+        setShowDuplicateDialog(true);
+      } else {
+        toast({ title: "Registration failed", description: err.message, variant: "destructive" });
+      }
     } finally {
       setLoading(false);
     }
@@ -198,6 +203,55 @@ export default function Register() {
           logoUrl={logoUrl}
           onDone={() => { setShowInstallPopup(false); setLocation("/"); }}
         />
+      )}
+
+      {showDuplicateDialog && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" />
+          <div className="relative w-[min(92vw,400px)] rounded-[32px] overflow-hidden shadow-[0_32px_100px_rgba(220,38,38,0.35)] animate-in fade-in zoom-in-95 duration-300">
+            <div className="absolute inset-0 rounded-[32px] ring-1 ring-inset ring-white/20 pointer-events-none z-10" />
+
+            {/* Header */}
+            <div className="relative bg-gradient-to-br from-[#7f1d1d] via-[#991b1b] to-[#b91c1c] px-5 pt-8 pb-6 flex flex-col items-center overflow-hidden">
+              <div className="absolute -top-8 -left-8 w-36 h-36 rounded-full bg-white/10 blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-4 -right-4 w-28 h-28 rounded-full bg-red-400/20 blur-2xl pointer-events-none" />
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+
+              <div className="relative z-10 w-16 h-16 rounded-full bg-white/15 border border-white/25 flex items-center justify-center mb-4 shadow-lg">
+                <ShieldAlert className="w-8 h-8 text-white" />
+              </div>
+              <p className="text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-red-200 mb-1">Security Alert</p>
+              <h2 className="text-center text-[20px] font-extrabold tracking-tight text-white drop-shadow-sm">Device Already Registered</h2>
+            </div>
+
+            {/* Body */}
+            <div className="bg-white px-6 pt-5 pb-2">
+              <p className="text-[15px] leading-[1.65] text-slate-600 text-center">
+                Is device par pehle se ek account registered hai.
+              </p>
+              <p className="text-[14px] leading-[1.6] text-slate-500 text-center mt-2">
+                Ek mobile par sirf <span className="font-semibold text-red-600">1 account</span> allowed hai. Apne purane account mein login karo.
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-white px-5 pt-4 pb-6 flex flex-col gap-3">
+              <Button
+                onClick={() => { setShowDuplicateDialog(false); setLocation("/login"); }}
+                className="w-full h-12 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 text-white text-[15px] font-bold shadow-lg shadow-red-500/30 hover:opacity-95 active:scale-[0.98] transition-all"
+              >
+                <LogIn className="w-4 h-4 mr-2" /> Login Karo
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setShowDuplicateDialog(false)}
+                className="w-full h-10 rounded-2xl text-slate-400 text-sm hover:bg-slate-50"
+              >
+                Wapas Jao
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
       <div className="flex flex-col items-center justify-center min-h-screen p-6">
         <img src={logoUrl} alt={`${appName} Logo`} className="w-24 h-24 mb-2 rounded-2xl object-contain" />
