@@ -9,9 +9,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { getAdminGetSettingsQueryKey, getGetAppSettingsQueryKey } from "@workspace/api-client-react";
-import { Plus, Trash2, Bell, Upload } from "lucide-react";
+import { getAuthToken } from "@/lib/auth";
+import { Plus, Trash2, Bell, Upload, Award } from "lucide-react";
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -698,6 +701,7 @@ export default function AdminSettings() {
         )}
 
         <FeeTransactionsCard />
+        <AgentEarningsCard />
 
         {/* Broadcast Notification */}
         <Card className="border-blue-200">
@@ -759,6 +763,65 @@ function SoundPicker({ value, onChange }: { value: string; onChange: (v: string)
 }
 
 function getErrorMessage(err: any) { return err?.message || err?.error || "Unknown error"; }
+
+function AgentEarningsCard() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-agent-transactions"],
+    queryFn: async () => {
+      const token = getAuthToken();
+      const res = await fetch(`${BASE}/api/admin/agent-transactions?limit=100`, {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+  const items = (data as any)?.items || [];
+  return (
+    <Card className="border-violet-200">
+      <CardHeader>
+        <CardTitle className="text-violet-700 flex items-center gap-2">
+          <Award className="w-4 h-4" />
+          Agent Criteria Earnings
+        </CardTitle>
+        <CardDescription>Daily agent rewards credited to admin from the platform's agent criteria system.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-xl bg-violet-50 p-3">
+            <div className="text-xs text-muted-foreground">Lifetime earnings</div>
+            <div className="text-2xl font-bold text-violet-700">₹{Number((data as any)?.totalAmount || 0).toFixed(2)}</div>
+            <div className="text-[11px] text-muted-foreground">{(data as any)?.totalCount ?? 0} rewards</div>
+          </div>
+          <div className="rounded-xl bg-orange-50 p-3">
+            <div className="text-xs text-muted-foreground">Today</div>
+            <div className="text-2xl font-bold text-orange-600">₹{Number((data as any)?.todayAmount || 0).toFixed(2)}</div>
+            <div className="text-[11px] text-muted-foreground">{(data as any)?.todayCount ?? 0} rewards</div>
+          </div>
+        </div>
+        <div className="border rounded-lg max-h-80 overflow-y-auto divide-y">
+          {isLoading ? (
+            <div className="p-3 text-sm text-muted-foreground">Loading...</div>
+          ) : items.length === 0 ? (
+            <div className="p-3 text-sm text-muted-foreground">No agent rewards credited yet.</div>
+          ) : items.map((t: any) => (
+            <div key={t.id} className="p-2.5 flex items-center justify-between text-xs gap-2">
+              <div className="flex-1 min-w-0">
+                <div className="truncate font-medium">{t.description}</div>
+                <div className="text-[10px] text-muted-foreground">
+                  {t.createdAt ? format(new Date(t.createdAt), "dd MMM yyyy, HH:mm") : ""}
+                </div>
+              </div>
+              <div className="font-bold text-violet-700 shrink-0">+₹{Number(t.amount).toFixed(2)}</div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 function FeeTransactionsCard() {
   const { data, isLoading } = useAdminGetFeeTransactions({ limit: 100, query: { retry: false, refetchOnWindowFocus: false } });

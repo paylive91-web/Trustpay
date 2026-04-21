@@ -577,6 +577,52 @@ router.get("/fee-transactions", requireAdmin, async (req, res) => {
   });
 });
 
+// Agent-reward transactions credited to admin from the agent tier system.
+router.get("/agent-transactions", requireAdmin, async (req, res) => {
+  const parsed = parseInt(String(req.query.limit || "100"));
+  const limit = Math.min(500, Math.max(1, Number.isFinite(parsed) ? parsed : 100));
+  const adminId = (req as any).user?.id as number;
+
+  const rows = await db.select().from(transactionsTable).where(and(
+    eq(transactionsTable.userId, adminId),
+    eq(transactionsTable.type, "credit"),
+    sql`${transactionsTable.description} ILIKE 'Agent Reward%'`,
+  )).orderBy(sql`${transactionsTable.createdAt} desc`).limit(limit);
+
+  const totals = await db.select({
+    sum: sql<string>`COALESCE(SUM(${transactionsTable.amount}), 0)`,
+    count: sql<string>`COUNT(*)`,
+  }).from(transactionsTable).where(and(
+    eq(transactionsTable.userId, adminId),
+    eq(transactionsTable.type, "credit"),
+    sql`${transactionsTable.description} ILIKE 'Agent Reward%'`,
+  ));
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const todayTotals = await db.select({
+    sum: sql<string>`COALESCE(SUM(${transactionsTable.amount}), 0)`,
+    count: sql<string>`COUNT(*)`,
+  }).from(transactionsTable).where(and(
+    eq(transactionsTable.userId, adminId),
+    eq(transactionsTable.type, "credit"),
+    sql`${transactionsTable.description} ILIKE 'Agent Reward%'`,
+    sql`${transactionsTable.createdAt} >= ${today}`,
+  ));
+
+  res.json({
+    totalAmount: parseFloat(totals[0]?.sum || "0"),
+    totalCount: parseInt(totals[0]?.count || "0"),
+    todayAmount: parseFloat(todayTotals[0]?.sum || "0"),
+    todayCount: parseInt(todayTotals[0]?.count || "0"),
+    items: rows.map((r) => ({
+      id: r.id,
+      amount: parseFloat(r.amount),
+      description: r.description,
+      createdAt: r.createdAt,
+    })),
+  });
+});
+
 router.get("/stats/daily", requireAdmin, async (_req, res) => {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const todayConfirmed = await db.select({ sum: sql<string>`COALESCE(SUM(${ordersTable.amount}), 0)`, count: sql<string>`COUNT(*)` })
