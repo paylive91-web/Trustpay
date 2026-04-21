@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import BottomNav from "./bottom-nav";
 import PaymentLockBanner from "./payment-lock-banner";
+import SellerOrderBanner from "./seller-order-banner";
 import { getAuthToken } from "@/lib/auth";
 
 interface LayoutProps {
@@ -38,6 +39,7 @@ export default function Layout({ children, showBottomNav = true }: LayoutProps) 
           {children}
         </div>
         <PaymentLockBanner />
+        <SellerOrderBanner />
         {showBottomNav && <BottomNav />}
       </div>
     </div>
