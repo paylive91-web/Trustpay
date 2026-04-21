@@ -126,7 +126,7 @@ export default function Register() {
   const { data: brandSettings } = useGetAppSettings();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { data: user, isLoading: isUserLoading } = useGetMe({ query: { retry: false } });
+  const { data: user, isLoading: isUserLoading } = useGetMe({ query: { queryKey: ["me"], retry: false } });
 
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState("");

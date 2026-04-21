@@ -95,7 +95,7 @@ export default function AdminDepositTasks() {
   const toggleActive = (task: any) => {
     updateMutation.mutate({
       id: task.id,
-      data: { isActive: !task.isActive }
+      data: { isActive: !task.isActive } as any
     }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getAdminGetDepositTasksQueryKey() });

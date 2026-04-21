@@ -109,7 +109,7 @@ interface AgentTier {
 export default function AdminSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: settings, isLoading: settingsLoading, isError: settingsError, error: settingsErr } = useAdminGetSettings({ query: { retry: false, refetchOnWindowFocus: false } });
+  const { data: settings, isLoading: settingsLoading, isError: settingsError, error: settingsErr } = useAdminGetSettings({ query: { queryKey: getAdminGetSettingsQueryKey(), retry: false, refetchOnWindowFocus: false } });
   const notifyMut = useAdminNotifyAll();
   const [broadcastTitle, setBroadcastTitle] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
@@ -272,7 +272,7 @@ export default function AdminSettings() {
       return;
     }
     try {
-      await notifyMut.mutateAsync({ data: { message: broadcastMessage.trim(), title: broadcastTitle.trim() || "TrustPay", imageUrl: broadcastImageUrl.trim() || "" } });
+      await notifyMut.mutateAsync({ data: { message: broadcastMessage.trim(), title: broadcastTitle.trim() || "TrustPay", imageUrl: broadcastImageUrl.trim() || "" } as any });
       toast({ title: "Notification sent to all users!" });
       setBroadcastMessage("");
       setBroadcastTitle("");
@@ -824,7 +824,7 @@ function AgentEarningsCard() {
 }
 
 function FeeTransactionsCard() {
-  const { data, isLoading } = useAdminGetFeeTransactions({ limit: 100, query: { retry: false, refetchOnWindowFocus: false } });
+  const { data, isLoading } = useAdminGetFeeTransactions({ limit: 100 });
   const items = (data as any)?.items || [];
   return (
     <Card className="border-emerald-200">

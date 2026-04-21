@@ -17,7 +17,7 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [location, setLocation] = useLocation();
-  const { data: user, isLoading } = useGetMe({ query: { retry: false } });
+  const { data: user, isLoading } = useGetMe({ query: { queryKey: ["me"], retry: false } });
   const { data: brandSettings } = useGetAppSettings();
   const logoutMutation = useLogout();
   const queryClient = useQueryClient();

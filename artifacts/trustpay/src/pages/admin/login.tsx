@@ -22,7 +22,7 @@ type LoginValues = z.infer<typeof loginSchema>;
 export default function AdminLogin() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { data: user, isLoading: isUserLoading } = useGetMe({ query: { retry: false } });
+  const { data: user, isLoading: isUserLoading } = useGetMe({ query: { queryKey: ["me"], retry: false } });
   const loginMutation = useAdminLogin();
 
   useEffect(() => {
@@ -44,7 +44,7 @@ export default function AdminLogin() {
         setLocation("/admin/dashboard");
       },
       onError: (err) => {
-        toast({ title: "Login failed", description: err.error || "Unknown error", variant: "destructive" });
+        toast({ title: "Login failed", description: (err as any).error || err.message || "Unknown error", variant: "destructive" });
       }
     });
   };

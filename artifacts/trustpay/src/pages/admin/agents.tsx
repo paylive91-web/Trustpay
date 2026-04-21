@@ -26,7 +26,7 @@ export default function AdminAgents() {
   const queryClient = useQueryClient();
 
   const { data: adminSettings, isLoading: settingsLoading } = useAdminGetSettings({
-    query: { retry: false, refetchOnWindowFocus: false },
+    query: { queryKey: getAdminGetSettingsQueryKey(), retry: false, refetchOnWindowFocus: false },
   });
 
   const [tiers, setTiers] = useState<AgentTier[]>([]);

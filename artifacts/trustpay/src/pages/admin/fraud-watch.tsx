@@ -161,9 +161,9 @@ export default function FraudWatch() {
                             <p className="text-[10px] text-muted-foreground mt-1">{format(new Date(a.createdAt), "MMM dd HH:mm:ss")}</p>
                           </div>
                           <div className="flex gap-2 items-start flex-wrap">
-                            {a.notifiedAt ? (
+                            {(a as any).notifiedAt ? (
                               <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                <BellRing className="h-3 w-3 mr-1" />notified {format(new Date(a.notifiedAt), "MMM dd HH:mm")}
+                                <BellRing className="h-3 w-3 mr-1" />notified {format(new Date((a as any).notifiedAt), "MMM dd HH:mm")}
                               </Badge>
                             ) : (
                               a.user && (
@@ -228,7 +228,7 @@ function RulesPanel() {
         return { previous };
       },
       onError: (e: any, _vars, ctx) => {
-        if (ctx?.previous) queryClient.setQueryData(queryKey, ctx.previous);
+        if ((ctx as any)?.previous) queryClient.setQueryData(queryKey, (ctx as any).previous);
         toast({ title: "Toggle failed", description: e.message, variant: "destructive" });
       },
       onSettled: () => queryClient.invalidateQueries({ queryKey }),

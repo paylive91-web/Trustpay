@@ -34,7 +34,7 @@ export default function AdminLinksMedia() {
     data: settings,
     isLoading,
     isError,
-  } = useAdminGetSettings({ query: { retry: false, refetchOnWindowFocus: false } });
+  } = useAdminGetSettings({ query: { queryKey: getAdminGetSettingsQueryKey(), retry: false, refetchOnWindowFocus: false } });
 
   const [telegramLink, setTelegramLink] = useState("");
   const [bannerImages, setBannerImages] = useState<string[]>([]);
