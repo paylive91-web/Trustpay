@@ -32,6 +32,9 @@ export default function Invite() {
   const { data: appSettings } = useGetAppSettings();
   const agentTiers = Array.isArray((appSettings as any)?.agentTiers) ? (appSettings as any).agentTiers : [];
   const todayActiveCount = invitees.filter((u: any) => Number(u.todayDeposits || 0) > 0).length;
+  const currentDailyReward = agentTiers
+    .filter((tier: any) => todayActiveCount >= Number(tier.minActiveDeposits || 0))
+    .reduce((sum: number, tier: any) => sum + Number(tier.reward || 0), 0);
   const shareUrl = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}/register?ref=${referralCode}`;
 
   const handleCopyCode = () => {
@@ -197,6 +200,10 @@ export default function Invite() {
                 <div className="text-xs text-muted-foreground">Invitees with today deposit</div>
                 <div className="text-2xl font-bold text-emerald-700">{invitees.filter((u: any) => Number(u.todayDeposits || 0) > 0).length}</div>
               </div>
+            </div>
+            <div className="rounded-2xl bg-slate-900 p-4 text-white">
+              <div className="text-xs text-white/70">Current daily reward at {todayActiveCount} active invite users</div>
+              <div className="text-2xl font-bold">₹{Number(currentDailyReward || 0).toFixed(2)}</div>
             </div>
             <div className="space-y-2">
               {agentTiers.length === 0 ? (
