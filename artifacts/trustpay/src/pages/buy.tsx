@@ -388,14 +388,14 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
                 Optional: also record your screen while paying. You'll need it only if a dispute opens later.
               </div>
               <Button
-                className="w-full h-12 text-base font-bold rounded-2xl bg-gradient-to-r from-primary via-sky-600 to-fuchsia-600 shadow-lg"
+                className="w-full h-12 text-base font-bold rounded-2xl bg-gradient-to-r from-primary via-sky-600 to-fuchsia-600 shadow-lg border border-fuchsia-200/60"
                 disabled={!utr || !screenshotUrl || submitMut.isPending || !!uploading}
                 onClick={() => setShowWarning(true)}
               >
                 {submitMut.isPending ? "Submitting..." : "Submit Payment Proof"}
               </Button>
               <AlertDialog open={showWarning} onOpenChange={setShowWarning}>
-                <AlertDialogContent>
+                  <AlertDialogContent className="rounded-[28px] border border-rose-200 bg-gradient-to-br from-white via-rose-50 to-orange-50 shadow-2xl">
                   <AlertDialogHeader>
                     <AlertDialogTitle className="text-red-600 flex items-center gap-2">
                       <AlertTriangle className="h-5 w-5" /> Confirm Payment Proof
@@ -415,24 +415,24 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
                       </span>
                     </AlertDialogDescription>
                   </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Go Back</AlertDialogCancel>
+                  <AlertDialogFooter className="gap-2">
+                    <AlertDialogCancel className="rounded-full border border-slate-300 bg-white/90 shadow-sm">Go Back</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={() => { setShowWarning(false); submitMut.mutate(); }}
-                      className="bg-red-600 hover:bg-red-700"
+                      className="rounded-full bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 hover:from-red-700 hover:via-rose-700 hover:to-orange-700 text-white shadow-lg"
                     >
                       Yes, Submit
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
-              <Button variant="ghost" size="sm" className="w-full" onClick={() => cancelMut.mutate()}>
+              <Button variant="ghost" size="sm" className="w-full rounded-2xl border border-slate-200 bg-white/80 text-slate-700 hover:bg-rose-50 hover:text-rose-700" onClick={() => cancelMut.mutate()}>
                 Cancel Buy
               </Button>
-      <Button variant="outline" size="sm" className="w-full" onClick={() => window.open((settings as any)?.telegramLink || "/support", "_blank")}>
-        <Headset className="mr-2 h-4 w-4" />
-        Contact Support
-      </Button>
+              <Button variant="outline" size="sm" className="w-full rounded-2xl border-fuchsia-200 bg-gradient-to-r from-fuchsia-50 to-sky-50 text-fuchsia-700 shadow-sm hover:from-fuchsia-100 hover:to-sky-100" onClick={() => window.open((settings as any)?.telegramLink || "/support", "_blank")}>
+                <Headset className="mr-2 h-4 w-4" />
+                Contact Support
+              </Button>
             </>
           )}
         </CardContent>
