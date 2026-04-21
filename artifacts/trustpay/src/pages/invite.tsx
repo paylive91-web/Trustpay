@@ -17,12 +17,6 @@ export default function Invite() {
   const referralCode = (user as any)?.referralCode || "";
   const inviteEarnings = (user as any)?.inviteEarnings || 0;
   const inviteEarningsL2 = (user as any)?.inviteEarningsL2 || 0;
-  const totalEarnings = inviteEarnings + inviteEarningsL2;
-  const { data: appSettings } = useGetAppSettings();
-  const agentTiers = Array.isArray((appSettings as any)?.agentTiers) ? (appSettings as any).agentTiers : [];
-  const todayActiveCount = invitees.filter((u: any) => Number(u.todayDeposits || 0) > 0).length;
-
-  const shareUrl = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}/register?ref=${referralCode}`;
   const { data: invitees = [] } = useQuery<any[]>({
     queryKey: ["invitees"],
     queryFn: async () => {
@@ -34,6 +28,11 @@ export default function Invite() {
     },
     enabled: !!user,
   });
+  const totalEarnings = inviteEarnings + inviteEarningsL2;
+  const { data: appSettings } = useGetAppSettings();
+  const agentTiers = Array.isArray((appSettings as any)?.agentTiers) ? (appSettings as any).agentTiers : [];
+  const todayActiveCount = invitees.filter((u: any) => Number(u.todayDeposits || 0) > 0).length;
+  const shareUrl = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}/register?ref=${referralCode}`;
 
   const handleCopyCode = () => {
     if (!referralCode) return;
