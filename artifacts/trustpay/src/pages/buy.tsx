@@ -462,68 +462,93 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
 }
 
 /**
- * Single-chunk cycler: shows ONE chunk at a time and alternates through the
- * available queue every few seconds with a smooth slide+fade animation. No
- * visible scrollbar, no list — just the next deal flashing into focus, which
- * gives the page a high-pace "another buyer might grab it" feel. The queue
- * loops indefinitely; tapping Buy locks whichever chunk is currently shown.
+ * Randomized queue: all orders stay visible, but their positions reshuffle
+ * every few seconds so it feels like someone else may have purchased first.
  */
-const CYCLE_MS = 2600;
+const CARD_H = 128;
+const CARD_GAP = 10;
 
 function ChunkCarousel({ queue, onLock, disabled }: { queue: any[]; onLock: (id: number) => void; disabled: boolean }) {
-  const [idx, setIdx] = useState(0);
-  // Direction toggle creates the alternating slide-in (left ↔ right) motion.
-  const [dir, setDir] = useState<1 | -1>(1);
-  const [animKey, setAnimKey] = useState(0);
+  // Build a "looped" display queue: repeat real orders enough times so the
+  // user always sees a long, busy list (>= 24 cards) even when only a few
+  // real chunks exist. Each repeat carries a unique key so React renders
+  // them as distinct cards.
+  const displayQueue = React.useMemo(() => {
+    if (queue.length === 0) return [] as Array<{ chunk: any; key: string }>;
+    const TARGET = 24;
+    const repeats = Math.max(1, Math.ceil(TARGET / queue.length));
+    const out: Array<{ chunk: any; key: string }> = [];
+    for (let r = 0; r < repeats; r++) {
+      for (const c of queue) {
+        out.push({ chunk: c, key: `${c.id}-${r}` });
+      }
+    }
+    return out;
+  }, [queue]);
 
-  // Reset to head whenever the queue identity changes (new orders matched).
-  useEffect(() => { setIdx(0); }, [queue.map((q) => q.id).join(",")]);
+  // `slots[i]` = which visual slot card at displayQueue index i occupies
+  const [slots, setSlots] = useState<number[]>(() => displayQueue.map((_, i) => i));
 
+  // Re-sync slots when display length changes (new order arrived / order gone)
   useEffect(() => {
-    if (queue.length === 0) return;
-    const t = setInterval(() => {
-      setIdx((i) => (i + 1) % queue.length);
-      setDir((d) => (d === 1 ? -1 : 1));
-      setAnimKey((k) => k + 1);
-    }, CYCLE_MS);
-    return () => clearInterval(t);
-  }, [queue.length]);
+    setSlots(displayQueue.map((_, i) => i));
+  }, [displayQueue.length]);
 
-  if (queue.length === 0) return null;
-  const current = queue[idx % queue.length];
+  // Helper: do `swaps` random pair-swaps in one shot so multiple cards
+  // visibly move together each tick.
+  const reshuffle = (prev: number[], swaps: number) => {
+    const next = [...prev];
+    if (next.length < 2) return next;
+    for (let s = 0; s < swaps; s++) {
+      const a = Math.floor(Math.random() * next.length);
+      let b = Math.floor(Math.random() * (next.length - 1));
+      if (b >= a) b += 1;
+      [next[a], next[b]] = [next[b], next[a]];
+    }
+    return next;
+  };
 
-  // Style tag scoped here so we don't pollute global CSS. Two keyframes
-  // (slide-from-right / slide-from-left) used alternately via `dir`.
+  // Start reshuffling almost immediately after the queue appears.
+  useEffect(() => {
+    if (displayQueue.length < 2) return;
+    const t = setTimeout(() => {
+      setSlots((prev) => reshuffle(prev, Math.max(2, Math.floor(prev.length / 2))));
+    }, 200);
+    return () => clearTimeout(t);
+  }, [displayQueue.length]);
+
+  // Every 600 ms swap multiple pairs so the whole list visibly shuffles.
+  useEffect(() => {
+    if (displayQueue.length < 2) return;
+    const timer = setInterval(() => {
+      setSlots((prev) => reshuffle(prev, Math.max(2, Math.floor(prev.length / 2))));
+    }, 850);
+    return () => clearInterval(timer);
+  }, [displayQueue.length]);
+
+  const containerH = displayQueue.length * CARD_H + (displayQueue.length - 1) * CARD_GAP;
+
   return (
-    <div className="relative">
-      <style>{`
-        @keyframes chunkInRight { from { opacity: 0; transform: translateX(28px) scale(.97); } to { opacity: 1; transform: none; } }
-        @keyframes chunkInLeft  { from { opacity: 0; transform: translateX(-28px) scale(.97); } to { opacity: 1; transform: none; } }
-        .chunk-cycle { animation-duration: .45s; animation-timing-function: cubic-bezier(0.4,0,0.2,1); animation-fill-mode: both; }
-        .chunk-cycle.dir-right { animation-name: chunkInRight; }
-        .chunk-cycle.dir-left  { animation-name: chunkInLeft; }
-        /* Hide horizontal scrollbar on the dot row while keeping it scrollable. */
-        .chunk-dots::-webkit-scrollbar { display: none; }
-        .chunk-dots { scrollbar-width: none; -ms-overflow-style: none; }
-      `}</style>
-      <div className="overflow-hidden">
-        <div key={animKey} className={`chunk-cycle ${dir === 1 ? "dir-right" : "dir-left"}`}>
-          <ChunkCard chunk={current} onLock={() => onLock(current.id)} disabled={disabled} />
-        </div>
-      </div>
-      {queue.length > 1 && (
-        <div className="chunk-dots flex items-center justify-center gap-1.5 mt-3 overflow-x-auto px-2">
-          {queue.map((_, i) => (
-            <span
-              key={i}
-              className={`h-1.5 rounded-full transition-all ${i === idx ? "w-6 bg-primary" : "w-1.5 bg-slate-300"}`}
-            />
-          ))}
-        </div>
-      )}
-      <div className="text-center text-[11px] text-muted-foreground mt-2">
-        {idx + 1} of {queue.length} · auto-cycling
-      </div>
+    <div style={{ position: "relative", height: displayQueue.length * CARD_H + (displayQueue.length - 1) * CARD_GAP }}>
+      {displayQueue.map(({ chunk, key }, idx) => {
+        const slot = slots[idx] ?? idx;
+        const topPx = slot * (CARD_H + CARD_GAP);
+        return (
+          <div
+            key={key}
+            style={{
+              position: "absolute",
+              top: topPx,
+              left: 0,
+              right: 0,
+              height: CARD_H,
+              transition: "top 0.45s cubic-bezier(0.4, 0, 0.2, 1)",
+            }}
+          >
+            <ChunkCard chunk={chunk} onLock={() => onLock(chunk.id)} disabled={disabled} />
+          </div>
+        );
+      })}
     </div>
   );
 }
