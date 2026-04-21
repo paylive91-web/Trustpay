@@ -359,19 +359,26 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
             <Button
               type="button"
               variant="outline"
-              className="h-12 rounded-2xl font-semibold border bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 text-white border-purple-400 shadow-md hover:from-purple-700 hover:to-indigo-700 flex items-center justify-center gap-2"
+              className="h-14 rounded-2xl border-0 bg-white shadow-md hover:shadow-lg flex items-center justify-center px-3 overflow-hidden"
               onClick={() => openUpiApp(buy.upiId, buy.amount, "phonepe")}
             >
-              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/PhonePe_Logo.svg/512px-PhonePe_Logo.svg.png" alt="PhonePe" className="h-5 w-5 rounded object-contain bg-white p-0.5" />
-              PhonePe
+              <img
+                src={`${import.meta.env.BASE_URL}phonepe-logo.png`}
+                alt="PhonePe"
+                className="h-8 w-full object-contain"
+              />
             </Button>
             <Button
               type="button"
               variant="outline"
-              className="h-12 rounded-2xl font-semibold border bg-gradient-to-r from-sky-400 via-blue-500 to-cyan-500 text-white border-sky-300 shadow-md hover:from-sky-500 hover:to-blue-600 flex items-center justify-center gap-2"
+              className="h-14 rounded-2xl border-0 bg-white shadow-md hover:shadow-lg flex items-center justify-center px-3 overflow-hidden"
               onClick={() => openUpiApp(buy.upiId, buy.amount, "paytm")}
             >
-              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Paytm_Logo_%28standalone%29.svg/512px-Paytm_Logo_%28standalone%29.svg.png" alt="Paytm" className="h-5 w-auto object-contain bg-white rounded px-0.5" />
+              <img
+                src={`${import.meta.env.BASE_URL}paytm-logo.png`}
+                alt="Paytm"
+                className="h-8 w-full object-contain"
+              />
             </Button>
           </div>
 
