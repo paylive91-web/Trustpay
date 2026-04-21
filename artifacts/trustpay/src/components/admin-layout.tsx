@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, ListOrdered, Settings, CreditCard, ShieldAlert, LogOut, Eye, AlertTriangle, Download, Link2 } from "lucide-react";
+import { LayoutDashboard, Users, ListOrdered, Settings, CreditCard, ShieldAlert, LogOut, Eye, AlertTriangle, Download, Link2, ShieldCheck } from "lucide-react";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { useGetMe, useLogout, useGetAppSettings } from "@workspace/api-client-react";
 import { clearAuthToken, getAuthToken } from "@/lib/auth";
@@ -67,6 +67,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { href: "/admin/high-value", label: "High Value", icon: Eye, badge: 0 },
     { href: "/admin/users", label: "Users", icon: Users, badge: 0 },
     { href: "/admin/deposit-tasks", label: "Deposit Tasks", icon: CreditCard, badge: 0 },
+    { href: "/admin/agents", label: "Agents", icon: ShieldCheck, badge: 0 },
     { href: "/admin/settings", label: "Settings", icon: Settings, badge: 0 },
     { href: "/admin/links-media", label: "Links & Media", icon: Link2, badge: 0 },
   ];

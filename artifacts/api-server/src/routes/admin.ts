@@ -76,6 +76,79 @@ router.get("/orders", requireAdmin, async (req, res) => {
   res.json(orders.map((o) => fOrder(o, userMap.get(o.userId))));
 });
 
+router.get("/agents", requireAdmin, async (req, res) => {
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  // All verified agents (isVerifiedAgent = true)
+  const agents = await db.select({
+    id: usersTable.id,
+    username: usersTable.username,
+    displayName: usersTable.displayName,
+    phone: usersTable.phone,
+    isVerifiedAgent: usersTable.isVerifiedAgent,
+    agentTierAwardedDate: usersTable.agentTierAwardedDate,
+    agentTierAwardedLevel: usersTable.agentTierAwardedLevel,
+    inviteEarnings: usersTable.inviteEarnings,
+    createdAt: usersTable.createdAt,
+  }).from(usersTable).where(eq(usersTable.isVerifiedAgent, true)).orderBy(sql`${usersTable.createdAt} desc`);
+
+  if (agents.length === 0) { res.json([]); return; }
+
+  const agentIds = agents.map((a) => a.id);
+
+  // Count total invitees per agent
+  const inviteeCounts = await db.select({
+    referredBy: usersTable.referredBy,
+    count: sql<string>`COUNT(*)`,
+  }).from(usersTable).where(inArray(usersTable.referredBy, agentIds)).groupBy(usersTable.referredBy);
+
+  const inviteeCountMap = new Map(inviteeCounts.map((r) => [r.referredBy, parseInt(r.count)]));
+
+  // Today's active invitees per agent (invitees who confirmed a buy order today)
+  // Step 1: get all invitee ids grouped by referrer
+  const allInvitees = await db.select({
+    id: usersTable.id,
+    referredBy: usersTable.referredBy,
+  }).from(usersTable).where(inArray(usersTable.referredBy, agentIds));
+
+  const inviteeIds = allInvitees.map((i) => i.id);
+
+  let todayActiveMap = new Map<number, number>();
+  if (inviteeIds.length > 0) {
+    const activeToday = await db.select({
+      buyerId: ordersTable.lockedByUserId,
+    }).from(ordersTable).where(and(
+      eq(ordersTable.status, "confirmed"),
+      inArray(ordersTable.lockedByUserId, inviteeIds),
+      sql`${ordersTable.confirmedAt} >= ${startOfDay}`,
+    )).groupBy(ordersTable.lockedByUserId);
+
+    const activeTodayIds = new Set(activeToday.map((r) => r.buyerId));
+
+    // Group active invitees back to their referrers
+    for (const inv of allInvitees) {
+      if (inv.referredBy && activeTodayIds.has(inv.id)) {
+        todayActiveMap.set(inv.referredBy, (todayActiveMap.get(inv.referredBy) || 0) + 1);
+      }
+    }
+  }
+
+  res.json(agents.map((a) => ({
+    id: a.id,
+    username: a.username,
+    displayName: a.displayName,
+    phone: a.phone,
+    isVerifiedAgent: a.isVerifiedAgent,
+    agentTierAwardedDate: a.agentTierAwardedDate,
+    agentTierAwardedLevel: a.agentTierAwardedLevel,
+    inviteEarnings: parseFloat(a.inviteEarnings || "0"),
+    totalInvitees: inviteeCountMap.get(a.id) || 0,
+    todayActiveInvitees: todayActiveMap.get(a.id) || 0,
+    createdAt: a.createdAt,
+  })));
+});
+
 router.get("/users", requireAdmin, async (req, res) => {
   const users = await db.select().from(usersTable).orderBy(sql`${usersTable.createdAt} desc`);
   res.json(users.map(formatUser));
