@@ -3,7 +3,6 @@ import { useGetMe, useGetAppSettings } from "@workspace/api-client-react";
 import { useLocation, Link } from "wouter";
 import Layout from "@/components/layout";
 import DisputePauseBanner from "@/components/dispute-pause-banner";
-import SellerAlertsPopup from "@/components/seller-alerts-popup";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -137,7 +136,6 @@ export default function Sell() {
           </div>
         </div>
       )}
-      <SellerAlertsPopup />
       <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-secondary via-secondary to-primary text-white">
         <Link href="/"><ArrowLeft className="cursor-pointer" /></Link>
         <span className="font-bold text-lg flex-1">Sell — Matching</span>
