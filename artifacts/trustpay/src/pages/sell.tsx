@@ -124,6 +124,29 @@ export default function Sell() {
 
   return (
     <Layout>
+      {((useQuery<any[]>({
+        queryKey: ["my-disputes-banner"],
+        queryFn: async () => {
+          const r = await fetch(`${API_BASE}/disputes/my`, { headers: { Authorization: `Bearer ${getAuthToken()}` } });
+          if (!r.ok) return [];
+          return await r.json();
+        },
+        refetchInterval: 30000,
+      }).data || []).filter((d) => d.status === "open").length > 0) && (
+        <div className="px-4 pt-3">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            {((useQuery<any[]>({
+              queryKey: ["my-disputes-banner-2"],
+              queryFn: async () => {
+                const r = await fetch(`${API_BASE}/disputes/my`, { headers: { Authorization: `Bearer ${getAuthToken()}` } });
+                if (!r.ok) return [];
+                return await r.json();
+              },
+              refetchInterval: 30000,
+            }).data || []).filter((d) => d.status === "open").length)} dispute open hai — aap sell page par kaam continue kar sakte ho.
+          </div>
+        </div>
+      )}
       <SellerAlertsPopup />
       <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-secondary via-secondary to-primary text-white">
         <Link href="/"><ArrowLeft className="cursor-pointer" /></Link>

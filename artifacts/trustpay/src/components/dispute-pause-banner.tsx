@@ -27,7 +27,7 @@ export default function DisputePauseBanner() {
       <div className="flex-1">
         <div className="font-semibold">Account paused — {open.length} open dispute{open.length > 1 ? "s" : ""}</div>
         <div className="text-xs">
-          Auto-sell and new buys are paused while disputes are unresolved.{" "}
+          Auto-sell is paused, but you can still place new orders.{" "}
           <Link href="/orders" className="underline font-medium">Resolve now</Link>
         </div>
       </div>

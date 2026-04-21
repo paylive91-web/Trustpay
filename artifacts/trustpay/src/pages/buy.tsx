@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useGetMe, useGetAppSettings } from "@workspace/api-client-react";
+import { useGetMe, useGetAppSettings, useGetMyDisputes } from "@workspace/api-client-react";
 import { useLocation, Link } from "wouter";
 import Layout from "@/components/layout";
 import DisputePauseBanner from "@/components/dispute-pause-banner";
@@ -238,6 +238,8 @@ export default function Buy() {
     setShowDailyRules(!localStorage.getItem(key));
   }, []);
 
+  const { data: disputesData } = useGetMyDisputes();
+  const openDisputes = (disputesData || []).filter((d: any) => d.status === "open").length;
   const lockMut = useMutation({
     mutationFn: (id: number) => api(`/p2p/lock/${id}`, { method: "POST" }),
     onSuccess: () => { refetchBuy(); qc.invalidateQueries({ queryKey: ["p2p-queue"] }); toast({ title: "Order locked! Pay now." }); },
@@ -248,6 +250,13 @@ export default function Buy() {
 
   return (
     <Layout>
+      {openDisputes > 0 && (
+        <div className="px-4 pt-3">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            {openDisputes} order{openDisputes > 1 ? "s" : ""} dispute me hai — aap naye orders continue kar sakte ho.
+          </div>
+        </div>
+      )}
       <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-primary via-primary to-sky-600 text-primary-foreground">
         <Link href="/"><ArrowLeft className="cursor-pointer" /></Link>
         <span className="font-bold text-lg flex-1">Buy</span>

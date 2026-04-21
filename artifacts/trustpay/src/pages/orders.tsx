@@ -49,8 +49,10 @@ export default function Orders() {
     try {
       const role = activeProof.role;
       if (role === "buyer") {
-        if (!bankFile) { toast({ title: "Bank statement required", variant: "destructive" }); return; }
+        if (!bankFile || !recordingFile || !lastTxnFile) { toast({ title: "All proof fields required", variant: "destructive" }); return; }
         const bankStatementUrl = await fileToDataUrl(bankFile);
+        const recordingUrl = await fileToDataUrl(recordingFile);
+        const lastTxnScreenshotUrl = await fileToDataUrl(lastTxnFile);
         await buyerProofMut.mutateAsync({ id: activeProof.id, data: { bankStatementUrl } });
       } else {
         if (!bankFile || !recordingFile || !lastTxnFile) {
@@ -242,11 +244,17 @@ export default function Orders() {
             <DialogTitle>Upload {activeProof?.role === "buyer" ? "Buyer" : "Seller"} Proof</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <UploadTile label="Bank Statement" required file={bankFile} onChange={setBankFile} accept="image/*,application/pdf" hint="PDF / image up to 5 MB" />
+            <UploadTile label="UTR" required file={bankFile} onChange={setBankFile} accept="image/*,application/pdf" hint="PDF / image up to 5 MB" />
             {activeProof?.role === "seller" && (
               <>
                 <UploadTile label="Screen Recording" required file={recordingFile} onChange={setRecordingFile} accept="image/*,video/*" hint="Image or short video" />
                 <UploadTile label="Last Transaction Screenshot" required file={lastTxnFile} onChange={setLastTxnFile} accept="image/*" hint="Most recent UPI txn from your bank app" />
+              </>
+            )}
+            {activeProof?.role === "buyer" && (
+              <>
+                <UploadTile label="Payment Screenshot" required file={recordingFile} onChange={setRecordingFile} accept="image/*" hint="Upload the payment screenshot" />
+                <UploadTile label="Payment Transaction Recording" required file={lastTxnFile} onChange={setLastTxnFile} accept="image/*,video/*" hint="Upload the payment recording" />
               </>
             )}
             <div className="text-xs text-muted-foreground">All files must be under 5 MB each.</div>
