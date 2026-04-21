@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle, Clock, Copy, Headset, ShieldCheck, Upload } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle, Clock, Copy, Headset, Loader2, ShieldCheck, Upload } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
 import {
@@ -140,7 +140,7 @@ function PaymentActionDialog({ open, onOpenChange, onPayNow, onCancel, buy }: {
 
 export default function Buy() {
   const [, setLocation] = useLocation();
-  const { data: user, isError } = useGetMe({ query: { queryKey: ["me"], retry: false } });
+  const { data: user, isError, isLoading: userLoading } = useGetMe({ query: { queryKey: ["me"], retry: false } });
   const { data: settings } = useGetAppSettings();
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -175,6 +175,15 @@ export default function Buy() {
     onSuccess: () => { refetchBuy(); qc.invalidateQueries({ queryKey: ["p2p-queue"] }); toast({ title: "Order locked! Pay now." }); },
     onError: (e: any) => toast({ title: "This order may be bought by someone else", description: e.message, variant: "destructive" }),
   });
+
+  if (userLoading) return (
+    <Layout>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Loading...</p>
+      </div>
+    </Layout>
+  );
 
   if (!user) return null;
 

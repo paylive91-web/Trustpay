@@ -260,17 +260,18 @@ function LockedOrderTabs({
 }) {
   const lockedChunks = chunks.filter((c) => c.status === "locked" || c.status === "pending_confirmation");
   const hasLocked = lockedChunks.length > 0;
-  const [tab, setTab] = useState<"pending" | "locked" | "chunks">(
-    pendingConfirms.length > 0 ? "pending" : hasLocked ? "locked" : "chunks"
-  );
+  const [manualTab, setManualTab] = useState<"pending" | "locked" | "chunks" | null>(null);
 
   useEffect(() => {
-    if (pendingConfirms.length > 0) setTab("pending");
-    else if (hasLocked) setTab("locked");
+    if (pendingConfirms.length > 0) setManualTab("pending");
+    else if (hasLocked) setManualTab("locked");
+    else setManualTab(null);
   }, [pendingConfirms.length, hasLocked]);
 
+  const tab = manualTab ?? (pendingConfirms.length > 0 ? "pending" : hasLocked ? "locked" : "chunks");
+
   return (
-    <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
+    <Tabs value={tab} onValueChange={(v) => setManualTab(v as any)}>
       <TabsList className="w-full">
         <TabsTrigger value="pending" className="flex-1">
           Pending {pendingConfirms.length > 0 && (
