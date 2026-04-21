@@ -12,7 +12,7 @@ import { getAdminGetUsersQueryKey } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Trash2, Pencil } from "lucide-react";
+import { Trash2, Pencil, ShieldOff, ShieldCheck } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
@@ -46,6 +46,23 @@ export default function AdminUsers() {
   const [renameUsername, setRenameUsername] = useState("");
   const [renameDisplayName, setRenameDisplayName] = useState("");
   const updateUserMut = useAdminUpdateUser();
+  const [unsuspendUser, setUnsuspendUser] = useState<any>(null);
+  const [unsuspendLoading, setUnsuspendLoading] = useState(false);
+
+  const handleUnsuspend = async () => {
+    if (!unsuspendUser) return;
+    setUnsuspendLoading(true);
+    try {
+      await api(`/admin/users/${unsuspendUser.id}/unfreeze`, { method: "POST" });
+      toast({ title: `${unsuspendUser.username} unsuspend ho gaya` });
+      setUnsuspendUser(null);
+      queryClient.invalidateQueries({ queryKey: getAdminGetUsersQueryKey() });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setUnsuspendLoading(false);
+    }
+  };
 
   const openEdit = (user: any) => {
     setEditUser(user);
@@ -107,10 +124,47 @@ export default function AdminUsers() {
     });
   };
 
+  const suspendedUsers = (users as any[] || []).filter((u: any) => u.isFrozen);
+  const activeUsers = (users as any[] || []).filter((u: any) => !u.isFrozen);
+
   return (
     <AdminLayout>
       <div className="space-y-4">
         <h1 className="text-2xl font-bold tracking-tight">Manage Users</h1>
+
+        {/* Suspended Users Section */}
+        {suspendedUsers.length > 0 && (
+          <Card className="border-red-300 bg-red-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <ShieldOff className="h-5 w-5 text-red-600" />
+                <h2 className="font-bold text-red-700 text-lg">Suspended Users ({suspendedUsers.length})</h2>
+              </div>
+              <div className="space-y-2">
+                {suspendedUsers.map((user: any) => (
+                  <div key={user.id} className="flex items-center justify-between bg-white border border-red-200 rounded-xl px-4 py-3">
+                    <div>
+                      <div className="font-semibold text-sm">{user.username}</div>
+                      <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
+                        <span>Trust Score: <span className="font-bold text-red-600">{user.trustScore ?? 0}</span></span>
+                        <span>·</span>
+                        <span>Balance: ₹{Number(user.balance).toFixed(2)}</span>
+                        {user.phone && <><span>·</span><span>{user.phone}</span></>}
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700 text-white rounded-xl"
+                      onClick={() => setUnsuspendUser(user)}
+                    >
+                      <ShieldCheck className="h-3.5 w-3.5 mr-1" /> Unsuspend
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardContent className="p-0">
@@ -134,8 +188,8 @@ export default function AdminUsers() {
                     <TableRow>
                       <TableCell colSpan={9} className="h-24 text-center">Loading...</TableCell>
                     </TableRow>
-                  ) : users && users.length > 0 ? (
-                    users.map((user: any) => (
+                  ) : activeUsers.length > 0 ? (
+                    activeUsers.map((user: any) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">{user.id}</TableCell>
                         <TableCell>
@@ -262,6 +316,31 @@ export default function AdminUsers() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteUser}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!unsuspendUser} onOpenChange={(open) => !open && setUnsuspendUser(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-green-600" /> Unsuspend karna hai?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              <span className="font-semibold">{unsuspendUser?.username}</span> ka account suspend se normal ho jayega. Woh phir se sell/buy kar sakta hai.
+              <br />
+              <span className="text-xs text-muted-foreground">Trust Score: {unsuspendUser?.trustScore ?? 0}</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={unsuspendLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-green-600 hover:bg-green-700"
+              onClick={handleUnsuspend}
+              disabled={unsuspendLoading}
+            >
+              {unsuspendLoading ? "Processing..." : "Haan, Unsuspend Karo"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
