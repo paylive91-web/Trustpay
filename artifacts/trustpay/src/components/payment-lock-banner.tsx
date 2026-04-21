@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useGetMe } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { ChevronDown, ShieldAlert, X } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 import React, { useEffect, useState } from "react";
@@ -20,6 +20,7 @@ async function api(path: string) {
 }
 
 export default function PaymentLockBanner() {
+  const [location] = useLocation();
   const qc = useQueryClient();
   const { data: user } = useGetMe({ query: { queryKey: ["me"], retry: false } });
   const { data: myBuy } = useQuery<any>({
@@ -34,6 +35,7 @@ export default function PaymentLockBanner() {
     if (myBuy?.status !== "locked" && myBuy?.status !== "pending_confirmation") setMinimized(false);
   }, [myBuy?.status]);
 
+  if (location === "/buy") return null;
   if (!myBuy || !["locked", "pending_confirmation"].includes(myBuy.status)) return null;
 
   return (
