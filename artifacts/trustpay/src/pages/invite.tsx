@@ -53,7 +53,7 @@ export default function Invite() {
       try {
         await navigator.share({
           title: "Join TrustPay",
-          text: `Join TrustPay and start earning! Use my referral code: ${referralCode}`,
+          text: `Join TrustPay and start earning! 6% earning platform. Use my referral code: ${referralCode}`,
           url: shareUrl,
         });
       } catch {}
