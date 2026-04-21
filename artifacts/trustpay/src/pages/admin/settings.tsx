@@ -706,7 +706,7 @@ export default function AdminSettings() {
               <Bell className="w-5 h-5 text-blue-500" />
               Send Notification to All Users
             </CardTitle>
-            <CardDescription>This message will appear as a popup next time users open the app.</CardDescription>
+            <CardDescription>This message will be delivered as a system notification next time users open the app.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-2">

@@ -19,15 +19,44 @@ export default function AppStartupPopup() {
 
   const today = new Date().toDateString();
 
+  // Broadcast notifications are delivered via the browser's system
+  // notification API (no longer shown as an in-app popup). We dispatch the
+  // notification once per `sentAt` value so the same broadcast doesn't fire
+  // repeatedly across reloads.
+  useEffect(() => {
+    if (!settings) return;
+    const broadcast = (settings as any)?.broadcastNotification;
+    if (!broadcast?.message) return;
+    const seenKey = `broadcast_notified_${broadcast.sentAt}`;
+    if (localStorage.getItem(seenKey)) return;
+
+    const fire = () => {
+      try {
+        const n = new Notification(broadcast.title || "TrustPay", {
+          body: broadcast.message,
+          icon: (settings as any)?.appLogoUrl || (broadcast.imageUrl || undefined),
+        });
+        // Auto-close after 8s so it doesn't pile up.
+        setTimeout(() => { try { n.close(); } catch {} }, 8000);
+      } catch {
+        // ignore — environment without Notification support
+      }
+      localStorage.setItem(seenKey, "1");
+    };
+
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    if (Notification.permission === "granted") {
+      fire();
+    } else if (Notification.permission !== "denied") {
+      Notification.requestPermission().then((perm) => {
+        if (perm === "granted") fire();
+      }).catch(() => {});
+    }
+  }, [JSON.stringify((settings as any)?.broadcastNotification), (settings as any)?.appLogoUrl]);
+
   useEffect(() => {
     if (!settings) return;
     const items: any[] = [];
-
-    const broadcast = (settings as any)?.broadcastNotification;
-    if (broadcast?.message) {
-      const broadcastKey = `broadcast_seen_${broadcast.sentAt}`;
-      items.push({ _key: broadcastKey, title: broadcast.title || "TrustPay", message: broadcast.message });
-    }
 
     const popupKey = `popup_seen_${today}`;
     const announcements = (settings as any)?.announcements;
