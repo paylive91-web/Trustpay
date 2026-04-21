@@ -513,7 +513,7 @@ function ChunkCarousel({ queue, onLock, disabled }: { queue: any[]; onLock: (id:
     if (displayQueue.length < 2) return;
     const t = setTimeout(() => {
       setSlots((prev) => reshuffle(prev, Math.max(2, Math.floor(prev.length / 2))));
-    }, 200);
+    }, 350);
     return () => clearTimeout(t);
   }, [displayQueue.length]);
 
@@ -522,7 +522,7 @@ function ChunkCarousel({ queue, onLock, disabled }: { queue: any[]; onLock: (id:
     if (displayQueue.length < 2) return;
     const timer = setInterval(() => {
       setSlots((prev) => reshuffle(prev, Math.max(2, Math.floor(prev.length / 2))));
-    }, 850);
+    }, 1400);
     return () => clearInterval(timer);
   }, [displayQueue.length]);
 
