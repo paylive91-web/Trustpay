@@ -50,25 +50,34 @@ export default function Invite() {
   };
 
   const handleShare = async () => {
+    const text = `Join TrustPay and start earning! 6% earning platform. Use my referral code: ${referralCode}\n${shareUrl}`;
     if (navigator.share) {
       try {
-        const shareData: ShareData = {
-          title: "Join TrustPay",
-          text: `Join TrustPay and start earning! 6% earning platform. Use my referral code: ${referralCode}`,
-          url: shareUrl,
-        };
+        // Try sharing with image if admin has uploaded one
         if (inviteShareImageUrl) {
           try {
-            const res = await fetch(inviteShareImageUrl);
-            const blob = await res.blob();
-            const file = new File([blob], "trustpay-invite.jpg", { type: blob.type || "image/jpeg" });
+            let blob: Blob;
+            if (inviteShareImageUrl.startsWith("data:")) {
+              // Convert data URL directly to blob (no fetch needed)
+              const [header, b64] = inviteShareImageUrl.split(",");
+              const mime = header.match(/:(.*?);/)?.[1] || "image/jpeg";
+              const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+              blob = new Blob([bytes], { type: mime });
+            } else {
+              const r = await fetch(inviteShareImageUrl);
+              blob = await r.blob();
+            }
+            const ext = blob.type.includes("png") ? "png" : "jpg";
+            const file = new File([blob], `trustpay-invite.${ext}`, { type: blob.type || "image/jpeg" });
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
-              await navigator.share({ ...shareData, files: [file] });
+              // Include URL in text since some browsers reject url+files together
+              await navigator.share({ title: "Join TrustPay", text, files: [file] });
               return;
             }
           } catch {}
         }
-        await navigator.share(shareData);
+        // Fallback: text + url only
+        await navigator.share({ title: "Join TrustPay", text: `Join TrustPay and start earning! 6% earning platform. Use my referral code: ${referralCode}`, url: shareUrl });
       } catch {}
     } else {
       handleCopyLink();
