@@ -53,6 +53,7 @@ const DEFAULT_SETTINGS: Record<string, string> = {
     { minActiveDeposits: 100, reward: 600, label: "Gold Agent" },
     { minActiveDeposits: 150, reward: 1200, label: "Platinum Agent" },
   ]),
+  inviteShareImageUrl: "",
   apkDownloadUrl: "",
   apkVersion: "1.0.0",
   forceAppDownload: "false",

@@ -29,6 +29,7 @@ export default function AdminLinksMedia() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const inviteImageInputRef = useRef<HTMLInputElement | null>(null);
 
   const {
     data: settings,
@@ -38,6 +39,7 @@ export default function AdminLinksMedia() {
 
   const [telegramLink, setTelegramLink] = useState("");
   const [bannerImages, setBannerImages] = useState<string[]>([]);
+  const [inviteShareImageUrl, setInviteShareImageUrl] = useState("");
 
   // Whenever fresh settings arrive, normalise & strip junk so UI is clean.
   useEffect(() => {
@@ -49,6 +51,7 @@ export default function AdminLinksMedia() {
       .map((u: unknown) => (typeof u === "string" ? u.trim() : ""))
       .filter((u: string) => u.length > 0);
     setBannerImages(clean);
+    setInviteShareImageUrl((settings as any).inviteShareImageUrl || "");
   }, [settings]);
 
   const uploadMut = useAdminUploadImage();
@@ -82,12 +85,31 @@ export default function AdminLinksMedia() {
     }
   };
 
+  const onPickInviteImage = async (file: File | null) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Image must be under 5 MB", variant: "destructive" });
+      return;
+    }
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      const d = await uploadMut.mutateAsync({ data: { dataUrl } });
+      setInviteShareImageUrl(d.url);
+      toast({ title: "Invite image uploaded — remember to Save Changes" });
+    } catch (e: any) {
+      toast({ title: "Upload failed", description: e?.message, variant: "destructive" });
+    } finally {
+      if (inviteImageInputRef.current) inviteImageInputRef.current.value = "";
+    }
+  };
+
   const onSave = (e: React.FormEvent) => {
     e.preventDefault();
     updateMut.mutate({
       data: {
         telegramLink: telegramLink.trim(),
         bannerImages: bannerImages.map((u) => u.trim()).filter(Boolean),
+        inviteShareImageUrl: inviteShareImageUrl.trim(),
       } as any,
     });
   };
@@ -139,6 +161,68 @@ export default function AdminLinksMedia() {
                     value={telegramLink}
                     onChange={(e) => setTelegramLink(e.target.value)}
                   />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Invite Share Image */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5 text-primary" />
+                  Invite Share Image
+                </CardTitle>
+                <CardDescription>
+                  Jab user Share button dabaye to yeh image WhatsApp/Telegram mein automatically attach hogi.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {inviteShareImageUrl ? (
+                  <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
+                    <div className="aspect-video bg-muted flex items-center justify-center overflow-hidden">
+                      <img
+                        src={inviteShareImageUrl}
+                        alt="Invite Share Image"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <div className="p-3 flex items-center justify-between gap-2">
+                      <span className="text-sm font-semibold text-muted-foreground">Current image</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setInviteShareImageUrl("")}
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" /> Remove
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground border-2 border-dashed rounded-md p-8 text-center">
+                    Koi image nahi — neeche Upload karo.
+                  </div>
+                )}
+                <div>
+                  <input
+                    ref={inviteImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => onPickInviteImage(e.target.files?.[0] || null)}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => inviteImageInputRef.current?.click()}
+                    disabled={uploading}
+                  >
+                    {uploading ? (
+                      <><Upload className="w-4 h-4 mr-2 animate-pulse" />Uploading...</>
+                    ) : (
+                      <><Upload className="w-4 h-4 mr-2" />Upload Image</>
+                    )}
+                  </Button>
                 </div>
               </CardContent>
             </Card>

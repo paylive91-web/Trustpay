@@ -35,6 +35,7 @@ export default function Invite() {
   const currentDailyReward = agentTiers
     .filter((tier: any) => todayActiveCount >= Number(tier.minActiveDeposits || 0))
     .reduce((sum: number, tier: any) => sum + Number(tier.reward || 0), 0);
+  const inviteShareImageUrl = (appSettings as any)?.inviteShareImageUrl || "";
   const shareUrl = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}/register?ref=${referralCode}`;
 
   const handleCopyCode = () => {
@@ -51,11 +52,23 @@ export default function Invite() {
   const handleShare = async () => {
     if (navigator.share) {
       try {
-        await navigator.share({
+        const shareData: ShareData = {
           title: "Join TrustPay",
           text: `Join TrustPay and start earning! 6% earning platform. Use my referral code: ${referralCode}`,
           url: shareUrl,
-        });
+        };
+        if (inviteShareImageUrl) {
+          try {
+            const res = await fetch(inviteShareImageUrl);
+            const blob = await res.blob();
+            const file = new File([blob], "trustpay-invite.jpg", { type: blob.type || "image/jpeg" });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+              await navigator.share({ ...shareData, files: [file] });
+              return;
+            }
+          } catch {}
+        }
+        await navigator.share(shareData);
       } catch {}
     } else {
       handleCopyLink();
