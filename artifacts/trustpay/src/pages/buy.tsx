@@ -353,10 +353,7 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
               className="h-12 rounded-2xl font-semibold border bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 text-white border-purple-400 shadow-md hover:from-purple-700 hover:to-indigo-700 flex items-center justify-center gap-2"
               onClick={() => openUpiApp(buy.upiId, buy.amount, "phonepe")}
             >
-              <svg width="20" height="20" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="100" height="100" rx="22" fill="white"/>
-                <path d="M72 28H54L34 55h12l-8 17 36-32H60l12-12z" fill="#5f259f"/>
-              </svg>
+              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/PhonePe_Logo.svg/512px-PhonePe_Logo.svg.png" alt="PhonePe" className="h-5 w-5 rounded object-contain bg-white p-0.5" />
               PhonePe
             </Button>
             <Button
@@ -365,13 +362,7 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
               className="h-12 rounded-2xl font-semibold border bg-gradient-to-r from-sky-400 via-blue-500 to-cyan-500 text-white border-sky-300 shadow-md hover:from-sky-500 hover:to-blue-600 flex items-center justify-center gap-2"
               onClick={() => openUpiApp(buy.upiId, buy.amount, "paytm")}
             >
-              <svg width="22" height="22" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="100" height="100" rx="18" fill="white"/>
-                <path d="M15 38h22v8H23v4h14v8H15V38z" fill="#00b9f1"/>
-                <path d="M40 38h8v28h-8V38z" fill="#00b9f1"/>
-                <path d="M52 38h22v8H60v4h14v8H52V38z" fill="#00b9f1"/>
-              </svg>
-              Paytm
+              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Paytm_Logo_%28standalone%29.svg/512px-Paytm_Logo_%28standalone%29.svg.png" alt="Paytm" className="h-5 w-auto object-contain bg-white rounded px-0.5" />
             </Button>
           </div>
 
