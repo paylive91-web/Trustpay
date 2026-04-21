@@ -104,6 +104,7 @@ export default function AdminSettings() {
   const notifyMut = useAdminNotifyAll();
   const [broadcastTitle, setBroadcastTitle] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
+  const [broadcastImageUrl, setBroadcastImageUrl] = useState("");
 
   const [upiId, setUpiId] = useState("");
   const [upiName, setUpiName] = useState("");
@@ -136,6 +137,7 @@ export default function AdminSettings() {
       setAnnouncements((settings as any).announcements || []);
       setPopupMessage((settings as any).popupMessage || "");
       setPopupImageUrl((settings as any).popupImageUrl || "");
+      setBroadcastImageUrl((settings as any).broadcastNotification?.imageUrl || "");
       setAppName((settings as any).appName || "TrustPay");
       setAppLogoUrl((settings as any).appLogoUrl || "");
       setPopupSoundUrl((settings as any).popupSoundUrl || "");
@@ -244,10 +246,11 @@ export default function AdminSettings() {
       return;
     }
     try {
-      await notifyMut.mutateAsync({ data: { message: broadcastMessage.trim(), title: broadcastTitle.trim() || "TrustPay" } });
+      await notifyMut.mutateAsync({ data: { message: broadcastMessage.trim(), title: broadcastTitle.trim() || "TrustPay", imageUrl: broadcastImageUrl.trim() || "" } });
       toast({ title: "Notification sent to all users!" });
       setBroadcastMessage("");
       setBroadcastTitle("");
+      setBroadcastImageUrl("");
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
@@ -642,6 +645,7 @@ export default function AdminSettings() {
                 className="min-h-[80px]"
               />
             </div>
+            <ImagePicker label="Popup Image (Optional)" value={broadcastImageUrl} onChange={setBroadcastImageUrl} />
             <Button onClick={handleSendBroadcast} disabled={notifying} className="w-full">
               <Bell className="w-4 h-4 mr-2" />
               {notifying ? "Sending..." : "Send to All Users"}
