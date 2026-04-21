@@ -171,7 +171,7 @@ function BuyRulesDialog({ open, onOpenChange, onConfirm, buy, rules }: {
             <div className="rounded-2xl bg-sky-50/80 border border-sky-100 p-3">
               <div className="text-xs font-semibold text-sky-700 mb-2">English</div>
               <ul className="space-y-2 text-sm text-slate-700 list-disc pl-5">
-                {(lines.length ? lines : ["Pay only exact amount.", "Only to the UPI shown on screen.", "If you submit a fake payment, duplicate screenshot, wrong UTR, or repeat someone else's UTR, your account's trust score will decrease by 10 points.", "If it reaches -50, your account will be suspended."]).map((line, idx) => <li key={idx}>{line}</li>)}
+                {(lines.length ? lines : ["Pay only exact amount.", "Only to the UPI shown on screen.", "If you submit a fake payment, duplicate screenshot, wrong UTR, or repeat someone else's UTR, your account's trust score will decrease by -10 points.", "If it reaches -50, your account will be suspended."]).map((line, idx) => <li key={idx}>{line}</li>)}
               </ul>
             </div>
             <div className="rounded-2xl bg-fuchsia-50/80 border border-fuchsia-100 p-3">
@@ -263,8 +263,8 @@ export default function Buy() {
             <AlertDialogDescription>Hindi aur English dono me rules check kar lo.</AlertDialogDescription>
           </AlertDialogHeader>
           <div className="grid gap-3 md:grid-cols-2">
-            <div className="rounded-2xl bg-sky-50/80 border border-sky-100 p-3 text-sm text-slate-700">Pay only exact amount.<br />Only to the UPI shown on screen.<br />Fake payment / duplicate screenshot / wrong UTR / repeated UTR reduces trust score by 10.<br />At -50, account gets suspended.</div>
-            <div className="rounded-2xl bg-fuchsia-50/80 border border-fuchsia-100 p-3 text-sm text-slate-700">Sirf exact amount pay karo.<br />Sirf dikhaya gaya UPI use karo.<br />OTP share mat karo, call par confirm mat karo.</div>
+            <div className="rounded-2xl bg-sky-50/80 border border-sky-100 p-3 text-sm text-slate-700">Pay only exact amount.<br />Only to the UPI shown on screen.<br />If you submit a fake payment, duplicate screenshot, wrong UTR, or repeat someone else's UTR, your account's trust score will decrease by -10 points.<br />If it reaches -50, your account will be suspended.</div>
+            <div className="rounded-2xl bg-fuchsia-50/80 border border-fuchsia-100 p-3 text-sm text-slate-700">Sirf exact amount pay karo.<br />Sirf screen par dikh raha UPI use karo.<br />Fake payment, duplicate screenshot, wrong UTR, ya kisi aur ka UTR repeat karne par trust score -10 hoga.<br />-50 par account suspend ho jayega.</div>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => { setShowDailyRules(false); localStorage.setItem(`buy_rules_seen_${new Date().toISOString().slice(0, 10)}`, "1"); }}>Cancel</Button>

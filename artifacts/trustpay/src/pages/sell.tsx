@@ -138,8 +138,8 @@ export default function Sell() {
             <DialogTitle className="font-bold">Sell rules</DialogTitle>
           </DialogHeader>
           <div className="grid gap-3 md:grid-cols-2">
-            <div className="rounded-2xl bg-sky-50/80 border border-sky-100 p-3 text-sm text-slate-700">Keep app open.<br />Stay online.<br />Confirm only after payment proof matches.</div>
-            <div className="rounded-2xl bg-fuchsia-50/80 border border-fuchsia-100 p-3 text-sm text-slate-700">App open rakho.<br />Online raho.<br />Payment proof match hone ke baad hi confirm karo.</div>
+            <div className="rounded-2xl bg-sky-50/80 border border-sky-100 p-3 text-sm text-slate-700">Stay on the sell page until the orders are being matched.<br />Confirm only after payment proof matches.<br />If the UPI ID shows your number, the scammer may call and force you to confirm the payment, so confirm the payment only when it arrives in your account.<br />If your payment has already been received but you still raise a “payment not received” dispute, then a -10 trust score will be added to your account. If it reaches -50, your account will be suspended.</div>
+            <div className="rounded-2xl bg-fuchsia-50/80 border border-fuchsia-100 p-3 text-sm text-slate-700">Sell page par tab tak raho jab tak orders match ho rahe hain.<br />Payment proof match hone ke baad hi confirm karo.<br />Agar UPI ID me tumhara number dikh raha hai to scammer call karke force kar sakta hai, isliye payment tabhi confirm karo jab wo account me aa jaye.<br />Agar payment aa chuki ho aur phir bhi “payment not received” dispute raise karo, to trust score -10 hoga. -50 par account suspend ho jayega.</div>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => { setShowRulesPopup(false); localStorage.setItem(`sell_rules_seen_${todayKey()}`, "1"); }}>Cancel</Button>
