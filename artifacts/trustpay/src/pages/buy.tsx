@@ -225,7 +225,7 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
   const [uploading, setUploading] = useState<"shot" | "rec" | null>(null);
   const [qrError, setQrError] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
-  const [showPaymentDialog, setShowPaymentDialog] = useState(true);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -304,16 +304,6 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
 
   return (
     <div className="space-y-3">
-      <PaymentActionDialog
-        open={showPaymentDialog}
-        onOpenChange={setShowPaymentDialog}
-        buy={buy}
-        onPayNow={() => setShowPaymentDialog(false)}
-        onCancel={() => {
-          setShowPaymentDialog(false);
-          cancelMut.mutate();
-        }}
-      />
       <Card className="rounded-[28px] shadow-xl border border-white/70 bg-gradient-to-br from-white via-sky-50 to-indigo-50 overflow-hidden">
         <CardContent className="p-4 space-y-4 relative">
           <div className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-sky-300 to-transparent" />
@@ -373,6 +363,27 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
                 </Button>
               ))}
           </div>
+
+          {!showPaymentDialog && (
+            <Button
+              className="w-full rounded-2xl"
+              onClick={() => setShowPaymentDialog(true)}
+            >
+              Show payment confirmation
+            </Button>
+          )}
+          {showPaymentDialog && (
+            <PaymentActionDialog
+              open={showPaymentDialog}
+              onOpenChange={setShowPaymentDialog}
+              buy={buy}
+              onPayNow={() => setShowPaymentDialog(false)}
+              onCancel={() => {
+                setShowPaymentDialog(false);
+                cancelMut.mutate();
+              }}
+            />
+          )}
 
           {expired ? (
             <Button variant="destructive" className="w-full" onClick={() => cancelMut.mutate()}>
