@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BellRing, Lock, Clock, AlertTriangle, Loader2 } from "lucide-react";
+import { BellRing, Clock, AlertTriangle, Loader2 } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 import { playAlarm } from "@/lib/alarm";
 import { useToast } from "@/hooks/use-toast";
@@ -121,13 +121,12 @@ export default function SellerAlertsPopup() {
     setProofViewer(url);
   };
 
-  const current = alerts[0];
+  const current = alerts.find((a) => a.status === "pending_confirmation") || null;
   if (!current) return null;
 
   const remaining = current.confirmDeadline
     ? Math.max(0, new Date(current.confirmDeadline).getTime() - now)
     : 0;
-  const isLocked = current.status === "locked";
 
   return (
     <>
@@ -138,35 +137,7 @@ export default function SellerAlertsPopup() {
           onPointerDownOutside={(e) => e.preventDefault()}
           onInteractOutside={(e) => e.preventDefault()}
         >
-          {isLocked ? (
-            <>
-              <DialogHeader className="p-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <DialogTitle className="text-left text-xl font-black">ORDER LOCKED</DialogTitle>
-                    <p className="text-sm font-medium mt-1">A buyer has locked your order. Awaiting their payment proof.</p>
-                  </div>
-                  <Lock className="h-6 w-6 shrink-0 animate-pulse" />
-                </div>
-              </DialogHeader>
-              <div className="p-4 space-y-4">
-                <div className="rounded-2xl bg-muted/50 p-4">
-                  <div className="text-sm text-muted-foreground">Amount</div>
-                  <div className="text-3xl font-black">₹{Number(current.amount).toFixed(2)}</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Buyer: {current.buyer?.username || `#${current.buyer?.id || "?"}`}
-                  </div>
-                  <div className="text-xs text-blue-700 mt-2 font-medium flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5" /> Lock expires in {fmtCountdown(remaining)}
-                  </div>
-                </div>
-                <div className="rounded-2xl border-2 border-dashed border-blue-400/40 bg-blue-50 p-3 text-sm text-blue-900">
-                  Please stay on this screen. As soon as the buyer submits their payment proof, you will be able to confirm it here.
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
+          <>
               <DialogHeader className="p-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -221,8 +192,7 @@ export default function SellerAlertsPopup() {
                   This popup will stay open until you confirm or dispute.
                 </div>
               </div>
-            </>
-          )}
+          </>
         </DialogContent>
       </Dialog>
 
