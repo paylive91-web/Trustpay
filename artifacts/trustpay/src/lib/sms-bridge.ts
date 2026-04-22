@@ -35,7 +35,8 @@ export function isSmsPermissionGranted(): boolean {
   if (window.TrustPayNative?.isSmsPermissionGranted) {
     return window.TrustPayNative.isSmsPermissionGranted();
   }
-  return localStorage.getItem("tp_sms_permission_granted") === "granted";
+  const stored = localStorage.getItem("tp_sms_permission_granted");
+  return stored === "granted" || stored === "dismissed_no_bridge";
 }
 
 export function hasNativeBridge(): boolean {

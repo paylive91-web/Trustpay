@@ -94,18 +94,27 @@ export default function SmsPermissionPopup() {
             access nahi ki jaati.
           </div>
 
-          <Button
-            className="w-full h-14 text-base font-bold rounded-2xl bg-gradient-to-r from-fuchsia-500 via-sky-500 to-emerald-500 hover:from-fuchsia-600 hover:via-sky-600 hover:to-emerald-600 text-white shadow-[0_4px_24px_rgba(99,102,241,0.5)] border-0 disabled:opacity-50"
-            onClick={handleAllow}
-            disabled={noBridge}
-          >
-            <MessageSquare className="mr-2 h-5 w-5" />
-            {noBridge ? "TrustPay App Required" : "Allow SMS Permission"}
-          </Button>
-
-          <p className="text-center text-[11px] text-slate-500">
-            Yeh permission bina diye app properly kaam nahi karega.
-          </p>
+          {noBridge ? (
+            <button
+              className="w-full py-3 text-sm text-slate-400 underline underline-offset-2 text-center"
+              onClick={() => { localStorage.setItem(STORAGE_KEY, "dismissed_no_bridge"); setShow(false); }}
+            >
+              Auto-verify ke bina continue karo (manual confirm milta rahega)
+            </button>
+          ) : (
+            <>
+              <Button
+                className="w-full h-14 text-base font-bold rounded-2xl bg-gradient-to-r from-fuchsia-500 via-sky-500 to-emerald-500 hover:from-fuchsia-600 hover:via-sky-600 hover:to-emerald-600 text-white shadow-[0_4px_24px_rgba(99,102,241,0.5)] border-0"
+                onClick={handleAllow}
+              >
+                <MessageSquare className="mr-2 h-5 w-5" />
+                Allow SMS Permission
+              </Button>
+              <p className="text-center text-[11px] text-slate-500">
+                Yeh permission bina diye auto-verify kaam nahi karega.
+              </p>
+            </>
+          )}
         </div>
       </div>
     </div>
