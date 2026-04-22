@@ -1,10 +1,14 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { disputesTable, ordersTable, usersTable, transactionsTable, userNotificationsTable } from "@workspace/db";
+import { disputesTable, ordersTable, usersTable, transactionsTable, userNotificationsTable, adminLogsTable } from "@workspace/db";
 import { eq, and, or, sql, inArray } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../lib/auth.js";
 import { applyTrustDelta, bumpSuccessfulTrade } from "../lib/trust.js";
 import { settleConfirmedTrade } from "../lib/settle.js";
+
+function asString(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] ?? "" : v ?? "";
+}
 
 const router = Router();
 
@@ -46,7 +50,7 @@ function validateProof(dataUrl: unknown, kind: "image" | "pdf"): string | null {
 
 router.post("/buyer-proof/:id", requireAuth, async (req, res) => {
   const u = (req as any).user;
-  const id = parseInt(req.params.id);
+  const id = parseInt(asString(req.params.id));
   const { bankStatementUrl, txHistoryUrl } = req.body;
   // For seller_offline disputes bank statement is optional; txHistory is required
   const [d] = await db.select().from(disputesTable).where(eq(disputesTable.id, id)).limit(1);
@@ -75,7 +79,7 @@ router.post("/buyer-proof/:id", requireAuth, async (req, res) => {
 
 router.post("/seller-proof/:id", requireAuth, async (req, res) => {
   const u = (req as any).user;
-  const id = parseInt(req.params.id);
+  const id = parseInt(asString(req.params.id));
   const { bankStatementUrl, recordingUrl, lastTxnScreenshotUrl } = req.body;
   for (const [name, url, kind] of [
     ["bank statement", bankStatementUrl, "pdf" as const],
@@ -118,7 +122,7 @@ router.get("/admin/list", requireAdmin, async (req, res) => {
 });
 
 router.post("/admin/resolve/:id", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(asString(req.params.id));
   const { winner, notes } = req.body; // "buyer" | "seller"
   if (winner !== "buyer" && winner !== "seller") {
     res.status(400).json({ error: "winner must be 'buyer' or 'seller'" }); return;
@@ -170,6 +174,13 @@ router.post("/admin/resolve/:id", requireAdmin, async (req, res) => {
     resolvedBy: (req as any).user.id,
     adminNotes: notes || null,
   }).where(eq(disputesTable.id, id));
+  await db.insert(adminLogsTable).values({
+    adminId: (req as any).user.id,
+    actionType: "resolve_dispute",
+    targetType: "dispute",
+    targetId: id,
+    details: `Dispute #${id} resolved — winner: ${winner}${notes ? ` — ${notes}` : ""}`,
+  });
   res.json({ success: true });
 });
 

@@ -45,6 +45,8 @@ export const usersTable = pgTable("users", {
   isVerifiedAgent: boolean("is_verified_agent").notNull().default(false),
   agentTierAwardedDate: date("agent_tier_awarded_date"),
   agentTierAwardedLevel: integer("agent_tier_awarded_level").notNull().default(0),
+  isTrusted: boolean("is_trusted").notNull().default(false),
+  freezeReason: text("freeze_reason"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

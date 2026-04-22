@@ -4,6 +4,10 @@ import { userNotificationsTable } from "@workspace/db";
 import { and, eq, sql, isNull } from "drizzle-orm";
 import { requireAuth } from "../lib/auth.js";
 
+function asString(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] ?? "" : v ?? "";
+}
+
 const router = Router();
 
 function fNotification(n: any) {
@@ -39,7 +43,7 @@ router.get("/", requireAuth, async (req, res) => {
 
 router.post("/:id/read", requireAuth, async (req, res) => {
   const userId = (req as any).user.id;
-  const id = parseInt(req.params.id);
+  const id = parseInt(asString(req.params.id));
   await db.update(userNotificationsTable)
     .set({ readAt: new Date() })
     .where(and(eq(userNotificationsTable.id, id), eq(userNotificationsTable.userId, userId)));

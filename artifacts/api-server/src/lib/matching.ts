@@ -46,6 +46,8 @@ function parseFeeTiers(raw: string): FeeTier[] {
  * Reservations the chunk amounts via heldBalance.
  */
 export async function regenerateChunksForUser(userId: number) {
+  const matchingPaused = (await getSettings(["matchingPaused"])).matchingPaused;
+  if (matchingPaused === "true") return;
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
   if (!user || user.isBlocked || user.isFrozen) return;
   // Admin liquidity is always-on. Regular sellers must have an active matching

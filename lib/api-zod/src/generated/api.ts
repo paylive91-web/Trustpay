@@ -956,6 +956,8 @@ export const GetMyDisputesResponseItem = zod
     sellerBankStatementUrl: zod.string().nullish(),
     sellerRecordingUrl: zod.string().nullish(),
     sellerLastTxnScreenshotUrl: zod.string().nullish(),
+    triggerReason: zod.string().nullish(),
+    buyerTxHistoryUrl: zod.string().nullish(),
   })
   .and(
     zod.object({
@@ -982,7 +984,8 @@ export const SubmitBuyerProofParams = zod.object({
 });
 
 export const SubmitBuyerProofBody = zod.object({
-  bankStatementUrl: zod.string(),
+  bankStatementUrl: zod.string().optional(),
+  txHistoryUrl: zod.string().optional(),
 });
 
 export const SubmitBuyerProofResponse = zod.object({
@@ -1028,6 +1031,8 @@ export const AdminListDisputesResponseItem = zod
     sellerBankStatementUrl: zod.string().nullish(),
     sellerRecordingUrl: zod.string().nullish(),
     sellerLastTxnScreenshotUrl: zod.string().nullish(),
+    triggerReason: zod.string().nullish(),
+    buyerTxHistoryUrl: zod.string().nullish(),
   })
   .and(
     zod.object({

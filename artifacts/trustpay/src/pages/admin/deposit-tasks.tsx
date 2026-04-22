@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import AdminLayout from "@/components/admin-layout";
 import { useAdminGetDepositTasks, useAdminCreateDepositTask, useAdminUpdateDepositTask, useAdminDeleteDepositTask } from "@workspace/api-client-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Plus, Edit2, Trash2 } from "lucide-react";
+import { Plus, Edit2, Trash2, Info } from "lucide-react";
 
 export default function AdminDepositTasks() {
   const { toast } = useToast();
@@ -112,6 +112,16 @@ export default function AdminDepositTasks() {
             <Plus className="mr-2 h-4 w-4" /> Add Task
           </Button>
         </div>
+
+        <Card className="border-blue-100 bg-blue-50/50">
+          <CardContent className="p-3 flex items-start gap-2">
+            <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+            <p className="text-xs text-blue-800">
+              Deposit Tasks are special fixed-amount deposit packages shown to users in the app. Each task has a <strong>reward %</strong> that users earn on top of their deposit when completed.
+              <strong className="ml-1">Active</strong> tasks are visible to users; inactive tasks are hidden without being deleted. Set a task inactive to temporarily remove it from the user app without losing the configuration.
+            </p>
+          </CardContent>
+        </Card>
         
         <Card>
           <CardContent className="p-0">

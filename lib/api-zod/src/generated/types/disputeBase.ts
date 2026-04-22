@@ -25,4 +25,6 @@ export interface DisputeBase {
   sellerBankStatementUrl?: string | null;
   sellerRecordingUrl?: string | null;
   sellerLastTxnScreenshotUrl?: string | null;
+  triggerReason?: string | null;
+  buyerTxHistoryUrl?: string | null;
 }

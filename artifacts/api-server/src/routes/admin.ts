@@ -1,11 +1,21 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db } from "@workspace/db";
-import { usersTable, ordersTable, transactionsTable, depositTasksTable, fraudAlertsTable, trustEventsTable, highValueEventsTable, userNotificationsTable, deviceFingerprintsTable, userUpiIdsTable, disputesTable, utrIndexTable, imageHashesTable, referralsTable } from "@workspace/db";
-import { eq, and, sql, inArray, or } from "drizzle-orm";
+import { usersTable, ordersTable, transactionsTable, depositTasksTable, fraudAlertsTable, trustEventsTable, highValueEventsTable, userNotificationsTable, deviceFingerprintsTable, userUpiIdsTable, disputesTable, utrIndexTable, imageHashesTable, referralsTable, adminLogsTable, tradePairBlocksTable } from "@workspace/db";
+import { eq, and, sql, inArray, or, desc, gte, lte } from "drizzle-orm";
 import { signToken, requireAdmin, formatUser } from "../lib/auth.js";
 import { getSetting, getAllSettings, setSetting } from "../lib/settings.js";
 import { listFraudRules, setFraudRuleEnabled } from "../lib/fraud.js";
+
+function asString(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] ?? "" : v ?? "";
+}
+
+async function logAdminAction(adminId: number, actionType: string, targetType?: string, targetId?: number, details?: string) {
+  try {
+    await db.insert(adminLogsTable).values({ adminId, actionType, targetType, targetId, details });
+  } catch {}
+}
 
 const router = Router();
 
@@ -155,7 +165,7 @@ router.get("/users", requireAdmin, async (req, res) => {
 });
 
 router.get("/users/:id", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(asString(req.params.id));
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id)).limit(1);
   if (!user) { res.status(404).json({ error: "Not found" }); return; }
   const orders = await db.select().from(ordersTable).where(eq(ordersTable.userId, id)).orderBy(sql`${ordersTable.createdAt} desc`).limit(50);
@@ -165,7 +175,7 @@ router.get("/users/:id", requireAdmin, async (req, res) => {
 });
 
 router.post("/users/:id/block", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(asString(req.params.id));
   const { reason } = req.body || {};
   await db.update(usersTable).set({
     isBlocked: true, blockedReason: reason || "Blocked by admin", blockedAt: new Date(),
@@ -174,7 +184,7 @@ router.post("/users/:id/block", requireAdmin, async (req, res) => {
 });
 
 router.post("/users/:id/unblock", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(asString(req.params.id));
   await db.update(usersTable).set({
     isBlocked: false, blockedReason: null, blockedAt: null,
   }).where(eq(usersTable.id, id));
@@ -182,21 +192,26 @@ router.post("/users/:id/unblock", requireAdmin, async (req, res) => {
 });
 
 router.post("/users/:id/freeze", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
-  await db.update(usersTable).set({ isFrozen: true }).where(eq(usersTable.id, id));
+  const id = parseInt(asString(req.params.id));
+  const { reason } = req.body || {};
+  const adminId = (req as any).user.id;
+  await db.update(usersTable).set({ isFrozen: true, freezeReason: reason || null }).where(eq(usersTable.id, id));
+  await logAdminAction(adminId, "freeze_user", "user", id, reason || undefined);
   res.json({ success: true });
 });
 
 router.post("/users/:id/unfreeze", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
-  await db.update(usersTable).set({ isFrozen: false }).where(eq(usersTable.id, id));
+  const id = parseInt(asString(req.params.id));
+  const adminId = (req as any).user.id;
+  await db.update(usersTable).set({ isFrozen: false, freezeReason: null }).where(eq(usersTable.id, id));
+  await logAdminAction(adminId, "unfreeze_user", "user", id);
   res.json({ success: true });
 });
 
 // Rename a user (username + optional displayName). Username uniqueness is
 // enforced at the DB level — we surface a friendly error on conflict.
 router.put("/users/:id", requireAdmin, async (req, res): Promise<any> => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(asString(req.params.id));
   const { username, displayName } = req.body || {};
   const patch: any = {};
   if (typeof username === "string") {
@@ -220,7 +235,8 @@ router.put("/users/:id", requireAdmin, async (req, res): Promise<any> => {
 });
 
 router.put("/users/:id/balance", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(asString(req.params.id));
+  const adminId = (req as any).user.id;
   const { balance, reason } = req.body || {};
   if (typeof balance !== "number") { res.status(400).json({ error: "balance number required" }); return; }
   await db.update(usersTable).set({ balance: String(balance) }).where(eq(usersTable.id, id));
@@ -230,12 +246,13 @@ router.put("/users/:id/balance", requireAdmin, async (req, res) => {
       amount: String(Math.abs(balance)), description: reason || "Admin balance update",
     });
   }
+  await logAdminAction(adminId, "balance_adjust", "user", id, `Set balance to ₹${balance}${reason ? ` — ${reason}` : ""}`);
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id)).limit(1);
   res.json(formatUser(user));
 });
 
 router.delete("/users/:id", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(asString(req.params.id));
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id)).limit(1);
   if (!user) { res.status(404).json({ error: "Not found" }); return; }
   if (user.role === "admin") { res.status(400).json({ error: "Admin users cannot be deleted" }); return; }
@@ -302,7 +319,7 @@ router.get("/fraud-alerts", requireAdmin, async (req, res) => {
 });
 
 router.post("/fraud-alerts/:id/resolve", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(asString(req.params.id));
   const [alert] = await db.select().from(fraudAlertsTable).where(eq(fraudAlertsTable.id, id)).limit(1);
   await db.update(fraudAlertsTable).set({ resolved: true }).where(eq(fraudAlertsTable.id, id));
   // Auto-unfreeze the user when ALL of their alerts are resolved, so admins
@@ -323,7 +340,7 @@ router.post("/fraud-alerts/:id/resolve", requireAdmin, async (req, res) => {
 // Admin marks alert as notified (or sends a fresh in-app notice if not yet sent).
 // Idempotent: marking again does not create a second notification.
 router.post("/fraud-alerts/:id/notify", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(asString(req.params.id));
   const adminId = (req as any).user.id;
   const [alert] = await db.select().from(fraudAlertsTable).where(eq(fraudAlertsTable.id, id)).limit(1);
   if (!alert) { res.status(404).json({ error: "Alert not found" }); return; }
@@ -669,7 +686,7 @@ router.post("/deposit-tasks", requireAdmin, async (req, res) => {
 });
 
 router.put("/deposit-tasks/:id", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(asString(req.params.id));
   const { amount, rewardPercent, isActive } = req.body || {};
   await db.update(depositTasksTable).set({
     amount: String(amount), rewardPercent: String(rewardPercent), isActive: isActive ?? true,
@@ -679,7 +696,7 @@ router.put("/deposit-tasks/:id", requireAdmin, async (req, res) => {
 });
 
 router.delete("/deposit-tasks/:id", requireAdmin, async (req, res) => {
-  await db.delete(depositTasksTable).where(eq(depositTasksTable.id, parseInt(req.params.id)));
+  await db.delete(depositTasksTable).where(eq(depositTasksTable.id, parseInt(asString(req.params.id))));
   res.json({ message: "Deleted" });
 });
 
@@ -729,7 +746,7 @@ router.get("/high-value/export.csv", requireAdmin, async (req, res) => {
 });
 
 router.post("/high-value/:id/review", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(asString(req.params.id));
   const { notes } = req.body || {};
   await db.update(highValueEventsTable).set({
     reviewedAt: new Date(),
@@ -737,6 +754,239 @@ router.post("/high-value/:id/review", requireAdmin, async (req, res) => {
     notes: notes || null,
   }).where(eq(highValueEventsTable.id, id));
   res.json({ success: true });
+});
+
+// ── 1. Force-close stuck order ──────────────────────────────────────────────
+router.post("/orders/:id/force-close", requireAdmin, async (req, res) => {
+  const id = parseInt(asString(req.params.id));
+  const adminId = (req as any).user.id;
+  const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
+  if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+  if (!["locked", "pending_confirmation"].includes(order.status)) {
+    res.status(400).json({ error: `Order status '${order.status}' cannot be force-closed. Only 'locked' or 'pending_confirmation' orders can be closed.` }); return;
+  }
+  const { releaseHold } = await import("../lib/hold.js");
+  await db.transaction(async (tx) => {
+    const heldAmt = parseFloat(order.heldAmount || "0");
+    await releaseHold(order.userId, heldAmt, tx);
+    await tx.update(ordersTable).set({
+      status: "cancelled", lockedAt: null, lockedByUserId: null, confirmDeadline: null, updatedAt: new Date(),
+    }).where(eq(ordersTable.id, id));
+  });
+  await logAdminAction(adminId, "force_close_order", "order", id, `Closed order #${id} from status '${order.status}'`);
+  res.json({ success: true });
+});
+
+// ── 2. Trade pair blocks ─────────────────────────────────────────────────────
+router.get("/trade-pair-blocks", requireAdmin, async (_req, res) => {
+  const blocks = await db.select().from(tradePairBlocksTable).orderBy(desc(tradePairBlocksTable.createdAt));
+  const userIds = [...new Set(blocks.flatMap((b) => [b.userId1, b.userId2]))];
+  const users = userIds.length ? await db.select().from(usersTable).where(inArray(usersTable.id, userIds)) : [];
+  const byId = new Map(users.map((u) => [u.id, { id: u.id, username: u.username }]));
+  res.json(blocks.map((b) => ({ ...b, user1: byId.get(b.userId1), user2: byId.get(b.userId2) })));
+});
+
+router.post("/trade-pair-blocks", requireAdmin, async (req, res) => {
+  const adminId = (req as any).user.id;
+  const { userId1, userId2, reason } = req.body || {};
+  if (!userId1 || !userId2) { res.status(400).json({ error: "userId1 and userId2 required" }); return; }
+  if (userId1 === userId2) { res.status(400).json({ error: "Cannot block a user with themselves" }); return; }
+  const [block] = await db.insert(tradePairBlocksTable).values({ userId1, userId2, reason: reason || null }).returning();
+  await logAdminAction(adminId, "trade_pair_block", "user", userId1, `Blocked pair ${userId1}↔${userId2}: ${reason || "no reason"}`);
+  res.json(block);
+});
+
+router.delete("/trade-pair-blocks/:id", requireAdmin, async (req, res) => {
+  const adminId = (req as any).user.id;
+  const id = parseInt(asString(req.params.id));
+  const [block] = await db.select().from(tradePairBlocksTable).where(eq(tradePairBlocksTable.id, id)).limit(1);
+  if (!block) { res.status(404).json({ error: "Block not found" }); return; }
+  await db.delete(tradePairBlocksTable).where(eq(tradePairBlocksTable.id, id));
+  await logAdminAction(adminId, "trade_pair_unblock", "user", block.userId1, `Unblocked pair ${block.userId1}↔${block.userId2}`);
+  res.json({ success: true });
+});
+
+// ── 3. Matching engine pause ─────────────────────────────────────────────────
+router.get("/matching/status", requireAdmin, async (_req, res) => {
+  const paused = (await getSetting("matchingPaused")) === "true";
+  res.json({ paused });
+});
+
+router.post("/matching/pause", requireAdmin, async (req, res) => {
+  const adminId = (req as any).user.id;
+  const { paused } = req.body || {};
+  if (typeof paused !== "boolean") { res.status(400).json({ error: "paused boolean required" }); return; }
+  await setSetting("matchingPaused", paused ? "true" : "false");
+  await logAdminAction(adminId, paused ? "matching_paused" : "matching_resumed", undefined, undefined, `Matching engine ${paused ? "paused" : "resumed"}`);
+  res.json({ paused });
+});
+
+// ── 4. Bulk fraud alert resolve ──────────────────────────────────────────────
+router.post("/users/:id/resolve-all-alerts", requireAdmin, async (req, res) => {
+  const id = parseInt(asString(req.params.id));
+  const adminId = (req as any).user.id;
+  const result = await db.update(fraudAlertsTable).set({ resolved: true })
+    .where(and(eq(fraudAlertsTable.userId, id), eq(fraudAlertsTable.resolved, false)));
+  await db.update(usersTable).set({ isFrozen: false }).where(eq(usersTable.id, id));
+  await logAdminAction(adminId, "bulk_resolve_alerts", "user", id, `Resolved all open alerts and unfroze user`);
+  res.json({ success: true });
+});
+
+// ── 5. Trusted user (false positive protection) ──────────────────────────────
+router.post("/users/:id/trust", requireAdmin, async (req, res) => {
+  const id = parseInt(asString(req.params.id));
+  const adminId = (req as any).user.id;
+  const { isTrusted } = req.body || {};
+  if (typeof isTrusted !== "boolean") { res.status(400).json({ error: "isTrusted boolean required" }); return; }
+  await db.update(usersTable).set({ isTrusted }).where(eq(usersTable.id, id));
+  await logAdminAction(adminId, isTrusted ? "mark_trusted" : "unmark_trusted", "user", id, `isTrusted set to ${isTrusted}`);
+  res.json({ success: true });
+});
+
+// ── 6. Fraud warning count reset ─────────────────────────────────────────────
+router.post("/users/:id/reset-fraud-warnings", requireAdmin, async (req, res) => {
+  const id = parseInt(asString(req.params.id));
+  const adminId = (req as any).user.id;
+  await db.update(usersTable).set({ fraudWarningCount: 0 }).where(eq(usersTable.id, id));
+  await logAdminAction(adminId, "reset_fraud_warnings", "user", id, `fraudWarningCount reset to 0`);
+  res.json({ success: true });
+});
+
+// ── 7. Transaction reversal ──────────────────────────────────────────────────
+router.post("/orders/:id/reverse", requireAdmin, async (req, res): Promise<any> => {
+  const id = parseInt(asString(req.params.id));
+  const adminId = (req as any).user.id;
+  const { reason } = req.body || {};
+  if (!reason) { return res.status(400).json({ error: "reason is required for reversal" }); }
+  const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
+  if (!order) { return res.status(404).json({ error: "Order not found" }); }
+  if (order.status !== "confirmed") { return res.status(400).json({ error: "Only confirmed orders can be reversed" }); }
+  if (!order.lockedByUserId) { return res.status(400).json({ error: "No buyer on this order" }); }
+  const amount = parseFloat(order.amount);
+  await db.transaction(async (tx) => {
+    await tx.update(usersTable).set({ balance: sql`${usersTable.balance} - ${String(amount)}` }).where(eq(usersTable.id, order.lockedByUserId!));
+    await tx.update(usersTable).set({ balance: sql`${usersTable.balance} + ${String(amount)}` }).where(eq(usersTable.id, order.userId));
+    await tx.insert(transactionsTable).values([
+      { userId: order.lockedByUserId!, type: "debit", amount: String(amount), description: `Reversal of order #${id}: ${reason}`, orderId: id },
+      { userId: order.userId, type: "credit", amount: String(amount), description: `Reversal credit for order #${id}: ${reason}`, orderId: id },
+    ]);
+    await tx.update(ordersTable).set({ status: "cancelled", updatedAt: new Date() }).where(eq(ordersTable.id, id));
+  });
+  await logAdminAction(adminId, "transaction_reversal", "order", id, `Reversed ₹${amount} — reason: ${reason}`);
+  res.json({ success: true });
+});
+
+// ── 9. Daily settlement report ───────────────────────────────────────────────
+router.get("/reports/daily", requireAdmin, async (req, res) => {
+  const dateStr = String(req.query.date || new Date().toISOString().slice(0, 10));
+  const dayStart = new Date(dateStr + "T00:00:00.000Z");
+  const dayEnd = new Date(dateStr + "T23:59:59.999Z");
+
+  const deposits = await db.select({
+    sum: sql<string>`COALESCE(SUM(${ordersTable.amount}), 0)`,
+    count: sql<string>`COUNT(*)`,
+  }).from(ordersTable).where(and(
+    eq(ordersTable.type, "deposit"), eq(ordersTable.status, "confirmed"),
+    gte(ordersTable.createdAt, dayStart), lte(ordersTable.createdAt, dayEnd),
+  ));
+
+  const withdrawals = await db.select({
+    sum: sql<string>`COALESCE(SUM(${ordersTable.amount}), 0)`,
+    count: sql<string>`COUNT(*)`,
+  }).from(ordersTable).where(and(
+    eq(ordersTable.type, "withdrawal"), eq(ordersTable.status, "confirmed"),
+    gte(ordersTable.createdAt, dayStart), lte(ordersTable.createdAt, dayEnd),
+  ));
+
+  const fees = await db.select({
+    sum: sql<string>`COALESCE(SUM(${transactionsTable.amount}), 0)`,
+    count: sql<string>`COUNT(*)`,
+  }).from(transactionsTable).where(and(
+    eq(transactionsTable.type, "credit"),
+    sql`${transactionsTable.description} ILIKE 'Platform fee%'`,
+    gte(transactionsTable.createdAt, dayStart), lte(transactionsTable.createdAt, dayEnd),
+  ));
+
+  const rewards = await db.select({
+    sum: sql<string>`COALESCE(SUM(${transactionsTable.amount}), 0)`,
+    count: sql<string>`COUNT(*)`,
+  }).from(transactionsTable).where(and(
+    eq(transactionsTable.type, "credit"),
+    sql`${transactionsTable.description} ILIKE '%reward%'`,
+    gte(transactionsTable.createdAt, dayStart), lte(transactionsTable.createdAt, dayEnd),
+  ));
+
+  const disputes = await db.select({ count: sql<string>`COUNT(*)` })
+    .from(disputesTable).where(and(gte(disputesTable.createdAt, dayStart), lte(disputesTable.createdAt, dayEnd)));
+
+  res.json({
+    date: dateStr,
+    totalDeposits: parseFloat(deposits[0]?.sum || "0"),
+    depositCount: parseInt(deposits[0]?.count || "0"),
+    totalWithdrawals: parseFloat(withdrawals[0]?.sum || "0"),
+    withdrawalCount: parseInt(withdrawals[0]?.count || "0"),
+    feesCollected: parseFloat(fees[0]?.sum || "0"),
+    feeCount: parseInt(fees[0]?.count || "0"),
+    rewardsPaid: parseFloat(rewards[0]?.sum || "0"),
+    rewardCount: parseInt(rewards[0]?.count || "0"),
+    disputeCount: parseInt(disputes[0]?.count || "0"),
+  });
+});
+
+router.get("/reports/daily/export.csv", requireAdmin, async (req, res) => {
+  const dateStr = String(req.query.date || new Date().toISOString().slice(0, 10));
+  const dayStart = new Date(dateStr + "T00:00:00.000Z");
+  const dayEnd = new Date(dateStr + "T23:59:59.999Z");
+  const rows = await db.select().from(ordersTable).where(and(
+    eq(ordersTable.status, "confirmed"),
+    gte(ordersTable.createdAt, dayStart), lte(ordersTable.createdAt, dayEnd),
+  )).orderBy(desc(ordersTable.createdAt));
+  const escape = (v: any) => v == null ? "" : `"${String(v).replace(/"/g, '""')}"`;
+  const header = "id,type,amount,userId,lockedByUserId,upiId,utrNumber,createdAt";
+  const body = rows.map((r) => [r.id, r.type, r.amount, r.userId, r.lockedByUserId, r.upiId, r.utrNumber, new Date(r.createdAt).toISOString()].map(escape).join(","));
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="settlement-${dateStr}.csv"`);
+  res.send([header, ...body].join("\n"));
+});
+
+// ── 10. Admin action log ─────────────────────────────────────────────────────
+router.get("/action-logs", requireAdmin, async (req, res) => {
+  const { adminId: adminIdQ, actionType, from, to, limit: limitQ } = req.query as any;
+  const conds: any[] = [];
+  if (adminIdQ) conds.push(eq(adminLogsTable.adminId, parseInt(adminIdQ)));
+  if (actionType) conds.push(eq(adminLogsTable.actionType, actionType));
+  if (from) conds.push(gte(adminLogsTable.createdAt, new Date(from)));
+  if (to) conds.push(lte(adminLogsTable.createdAt, new Date(to)));
+  const limitN = Math.min(500, Math.max(1, parseInt(limitQ || "100") || 100));
+  const rows = conds.length
+    ? await db.select().from(adminLogsTable).where(and(...conds)).orderBy(desc(adminLogsTable.createdAt)).limit(limitN)
+    : await db.select().from(adminLogsTable).orderBy(desc(adminLogsTable.createdAt)).limit(limitN);
+  const adminIds = [...new Set(rows.map((r) => r.adminId))];
+  const admins = adminIds.length ? await db.select().from(usersTable).where(inArray(usersTable.id, adminIds)) : [];
+  const byId = new Map(admins.map((u) => [u.id, u.username]));
+  res.json(rows.map((r) => ({ ...r, adminUsername: byId.get(r.adminId) || `#${r.adminId}` })));
+});
+
+// ── 11. Dispute deadline extend ───────────────────────────────────────────────
+router.post("/disputes/:id/extend-deadline", requireAdmin, async (req, res) => {
+  const id = parseInt(asString(req.params.id));
+  const adminId = (req as any).user.id;
+  const { hours = 24 } = req.body || {};
+  const [dispute] = await db.select().from(disputesTable).where(eq(disputesTable.id, id)).limit(1);
+  if (!dispute) { res.status(404).json({ error: "Dispute not found" }); return; }
+  if (dispute.status !== "open") { res.status(400).json({ error: "Only open disputes can be extended" }); return; }
+  const ms = Number(hours) * 60 * 60 * 1000;
+  const newBuyerDeadline = dispute.buyerProofDeadline
+    ? new Date(new Date(dispute.buyerProofDeadline).getTime() + ms)
+    : new Date(Date.now() + ms);
+  const newSellerDeadline = dispute.sellerProofDeadline
+    ? new Date(new Date(dispute.sellerProofDeadline).getTime() + ms)
+    : new Date(Date.now() + ms);
+  await db.update(disputesTable).set({
+    buyerProofDeadline: newBuyerDeadline, sellerProofDeadline: newSellerDeadline,
+  }).where(eq(disputesTable.id, id));
+  await logAdminAction(adminId, "extend_dispute_deadline", "dispute", id, `Extended by ${hours}h`);
+  res.json({ success: true, buyerProofDeadline: newBuyerDeadline, sellerProofDeadline: newSellerDeadline });
 });
 
 // Image upload (base64 data URL passthrough with size check, ~5MB)

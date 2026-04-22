@@ -385,11 +385,11 @@ export interface DisputeBase {
   buyerProofDeadline?: string | null;
   sellerProofDeadline?: string | null;
   buyerBankStatementUrl?: string | null;
-  buyerTxHistoryUrl?: string | null;
   sellerBankStatementUrl?: string | null;
   sellerRecordingUrl?: string | null;
   sellerLastTxnScreenshotUrl?: string | null;
   triggerReason?: string | null;
+  buyerTxHistoryUrl?: string | null;
 }
 
 export type MyDisputeRole = (typeof MyDisputeRole)[keyof typeof MyDisputeRole];

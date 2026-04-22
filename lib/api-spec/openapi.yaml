@@ -1661,6 +1661,12 @@ components:
         sellerLastTxnScreenshotUrl:
           type: string
           nullable: true
+        triggerReason:
+          type: string
+          nullable: true
+        buyerTxHistoryUrl:
+          type: string
+          nullable: true
       required: [id, orderId, buyerId, sellerId, status, createdAt]
 
     MyDispute:
@@ -1700,7 +1706,8 @@ components:
       properties:
         bankStatementUrl:
           type: string
-      required: [bankStatementUrl]
+        txHistoryUrl:
+          type: string
 
     SellerProofBody:
       type: object

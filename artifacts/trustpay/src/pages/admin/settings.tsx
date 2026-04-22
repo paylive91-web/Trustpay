@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { getAdminGetSettingsQueryKey, getGetAppSettingsQueryKey } from "@workspace/api-client-react";
 import { getAuthToken } from "@/lib/auth";
-import { Plus, Trash2, Bell, Upload, Award } from "lucide-react";
+import { Plus, Trash2, Bell, Upload, Award, Info } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -299,6 +299,20 @@ export default function AdminSettings() {
           <h1 className="text-2xl font-bold tracking-tight">App Settings</h1>
           <p className="text-muted-foreground">Configure payment, rules, links, and announcements.</p>
         </div>
+
+        <Card className="border-blue-100 bg-blue-50/50">
+          <CardContent className="p-3 flex items-start gap-2">
+            <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+            <p className="text-xs text-blue-800">
+              Changes here affect <strong>all users</strong> immediately after saving.
+              <strong className="ml-1">UPI ID</strong> — the main account users pay to for deposits.
+              <strong className="ml-1">Withdrawal Details</strong> — shown to sellers when getting paid.
+              <strong className="ml-1">Fee Tiers</strong> — define the platform fee % per transaction amount range; ensure tiers don't overlap.
+              <strong className="ml-1">Announcement Popup</strong> — shown to all users when they open the app; leave empty to hide.
+              <strong className="ml-1">Notify All</strong> — sends a push notification to every registered user immediately.
+            </p>
+          </CardContent>
+        </Card>
 
         {settingsLoading ? (
           <Skeleton className="h-[500px] w-full rounded-xl" />

@@ -4,6 +4,10 @@ import { ordersTable, depositTasksTable } from "@workspace/db";
 import { eq, and, sql, or } from "drizzle-orm";
 import { requireAuth } from "../lib/auth.js";
 
+function asString(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] ?? "" : v ?? "";
+}
+
 const router = Router();
 
 function f(o: any) {
@@ -72,7 +76,7 @@ router.get("/withdrawal-orders", requireAuth, async (_req, res) => {
 });
 
 router.get("/:id", requireAuth, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(asString(req.params.id));
   const u = (req as any).user;
   const [o] = await db.select().from(ordersTable).where(and(
     eq(ordersTable.id, id),

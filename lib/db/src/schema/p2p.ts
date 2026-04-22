@@ -98,8 +98,28 @@ export const imageHashesTable = pgTable("image_hashes", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const adminLogsTable = pgTable("admin_logs", {
+  id: serial("id").primaryKey(),
+  adminId: integer("admin_id").notNull().references(() => usersTable.id),
+  actionType: text("action_type").notNull(),
+  targetType: text("target_type"),
+  targetId: integer("target_id"),
+  details: text("details"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const tradePairBlocksTable = pgTable("trade_pair_blocks", {
+  id: serial("id").primaryKey(),
+  userId1: integer("user_id_1").notNull().references(() => usersTable.id),
+  userId2: integer("user_id_2").notNull().references(() => usersTable.id),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export type UserUpiIdRow = typeof userUpiIdsTable.$inferSelect;
 export type Dispute = typeof disputesTable.$inferSelect;
 export type FraudAlert = typeof fraudAlertsTable.$inferSelect;
 export type TrustEvent = typeof trustEventsTable.$inferSelect;
 export type UserNotification = typeof userNotificationsTable.$inferSelect;
+export type AdminLog = typeof adminLogsTable.$inferSelect;
+export type TradePairBlock = typeof tradePairBlocksTable.$inferSelect;

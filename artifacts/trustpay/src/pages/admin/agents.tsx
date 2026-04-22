@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Award, Flame, IndianRupee, ShieldCheck, Plus, Trash2, Pencil, Check, X } from "lucide-react";
+import { Users, Award, Flame, IndianRupee, ShieldCheck, Plus, Trash2, Pencil, Check, X, Info } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -118,6 +118,17 @@ export default function AdminAgents() {
             Manage agent reward tiers and monitor verified agents' daily activity.
           </p>
         </div>
+
+        <Card className="border-blue-100 bg-blue-50/50">
+          <CardContent className="p-3 flex items-start gap-2">
+            <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+            <p className="text-xs text-blue-800">
+              <strong>Agent Tiers</strong> define the reward structure for verified agents based on their active deposit count. Each tier specifies a minimum number of active deposits and the flat ₹ reward they earn.
+              Changes to tiers take effect immediately for all active agents. Agents who drop below a tier's minimum will lose that tier's reward until they recover.
+              <strong className="ml-1">Active Deposits</strong> = deposits currently in an open/locked state that the agent directly placed.
+            </p>
+          </CardContent>
+        </Card>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

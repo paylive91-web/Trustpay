@@ -7,5 +7,6 @@
  */
 
 export interface BuyerProofBody {
-  bankStatementUrl: string;
+  bankStatementUrl?: string;
+  txHistoryUrl?: string;
 }

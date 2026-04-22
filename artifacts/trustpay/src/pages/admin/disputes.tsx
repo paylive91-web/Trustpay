@@ -3,6 +3,7 @@ import AdminLayout from "@/components/admin-layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
@@ -13,7 +14,21 @@ import {
   type AdminDispute,
 } from "@workspace/api-client-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { ShieldAlert, Eye } from "lucide-react";
+import { ShieldAlert, Eye, Clock, Info } from "lucide-react";
+import { getAuthToken } from "@/lib/auth";
+
+const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+
+async function api(path: string, opts: RequestInit = {}) {
+  const token = getAuthToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...opts,
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(opts.headers || {}) },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Request failed");
+  return data;
+}
 
 export default function AdminDisputes() {
   const { toast } = useToast();
@@ -22,12 +37,14 @@ export default function AdminDisputes() {
   const [viewDispute, setView] = useState<AdminDispute | null>(null);
   const [resolveOpen, setResolveOpen] = useState<{ d: AdminDispute; winner: "buyer" | "seller" } | null>(null);
   const [notes, setNotes] = useState("");
+  const [extendOpen, setExtendOpen] = useState<AdminDispute | null>(null);
+  const [extendHours, setExtendHours] = useState("24");
+  const [extendLoading, setExtendLoading] = useState(false);
 
   const { data, isLoading } = useAdminListDisputes({
     query: { queryKey: getAdminListDisputesQueryKey(), refetchInterval: 10000 },
   });
   const rows = data ?? [];
-
   const filtered = filter === "open" ? rows.filter((r) => r.status === "open") : rows;
 
   const resolveMut = useAdminResolveDispute({
@@ -41,6 +58,21 @@ export default function AdminDisputes() {
     },
   });
 
+  const handleExtend = async () => {
+    if (!extendOpen) return;
+    setExtendLoading(true);
+    try {
+      await api(`/admin/disputes/${extendOpen.id}/extend-deadline`, { method: "POST", body: JSON.stringify({ hours: Number(extendHours) || 24 }) });
+      toast({ title: `Deadline extended by ${extendHours}h for Dispute #${extendOpen.id}` });
+      setExtendOpen(null);
+      qc.invalidateQueries({ queryKey: getAdminListDisputesQueryKey() });
+    } catch (e: any) {
+      toast({ title: "Failed to extend", description: e.message, variant: "destructive" });
+    } finally {
+      setExtendLoading(false);
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-4">
@@ -53,6 +85,17 @@ export default function AdminDisputes() {
             <Button variant={filter === "all" ? "default" : "outline"} size="sm" onClick={() => setFilter("all")}>All</Button>
           </div>
         </div>
+
+        <Card className="border-blue-100 bg-blue-50/50">
+          <CardContent className="p-3 flex items-start gap-2">
+            <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+            <p className="text-xs text-blue-800">
+              Disputes arise when a buyer claims payment was made but the seller didn't confirm. Review the evidence from both sides and award to the correct winner.
+              <strong className="ml-1">Extend Deadline:</strong> If a party needs more time to submit proof, use the clock button to add hours to their deadline (default +24h).
+              Resolving awards the trade amount to the winner and applies trust score adjustments.
+            </p>
+          </CardContent>
+        </Card>
 
         {isLoading ? (
           <div className="text-center text-muted-foreground py-8">Loading...</div>
@@ -71,6 +114,11 @@ export default function AdminDisputes() {
                         <Badge className="mt-1 text-[10px] bg-orange-100 text-orange-700 border-orange-300">Seller Was Offline</Badge>
                       )}
                       {d.reason && <div className="text-xs mt-1 italic">"{d.reason}"</div>}
+                      {d.buyerProofDeadline && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Buyer deadline: {format(new Date(d.buyerProofDeadline), "MMM dd HH:mm")}
+                        </div>
+                      )}
                     </div>
                     <Badge variant="outline" className={
                       d.status === "open" ? "bg-red-100 text-red-700" :
@@ -105,13 +153,14 @@ export default function AdminDisputes() {
                   <div className="flex justify-end gap-2 flex-wrap">
                     <Button variant="ghost" size="sm" onClick={() => setView(d)}><Eye className="h-3 w-3 mr-1" /> Details</Button>
                     {d.status === "open" && (
+                      <Button variant="outline" size="sm" onClick={() => { setExtendOpen(d); setExtendHours("24"); }}>
+                        <Clock className="h-3 w-3 mr-1" /> Extend Deadline
+                      </Button>
+                    )}
+                    {d.status === "open" && (
                       <>
-                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => setResolveOpen({ d, winner: "buyer" })}>
-                          Buyer Wins
-                        </Button>
-                        <Button size="sm" className="bg-orange-600 hover:bg-orange-700" onClick={() => setResolveOpen({ d, winner: "seller" })}>
-                          Seller Wins
-                        </Button>
+                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => setResolveOpen({ d, winner: "buyer" })}>Buyer Wins</Button>
+                        <Button size="sm" className="bg-orange-600 hover:bg-orange-700" onClick={() => setResolveOpen({ d, winner: "seller" })}>Seller Wins</Button>
                       </>
                     )}
                   </div>
@@ -158,9 +207,7 @@ export default function AdminDisputes() {
 
       <Dialog open={!!resolveOpen} onOpenChange={(o) => !o && setResolveOpen(null)}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Award to {resolveOpen?.winner.toUpperCase()}?</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Award to {resolveOpen?.winner.toUpperCase()}?</DialogTitle></DialogHeader>
           <div className="space-y-3 py-2">
             <p className="text-sm text-muted-foreground">
               {resolveOpen?.winner === "buyer"
@@ -173,6 +220,27 @@ export default function AdminDisputes() {
             <Button variant="outline" onClick={() => setResolveOpen(null)}>Cancel</Button>
             <Button onClick={() => resolveMut.mutate({ id: resolveOpen!.d.id, data: { winner: resolveOpen!.winner, notes } })} disabled={resolveMut.isPending}>
               {resolveMut.isPending ? "Resolving..." : "Confirm Resolution"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!extendOpen} onOpenChange={(o) => !o && setExtendOpen(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Extend Deadline — Dispute #{extendOpen?.id}</DialogTitle></DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              Extends both the buyer and seller proof submission deadlines by the specified number of hours. Current buyer deadline: {extendOpen?.buyerProofDeadline ? format(new Date(extendOpen.buyerProofDeadline), "MMM dd HH:mm") : "not set"}.
+            </p>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Extend by (hours)</label>
+              <Input type="number" min={1} max={168} value={extendHours} onChange={(e) => setExtendHours(e.target.value)} className="w-32" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExtendOpen(null)}>Cancel</Button>
+            <Button onClick={handleExtend} disabled={extendLoading || !extendHours}>
+              {extendLoading ? "Extending..." : `Extend +${extendHours}h`}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -28,6 +28,8 @@ import AdminDepositTasks from "@/pages/admin/deposit-tasks";
 import AdminFraudWatch from "@/pages/admin/fraud-watch";
 import AdminHighValue from "@/pages/admin/high-value";
 import AdminAgents from "@/pages/admin/agents";
+import AdminReports from "@/pages/admin/reports";
+import AdminActivityLog from "@/pages/admin/activity-log";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +60,8 @@ function Router() {
       <Route path="/admin/fraud-watch" component={AdminFraudWatch} />
       <Route path="/admin/high-value" component={AdminHighValue} />
       <Route path="/admin/agents" component={AdminAgents} />
+      <Route path="/admin/reports" component={AdminReports} />
+      <Route path="/admin/activity-log" component={AdminActivityLog} />
 
       <Route component={NotFound} />
     </Switch>

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { clearAuthToken } from "@/lib/auth";
-import { Headset, LogOut, ChevronRight, TrendingUp, Wallet, ArrowDownCircle, ArrowUpCircle, Phone, Gift, Copy, ShieldCheck, Mail, Loader2 } from "lucide-react";
+import { Headset, LogOut, ChevronRight, TrendingUp, Wallet, ArrowDownCircle, ArrowUpCircle, Phone, Gift, Copy, ShieldCheck, Mail, Loader2, ShieldOff } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
@@ -169,6 +169,21 @@ export default function Profile() {
       </div>
 
       <div className="px-4 -mt-12 relative z-10 space-y-4">
+        {(user as any)?.isFrozen && (
+          <Card className="border-red-200 bg-red-50 shadow-md">
+            <CardContent className="p-4 flex items-start gap-3">
+              <ShieldOff className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-red-800 text-sm">Account Frozen</p>
+                <p className="text-xs text-red-700 mt-0.5">
+                  {(user as any)?.freezeReason
+                    ? (user as any).freezeReason
+                    : "Your account has been frozen by admin. Please contact support for details."}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
         <Card className="border-none shadow-md overflow-hidden">
           <CardContent className="p-4">
             <h3 className="font-semibold text-sm text-muted-foreground mb-3 uppercase tracking-wide">Account Statistics</h3>

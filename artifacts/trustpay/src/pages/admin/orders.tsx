@@ -9,11 +9,28 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Image as ImageIcon } from "lucide-react";
+import { Image as ImageIcon, XCircle, RotateCcw, Info } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { getAuthToken } from "@/lib/auth";
 
 const STATUS_OPTIONS = ["all", "available", "locked", "pending_confirmation", "disputed", "confirmed", "cancelled", "expired"];
+const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+
+async function api(path: string, opts: RequestInit = {}) {
+  const token = getAuthToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...opts,
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(opts.headers || {}) },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Request failed");
+  return data;
+}
 
 export default function AdminOrders() {
+  const { toast } = useToast();
+  const qc = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [userQuery, setUserQuery] = useState("");
@@ -26,7 +43,7 @@ export default function AdminOrders() {
   if (statusFilter !== "all") params.status = statusFilter;
   if (typeFilter !== "all") params.type = typeFilter;
 
-  const { data: ordersAll, isLoading } = useAdminGetOrders(params, {
+  const { data: ordersAll, isLoading, refetch } = useAdminGetOrders(params, {
     query: { queryKey: ["/api/admin/orders", params] },
   });
 
@@ -53,6 +70,39 @@ export default function AdminOrders() {
   }, [ordersAll, userQuery, minAmount, maxAmount, fromDate, toDate]);
 
   const [viewOrder, setViewOrder] = useState<any>(null);
+  const [reverseOrder, setReverseOrder] = useState<any>(null);
+  const [reverseReason, setReverseReason] = useState("");
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
+
+  const handleForceClose = async (order: any) => {
+    if (!confirm(`Force-close order #${order.id} (${order.status})? This will cancel it and release the seller's hold.`)) return;
+    setActionLoading(order.id);
+    try {
+      await api(`/admin/orders/${order.id}/force-close`, { method: "POST" });
+      toast({ title: `Order #${order.id} force-closed` });
+      refetch();
+    } catch (e: any) {
+      toast({ title: "Failed", description: e.message, variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleReverse = async () => {
+    if (!reverseOrder || !reverseReason.trim()) return;
+    setActionLoading(reverseOrder.id);
+    try {
+      await api(`/admin/orders/${reverseOrder.id}/reverse`, { method: "POST", body: JSON.stringify({ reason: reverseReason.trim() }) });
+      toast({ title: `Order #${reverseOrder.id} reversed` });
+      setReverseOrder(null);
+      setReverseReason("");
+      refetch();
+    } catch (e: any) {
+      toast({ title: "Reversal failed", description: e.message, variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   const statusColor = (s: string) => {
     if (s === "confirmed") return "bg-green-100 text-green-800";
@@ -68,8 +118,8 @@ export default function AdminOrders() {
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Orders (Read-only)</h1>
-            <p className="text-sm text-muted-foreground">P2P trades are settled automatically. Use the Disputes tab to intervene.</p>
+            <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
+            <p className="text-sm text-muted-foreground">View, filter, force-close stuck orders, or reverse completed trades.</p>
           </div>
           <div className="flex gap-2 w-full sm:w-auto flex-wrap">
             <Input className="w-[180px]" placeholder="User / phone / id" value={userQuery} onChange={(e) => setUserQuery(e.target.value)} />
@@ -95,6 +145,16 @@ export default function AdminOrders() {
             </Select>
           </div>
         </div>
+
+        <Card className="border-blue-100 bg-blue-50/50">
+          <CardContent className="p-3 flex items-start gap-2">
+            <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+            <p className="text-xs text-blue-800">
+              <strong>Force-Close:</strong> Cancels a stuck <em>locked</em> or <em>pending_confirmation</em> order, releasing the seller's hold. Use when a buyer has disappeared and the order is stuck.
+              <strong className="ml-2">Reverse:</strong> Undoes a <em>confirmed</em> trade — deducts the amount from the buyer's wallet and returns it to the seller. Requires a written reason which is logged permanently.
+            </p>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardContent className="p-0">
@@ -145,11 +205,23 @@ export default function AdminOrders() {
                           <Badge variant="outline" className={statusColor(order.status)}>{order.status}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          {(order.screenshotUrl || order.recordingUrl) && (
-                            <Button size="sm" variant="ghost" onClick={() => setViewOrder(order)}>
-                              <ImageIcon className="w-4 h-4" />
-                            </Button>
-                          )}
+                          <div className="flex gap-1 justify-end flex-wrap">
+                            {(order.screenshotUrl || order.recordingUrl) && (
+                              <Button size="sm" variant="ghost" onClick={() => setViewOrder(order)}>
+                                <ImageIcon className="w-4 h-4" />
+                              </Button>
+                            )}
+                            {["locked", "pending_confirmation"].includes(order.status) && (
+                              <Button size="sm" variant="outline" className="text-orange-600 border-orange-300" onClick={() => handleForceClose(order)} disabled={actionLoading === order.id}>
+                                <XCircle className="w-3.5 h-3.5 mr-1" /> Force Close
+                              </Button>
+                            )}
+                            {order.status === "confirmed" && (
+                              <Button size="sm" variant="outline" className="text-red-600 border-red-300" onClick={() => { setReverseOrder(order); setReverseReason(""); }}>
+                                <RotateCcw className="w-3.5 h-3.5 mr-1" /> Reverse
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -165,9 +237,7 @@ export default function AdminOrders() {
 
       <Dialog open={!!viewOrder} onOpenChange={(open) => !open && setViewOrder(null)}>
         <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Order #{viewOrder?.id} — Proof</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Order #{viewOrder?.id} — Proof</DialogTitle></DialogHeader>
           <div className="space-y-3">
             {viewOrder?.utrNumber && (
               <div className="bg-blue-50 rounded-lg p-3">
@@ -190,6 +260,33 @@ export default function AdminOrders() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setViewOrder(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!reverseOrder} onOpenChange={(o) => !o && setReverseOrder(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Reverse Order #{reverseOrder?.id}?</DialogTitle></DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              This will deduct <strong>₹{reverseOrder?.amount}</strong> from the buyer (User #{reverseOrder?.lockedByUserId}) and return it to the seller (User #{reverseOrder?.userId}). The order will be marked as cancelled. This action is <strong>permanent</strong> and logged.
+            </p>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Reason for reversal <span className="text-red-500">*</span></label>
+              <textarea
+                className="w-full border rounded p-2 text-sm"
+                rows={3}
+                placeholder="Enter the reason for reversing this trade..."
+                value={reverseReason}
+                onChange={(e) => setReverseReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReverseOrder(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleReverse} disabled={!reverseReason.trim() || actionLoading === reverseOrder?.id}>
+              {actionLoading === reverseOrder?.id ? "Reversing..." : "Confirm Reversal"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

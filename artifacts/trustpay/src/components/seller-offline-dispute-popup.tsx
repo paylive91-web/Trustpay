@@ -25,7 +25,7 @@ export default function SellerOfflineDisputePopup() {
   if (!pendingOffline.length) return null;
 
   const d = pendingOffline[0];
-  const orderAmount = d.order?.amount ?? d.amount ?? "?";
+  const orderAmount = d.order?.amount ?? "?";
   const orderId = d.orderId ?? d.order?.id ?? "?";
 
   return (

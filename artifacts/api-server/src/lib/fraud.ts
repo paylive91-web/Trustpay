@@ -176,8 +176,8 @@ async function logAlert(userId: number | null, orderId: number | null, rule: str
   if (userId && (severity === "warn" || severity === "critical")) {
     const [u] = await db.update(usersTable).set({
       fraudWarningCount: sql`${usersTable.fraudWarningCount} + 1`,
-    }).where(eq(usersTable.id, userId)).returning({ count: usersTable.fraudWarningCount });
-    if (u && (u.count ?? 0) >= 3) {
+    }).where(eq(usersTable.id, userId)).returning({ count: usersTable.fraudWarningCount, isTrusted: usersTable.isTrusted });
+    if (u && (u.count ?? 0) >= 3 && !u.isTrusted) {
       await db.update(usersTable).set({ isFrozen: true }).where(eq(usersTable.id, userId));
     }
   }

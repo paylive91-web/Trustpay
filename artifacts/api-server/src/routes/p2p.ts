@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { ordersTable, usersTable, disputesTable } from "@workspace/db";
+import { ordersTable, usersTable, disputesTable, tradePairBlocksTable } from "@workspace/db";
 import { eq, and, sql, inArray, ne, or } from "drizzle-orm";
 import { requireAuth } from "../lib/auth.js";
 import { getSettings } from "../lib/settings.js";
@@ -68,6 +68,7 @@ function f(o: any, sellerInfo?: any) {
     screenshotUrl: o.screenshotUrl,
     recordingUrl: o.recordingUrl,
     createdAt: o.createdAt,
+    qrImageUrl: undefined as string | undefined,
     seller: sellerInfo ? {
       id: sellerInfo.id,
       username: sellerInfo.username,
@@ -172,6 +173,17 @@ router.post("/lock/:id", requireAuth, async (req, res) => {
   }
   if (chunk.userId === u.id) {
     res.status(400).json({ error: "Cannot buy your own chunk" });
+    return;
+  }
+  // Check trade pair blocks — if this buyer-seller pair is blocked, skip
+  const [pairBlock] = await db.select().from(tradePairBlocksTable).where(
+    or(
+      and(eq(tradePairBlocksTable.userId1, u.id), eq(tradePairBlocksTable.userId2, chunk.userId)),
+      and(eq(tradePairBlocksTable.userId1, chunk.userId), eq(tradePairBlocksTable.userId2, u.id)),
+    )
+  ).limit(1);
+  if (pairBlock) {
+    res.status(403).json({ error: "This trade pair is blocked by admin" });
     return;
   }
   // Seller must be online — reject lock if seller went offline
