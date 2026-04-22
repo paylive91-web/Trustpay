@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { MessageSquare, CheckCircle2, Clock, Smartphone, Zap } from "lucide-react";
 import { parseBankSms } from "@/lib/utr-validator";
-import { addSmsListener } from "@/lib/sms-bridge";
+import { addSmsListener, isTrustedSender, type SmsMessage } from "@/lib/sms-bridge";
 
 interface SmsDetectorCardProps {
   submittedAt: string;
@@ -41,9 +41,10 @@ export default function SmsDetectorCard({
 
   useEffect(() => {
     if (!isAndroid()) return;
-    const remove = addSmsListener((sms: string) => {
+    const remove = addSmsListener((msg: SmsMessage) => {
       if (confirmedRef.current) return;
-      const parsed = parseBankSms(sms);
+      if (!isTrustedSender(msg.sender)) return;
+      const parsed = parseBankSms(msg.sms);
       if (!parsed) return;
       const utrMatch = parsed.utr.toUpperCase() === utrNumber.toUpperCase();
       const amountMatch = Math.abs(parsed.amount - amount) <= AMOUNT_TOLERANCE;

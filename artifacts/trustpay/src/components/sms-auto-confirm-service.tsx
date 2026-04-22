@@ -1,18 +1,17 @@
-import React, { useEffect, useRef, useState } from "react";
-import { CheckCircle2, X } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { CheckCircle2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { getAuthToken } from "@/lib/auth";
-import { addSmsListener } from "@/lib/sms-bridge";
+import { addSmsListener, isTrustedSender, type SmsMessage } from "@/lib/sms-bridge";
 import { parseBankSms } from "@/lib/utr-validator";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 const AMOUNT_TOLERANCE = 1;
 
-async function confirmOrder(id: number) {
+async function confirmOrder(id: number): Promise<{ error?: string }> {
   const token = getAuthToken();
   const res = await fetch(`${API_BASE}/p2p/confirm/${id}`, {
     method: "POST",
@@ -53,18 +52,24 @@ export default function SmsAutoConfirmService() {
   useEffect(() => {
     if (!isAndroid() || pendingOrders.length === 0) return;
 
-    const remove = addSmsListener((sms: string) => {
-      const parsed = parseBankSms(sms);
+    const remove = addSmsListener(async (msg: SmsMessage) => {
+      if (!isTrustedSender(msg.sender)) return;
+      const parsed = parseBankSms(msg.sms);
       if (!parsed) return;
       for (const order of pendingOrders) {
-        if (confirmedIds.current.has(order.id)) continue;
+        const id: number = order.id;
+        if (confirmedIds.current.has(id)) continue;
         const utrMatch = parsed.utr.toUpperCase() === String(order.utrNumber || "").toUpperCase();
         const amountMatch = Math.abs(parsed.amount - Number(order.amount)) <= AMOUNT_TOLERANCE;
         if (utrMatch && amountMatch) {
-          confirmedIds.current.add(order.id);
-          confirmOrder(order.id).catch(() => {});
+          confirmedIds.current.add(id);
+          const result = await confirmOrder(id);
+          if (result?.error) {
+            confirmedIds.current.delete(id);
+            return;
+          }
           setConfirmedOrder({
-            orderId: order.id,
+            orderId: id,
             utrNumber: order.utrNumber,
             amount: Number(order.amount),
           });
