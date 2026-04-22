@@ -15,6 +15,8 @@ function f(o: any) {
     rewardPercent: parseFloat(o.rewardPercent),
     rewardAmount: parseFloat(o.rewardAmount),
     totalAmount: parseFloat(o.totalAmount),
+    sellRewardPercent: parseFloat(o.sellRewardPercent || "0"),
+    sellRewardAmount: parseFloat(o.sellRewardAmount || "0"),
     status: o.status,
     upiId: o.upiId,
     upiName: o.upiName,

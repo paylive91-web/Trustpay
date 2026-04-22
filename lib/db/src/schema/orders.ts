@@ -49,6 +49,9 @@ export const ordersTable = pgTable("orders", {
   // chunk expires/cancels, no fee is charged. Stored on the order so admin
   // tier-edits after creation don't change what gets charged at settle time.
   feeAmount: numeric("fee_amount", { precision: 12, scale: 2 }).notNull().default("0"),
+  // Sell reward credited to the seller at settlement (admin-configurable %).
+  sellRewardPercent: numeric("sell_reward_percent", { precision: 5, scale: 2 }).notNull().default("0"),
+  sellRewardAmount: numeric("sell_reward_amount", { precision: 12, scale: 2 }).notNull().default("0"),
   // P2P chunk fields
   parentSellId: integer("parent_sell_id"),
   lockedAt: timestamp("locked_at"),

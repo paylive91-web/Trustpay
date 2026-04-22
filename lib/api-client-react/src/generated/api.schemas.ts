@@ -385,9 +385,11 @@ export interface DisputeBase {
   buyerProofDeadline?: string | null;
   sellerProofDeadline?: string | null;
   buyerBankStatementUrl?: string | null;
+  buyerTxHistoryUrl?: string | null;
   sellerBankStatementUrl?: string | null;
   sellerRecordingUrl?: string | null;
   sellerLastTxnScreenshotUrl?: string | null;
+  triggerReason?: string | null;
 }
 
 export type MyDisputeRole = (typeof MyDisputeRole)[keyof typeof MyDisputeRole];
@@ -409,7 +411,8 @@ export type AdminDispute = DisputeBase & {
 };
 
 export interface BuyerProofBody {
-  bankStatementUrl: string;
+  bankStatementUrl?: string;
+  txHistoryUrl?: string;
 }
 
 export interface SellerProofBody {

@@ -486,6 +486,7 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
     newUserChunkCap: b.newUserChunkCap, newUserTradeThreshold: b.newUserTradeThreshold,
     buyLockMinutes: b.buyLockMinutes, sellerConfirmMinutes: b.sellerConfirmMinutes,
     disputeWindowHours: b.disputeWindowHours,
+    buyRewardPercent: b.buyRewardPercent, sellRewardPercent: b.sellRewardPercent,
     highValueThreshold: b.highValueThreshold, highValueCriticalThreshold: b.highValueCriticalThreshold,
     platformCommissionPerChunk: b.platformCommissionPerChunk,
     apkDownloadUrl: b.apkDownloadUrl, apkVersion: b.apkVersion,

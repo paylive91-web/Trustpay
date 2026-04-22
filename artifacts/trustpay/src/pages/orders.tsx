@@ -37,6 +37,7 @@ export default function Orders() {
   const [bankFile, setBankFile] = useState<File | null>(null);
   const [recordingFile, setRecordingFile] = useState<File | null>(null);
   const [lastTxnFile, setLastTxnFile] = useState<File | null>(null);
+  const [txHistoryFile, setTxHistoryFile] = useState<File | null>(null);
 
   const invalidateDisputes = () => queryClient.invalidateQueries({ queryKey: getGetMyDisputesQueryKey() });
 
@@ -44,16 +45,25 @@ export default function Orders() {
   const sellerProofMut = useSubmitSellerProof();
   const uploading = buyerProofMut.isPending || sellerProofMut.isPending;
 
+  const isOfflineDispute = (d: MyDispute | null) => d?.triggerReason === "seller_offline";
+
   const submitProof = async () => {
     if (!activeProof) return;
     try {
       const role = activeProof.role;
       if (role === "buyer") {
-        if (!bankFile || !recordingFile || !lastTxnFile) { toast({ title: "All proof fields required", variant: "destructive" }); return; }
-        const bankStatementUrl = await fileToDataUrl(bankFile);
-        const recordingUrl = await fileToDataUrl(recordingFile);
-        const lastTxnScreenshotUrl = await fileToDataUrl(lastTxnFile);
-        await buyerProofMut.mutateAsync({ id: activeProof.id, data: { bankStatementUrl } });
+        const offline = isOfflineDispute(activeProof);
+        if (offline) {
+          if (!txHistoryFile && !bankFile) { toast({ title: "Ek proof zaroor chahiye", description: "Transaction history screenshot ya bank statement upload karo", variant: "destructive" }); return; }
+          const data: Record<string, string> = {};
+          if (txHistoryFile) data.txHistoryUrl = await fileToDataUrl(txHistoryFile);
+          if (bankFile) data.bankStatementUrl = await fileToDataUrl(bankFile);
+          await buyerProofMut.mutateAsync({ id: activeProof.id, data });
+        } else {
+          if (!bankFile) { toast({ title: "Bank statement required", variant: "destructive" }); return; }
+          const bankStatementUrl = await fileToDataUrl(bankFile);
+          await buyerProofMut.mutateAsync({ id: activeProof.id, data: { bankStatementUrl } });
+        }
       } else {
         if (!bankFile || !recordingFile || !lastTxnFile) {
           toast({ title: "All three proofs required", variant: "destructive" }); return;
@@ -65,8 +75,8 @@ export default function Orders() {
         ]);
         await sellerProofMut.mutateAsync({ id: activeProof.id, data: { bankStatementUrl, recordingUrl, lastTxnScreenshotUrl } });
       }
-      toast({ title: "Proof uploaded successfully" });
-      setActiveProof(null); setBankFile(null); setRecordingFile(null); setLastTxnFile(null);
+      toast({ title: "Proof upload ho gaya!" });
+      setActiveProof(null); setBankFile(null); setRecordingFile(null); setLastTxnFile(null); setTxHistoryFile(null);
       invalidateDisputes();
     } catch (e: any) {
       toast({ title: "Failed", description: e.message, variant: "destructive" });
@@ -213,6 +223,13 @@ export default function Orders() {
                             +<IndianRupee className="w-3.5 h-3.5 mr-0.5 ml-1" />{order.rewardAmount.toFixed(2)}
                           </div>
                         </div>
+                      ) : order.type === "withdrawal" && (order as any).sellRewardAmount > 0 ? (
+                        <div className="text-right">
+                          <div className="text-muted-foreground text-xs mb-0.5">Sell Reward ({(order as any).sellRewardPercent}%)</div>
+                          <div className="font-semibold text-emerald-600 flex items-center justify-end">
+                            +<IndianRupee className="w-3.5 h-3.5 mr-0.5 ml-1" />{Number((order as any).sellRewardAmount).toFixed(2)}
+                          </div>
+                        </div>
                       ) : (
                         <div className="text-right">
                           <div className="text-muted-foreground text-xs mb-0.5">UPI</div>
@@ -241,27 +258,39 @@ export default function Orders() {
       <Dialog open={!!activeProof} onOpenChange={(o) => !o && setActiveProof(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Upload {activeProof?.role === "buyer" ? "Buyer" : "Seller"} Proof</DialogTitle>
+            <DialogTitle>
+              {activeProof?.role === "buyer"
+                ? isOfflineDispute(activeProof) ? "Payment Proof Upload" : "Buyer Proof Upload"
+                : "Seller Proof Upload"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <UploadTile label="UTR" required file={bankFile} onChange={setBankFile} accept="image/*,application/pdf" hint="PDF / image up to 5 MB" />
-            {activeProof?.role === "seller" && (
+            {activeProof?.role === "buyer" && isOfflineDispute(activeProof) ? (
               <>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+                  Seller offline tha jab order expire hua. Apna payment proof upload karo — admin verify karke refund ya confirmation karenge.
+                </div>
+                <UploadTile label="Transaction History Screenshot" required file={txHistoryFile} onChange={setTxHistoryFile} accept="image/*" hint="Bank app ka transaction history screenshot (required)" />
+                <UploadTile label="Bank Statement PDF" file={bankFile} onChange={setBankFile} accept="image/*,application/pdf" hint="Bank statement optional (extra proof ke liye)" />
+              </>
+            ) : activeProof?.role === "buyer" ? (
+              <>
+                <UploadTile label="Bank Statement" required file={bankFile} onChange={setBankFile} accept="image/*,application/pdf" hint="PDF / image up to 5 MB" />
+                <UploadTile label="Payment Screenshot" required file={recordingFile} onChange={setRecordingFile} accept="image/*" hint="Upload the payment screenshot" />
+                <UploadTile label="Payment Recording" required file={lastTxnFile} onChange={setLastTxnFile} accept="image/*,video/*" hint="Upload the payment recording" />
+              </>
+            ) : (
+              <>
+                <UploadTile label="Bank Statement" required file={bankFile} onChange={setBankFile} accept="image/*,application/pdf" hint="PDF / image up to 5 MB" />
                 <UploadTile label="Screen Recording" required file={recordingFile} onChange={setRecordingFile} accept="image/*,video/*" hint="Image or short video" />
                 <UploadTile label="Last Transaction Screenshot" required file={lastTxnFile} onChange={setLastTxnFile} accept="image/*" hint="Most recent UPI txn from your bank app" />
-              </>
-            )}
-            {activeProof?.role === "buyer" && (
-              <>
-                <UploadTile label="Payment Screenshot" required file={recordingFile} onChange={setRecordingFile} accept="image/*" hint="Upload the payment screenshot" />
-                <UploadTile label="Payment Transaction Recording" required file={lastTxnFile} onChange={setLastTxnFile} accept="image/*,video/*" hint="Upload the payment recording" />
               </>
             )}
             <div className="text-xs text-muted-foreground">All files must be under 5 MB each.</div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setActiveProof(null)}>Cancel</Button>
-            <Button onClick={submitProof} disabled={uploading}>{uploading ? "Uploading..." : "Submit"}</Button>
+            <Button onClick={submitProof} disabled={uploading}>{uploading ? "Uploading..." : "Submit Proof"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

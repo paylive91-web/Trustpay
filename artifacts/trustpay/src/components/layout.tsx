@@ -3,6 +3,7 @@ import BottomNav from "./bottom-nav";
 import PaymentLockBanner from "./payment-lock-banner";
 import SellerOrderBanner from "./seller-order-banner";
 import SellerAlertsPopup from "./seller-alerts-popup";
+import SellerOfflineDisputePopup from "./seller-offline-dispute-popup";
 import { getAuthToken } from "@/lib/auth";
 
 interface LayoutProps {
@@ -47,6 +48,7 @@ export default function Layout({ children, showBottomNav = true }: LayoutProps) 
           {children}
         </div>
         <SellerAlertsPopup />
+        <SellerOfflineDisputePopup />
         <PaymentLockBanner />
         <SellerOrderBanner />
         {showBottomNav && <BottomNav />}

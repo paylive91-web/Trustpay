@@ -1,5 +1,5 @@
 import { db } from "@workspace/db";
-import { ordersTable, usersTable, userUpiIdsTable, disputesTable, transactionsTable, settingsTable } from "@workspace/db";
+import { ordersTable, usersTable, userUpiIdsTable, disputesTable, transactionsTable, settingsTable, userNotificationsTable, trustEventsTable } from "@workspace/db";
 import { eq, and, sql, or } from "drizzle-orm";
 import { getSettings } from "./settings.js";
 
@@ -211,10 +211,13 @@ export async function releaseExpiredLocks() {
 
 /**
  * Auto-confirm pending_confirmation orders whose seller-confirm window expired.
- * Buyer auto-wins.
+ * If the seller was offline (lastSeenAt > 5 min ago), create a dispute instead
+ * of auto-confirming — buyer gets extra +1 trust, seller gets -1 trust with a
+ * warning notification. If seller was online, buyer auto-wins normally.
  */
 export async function autoConfirmExpired() {
   const now = new Date();
+  const offlineCutoff = new Date(now.getTime() - 5 * 60 * 1000); // 5 minutes ago
   const expired = await db.select().from(ordersTable)
     .where(and(
       eq(ordersTable.type, "withdrawal"),
@@ -222,7 +225,55 @@ export async function autoConfirmExpired() {
       sql`${ordersTable.confirmDeadline} < ${now}`,
     ));
   const { settleConfirmedTrade } = await import("./settle.js");
+  const { applyTrustDelta } = await import("./trust.js");
+
   for (const o of expired) {
-    await settleConfirmedTrade(o.id, true);
+    if (!o.lockedByUserId) { await settleConfirmedTrade(o.id, true); continue; }
+
+    // Check if seller is offline (lastSeenAt not set or > 5 min ago)
+    const [seller] = await db.select().from(usersTable).where(eq(usersTable.id, o.userId)).limit(1);
+    const sellerOffline = !seller?.lastSeenAt || new Date(seller.lastSeenAt) < offlineCutoff;
+
+    if (!sellerOffline) {
+      // Seller was online → standard auto-confirm (buyer wins)
+      await settleConfirmedTrade(o.id, true);
+      continue;
+    }
+
+    // Seller was offline → escalate to dispute instead
+    const disputeWindowHours = 24;
+    const buyerDeadline = new Date(now.getTime() + disputeWindowHours * 60 * 60 * 1000);
+    const sellerDeadline = new Date(now.getTime() + disputeWindowHours * 60 * 60 * 1000);
+
+    // Open dispute — order moves to "disputed" status
+    await db.update(ordersTable).set({ status: "disputed", updatedAt: now }).where(eq(ordersTable.id, o.id));
+    await db.insert(disputesTable).values({
+      orderId: o.id,
+      buyerId: o.lockedByUserId,
+      sellerId: o.userId,
+      reason: "Auto-dispute: seller was offline when confirm window expired",
+      triggerReason: "seller_offline",
+      buyerProofDeadline: buyerDeadline,
+      sellerProofDeadline: sellerDeadline,
+    });
+
+    // Seller penalty: -1 trust + notification
+    await applyTrustDelta(o.userId, -1, "seller_offline_dispute", o.id);
+    await db.insert(userNotificationsTable).values({
+      userId: o.userId,
+      kind: "seller_offline_penalty",
+      title: "⚠️ -1 Trust — Order Dispute",
+      body: `Aapka order ₹${parseFloat(o.amount).toFixed(2)} dispute mein chala gaya kyunki aap matching ke dauran offline ho gaye. Agla baar order lock ho to online rahiye.`,
+      severity: "warn",
+    });
+
+    // Buyer notification — let them know they need to submit proof
+    await db.insert(userNotificationsTable).values({
+      userId: o.lockedByUserId,
+      kind: "seller_offline_dispute_buyer",
+      title: "Seller Offline — Dispute Khula",
+      body: `Seller offline the isliye aapka ₹${parseFloat(o.amount).toFixed(2)} ka order dispute mein gaya. Apna payment proof 24 ghante mein upload karein.`,
+      severity: "info",
+    });
   }
 }

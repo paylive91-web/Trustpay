@@ -138,6 +138,8 @@ export default function AdminSettings() {
   const [apkDownloadUrl, setApkDownloadUrl] = useState("");
   const [apkVersion, setApkVersion] = useState("");
   const [forceAppDownload, setForceAppDownload] = useState(true);
+  const [buyRewardPercent, setBuyRewardPercent] = useState<number>(5);
+  const [sellRewardPercent, setSellRewardPercent] = useState<number>(0);
 
   useEffect(() => {
     if (settings) {
@@ -170,6 +172,8 @@ export default function AdminSettings() {
       setApkDownloadUrl((settings as any).apkDownloadUrl || "");
       setApkVersion((settings as any).apkVersion || "1.0.0");
       setForceAppDownload((settings as any).forceAppDownload === true);
+      setBuyRewardPercent(Number((settings as any).buyRewardPercent) || 5);
+      setSellRewardPercent(Number((settings as any).sellRewardPercent) || 0);
       setAdminPassword("");
     }
   }, [settings]);
@@ -261,6 +265,8 @@ export default function AdminSettings() {
       apkDownloadUrl,
       apkVersion,
       forceAppDownload,
+      buyRewardPercent,
+      sellRewardPercent,
     };
     if (adminPassword) payload.adminPassword = adminPassword;
     updateSettingsMut.mutate({ data: payload });
@@ -509,6 +515,46 @@ export default function AdminSettings() {
                 <Button type="button" variant="outline" onClick={addFeeTier} className="w-full" data-testid="button-add-tier">
                   <Plus className="w-4 h-4 mr-2" /> Add Tier
                 </Button>
+              </CardContent>
+            </Card>
+
+            {/* Trade Reward Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Trade Reward Settings</CardTitle>
+                <CardDescription>
+                  Buy reward: buyer ko har successful trade pe milega (order amount ka %). Sell reward: seller ko milega (0% = band hai, future mein enable karo).
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Buy Reward %</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      value={buyRewardPercent}
+                      onChange={(e) => setBuyRewardPercent(parseFloat(e.target.value) || 0)}
+                      placeholder="e.g. 5"
+                    />
+                    <p className="text-[11px] text-muted-foreground">Buyer ko ₹100 trade pe ₹{(100 * buyRewardPercent / 100).toFixed(2)} milega</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Sell Reward %</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      value={sellRewardPercent}
+                      onChange={(e) => setSellRewardPercent(parseFloat(e.target.value) || 0)}
+                      placeholder="e.g. 1"
+                    />
+                    <p className="text-[11px] text-muted-foreground">Seller ko ₹100 trade pe ₹{(100 * sellRewardPercent / 100).toFixed(2)} milega</p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 

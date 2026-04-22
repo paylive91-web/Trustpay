@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { disputesTable, ordersTable, usersTable, transactionsTable } from "@workspace/db";
+import { disputesTable, ordersTable, usersTable, transactionsTable, userNotificationsTable } from "@workspace/db";
 import { eq, and, or, sql, inArray } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../lib/auth.js";
 import { applyTrustDelta, bumpSuccessfulTrade } from "../lib/trust.js";
@@ -47,17 +47,29 @@ function validateProof(dataUrl: unknown, kind: "image" | "pdf"): string | null {
 router.post("/buyer-proof/:id", requireAuth, async (req, res) => {
   const u = (req as any).user;
   const id = parseInt(req.params.id);
-  const { bankStatementUrl } = req.body;
-  const err = validateProof(bankStatementUrl, "pdf");
-  if (err) { res.status(400).json({ error: err }); return; }
+  const { bankStatementUrl, txHistoryUrl } = req.body;
+  // For seller_offline disputes bank statement is optional; txHistory is required
   const [d] = await db.select().from(disputesTable).where(eq(disputesTable.id, id)).limit(1);
   if (!d || d.buyerId !== u.id || d.status !== "open") {
     res.status(400).json({ error: "Cannot upload" }); return;
   }
-  await db.update(disputesTable).set({
-    buyerBankStatementUrl: bankStatementUrl,
-    buyerProofAt: new Date(),
-  }).where(eq(disputesTable.id, id));
+  // Validate bank statement (pdf) only if provided
+  if (bankStatementUrl) {
+    const err = validateProof(bankStatementUrl, "pdf");
+    if (err) { res.status(400).json({ error: err }); return; }
+  }
+  // Validate txHistory screenshot (image) only if provided
+  if (txHistoryUrl) {
+    const err = validateProof(txHistoryUrl, "image");
+    if (err) { res.status(400).json({ error: err }); return; }
+  }
+  if (!bankStatementUrl && !txHistoryUrl) {
+    res.status(400).json({ error: "At least one proof file is required" }); return;
+  }
+  const updates: Record<string, any> = { buyerProofAt: new Date() };
+  if (bankStatementUrl) updates.buyerBankStatementUrl = bankStatementUrl;
+  if (txHistoryUrl) updates.buyerTxHistoryUrl = txHistoryUrl;
+  await db.update(disputesTable).set(updates).where(eq(disputesTable.id, id));
   res.json({ success: true });
 });
 
@@ -119,6 +131,20 @@ router.post("/admin/resolve/:id", requireAdmin, async (req, res) => {
     // Settlement applies +1 trust to both parties for trade_success.
     // Reverse the unintended seller +1, then apply the -10 dispute loss net.
     await applyTrustDelta(d.sellerId, -11, "dispute_loss", d.orderId);
+
+    // For seller_offline disputes: buyer gets an extra +1 trust for patience
+    // + waiting — already got +1 from trade_success, this is the bonus.
+    if (d.triggerReason === "seller_offline") {
+      await applyTrustDelta(d.buyerId, 1, "seller_offline_buyer_bonus", d.orderId);
+      const [ord] = await db.select().from(ordersTable).where(eq(ordersTable.id, d.orderId)).limit(1);
+      await db.insert(userNotificationsTable).values({
+        userId: d.buyerId,
+        kind: "seller_offline_buyer_bonus",
+        title: "✅ +1 Bonus Trust Score",
+        body: `Seller ke offline jaane ke kaaran aapka ₹${ord ? parseFloat(ord.amount).toFixed(2) : "?"} hold mein tha. System ne verify kiya ki aapne real payment ki — wait karne ke liye extra +1 trust score diya ja raha hai!`,
+        severity: "info",
+      });
+    }
   } else {
     // Seller wins - release seller's hold back to balance, reset chunk to available, buyer gets nothing.
     const [chunk] = await db.select().from(ordersTable).where(eq(ordersTable.id, d.orderId)).limit(1);

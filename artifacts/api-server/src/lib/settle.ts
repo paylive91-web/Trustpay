@@ -6,12 +6,6 @@ import { getSettings } from "./settings.js";
 import { checkNewAccountHighValue, checkDisputeRate } from "./fraud.js";
 import { logger } from "./logger.js";
 
-function getRewardPercent(amount: number): number {
-  if (amount >= 2001) return 3;
-  if (amount >= 1001) return 4;
-  return 5;
-}
-
 /**
  * Settle a pending_confirmation chunk: buyer credited (amount + reward),
  * seller's heldBalance and balance both decremented (held was reserved on lock).
@@ -25,6 +19,11 @@ export async function settleConfirmedTrade(chunkOrderId: number, isAutoConfirm =
   const buyerId = chunk.lockedByUserId!;
   const amount = parseFloat(chunk.amount);
 
+  // Fetch admin-configured reward percentages
+  const rewardSettings = await getSettings(["buyRewardPercent", "sellRewardPercent"]);
+  const buyRewardPercent = Math.max(0, parseFloat(rewardSettings.buyRewardPercent) || 5);
+  const sellRewardPct = Math.max(0, parseFloat(rewardSettings.sellRewardPercent) || 0);
+
   // Per-order reservation tracking: chunk.heldAmount records exactly what was
   // moved into seller.heldBalance at lock time (0 for legacy locks created
   // before held-balance semantics). For legacy chunks the seller's main
@@ -37,9 +36,10 @@ export async function settleConfirmedTrade(chunkOrderId: number, isAutoConfirm =
   // successful settlement, so cancelled/expired chunks cost the seller nothing.
   const platformFee = parseFloat(chunk.feeAmount || "0");
 
-  const rewardPercent = getRewardPercent(amount);
+  const rewardPercent = buyRewardPercent;
   const rewardAmount = parseFloat((amount * rewardPercent / 100).toFixed(2));
   const totalCredit = parseFloat((amount + rewardAmount).toFixed(2));
+  const sellRewardAmount = parseFloat((amount * sellRewardPct / 100).toFixed(2));
 
   // Atomic ledger update: order -> confirmed, buyer credit, seller hold released, transaction rows.
   // Seller balance was already debited at lock time (balance -> heldBalance), so settlement
@@ -50,6 +50,8 @@ export async function settleConfirmedTrade(chunkOrderId: number, isAutoConfirm =
       rewardPercent: String(rewardPercent),
       rewardAmount: String(rewardAmount),
       totalAmount: String(totalCredit),
+      sellRewardPercent: String(sellRewardPct),
+      sellRewardAmount: String(sellRewardAmount),
       confirmedAt: new Date(),
       updatedAt: new Date(),
     }).where(eq(ordersTable.id, chunkOrderId));
@@ -62,9 +64,10 @@ export async function settleConfirmedTrade(chunkOrderId: number, isAutoConfirm =
 
     // Seller: debit heldBalance (preferred) and fall back to balance for any
     // shortfall (legacy locks created before held-balance semantics).
+    // Also credit sell reward if configured.
     await tx.update(usersTable).set({
       heldBalance: sql`GREATEST(${usersTable.heldBalance} - ${heldDebit}, 0)`,
-      balance: sql`${usersTable.balance} - ${balanceDebit}`,
+      balance: sql`${usersTable.balance} - ${balanceDebit} + ${sellRewardAmount}`,
       totalWithdrawals: sql`${usersTable.totalWithdrawals} + ${amount}`,
     }).where(eq(usersTable.id, sellerId));
 
@@ -78,6 +81,14 @@ export async function settleConfirmedTrade(chunkOrderId: number, isAutoConfirm =
       amount: String(amount),
       description: `Chunk sold to buyer #${buyerId} (chunk #${chunkOrderId})`,
     });
+    // Sell reward transaction (only if non-zero)
+    if (sellRewardAmount > 0) {
+      await tx.insert(transactionsTable).values({
+        userId: sellerId, orderId: chunkOrderId, type: "credit",
+        amount: String(sellRewardAmount),
+        description: `Sell reward +${sellRewardPct}% (chunk #${chunkOrderId})`,
+      });
+    }
 
     // Per-chunk platform fee: deferred from chunk-creation to here so the
     // seller is only charged when the chunk actually settles. Debit seller,

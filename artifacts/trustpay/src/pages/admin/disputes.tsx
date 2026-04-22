@@ -67,6 +67,9 @@ export default function AdminDisputes() {
                     <div>
                       <div className="font-semibold">Dispute #{d.id} — Order #{d.orderId} — ₹{d.order?.amount}</div>
                       <div className="text-xs text-muted-foreground">Opened {format(new Date(d.createdAt), "MMM dd HH:mm")}</div>
+                      {d.triggerReason === "seller_offline" && (
+                        <Badge className="mt-1 text-[10px] bg-orange-100 text-orange-700 border-orange-300">Seller Was Offline</Badge>
+                      )}
                       {d.reason && <div className="text-xs mt-1 italic">"{d.reason}"</div>}
                     </div>
                     <Badge variant="outline" className={
@@ -83,7 +86,8 @@ export default function AdminDisputes() {
                       <div className="text-sm">{d.buyer?.username} (Trust: {d.buyer?.trustScore})</div>
                       <div className="text-xs text-muted-foreground">UTR: {d.order?.utrNumber || "-"}</div>
                       <div className="text-xs mt-1">
-                        Bank Statement: {d.buyerBankStatementUrl ? <a href={d.buyerBankStatementUrl} target="_blank" className="text-primary underline">View</a> : <span className="text-red-500">Not uploaded</span>}
+                        Bank: {d.buyerBankStatementUrl ? <a href={d.buyerBankStatementUrl} target="_blank" className="text-primary underline">View</a> : <span className="text-muted-foreground">—</span>}
+                        {" · "}TxHistory: {d.buyerTxHistoryUrl ? <a href={d.buyerTxHistoryUrl} target="_blank" className="text-primary underline">View</a> : <span className="text-muted-foreground">—</span>}
                       </div>
                     </div>
                     <div className="border rounded p-2 bg-orange-50/50">
@@ -130,6 +134,9 @@ export default function AdminDisputes() {
                 )}
                 {viewDispute.buyerBankStatementUrl && (
                   <div className="mt-2"><div className="text-xs mb-1">Bank Statement:</div><img src={viewDispute.buyerBankStatementUrl} className="w-full border rounded" /></div>
+                )}
+                {viewDispute.buyerTxHistoryUrl && (
+                  <div className="mt-2"><div className="text-xs mb-1">Transaction History Screenshot:</div><img src={viewDispute.buyerTxHistoryUrl} className="w-full border rounded" /></div>
                 )}
               </div>
               <div>

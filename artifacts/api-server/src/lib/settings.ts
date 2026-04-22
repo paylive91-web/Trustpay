@@ -60,6 +60,9 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   buyLockMinutes: "15",
   sellerConfirmMinutes: "15",
   disputeWindowHours: "24",
+  // Admin-configurable reward percentages (flat %)
+  buyRewardPercent: "5",   // buyer reward % on each trade (default 5%)
+  sellRewardPercent: "0",  // seller reward % on each trade (default 0%, can enable anytime)
 };
 
 export async function getSetting(key: string): Promise<string> {
