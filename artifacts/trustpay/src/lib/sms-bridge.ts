@@ -3,7 +3,7 @@ declare global {
     TrustPayNative?: {
       requestSmsPermission?: () => void;
       isSmsPermissionGranted?: () => boolean;
-      onSmsReceived?: (sms: string) => void;
+      onSmsReceived?: (sms: string, sender?: string) => void;
     };
   }
 }
@@ -15,15 +15,215 @@ export interface SmsMessage {
 
 type SmsListener = (msg: SmsMessage) => void;
 
-const ALLOWED_SENDERS = new Set([
-  "HDFCBK", "HDFC", "HDFCBN", "SBIINB", "SBIPSG", "SBISMS",
-  "ICICIB", "ICICI", "AXISBK", "AXISNB", "KOTAKB", "KOTAKN",
-  "PNBSMS", "PNBMOB", "BOIBNK", "IDBIBN", "YESBNK", "FEDBKL",
-  "CANBNK", "UNIONB", "INDBNK", "CENTBK", "OBCBNK", "SNDBNK",
-  "INDBLL", "RBLBNK", "IOBSMS", "ALLBNK", "VIJBNK", "DENABNK",
-  "PHONEPE", "GPAYOK", "GPAY", "PAYTM", "PAYTMB", "AMZPAY",
-  "NPCIUP", "UPIBNK", "BHIMUPI",
+/**
+ * Trusted SMS sender IDs for Indian banks, UPI apps, and wallets.
+ * 
+ * Real Indian SMS senders use DLT (Distributed Ledger Technology) headers in the format:
+ *   <2-letter operator/region prefix>-<6-char header>[-<1-char category: S/P/T/G>]
+ * 
+ * Examples seen in the wild:
+ *   "VK-HDFCBK", "JD-HDFCBK-S", "AX-HDFCBK", "BP-SBIINB", "BH-PAYTM-S",
+ *   "AD-PHONEPE", "JM-GPAYIN-S", "TM-AMZNPY"
+ * 
+ * isTrustedSender() splits sender on common separators and matches each
+ * segment against this list — so prefixes/suffixes don't break detection.
+ */
+const ALLOWED_SENDERS = new Set<string>([
+  // ===== UPI APPS / WALLETS (notify before bank SMS) =====
+  // PhonePe
+  "PHONEPE", "PHONPE", "PHPEPL", "PHPEUP", "PHPE",
+  // Google Pay
+  "GPAY", "GPAYIN", "GOOGLEPAY", "GOOGPY", "GPAYTM",
+  // Paytm
+  "PAYTM", "PAYTMB", "PYTM", "PAYTMS", "PYTMUP",
+  // Amazon Pay
+  "AMZNPY", "AMZPAY", "AMAZONPAY", "AMAZPY", "AMZUPI",
+  // BHIM / NPCI
+  "BHIM", "BHIMUPI", "BHIMPL", "NPCIBHIM", "NPCI", "NPCIUP", "NPCIPN",
+  // WhatsApp Pay
+  "WHTSPP", "WAPAY", "WHATSAPP", "WAPAYM",
+  // MobiKwik
+  "MOBKWK", "MOBIKWIK", "MBKWIK", "MBKWK", "MOBWIK",
+  // CRED
+  "CRED", "CREDPAY", "CREDIT", "CREDPY", "CREDCL",
+  // Slice
+  "SLICE", "SLICEP", "SLCEPY",
+  // Jupiter
+  "JUPITER", "JPITER", "JPTRMY", "JUPMNY",
+  // Fi Money
+  "FIMONY", "FIMONEY", "FIBANK", "FIPAY", "FIMNYC",
+  // Niyo
+  "NIYO", "NIYOIN", "NIYOPY", "NIYOSL",
+  // Freo / MoneyTap
+  "FREO", "FREOPY", "MNTPAY", "MNYTAP",
+  // FamPay
+  "FAMPAY", "FAMPYS", "FAMAPP",
+  // LazyPay
+  "LAZPAY", "LAZYPAY", "LAZYPY",
+  // Simpl
+  "SIMPL", "SIMPLB", "SIMPLE", "SMPLPY",
+  // Ola Money
+  "OLAMNY", "OLAMONEY", "OLAFIN", "OLAMON",
+  // Airtel Payments Bank
+  "AIRTEL", "AIRPYB", "APBANK", "AIRTPB", "AIRBNK", "AIRMNY",
+  // JioMoney / Jio Payments Bank
+  "JIOMNY", "JIOPAY", "JIOFIN", "JIOPB", "JIOBNK",
+  // FreeCharge
+  "FRCRGE", "FREECG", "FREECHRG", "FRCRG",
+  // PayZapp
+  "PAYZAP", "PAYZPP", "PYZAPP",
+  // RuPay infra
+  "RUPAY", "RPAYIN",
+  // UPI generic
+  "UPI", "UPIBNK", "UPIPN", "UPIPAY",
+
+  // ===== PUBLIC SECTOR BANKS (12 main) =====
+  // SBI
+  "SBI", "SBIINB", "SBIPSG", "SBISMS", "SBIBNK", "SBIUPI", "SBIBKN", "SBIATM",
+  // PNB (Punjab National Bank)
+  "PNB", "PNBSMS", "PNBMOB", "PNBBNK", "PNBSBI",
+  // Bank of Baroda
+  "BOB", "BARODA", "BARODB", "BOBANK", "BOBSMS", "BOBIBN",
+  // Canara Bank
+  "CANBNK", "CANARA", "CANBKK", "CANBNK",
+  // Union Bank of India
+  "UNION", "UNIONB", "UBOFI", "UBIBKN", "UBINET",
+  // Bank of India
+  "BOI", "BOIBNK", "BOIIND", "BOIINB",
+  // Indian Bank
+  "INDB", "INDBNK", "INDIANB", "INDBLL",
+  // Central Bank of India
+  "CENTBK", "CBOI", "CBOIIN", "CBINET",
+  // Indian Overseas Bank
+  "IOB", "IOBSMS", "IOBANK", "IOBKNT",
+  // UCO Bank
+  "UCO", "UCOBNK", "UCOBKN",
+  // Bank of Maharashtra
+  "BOMBNK", "BOMHRA", "MAHBNK", "BOMSMS",
+  // Punjab & Sind Bank
+  "PSB", "PSBANK", "PSBSND", "PSBSMS",
+
+  // ===== PRIVATE BANKS (15 major) =====
+  // HDFC
+  "HDFC", "HDFCBK", "HDFCBN", "HDFCNT", "HDFCBNK",
+  // ICICI
+  "ICICI", "ICICIB", "ICICIBK", "ICICIN", "ICCIBN",
+  // Axis
+  "AXIS", "AXISBK", "AXISBN", "AXISNB", "AXISMS",
+  // Kotak Mahindra
+  "KOTAK", "KOTAKB", "KOTAKM", "KOTAKN", "KMBANK",
+  // IndusInd
+  "INDUS", "INDUSB", "INDSND", "INDSBN", "IBLBNK",
+  // Yes Bank
+  "YES", "YESBNK", "YESBK", "YESBKN",
+  // IDFC First
+  "IDFC", "IDFCB", "IDFCFB", "IDFCFRST", "IDFFRST",
+  // Federal Bank
+  "FED", "FEDBNK", "FEDRAL", "FEDBKL",
+  // RBL Bank
+  "RBL", "RBLBNK", "RBLCRD", "RBLBKN",
+  // Bandhan
+  "BNDHN", "BANDHN", "BNDHBK", "BANDHAN",
+  // South Indian Bank
+  "SIB", "SOUTHB", "SIBANK", "SIBL",
+  // Karur Vysya Bank
+  "KVB", "KARVYB", "KARURVB", "KARVYS",
+  // City Union Bank
+  "CITY", "CTYUNI", "CUBSMS", "CITYUN",
+  // DCB Bank
+  "DCB", "DCBANK", "DCBBNK",
+  // Tamilnad Mercantile
+  "TMB", "TMBLTD", "TMBANK",
+
+  // ===== OLD PRIVATE / REGIONAL BANKS (8) =====
+  // J&K Bank
+  "JKBANK", "JKBNK", "JKBK",
+  // Karnataka Bank
+  "KBL", "KARBNK", "KARNTK",
+  // Nainital Bank
+  "NTNL", "NAINIB", "NTLBNK",
+  // Dhanlaxmi Bank
+  "DHAN", "DHANBK", "DHNBNK", "DLBNET",
+  // Catholic Syrian Bank / CSB
+  "CSB", "CTHSYR", "CSBANK", "CSBNET",
+  // Lakshmi Vilas Bank (now DBS)
+  "LVB", "LVBANK",
+  // IDBI
+  "IDBI", "IDBIBN", "IDBIBK", "IDBINET",
+  // Saraswat Cooperative
+  "SARSWT", "SARASW", "SARASWAT",
+
+  // ===== SMALL FINANCE BANKS (10) =====
+  "AUSFB", "AUBNK", "AUFBNK", "AUSMAL",
+  "EQUITS", "EQTSFB", "EQUSFB", "EQTBNK",
+  "UJVSFB", "UJJVAN", "UJJSFB", "UJVBNK",
+  "ESAFSFB", "ESAFBN", "ESAFBK", "ESAFSF",
+  "SURYDY", "SRYDFB", "SURFB", "SURYBK",
+  "JANASF", "JANSFB", "JANBNK",
+  "CAPSFB", "CPTSFB", "CAPBNK",
+  "FINCRE", "FINCAR", "FNCRSFB", "FINBNK",
+  "SHIVLK", "SHVLK", "SHIVBK",
+  "UNITY", "UNTYFB", "UNTYBK",
+
+  // ===== FOREIGN BANKS IN INDIA (5) =====
+  "HSBC", "HSBCBK", "HSBCBN", "HSBCIN",
+  "CITI", "CITIBK", "CITIBN", "CITINT",
+  "SCBANK", "STDCH", "STDCHB", "SCB", "SCBNET",
+  "DBS", "DBSBK", "DBSBNK", "DBSIN",
+  "DEUTSC", "DBANK", "DEUTBK",
+
+  // ===== COOPERATIVE / OTHER (extra) =====
+  "COSMOS", "CSMOSB",
+  "ABHYUD", "ABHBNK",
+  "NKGSB",
+  "TJSB",
+  "ANDHRA", "ANDBNK",
+  "VIJAYA", "VIJBNK",
+  "DENA", "DENABNK",
+  "ALLAHABAD", "ALLBNK",
+  "SYNDIC", "SNDBNK",
+  "ORIENT", "OBC", "OBCBNK",
+  "CORPBK", "CORPBANK",
 ]);
+
+/**
+ * DLT category single-char suffixes that may be appended without a separator.
+ * Strip these and re-check the allowlist.
+ */
+const DLT_CATEGORY_SUFFIXES = new Set(["S", "P", "T", "G", "M"]);
+
+/**
+ * Validate an SMS sender ID against the trusted-sender allowlist.
+ * Tolerates DLT operator prefixes and category suffixes.
+ *
+ * Examples accepted:
+ *   "HDFCBK", "VK-HDFCBK", "JD-HDFCBK-S", "BP-SBIINB",
+ *   "AD-PHONEPE", "JM-GPAYIN-S", "BH-PAYTM-S"
+ *
+ * Examples rejected:
+ *   "+919876543210", "1234567", "RANDOM-TEXT", ""
+ */
+export function isTrustedSender(sender: string): boolean {
+  if (!sender) return false;
+  const upper = sender.toUpperCase().trim();
+  if (!upper) return false;
+
+  // Split on every common separator: dash, underscore, dot, space, plus, slash
+  const segments = upper.split(/[-_.\s+/\\]+/).filter((s) => s.length >= 3);
+
+  for (const seg of segments) {
+    if (ALLOWED_SENDERS.has(seg)) return true;
+
+    // Try stripping a single DLT category suffix (S/P/T/G/M) attached without dash
+    if (seg.length > 4) {
+      const last = seg.slice(-1);
+      if (DLT_CATEGORY_SUFFIXES.has(last)) {
+        if (ALLOWED_SENDERS.has(seg.slice(0, -1))) return true;
+      }
+    }
+  }
+  return false;
+}
 
 const listeners = new Set<SmsListener>();
 let bridgeInstalled = false;
@@ -41,12 +241,6 @@ export function addSmsListener(fn: SmsListener): () => void {
   listeners.add(fn);
   installBridge();
   return () => listeners.delete(fn);
-}
-
-export function isTrustedSender(sender: string): boolean {
-  if (!sender) return false;
-  const s = sender.toUpperCase().trim();
-  return ALLOWED_SENDERS.has(s);
 }
 
 export function requestSmsPermission() {
