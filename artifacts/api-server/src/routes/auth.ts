@@ -54,15 +54,17 @@ router.post("/register", async (req, res) => {
     return;
   }
 
-  // Strict 1 device = 1 registration. Reject if this device fingerprint
-  // already belongs to another user. Logging into another account from the
-  // same phone is still allowed — only a brand new registration is blocked.
+  // Max 3 registrations per device fingerprint. Logging into an existing
+  // account from the same phone is always allowed — only new registrations
+  // are counted against the per-device limit.
   if (deviceFingerprint) {
     const { deviceFingerprintsTable } = await import("@workspace/db");
-    const existingDevice = await db.select().from(deviceFingerprintsTable)
-      .where(eq(deviceFingerprintsTable.fingerprint, deviceFingerprint)).limit(1);
-    if (existingDevice[0]) {
-      res.status(400).json({ error: "Only 1 account is allowed per mobile device. Please login to your existing account." });
+    const deviceRows = await db
+      .selectDistinct({ userId: deviceFingerprintsTable.userId })
+      .from(deviceFingerprintsTable)
+      .where(eq(deviceFingerprintsTable.fingerprint, deviceFingerprint));
+    if (deviceRows.length >= 3) {
+      res.status(400).json({ error: "Only 3 accounts are allowed per mobile device. Please login to your existing account." });
       return;
     }
   }

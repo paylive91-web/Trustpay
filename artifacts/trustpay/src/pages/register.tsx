@@ -185,7 +185,7 @@ export default function Register() {
         setLocation("/");
       }
     } catch (err: any) {
-      if (err.message && err.message.includes("1 account is allowed")) {
+      if (err.message && (err.message.includes("1 account is allowed") || err.message.includes("accounts are allowed per mobile device"))) {
         setShowDuplicateDialog(true);
       } else {
         toast({ title: "Registration failed", description: err.message, variant: "destructive" });

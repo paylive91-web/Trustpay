@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, Copy, Share2, Users, TrendingUp, IndianRupee, Award, Flame } from "lucide-react";
+import { Gift, Copy, Share2, Users, TrendingUp, IndianRupee, Award, Flame, Download } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
 
@@ -49,34 +49,57 @@ export default function Invite() {
     toast({ title: "Invite link copied!" });
   };
 
+  const dataUrlToBlob = (dataUrl: string): Blob => {
+    const [header, b64] = dataUrl.split(",");
+    const mime = header.match(/:(.*?);/)?.[1] || "image/jpeg";
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type: mime });
+  };
+
+  const handleSaveImage = () => {
+    if (!inviteShareImageUrl) return;
+    try {
+      const blob = inviteShareImageUrl.startsWith("data:")
+        ? dataUrlToBlob(inviteShareImageUrl)
+        : undefined;
+      const url = blob ? URL.createObjectURL(blob) : inviteShareImageUrl;
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "trustpay-invite.jpg";
+      a.click();
+      if (blob) setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast({ title: "Image save ho rahi hai", description: "Gallery mein save hone ke baad share karo" });
+    } catch {
+      toast({ title: "Save failed", variant: "destructive" });
+    }
+  };
+
   const handleShare = async () => {
     const text = `Join TrustPay and start earning! 6% earning platform. Use my referral code: ${referralCode}\n${shareUrl}`;
     if (navigator.share) {
+      // Try sharing with image via Web Share API
+      if (inviteShareImageUrl) {
+        try {
+          const blob = inviteShareImageUrl.startsWith("data:")
+            ? dataUrlToBlob(inviteShareImageUrl)
+            : await fetch(inviteShareImageUrl).then((r) => r.blob());
+          const ext = blob.type.includes("png") ? "png" : "jpg";
+          const file = new File([blob], `trustpay-invite.${ext}`, { type: blob.type || "image/jpeg" });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ title: "Join TrustPay", text, files: [file] });
+            return;
+          }
+        } catch {}
+        // Image share not supported — prompt user to save image manually
+        toast({
+          title: "Image alag se save karo",
+          description: "Neeche 'Save Image' dabao → gallery se attach karke share karo",
+        });
+      }
+      // Text + link share
       try {
-        // Try sharing with image if admin has uploaded one
-        if (inviteShareImageUrl) {
-          try {
-            let blob: Blob;
-            if (inviteShareImageUrl.startsWith("data:")) {
-              // Convert data URL directly to blob (no fetch needed)
-              const [header, b64] = inviteShareImageUrl.split(",");
-              const mime = header.match(/:(.*?);/)?.[1] || "image/jpeg";
-              const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-              blob = new Blob([bytes], { type: mime });
-            } else {
-              const r = await fetch(inviteShareImageUrl);
-              blob = await r.blob();
-            }
-            const ext = blob.type.includes("png") ? "png" : "jpg";
-            const file = new File([blob], `trustpay-invite.${ext}`, { type: blob.type || "image/jpeg" });
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-              // Include URL in text since some browsers reject url+files together
-              await navigator.share({ title: "Join TrustPay", text, files: [file] });
-              return;
-            }
-          } catch {}
-        }
-        // Fallback: text + url only
         await navigator.share({ title: "Join TrustPay", text: `Join TrustPay and start earning! 6% earning platform. Use my referral code: ${referralCode}`, url: shareUrl });
       } catch {}
     } else {
@@ -176,6 +199,33 @@ export default function Invite() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Invite Image — shown when admin has uploaded one */}
+        {inviteShareImageUrl && (
+          <Card className="border-none shadow-sm overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Invite Image</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 p-4 pt-0">
+              <img
+                src={inviteShareImageUrl}
+                alt="Invite"
+                className="w-full rounded-xl object-cover max-h-64"
+              />
+              <p className="text-xs text-muted-foreground text-center">
+                Image save karo → WhatsApp/Telegram mein manually attach karke share karo
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleSaveImage}
+                className="w-full rounded-xl"
+              >
+                <Download className="w-4 h-4 mr-2" /> Save Image to Gallery
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* How it works */}
         <Card className="border-none shadow-sm">
