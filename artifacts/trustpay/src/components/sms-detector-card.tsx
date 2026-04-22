@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { MessageSquare, CheckCircle2, Clock, Smartphone, Zap } from "lucide-react";
 import { parseBankSms } from "@/lib/utr-validator";
+import { addSmsListener } from "@/lib/sms-bridge";
 
 interface SmsDetectorCardProps {
   submittedAt: string;
@@ -15,15 +16,6 @@ const AMOUNT_TOLERANCE = 1;
 
 function isAndroid(): boolean {
   return /android/i.test(navigator.userAgent);
-}
-
-declare global {
-  interface Window {
-    TrustPayNative?: {
-      requestSmsPermission?: () => void;
-      onSmsReceived?: (sms: string) => void;
-    };
-  }
 }
 
 export default function SmsDetectorCard({
@@ -49,10 +41,8 @@ export default function SmsDetectorCard({
 
   useEffect(() => {
     if (!isAndroid()) return;
-
-    function handleSmsEvent(e: Event) {
-      const sms: string = (e as CustomEvent).detail?.sms ?? "";
-      if (!sms || confirmedRef.current) return;
+    const remove = addSmsListener((sms: string) => {
+      if (confirmedRef.current) return;
       const parsed = parseBankSms(sms);
       if (!parsed) return;
       const utrMatch = parsed.utr.toUpperCase() === utrNumber.toUpperCase();
@@ -62,22 +52,8 @@ export default function SmsDetectorCard({
         setMatched(true);
         onAutoConfirm();
       }
-    }
-
-    document.addEventListener("trustpay:sms", handleSmsEvent);
-
-    if (window.TrustPayNative) {
-      window.TrustPayNative.onSmsReceived = (sms: string) => {
-        document.dispatchEvent(new CustomEvent("trustpay:sms", { detail: { sms } }));
-      };
-    }
-
-    return () => {
-      document.removeEventListener("trustpay:sms", handleSmsEvent);
-      if (window.TrustPayNative) {
-        window.TrustPayNative.onSmsReceived = undefined;
-      }
-    };
+    });
+    return remove;
   }, [utrNumber, amount, onAutoConfirm]);
 
   if (!isAndroid()) {
@@ -146,20 +122,17 @@ export default function SmsDetectorCard({
           {mm}:{ss}
         </div>
       </div>
-
       <div className="w-full h-1.5 bg-fuchsia-100 rounded-full overflow-hidden">
         <div
           className="h-full bg-gradient-to-r from-fuchsia-500 to-sky-500 rounded-full transition-all duration-1000"
           style={{ width: `${progress}%` }}
         />
       </div>
-
       <div className="text-[11px] text-fuchsia-700 leading-snug">
         Bank SMS mein UTR{" "}
-        <span className="font-mono font-semibold">{utrNumber}</span> aur ₹{amount} match hone
-        par automatically confirm ho jayega.
+        <span className="font-mono font-semibold">{utrNumber}</span> aur ₹{amount} match hone par
+        automatically confirm ho jayega.
       </div>
-
       <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
         <CheckCircle2 className="w-3 h-3 text-emerald-500" />
         5 minute baad SMS nahi aaya to manual confirm option pe jaana hoga

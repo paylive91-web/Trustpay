@@ -1,41 +1,25 @@
 import React, { useEffect, useState } from "react";
-import { MessageSquare, ShieldCheck, Zap, Lock } from "lucide-react";
+import { MessageSquare, ShieldCheck, Zap, Lock, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getAuthToken } from "@/lib/auth";
+import { isSmsPermissionGranted, hasNativeBridge, requestSmsPermission } from "@/lib/sms-bridge";
 
 const STORAGE_KEY = "tp_sms_permission_granted";
-
-declare global {
-  interface Window {
-    TrustPayNative?: {
-      requestSmsPermission?: () => void;
-      isSmsPermissionGranted?: () => boolean;
-      onSmsReceived?: (sms: string) => void;
-    };
-  }
-}
 
 function isAndroid(): boolean {
   return /android/i.test(navigator.userAgent);
 }
 
-function checkNativePermissionGranted(): boolean {
-  if (window.TrustPayNative?.isSmsPermissionGranted) {
-    return window.TrustPayNative.isSmsPermissionGranted();
-  }
-  return localStorage.getItem(STORAGE_KEY) === "granted";
-}
-
 export default function SmsPermissionPopup() {
   const [show, setShow] = useState(false);
+  const [noBridge, setNoBridge] = useState(false);
 
   useEffect(() => {
     if (!isAndroid()) return;
     const token = getAuthToken();
     if (!token) return;
-
-    if (checkNativePermissionGranted()) return;
-
+    if (isSmsPermissionGranted()) return;
+    setNoBridge(!hasNativeBridge());
     setShow(true);
 
     function handlePermissionResult(e: Event) {
@@ -55,11 +39,8 @@ export default function SmsPermissionPopup() {
   if (!show) return null;
 
   function handleAllow() {
-    if (window.TrustPayNative?.requestSmsPermission) {
-      window.TrustPayNative.requestSmsPermission();
-    } else {
-      localStorage.setItem(STORAGE_KEY, "granted");
-      setShow(false);
+    if (hasNativeBridge()) {
+      requestSmsPermission();
     }
   }
 
@@ -73,38 +54,55 @@ export default function SmsPermissionPopup() {
               <MessageSquare className="w-10 h-10 text-white" />
             </div>
           </div>
+
           <div className="text-center space-y-1">
             <div className="text-xl font-black tracking-tight">SMS Permission Required</div>
             <div className="text-sm text-slate-400">Automatic payment verification ke liye</div>
           </div>
-          <div className="space-y-3">
-            <PermissionFeature
-              icon={<Zap className="w-4 h-4 text-yellow-400" />}
-              title="Auto UTR Detection"
-              desc="Bank SMS se UTR number automatically read hoga — koi manual entry nahi"
-            />
-            <PermissionFeature
-              icon={<ShieldCheck className="w-4 h-4 text-emerald-400" />}
-              title="Instant Verification"
-              desc="Payment SMS match hote hi order auto-confirm — seller ka wait khatam"
-            />
-            <PermissionFeature
-              icon={<Lock className="w-4 h-4 text-sky-400" />}
-              title="Fraud Protection"
-              desc="Fake UTR aur duplicate payments automatically block ho jaate hain"
-            />
-          </div>
+
+          {noBridge ? (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+              <div className="text-sm text-amber-200 leading-snug">
+                Yeh feature sirf <strong>TrustPay Android App</strong> mein available hai. Browser
+                mein SMS permission nahi diya ja sakta. App install karne ke baad yeh
+                screen automatically unlock ho jayegi.
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <PermissionFeature
+                icon={<Zap className="w-4 h-4 text-yellow-400" />}
+                title="Auto UTR Detection"
+                desc="Bank SMS se UTR number automatically read hoga — koi manual entry nahi"
+              />
+              <PermissionFeature
+                icon={<ShieldCheck className="w-4 h-4 text-emerald-400" />}
+                title="Instant Verification"
+                desc="Payment SMS match hote hi order auto-confirm — seller ka wait khatam"
+              />
+              <PermissionFeature
+                icon={<Lock className="w-4 h-4 text-sky-400" />}
+                title="Fraud Protection"
+                desc="Fake UTR aur duplicate payments automatically block ho jaate hain"
+              />
+            </div>
+          )}
+
           <div className="bg-white/5 border border-white/10 rounded-2xl p-3 text-xs text-slate-400 leading-relaxed">
             TrustPay sirf payment SMS padhta hai — personal messages, OTPs, ya koi aur SMS kabhi
             access nahi ki jaati.
           </div>
+
           <Button
-            className="w-full h-14 text-base font-bold rounded-2xl bg-gradient-to-r from-fuchsia-500 via-sky-500 to-emerald-500 hover:from-fuchsia-600 hover:via-sky-600 hover:to-emerald-600 text-white shadow-[0_4px_24px_rgba(99,102,241,0.5)] border-0"
+            className="w-full h-14 text-base font-bold rounded-2xl bg-gradient-to-r from-fuchsia-500 via-sky-500 to-emerald-500 hover:from-fuchsia-600 hover:via-sky-600 hover:to-emerald-600 text-white shadow-[0_4px_24px_rgba(99,102,241,0.5)] border-0 disabled:opacity-50"
             onClick={handleAllow}
+            disabled={noBridge}
           >
             <MessageSquare className="mr-2 h-5 w-5" />
-            Allow SMS Permission
+            {noBridge ? "TrustPay App Required" : "Allow SMS Permission"}
           </Button>
+
           <p className="text-center text-[11px] text-slate-500">
             Yeh permission bina diye app properly kaam nahi karega.
           </p>

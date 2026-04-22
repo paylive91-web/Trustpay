@@ -235,8 +235,13 @@ router.post("/submit/:id", requireAuth, async (req, res) => {
   const id = parseInt(asString(req.params.id));
   const { utrNumber, screenshotUrl, recordingUrl } = req.body;
   const utrClean = String(utrNumber || "").trim().toUpperCase();
+  const BANK_UTR_PATTERNS = [/^[A-Z]{1,6}\d{6,11}$/, /^\d{12}$/, /^[A-Z]{2,4}[A-Z0-9]{8,10}$/];
   if (!/^[A-Z0-9]{12}$/.test(utrClean) || /^(.)\1+$/.test(utrClean)) {
-    res.status(400).json({ error: "Invalid UTR format. UTR must be exactly 12 alphanumeric characters (e.g. T12345678901) and cannot be repeated digits." });
+    res.status(400).json({ error: "Invalid UTR format. UTR must be exactly 12 alphanumeric characters (e.g. T12345678901)." });
+    return;
+  }
+  if (!BANK_UTR_PATTERNS.some((re) => re.test(utrClean))) {
+    res.status(400).json({ error: "UTR does not match a recognised Indian bank format (e.g. T12345678901, HDFC12345678, 123456789012)." });
     return;
   }
   if (!screenshotUrl) { res.status(400).json({ error: "Payment screenshot required" }); return; }
