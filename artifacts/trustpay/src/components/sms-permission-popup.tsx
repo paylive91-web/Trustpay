@@ -44,6 +44,10 @@ export default function SmsPermissionPopup() {
     }
   }
 
+  function handleInstallApp() {
+    window.open("https://play.google.com/store", "_blank");
+  }
+
   return (
     <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/70 backdrop-blur-sm">
       <div className="w-full max-w-[430px] rounded-t-[32px] bg-gradient-to-b from-[#0f172a] to-[#1e293b] text-white overflow-hidden shadow-[0_-20px_80px_rgba(0,0,0,0.6)]">
@@ -65,7 +69,7 @@ export default function SmsPermissionPopup() {
               <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
               <div className="text-sm text-amber-200 leading-snug">
                 Yeh feature sirf <strong>TrustPay Android App</strong> mein available hai. Browser
-                mein SMS permission nahi diya ja sakta. App install karne ke baad yeh
+                mein SMS permission nahi diya ja sakta. APK install karne ke baad yeh
                 screen automatically unlock ho jayegi.
               </div>
             </div>
@@ -102,9 +106,18 @@ export default function SmsPermissionPopup() {
             <MessageSquare className="mr-2 h-5 w-5" />
             Allow SMS Permission
           </Button>
+          {noBridge && (
+            <Button
+              variant="outline"
+              className="w-full h-12 rounded-2xl border-white/15 bg-white/5 text-white hover:bg-white/10"
+              onClick={handleInstallApp}
+            >
+              Install APK App
+            </Button>
+          )}
           <p className="text-center text-[11px] text-slate-500">
             {noBridge
-              ? "TrustPay Android app install karo taaki yeh button active ho sake."
+              ? "Browser se nahi chalega. APK install karo ya app open karo."
               : "Yeh permission bina diye auto-verify kaam nahi karega."}
           </p>
         </div>
