@@ -17,26 +17,20 @@ const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 type LoginStep = "login" | "forgot_google";
 
 export default function Login() {
-  const { data: brandSettings } = useGetAppSettings();
+  const { data: settings } = useGetAppSettings();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { data: user, isLoading: isUserLoading } = useGetMe({ query: { queryKey: ["me"], retry: false } });
-  const { data: settings } = useGetAppSettings();
-
   const [step, setStep] = useState<LoginStep>("login");
   const [loading, setLoading] = useState(false);
-
-  // Login form state
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
-
-  // Google forgot-password state
   const [googleIdToken, setGoogleIdToken] = useState<string | null>(null);
   const [verifiedHint, setVerifiedHint] = useState<string>("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
 
-  const googleClientId = (settings as any)?.googleClientId as string | undefined;
+  const googleClientId = settings?.googleClientId;
 
   useEffect(() => {
     if (user && !isUserLoading) {
@@ -57,14 +51,14 @@ export default function Login() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ identifier, password, deviceFingerprint: getDeviceFingerprint() }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Login failed");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Login failed (${res.status})`);
       setAuthToken(data.token);
       localStorage.removeItem("popup_seen_session");
       toast({ title: "Login successful" });
       setLocation("/");
     } catch (err: any) {
-      toast({ title: "Login failed", description: err.message, variant: "destructive" });
+      toast({ title: "Login failed", description: err?.message || "Unknown error", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -78,8 +72,6 @@ export default function Login() {
     setLoading(true);
     try {
       const idToken = await getGoogleIdToken(googleClientId);
-      // Decode the email out of the JWT just for display ("Verified as
-      // user@gmail.com"). The server still re-verifies on submit.
       let hint = "";
       try {
         const payload = JSON.parse(atob(idToken.split(".")[1]));
@@ -89,7 +81,7 @@ export default function Login() {
       setVerifiedHint(hint);
       toast({ title: "Google verified", description: hint });
     } catch (err: any) {
-      toast({ title: "Verification failed", description: err.message, variant: "destructive" });
+      toast({ title: "Verification failed", description: err?.message || "Unknown error", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -116,8 +108,8 @@ export default function Login() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ idToken: googleIdToken, newPassword }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to reset password");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Failed to reset password (${res.status})`);
       toast({ title: "Password badal diya!", description: "Ab naye password se login karein." });
       setStep("login");
       setPassword("");
@@ -126,7 +118,7 @@ export default function Login() {
       setGoogleIdToken(null);
       setVerifiedHint("");
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "Error", description: err?.message || "Unknown error", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -135,8 +127,8 @@ export default function Login() {
   return (
     <Layout showBottomNav={false}>
       <div className="flex flex-col items-center justify-center min-h-screen p-6">
-        <img src={(brandSettings as any)?.appLogoUrl || logoPath} alt={`${(brandSettings as any)?.appName || "TrustPay"} Logo`} className="w-24 h-24 mb-2 rounded-2xl object-contain" />
-        <div className="text-xl font-bold mb-6 text-primary">{(brandSettings as any)?.appName || "TrustPay"}</div>
+        <img src={settings?.appLogoUrl || logoPath} alt={`${settings?.appName || "TrustPay"} Logo`} className="w-24 h-24 mb-2 rounded-2xl object-contain" />
+        <div className="text-xl font-bold mb-6 text-primary">{settings?.appName || "TrustPay"}</div>
 
         {step === "login" && (
           <>
@@ -145,21 +137,11 @@ export default function Login() {
             <form onSubmit={handleLogin} className="w-full space-y-4">
               <div className="space-y-2">
                 <Label>Username or Mobile Number</Label>
-                <Input
-                  type="text"
-                  placeholder="Username or 10-digit mobile"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                />
+                <Input type="text" placeholder="Username or 10-digit mobile" value={identifier} onChange={(e) => setIdentifier(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Password</Label>
-                <Input
-                  type="password"
-                  placeholder="Enter password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                <Input type="password" placeholder="Enter password" value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
               <div className="text-right">
                 <button
@@ -188,9 +170,7 @@ export default function Login() {
         {step === "forgot_google" && (
           <>
             <h1 className="text-2xl font-bold mb-2">Forgot Password</h1>
-            <p className="text-muted-foreground mb-6 text-center">
-              Apne bound Google account se verify karke naya password set karein.
-            </p>
+            <p className="text-muted-foreground mb-6 text-center">Apne bound Google account se verify karke naya password set karein.</p>
             <form onSubmit={handleResetPasswordWithGoogle} className="w-full space-y-4">
               <div className="rounded-xl border p-4 bg-muted/30">
                 <div className="flex items-start gap-3 mb-3">
@@ -202,9 +182,7 @@ export default function Login() {
                     {googleIdToken ? (
                       <div className="text-xs text-green-700 mt-0.5 truncate">Verified: {verifiedHint || "OK"}</div>
                     ) : (
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        Sirf wahi user reset kar sakta hai jo profile me Gmail bind kar chuka ho.
-                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5">Sirf wahi user reset kar sakta hai jo profile me Gmail bind kar chuka ho.</div>
                     )}
                   </div>
                 </div>
@@ -223,35 +201,16 @@ export default function Login() {
 
               <div className="space-y-2">
                 <Label>New Password</Label>
-                <Input
-                  type="password"
-                  placeholder="At least 6 characters"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  disabled={!googleIdToken}
-                />
+                <Input type="password" placeholder="At least 6 characters" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} disabled={!googleIdToken} />
               </div>
               <div className="space-y-2">
                 <Label>Confirm Password</Label>
-                <Input
-                  type="password"
-                  placeholder="Repeat new password"
-                  value={confirmNewPassword}
-                  onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  disabled={!googleIdToken}
-                />
+                <Input type="password" placeholder="Repeat new password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} disabled={!googleIdToken} />
               </div>
-              <Button
-                type="submit"
-                className="w-full h-12 text-base"
-                disabled={loading || !googleIdToken}
-                data-testid="button-reset-password"
-              >
+              <Button type="submit" className="w-full h-12 text-base" disabled={loading || !googleIdToken} data-testid="button-reset-password">
                 {loading ? "Saving..." : "Save New Password"}
               </Button>
-              <Button type="button" variant="ghost" className="w-full" onClick={() => setStep("login")}>
-                Back to Login
-              </Button>
+              <Button type="button" variant="ghost" className="w-full" onClick={() => setStep("login")}>Back to Login</Button>
             </form>
           </>
         )}

@@ -17,12 +17,16 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 ensureSchema().finally(() => {
-  app.listen(port, (err) => {
-    if (err) {
-      logger.error({ err }, "Error listening on port");
-      process.exit(1);
-    }
-
+  const server = app.listen(port, () => {
     logger.info({ port }, "Server listening");
+  });
+
+  server.on("error", (err: any) => {
+    if (err?.code === "EADDRINUSE") {
+      logger.error({ err, port }, "Port already in use");
+      return;
+    }
+    logger.error({ err }, "Error listening on port");
+    process.exit(1);
   });
 });
