@@ -510,8 +510,6 @@ function PendingConfirmCard({ chunk, onResolved }: { chunk: any; onResolved: () 
             submittedAt={chunk.submittedAt}
             utrNumber={chunk.utrNumber}
             amount={chunk.amount}
-            onAutoConfirm={() => confirmMut.mutate()}
-            confirmPending={confirmMut.isPending}
           />
         )}
 

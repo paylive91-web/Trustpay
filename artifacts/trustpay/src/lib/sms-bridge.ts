@@ -63,3 +63,15 @@ export function isSmsPermissionGranted(): boolean {
 export function hasNativeBridge(): boolean {
   return typeof window !== "undefined" && !!window.TrustPayNative;
 }
+
+const claimedOrderIds = new Set<number>();
+
+export function claimOrderConfirm(orderId: number): boolean {
+  if (claimedOrderIds.has(orderId)) return false;
+  claimedOrderIds.add(orderId);
+  return true;
+}
+
+export function releaseOrderClaim(orderId: number): void {
+  claimedOrderIds.delete(orderId);
+}

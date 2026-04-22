@@ -3,7 +3,7 @@ import { CheckCircle2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { getAuthToken } from "@/lib/auth";
-import { addSmsListener, isTrustedSender, type SmsMessage } from "@/lib/sms-bridge";
+import { addSmsListener, isTrustedSender, claimOrderConfirm, releaseOrderClaim, type SmsMessage } from "@/lib/sms-bridge";
 import { parseBankSms } from "@/lib/utr-validator";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -32,7 +32,6 @@ interface MatchedOrder {
 
 export default function SmsAutoConfirmService() {
   const [confirmedOrder, setConfirmedOrder] = useState<MatchedOrder | null>(null);
-  const confirmedIds = useRef<Set<number>>(new Set());
 
   const { data: pendingOrders = [] } = useQuery<any[]>({
     queryKey: ["my-pending-confirmations-bg"],
@@ -58,14 +57,13 @@ export default function SmsAutoConfirmService() {
       if (!parsed) return;
       for (const order of pendingOrders) {
         const id: number = order.id;
-        if (confirmedIds.current.has(id)) continue;
         const utrMatch = parsed.utr.toUpperCase() === String(order.utrNumber || "").toUpperCase();
         const amountMatch = Math.abs(parsed.amount - Number(order.amount)) <= AMOUNT_TOLERANCE;
         if (utrMatch && amountMatch) {
-          confirmedIds.current.add(id);
+          if (!claimOrderConfirm(id)) break;
           const result = await confirmOrder(id);
           if (result?.error) {
-            confirmedIds.current.delete(id);
+            releaseOrderClaim(id);
             return;
           }
           setConfirmedOrder({

@@ -7,8 +7,6 @@ interface SmsDetectorCardProps {
   submittedAt: string;
   utrNumber: string;
   amount: number;
-  onAutoConfirm: () => void;
-  confirmPending: boolean;
 }
 
 const SMS_WINDOW_MS = 5 * 60 * 1000;
@@ -22,8 +20,6 @@ export default function SmsDetectorCard({
   submittedAt,
   utrNumber,
   amount,
-  onAutoConfirm,
-  confirmPending,
 }: SmsDetectorCardProps) {
   const [now, setNow] = useState(Date.now());
   const [matched, setMatched] = useState(false);
@@ -51,11 +47,10 @@ export default function SmsDetectorCard({
       if (utrMatch && amountMatch) {
         confirmedRef.current = true;
         setMatched(true);
-        onAutoConfirm();
       }
     });
     return remove;
-  }, [utrNumber, amount, onAutoConfirm]);
+  }, [utrNumber, amount]);
 
   if (!isAndroid()) {
     return (
@@ -73,7 +68,7 @@ export default function SmsDetectorCard({
     );
   }
 
-  if (matched || confirmPending) {
+  if (matched) {
     return (
       <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-4 flex items-center gap-3">
         <CheckCircle2 className="w-8 h-8 text-emerald-600 shrink-0 animate-pulse" />
