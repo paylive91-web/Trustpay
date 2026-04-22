@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle, Clock, Copy, Headset, Loader2, ShieldCheck, Upload } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
+import { utrError } from "@/lib/utr-validator";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -390,7 +391,25 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
             <>
               <div className="space-y-1.5">
                 <Label className="text-xs">UTR / Reference Number</Label>
-                <Input className="border-fuchsia-200 bg-fuchsia-50/40 focus-visible:ring-fuchsia-300" placeholder="12-digit UTR from your UPI app" value={utr} onChange={(e) => setUtr(e.target.value.trim())} />
+                <Input
+                  className={`focus-visible:ring-fuchsia-300 ${utr && utrError(utr) ? "border-red-400 bg-red-50/60" : utr && !utrError(utr) ? "border-emerald-400 bg-emerald-50/40" : "border-fuchsia-200 bg-fuchsia-50/40"}`}
+                  placeholder="12-character UTR (e.g. T12345678901)"
+                  value={utr}
+                  maxLength={12}
+                  onChange={(e) => setUtr(e.target.value.trim().toUpperCase())}
+                />
+                {utr && utrError(utr) && (
+                  <p className="text-xs text-red-600 flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    {utrError(utr)}
+                  </p>
+                )}
+                {utr && !utrError(utr) && (
+                  <p className="text-xs text-emerald-600 flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3" />
+                    UTR format sahi hai
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">Payment Screenshot <span className="text-red-600">*</span></Label>
@@ -408,7 +427,7 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
               </div>
               <Button
                 className="w-full h-12 text-base font-bold rounded-2xl bg-gradient-to-r from-primary via-sky-600 to-fuchsia-600 shadow-lg border border-fuchsia-200/60"
-                disabled={!utr || !screenshotUrl || submitMut.isPending || !!uploading}
+                disabled={!utr || !!utrError(utr) || !screenshotUrl || submitMut.isPending || !!uploading}
                 onClick={() => setShowWarning(true)}
               >
                 {submitMut.isPending ? "Submitting..." : "Submit Payment Proof"}

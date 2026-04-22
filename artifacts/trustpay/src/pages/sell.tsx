@@ -13,6 +13,7 @@ import {
   Pencil, Radio, Wallet, User as UserIcon, Sparkles, Wifi, WifiOff, Headset, ChevronDown,
   AlertTriangle,
 } from "lucide-react";
+import SmsDetectorCard from "@/components/sms-detector-card";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -502,6 +503,16 @@ function PendingConfirmCard({ chunk, onResolved }: { chunk: any; onResolved: () 
         )}{" "}
         {chunk.recordingUrl && (
           <a href={chunk.recordingUrl} target="_blank" className="text-sm text-primary underline font-medium ml-2">View Recording</a>
+        )}
+
+        {chunk.submittedAt && (
+          <SmsDetectorCard
+            submittedAt={chunk.submittedAt}
+            utrNumber={chunk.utrNumber}
+            amount={chunk.amount}
+            onManualConfirm={() => setConfirmPopupOpen(true)}
+            confirmPending={confirmMut.isPending}
+          />
         )}
 
         <div className="text-xs text-muted-foreground">

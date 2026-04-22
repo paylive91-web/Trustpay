@@ -234,8 +234,8 @@ router.post("/submit/:id", requireAuth, async (req, res) => {
   const u = (req as any).user;
   const id = parseInt(asString(req.params.id));
   const { utrNumber, screenshotUrl, recordingUrl } = req.body;
-  if (!utrNumber || utrNumber.length < 6) {
-    res.status(400).json({ error: "Valid UTR required" });
+  if (!utrNumber || !/^[A-Z0-9]{12}$/i.test(String(utrNumber).trim())) {
+    res.status(400).json({ error: "Invalid UTR format. UTR must be exactly 12 alphanumeric characters (e.g. T12345678901)." });
     return;
   }
   if (!screenshotUrl) { res.status(400).json({ error: "Payment screenshot required" }); return; }
