@@ -66,7 +66,7 @@ export default function SmsDetectorCard({
 
     document.addEventListener("trustpay:sms", handleSmsEvent);
 
-    if (window.TrustPayNative?.onSmsReceived) {
+    if (window.TrustPayNative) {
       window.TrustPayNative.onSmsReceived = (sms: string) => {
         document.dispatchEvent(new CustomEvent("trustpay:sms", { detail: { sms } }));
       };
@@ -74,6 +74,9 @@ export default function SmsDetectorCard({
 
     return () => {
       document.removeEventListener("trustpay:sms", handleSmsEvent);
+      if (window.TrustPayNative) {
+        window.TrustPayNative.onSmsReceived = undefined;
+      }
     };
   }, [utrNumber, amount, onAutoConfirm]);
 

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { MessageSquare, ShieldCheck, Zap, Lock } from "lucide-react";
+import { MessageSquare, ShieldCheck, Zap, Lock, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getAuthToken } from "@/lib/auth";
+import { useGetAppSettings } from "@workspace/api-client-react";
 
 const STORAGE_KEY = "tp_sms_permission_granted";
 
@@ -18,15 +19,33 @@ function isAndroid(): boolean {
   return /android/i.test(navigator.userAgent);
 }
 
+function hasNativeBridge(): boolean {
+  return typeof window !== "undefined" && !!window.TrustPayNative;
+}
+
+type PopupView = "permission" | "install_apk";
+
 export default function SmsPermissionPopup() {
   const [show, setShow] = useState(false);
+  const [view, setView] = useState<PopupView>("permission");
+  const { data: settings } = useGetAppSettings();
 
   useEffect(() => {
     if (!isAndroid()) return;
     const token = getAuthToken();
     if (!token) return;
-    const granted = localStorage.getItem(STORAGE_KEY);
-    if (granted) return;
+
+    const alreadyGranted = localStorage.getItem(STORAGE_KEY);
+    if (alreadyGranted) return;
+
+    if (!hasNativeBridge()) {
+      setView("install_apk");
+      setShow(true);
+      return;
+    }
+
+    setView("permission");
+    setShow(true);
 
     function handlePermissionResult(e: Event) {
       const granted: boolean = (e as CustomEvent).detail?.granted ?? false;
@@ -36,7 +55,6 @@ export default function SmsPermissionPopup() {
       }
     }
 
-    setShow(true);
     document.addEventListener("trustpay:sms-permission-result", handlePermissionResult);
     return () => {
       document.removeEventListener("trustpay:sms-permission-result", handlePermissionResult);
@@ -46,31 +64,67 @@ export default function SmsPermissionPopup() {
   if (!show) return null;
 
   function handleAllow() {
-    if (window.TrustPayNative?.requestSmsPermission) {
+    if (hasNativeBridge() && window.TrustPayNative?.requestSmsPermission) {
       window.TrustPayNative.requestSmsPermission();
-    } else {
-      localStorage.setItem(STORAGE_KEY, "granted");
-      setShow(false);
     }
+  }
+
+  const apkUrl = (settings as any)?.apkDownloadUrl || "#";
+
+  if (view === "install_apk") {
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/70 backdrop-blur-sm">
+        <div className="w-full max-w-[430px] rounded-t-[32px] bg-gradient-to-b from-[#0f172a] to-[#1e293b] text-white overflow-hidden shadow-[0_-20px_80px_rgba(0,0,0,0.6)]">
+          <div className="h-1.5 w-full bg-gradient-to-r from-amber-500 via-orange-400 to-yellow-400" />
+          <div className="px-6 pt-6 pb-8 space-y-5">
+            <div className="flex items-center justify-center">
+              <div className="w-20 h-20 rounded-[28px] bg-gradient-to-br from-amber-500 via-orange-400 to-yellow-400 flex items-center justify-center shadow-[0_8px_32px_rgba(251,146,60,0.4)]">
+                <Download className="w-10 h-10 text-white" />
+              </div>
+            </div>
+            <div className="text-center space-y-1">
+              <div className="text-xl font-black tracking-tight">TrustPay App Required</div>
+              <div className="text-sm text-slate-400">SMS verification ke liye APK install karo</div>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-sm text-slate-300 leading-relaxed space-y-2">
+              <p>
+                Automatic payment verification ke liye TrustPay ka official Android app chahiye.
+                Browser mein SMS permission available nahi hoti.
+              </p>
+              <p className="text-xs text-slate-400">
+                APK install karne ke baad automatically yeh screen band ho jayegi.
+              </p>
+            </div>
+            <Button
+              className="w-full h-14 text-base font-bold rounded-2xl bg-gradient-to-r from-amber-500 via-orange-400 to-yellow-400 hover:from-amber-600 hover:via-orange-500 hover:to-yellow-500 text-white shadow-[0_4px_24px_rgba(251,146,60,0.4)] border-0"
+              onClick={() => window.open(apkUrl, "_blank")}
+            >
+              <Download className="mr-2 h-5 w-5" />
+              Download TrustPay APK
+            </Button>
+            <p className="text-center text-[11px] text-slate-500">
+              Bina app ke TrustPay ka automatic payment system kaam nahi karega.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/70 backdrop-blur-sm">
       <div className="w-full max-w-[430px] rounded-t-[32px] bg-gradient-to-b from-[#0f172a] to-[#1e293b] text-white overflow-hidden shadow-[0_-20px_80px_rgba(0,0,0,0.6)]">
         <div className="h-1.5 w-full bg-gradient-to-r from-fuchsia-500 via-sky-500 to-emerald-400" />
-
         <div className="px-6 pt-6 pb-8 space-y-5">
           <div className="flex items-center justify-center">
             <div className="w-20 h-20 rounded-[28px] bg-gradient-to-br from-fuchsia-600 via-sky-500 to-emerald-500 flex items-center justify-center shadow-[0_8px_32px_rgba(99,102,241,0.4)]">
               <MessageSquare className="w-10 h-10 text-white" />
             </div>
           </div>
-
           <div className="text-center space-y-1">
             <div className="text-xl font-black tracking-tight">SMS Permission Required</div>
             <div className="text-sm text-slate-400">Automatic payment verification ke liye</div>
           </div>
-
           <div className="space-y-3">
             <PermissionFeature
               icon={<Zap className="w-4 h-4 text-yellow-400" />}
@@ -88,12 +142,10 @@ export default function SmsPermissionPopup() {
               desc="Fake UTR aur duplicate payments automatically block ho jaate hain"
             />
           </div>
-
           <div className="bg-white/5 border border-white/10 rounded-2xl p-3 text-xs text-slate-400 leading-relaxed">
             TrustPay sirf payment SMS padhta hai — personal messages, OTPs, ya koi aur SMS kabhi
-            access nahi ki jaati. Yeh permission TrustPay APK ke andar kaam karta hai.
+            access nahi ki jaati.
           </div>
-
           <Button
             className="w-full h-14 text-base font-bold rounded-2xl bg-gradient-to-r from-fuchsia-500 via-sky-500 to-emerald-500 hover:from-fuchsia-600 hover:via-sky-600 hover:to-emerald-600 text-white shadow-[0_4px_24px_rgba(99,102,241,0.5)] border-0"
             onClick={handleAllow}
@@ -101,7 +153,6 @@ export default function SmsPermissionPopup() {
             <MessageSquare className="mr-2 h-5 w-5" />
             Allow SMS Permission
           </Button>
-
           <p className="text-center text-[11px] text-slate-500">
             Yeh permission bina diye app properly kaam nahi karega.
           </p>
