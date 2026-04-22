@@ -63,6 +63,8 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   // Admin-configurable reward percentages (flat %)
   buyRewardPercent: "5",   // buyer reward % on each trade (default 5%)
   sellRewardPercent: "0",  // seller reward % on each trade (default 0%, can enable anytime)
+  // Max accounts allowed per device fingerprint (default 3)
+  deviceRegistrationLimit: "3",
 };
 
 export async function getSetting(key: string): Promise<string> {

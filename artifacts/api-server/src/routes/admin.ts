@@ -435,6 +435,9 @@ function fSettings(s: any) {
     apkDownloadUrl: process.env.APK_DOWNLOAD_URL || s.apkDownloadUrl || "",
     apkVersion: s.apkVersion || "1.0.0",
     forceAppDownload: (s.forceAppDownload ?? "false") === "true",
+    buyRewardPercent: parseFloat(s.buyRewardPercent || "5"),
+    sellRewardPercent: parseFloat(s.sellRewardPercent || "0"),
+    deviceRegistrationLimit: parseInt(s.deviceRegistrationLimit || "3"),
     broadcastNotification,
   };
 }
@@ -487,6 +490,7 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
     buyLockMinutes: b.buyLockMinutes, sellerConfirmMinutes: b.sellerConfirmMinutes,
     disputeWindowHours: b.disputeWindowHours,
     buyRewardPercent: b.buyRewardPercent, sellRewardPercent: b.sellRewardPercent,
+    deviceRegistrationLimit: b.deviceRegistrationLimit,
     highValueThreshold: b.highValueThreshold, highValueCriticalThreshold: b.highValueCriticalThreshold,
     platformCommissionPerChunk: b.platformCommissionPerChunk,
     apkDownloadUrl: b.apkDownloadUrl, apkVersion: b.apkVersion,

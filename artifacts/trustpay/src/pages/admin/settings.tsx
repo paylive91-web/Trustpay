@@ -140,6 +140,7 @@ export default function AdminSettings() {
   const [forceAppDownload, setForceAppDownload] = useState(true);
   const [buyRewardPercent, setBuyRewardPercent] = useState<number>(5);
   const [sellRewardPercent, setSellRewardPercent] = useState<number>(0);
+  const [deviceRegistrationLimit, setDeviceRegistrationLimit] = useState<number>(3);
 
   useEffect(() => {
     if (settings) {
@@ -174,6 +175,7 @@ export default function AdminSettings() {
       setForceAppDownload((settings as any).forceAppDownload === true);
       setBuyRewardPercent(Number((settings as any).buyRewardPercent) || 5);
       setSellRewardPercent(Number((settings as any).sellRewardPercent) || 0);
+      setDeviceRegistrationLimit(Number((settings as any).deviceRegistrationLimit) || 3);
       setAdminPassword("");
     }
   }, [settings]);
@@ -267,6 +269,7 @@ export default function AdminSettings() {
       forceAppDownload,
       buyRewardPercent,
       sellRewardPercent,
+      deviceRegistrationLimit,
     };
     if (adminPassword) payload.adminPassword = adminPassword;
     updateSettingsMut.mutate({ data: payload });
@@ -661,6 +664,34 @@ export default function AdminSettings() {
                   />
                   <span className="text-sm">Force every web visitor to install the APK (not just newly registered users)</span>
                 </label>
+              </CardContent>
+            </Card>
+
+            {/* Device Registration Limit */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Device Registration Limit</CardTitle>
+                <CardDescription>
+                  Ek mobile device se kitne accounts register ho sakte hain. Default 3 hai. 1 set karo toh ek device pe sirf ek account.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Max Accounts Per Device</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={20}
+                    step={1}
+                    value={deviceRegistrationLimit}
+                    onChange={(e) => setDeviceRegistrationLimit(Math.max(1, parseInt(e.target.value) || 1))}
+                    placeholder="e.g. 3"
+                    className="max-w-[160px]"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Currently: ek phone se <strong>{deviceRegistrationLimit}</strong> account{deviceRegistrationLimit !== 1 ? "s" : ""} ban sakte hain
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
