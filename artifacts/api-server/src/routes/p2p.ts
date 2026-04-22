@@ -234,8 +234,9 @@ router.post("/submit/:id", requireAuth, async (req, res) => {
   const u = (req as any).user;
   const id = parseInt(asString(req.params.id));
   const { utrNumber, screenshotUrl, recordingUrl } = req.body;
-  if (!utrNumber || !/^[A-Z0-9]{12}$/i.test(String(utrNumber).trim())) {
-    res.status(400).json({ error: "Invalid UTR format. UTR must be exactly 12 alphanumeric characters (e.g. T12345678901)." });
+  const utrClean = String(utrNumber || "").trim().toUpperCase();
+  if (!/^[A-Z0-9]{12}$/.test(utrClean) || /^(.)\1+$/.test(utrClean)) {
+    res.status(400).json({ error: "Invalid UTR format. UTR must be exactly 12 alphanumeric characters (e.g. T12345678901) and cannot be repeated digits." });
     return;
   }
   if (!screenshotUrl) { res.status(400).json({ error: "Payment screenshot required" }); return; }
@@ -252,7 +253,7 @@ router.post("/submit/:id", requireAuth, async (req, res) => {
     return;
   }
 
-  const utrIssues = await checkUtrFraud(utrNumber, u.id, id);
+  const utrIssues = await checkUtrFraud(utrClean, u.id, id);
   await checkImageHash(screenshotUrl, u.id, id, "screenshot");
   if (recordingUrl) await checkImageHash(recordingUrl, u.id, id, "recording");
   if (utrIssues.includes("fake_utr_repeated_digits")) {
@@ -267,7 +268,7 @@ router.post("/submit/:id", requireAuth, async (req, res) => {
   const deadline = new Date(now.getTime() + confirmMin * 60 * 1000);
   await db.update(ordersTable).set({
     status: "pending_confirmation",
-    utrNumber, screenshotUrl, recordingUrl: recordingUrl || null,
+    utrNumber: utrClean, screenshotUrl, recordingUrl: recordingUrl || null,
     submittedAt: now,
     confirmDeadline: deadline,
     updatedAt: now,

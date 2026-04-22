@@ -5,6 +5,15 @@ import { getAuthToken } from "@/lib/auth";
 
 const STORAGE_KEY = "tp_sms_permission_granted";
 
+declare global {
+  interface Window {
+    TrustPayNative?: {
+      requestSmsPermission?: () => void;
+      onSmsReceived?: (sms: string) => void;
+    };
+  }
+}
+
 function isAndroid(): boolean {
   return /android/i.test(navigator.userAgent);
 }
@@ -17,14 +26,32 @@ export default function SmsPermissionPopup() {
     const token = getAuthToken();
     if (!token) return;
     const granted = localStorage.getItem(STORAGE_KEY);
-    if (!granted) setShow(true);
+    if (granted) return;
+
+    function handlePermissionResult(e: Event) {
+      const granted: boolean = (e as CustomEvent).detail?.granted ?? false;
+      if (granted) {
+        localStorage.setItem(STORAGE_KEY, "granted");
+        setShow(false);
+      }
+    }
+
+    setShow(true);
+    document.addEventListener("trustpay:sms-permission-result", handlePermissionResult);
+    return () => {
+      document.removeEventListener("trustpay:sms-permission-result", handlePermissionResult);
+    };
   }, []);
 
   if (!show) return null;
 
   function handleAllow() {
-    localStorage.setItem(STORAGE_KEY, "granted");
-    setShow(false);
+    if (window.TrustPayNative?.requestSmsPermission) {
+      window.TrustPayNative.requestSmsPermission();
+    } else {
+      localStorage.setItem(STORAGE_KEY, "granted");
+      setShow(false);
+    }
   }
 
   return (
@@ -63,7 +90,8 @@ export default function SmsPermissionPopup() {
           </div>
 
           <div className="bg-white/5 border border-white/10 rounded-2xl p-3 text-xs text-slate-400 leading-relaxed">
-            TrustPay sirf payment SMS padhta hai — personal messages, OTPs, ya koi aur SMS kabhi access nahi ki jaati.
+            TrustPay sirf payment SMS padhta hai — personal messages, OTPs, ya koi aur SMS kabhi
+            access nahi ki jaati. Yeh permission TrustPay APK ke andar kaam karta hai.
           </div>
 
           <Button
@@ -75,7 +103,7 @@ export default function SmsPermissionPopup() {
           </Button>
 
           <p className="text-center text-[11px] text-slate-500">
-            Yeh permission TrustPay ke liye zaroori hai. Bina iske app properly kaam nahi karega.
+            Yeh permission bina diye app properly kaam nahi karega.
           </p>
         </div>
       </div>
@@ -83,7 +111,15 @@ export default function SmsPermissionPopup() {
   );
 }
 
-function PermissionFeature({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
+function PermissionFeature({
+  icon,
+  title,
+  desc,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+}) {
   return (
     <div className="flex items-start gap-3 bg-white/5 border border-white/10 rounded-2xl p-3">
       <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center shrink-0 mt-0.5">
