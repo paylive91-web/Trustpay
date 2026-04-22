@@ -41,6 +41,9 @@ export const FRAUD_RULES: Array<{ rule: string; severity: Severity; label: strin
   { rule: "extreme_dispute_rate", severity: "critical", label: "Dispute rate >=50%" },
   { rule: "new_account_high_value", severity: "critical", label: "High-value action on new account" },
   { rule: "balance_drain_attempt", severity: "critical", label: "Repeated lock/release drain attempt" },
+  { rule: "ocr_amount_mismatch", severity: "critical", label: "Screenshot amount doesn't match order" },
+  { rule: "ocr_utr_mismatch", severity: "critical", label: "Screenshot UTR doesn't match submitted UTR" },
+  { rule: "ocr_unreadable", severity: "warn", label: "Payment screenshot unreadable or blank" },
 ];
 
 // Per-rule state is stored as a JSON object so each rule keeps its own
@@ -137,6 +140,9 @@ function describeRule(rule: string, severity: Severity): { title: string; body: 
     extreme_dispute_rate: "Excessive disputes on your account",
     new_account_high_value: "High-value action on new account",
     balance_drain_attempt: "Repeated lock-and-release flagged",
+    ocr_amount_mismatch: "Payment screenshot amount mismatch",
+    ocr_utr_mismatch: "Payment screenshot UTR mismatch",
+    ocr_unreadable: "Payment screenshot unreadable",
   };
   const title = titles[rule] || `Account flagged: ${rule}`;
   const frozenNote = severity === "critical"
@@ -439,4 +445,74 @@ export async function checkBalanceDrain(userId: number): Promise<void> {
   if (c >= 8) {
     await logAlert(userId, null, "balance_drain_attempt", "critical", `${c} chunks locked & released in 1h - drain attempt`);
   }
+}
+
+export interface OcrFraudInput {
+  orderId: number;
+  buyerId: number;
+  orderAmount: number;
+  submittedUtr: string;
+  ocrAmount: string | null;
+  ocrUtr: string | null;
+  ocrStatus: string;
+}
+
+export interface OcrFraudResult {
+  issues: string[];
+  amountMatch: "match" | "mismatch" | "not_extracted";
+  utrMatch: "match" | "mismatch" | "not_extracted";
+}
+
+export async function checkOcrFraud(input: OcrFraudInput): Promise<OcrFraudResult> {
+  const { orderId, buyerId, orderAmount, submittedUtr, ocrAmount, ocrUtr, ocrStatus } = input;
+  const issues: string[] = [];
+  let amountMatch: "match" | "mismatch" | "not_extracted" = "not_extracted";
+  let utrMatch: "match" | "mismatch" | "not_extracted" = "not_extracted";
+
+  if (ocrStatus === "unreadable" || ocrStatus === "failed") {
+    issues.push("ocr_unreadable");
+    const reason = ocrStatus === "failed"
+      ? "Payment screenshot OCR failed to process — screenshot flagged as suspicious"
+      : "Payment screenshot could not be read by OCR — no recognizable payment data found";
+    await logAlert(buyerId, orderId, "ocr_unreadable", "warn", reason);
+    return { issues, amountMatch, utrMatch };
+  }
+
+  // When OCR "done" but both key fields are missing — no recognizable payment data
+  if (ocrStatus === "done" && ocrAmount === null && ocrUtr === null) {
+    issues.push("ocr_unreadable");
+    await logAlert(buyerId, orderId, "ocr_unreadable", "warn",
+      "OCR completed but found no recognizable payment fields (amount or UTR) — screenshot flagged as suspicious");
+    return { issues, amountMatch, utrMatch };
+  }
+
+  if (ocrAmount !== null) {
+    const extracted = parseFloat(ocrAmount);
+    const expected = orderAmount;
+    const diff = Math.abs(extracted - expected);
+    const tolerance = expected * 0.01;
+    if (diff > tolerance) {
+      issues.push("ocr_amount_mismatch");
+      amountMatch = "mismatch";
+      await logAlert(buyerId, orderId, "ocr_amount_mismatch", "critical",
+        `Screenshot shows ₹${extracted.toFixed(2)} but order is ₹${expected.toFixed(2)}`);
+    } else {
+      amountMatch = "match";
+    }
+  }
+
+  if (ocrUtr !== null && submittedUtr) {
+    const ocrNorm = ocrUtr.toUpperCase().replace(/\s+/g, "");
+    const subNorm = submittedUtr.toUpperCase().replace(/\s+/g, "");
+    if (ocrNorm !== subNorm) {
+      issues.push("ocr_utr_mismatch");
+      utrMatch = "mismatch";
+      await logAlert(buyerId, orderId, "ocr_utr_mismatch", "critical",
+        `Screenshot UTR "${ocrNorm}" does not match submitted UTR "${subNorm}"`);
+    } else {
+      utrMatch = "match";
+    }
+  }
+
+  return { issues, amountMatch, utrMatch };
 }

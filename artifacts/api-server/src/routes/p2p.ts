@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { ordersTable, usersTable, disputesTable, tradePairBlocksTable } from "@workspace/db";
+import { ordersTable, usersTable, disputesTable, tradePairBlocksTable, userNotificationsTable } from "@workspace/db";
 import { eq, and, sql, inArray, ne, or } from "drizzle-orm";
 import { requireAuth } from "../lib/auth.js";
 import { getSettings } from "../lib/settings.js";
@@ -9,8 +9,9 @@ import { settleConfirmedTrade } from "../lib/settle.js";
 import { applyTrustDelta } from "../lib/trust.js";
 import {
   checkUtrFraud, checkImageHash, checkVelocity, checkCancelRate,
-  checkRapidLockRelease, checkBalanceDrain,
+  checkRapidLockRelease, checkBalanceDrain, checkOcrFraud,
 } from "../lib/fraud.js";
+import { runOcr } from "../lib/ocr.js";
 
 const router = Router();
 
@@ -257,6 +258,10 @@ router.post("/submit/:id", requireAuth, async (req, res) => {
     return;
   }
   if (!screenshotUrl) { res.status(400).json({ error: "Payment screenshot required" }); return; }
+  if (!screenshotUrl.startsWith("data:image/")) {
+    res.status(400).json({ error: "Screenshot must be a base64-encoded image (data URL)" });
+    return;
+  }
 
   const [chunk] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
   if (!chunk || chunk.status !== "locked" || chunk.lockedByUserId !== u.id) {
@@ -289,9 +294,99 @@ router.post("/submit/:id", requireAuth, async (req, res) => {
     submittedAt: now,
     confirmDeadline: deadline,
     updatedAt: now,
+    ocrStatus: "pending",
   }).where(eq(ordersTable.id, id));
   const [updated] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
   res.json(f(updated));
+
+  // Run OCR asynchronously — don't block the response
+  (async () => {
+    try {
+      const ocrResult = await runOcr(screenshotUrl);
+      await db.update(ordersTable).set({
+        ocrUtr: ocrResult.utr,
+        ocrAmount: ocrResult.amount,
+        ocrTimestamp: ocrResult.timestamp,
+        ocrBank: ocrResult.bank,
+        ocrRawText: ocrResult.rawText.slice(0, 4000),
+        ocrStatus: ocrResult.status,
+        updatedAt: new Date(),
+      }).where(eq(ordersTable.id, id));
+
+      const orderAmount = parseFloat(chunk.amount);
+      const ocrFraud = await checkOcrFraud({
+        orderId: id,
+        buyerId: u.id,
+        orderAmount,
+        submittedUtr: utrClean,
+        ocrAmount: ocrResult.amount,
+        ocrUtr: ocrResult.utr,
+        ocrStatus: ocrResult.status,
+      });
+
+      // Persist immutable match outcomes for audit trail
+      await db.update(ordersTable).set({
+        ocrAmountMatch: ocrFraud.amountMatch,
+        ocrUtrMatch: ocrFraud.utrMatch,
+        updatedAt: new Date(),
+      }).where(eq(ordersTable.id, id));
+
+      // Only mark as clean when OCR successfully completed AND raised no issues.
+      // Any failed/unreadable/mismatch/no-data result is "flagged".
+      const isClean = ocrResult.status === "done" && ocrFraud.issues.length === 0;
+      const [buyerNotifTitle, buyerNotifBody] = isClean
+        ? ["Payment proof received and verified", "Your payment screenshot has been successfully verified by our system. The seller will review and confirm shortly."]
+        : ["Payment proof flagged — please resubmit", `Your payment screenshot was flagged by our system. Issues: ${ocrFraud.issues.join(", ")}. Please contact support if you believe this is a mistake.`];
+
+      await db.insert(userNotificationsTable).values({
+        userId: u.id,
+        kind: "ocr_result",
+        title: buyerNotifTitle,
+        body: buyerNotifBody,
+        severity: isClean ? "info" : "warn",
+      });
+
+      const [sellerNotifTitle, sellerNotifBody] = isClean
+        ? ["Buyer payment screenshot verified", `The buyer's payment proof for order #${id} has been verified by our system. Please review and confirm the payment.`]
+        : ["Buyer screenshot flagged by system", `The payment screenshot for order #${id} was flagged by our automated system. Please review carefully before confirming.`];
+
+      await db.insert(userNotificationsTable).values({
+        userId: chunk.userId,
+        kind: "ocr_result",
+        title: sellerNotifTitle,
+        body: sellerNotifBody,
+        severity: isClean ? "info" : "warn",
+      });
+    } catch (err) {
+      // OCR failed — still flag the order as suspicious and notify both parties
+      await db.update(ordersTable).set({ ocrStatus: "failed", updatedAt: new Date() }).where(eq(ordersTable.id, id)).catch(() => {});
+      // Raise a fraud alert for the failed OCR (treated as suspicious screenshot)
+      await checkOcrFraud({
+        orderId: id,
+        buyerId: u.id,
+        orderAmount: parseFloat(chunk.amount),
+        submittedUtr: utrClean,
+        ocrAmount: null,
+        ocrUtr: null,
+        ocrStatus: "unreadable",
+      }).catch(() => {});
+      // Notify buyer and seller about the failure
+      await db.insert(userNotificationsTable).values({
+        userId: u.id,
+        kind: "ocr_result",
+        title: "Payment proof flagged — please resubmit",
+        body: "We could not process your payment screenshot. Please resubmit a clearer image. Contact support if the problem persists.",
+        severity: "warn",
+      }).catch(() => {});
+      await db.insert(userNotificationsTable).values({
+        userId: chunk.userId,
+        kind: "ocr_result",
+        title: "Buyer screenshot flagged by system",
+        body: `The payment screenshot for order #${id} could not be verified by our system. Please review carefully before confirming.`,
+        severity: "warn",
+      }).catch(() => {});
+    }
+  })();
 });
 
 router.get("/my-seller-alerts", requireAuth, async (req, res) => {

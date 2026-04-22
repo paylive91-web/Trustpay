@@ -9,10 +9,35 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Image as ImageIcon, XCircle, RotateCcw, Info } from "lucide-react";
+import { Image as ImageIcon, XCircle, RotateCcw, Info, CheckCircle2, XCircle as XCircleIcon, AlertCircle, Scan } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
+
+function OcrField({ label, value, storedMatch }: {
+  label: string;
+  value: string | null | undefined;
+  storedMatch?: "match" | "mismatch" | "not_extracted" | null;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-2 py-1.5 border-b last:border-0">
+      <div className="text-xs text-muted-foreground shrink-0 w-40">{label}</div>
+      <div className="flex items-center gap-1.5 flex-1 justify-end">
+        {value != null ? (
+          <span className="font-medium text-sm">{value}</span>
+        ) : (
+          <span className="text-xs text-muted-foreground italic">Not found</span>
+        )}
+        {storedMatch === "match" && (
+          <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" aria-label="Matches submitted value" />
+        )}
+        {storedMatch === "mismatch" && (
+          <XCircleIcon className="w-4 h-4 text-red-500 shrink-0" aria-label="Does not match submitted value" />
+        )}
+      </div>
+    </div>
+  );
+}
 
 const STATUS_OPTIONS = ["all", "available", "locked", "pending_confirmation", "disputed", "confirmed", "cancelled", "expired"];
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
@@ -236,15 +261,70 @@ export default function AdminOrders() {
       </div>
 
       <Dialog open={!!viewOrder} onOpenChange={(open) => !open && setViewOrder(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Order #{viewOrder?.id} — Proof</DialogTitle></DialogHeader>
-          <div className="space-y-3">
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Order #{viewOrder?.id} — Proof &amp; OCR Analysis</DialogTitle></DialogHeader>
+          <div className="space-y-4">
             {viewOrder?.utrNumber && (
               <div className="bg-blue-50 rounded-lg p-3">
-                <div className="text-xs text-muted-foreground">UTR Number</div>
+                <div className="text-xs text-muted-foreground">UTR Number (Submitted)</div>
                 <div className="font-bold text-blue-700 text-lg">{viewOrder.utrNumber}</div>
               </div>
             )}
+
+            {/* OCR Analysis Panel */}
+            {viewOrder?.ocrStatus && (
+              <div className="border rounded-lg overflow-hidden">
+                <div className="bg-slate-50 px-3 py-2 flex items-center gap-2 border-b">
+                  <Scan className="w-4 h-4 text-slate-600" />
+                  <span className="font-medium text-sm">OCR Analysis</span>
+                  <Badge variant="outline" className={
+                    viewOrder.ocrStatus === "done" ? "text-green-700 border-green-300 bg-green-50" :
+                    viewOrder.ocrStatus === "pending" ? "text-yellow-700 border-yellow-300 bg-yellow-50" :
+                    viewOrder.ocrStatus === "unreadable" ? "text-orange-700 border-orange-300 bg-orange-50" :
+                    "text-red-700 border-red-300 bg-red-50"
+                  }>
+                    {viewOrder.ocrStatus}
+                  </Badge>
+                </div>
+                <div className="p-3 space-y-2">
+                  {viewOrder.ocrStatus === "pending" && (
+                    <p className="text-sm text-muted-foreground">OCR is still processing…</p>
+                  )}
+                  {viewOrder.ocrStatus === "failed" && (
+                    <p className="text-sm text-red-600">OCR failed to process this image.</p>
+                  )}
+                  {viewOrder.ocrStatus === "unreadable" && (
+                    <div className="flex items-center gap-2 text-orange-700 text-sm">
+                      <AlertCircle className="w-4 h-4" />
+                      No recognizable payment data could be extracted from this screenshot.
+                    </div>
+                  )}
+                  {(viewOrder.ocrStatus === "done") && (
+                    <div className="space-y-2">
+                      <OcrField
+                        label="UTR in Screenshot"
+                        value={viewOrder.ocrUtr}
+                        storedMatch={viewOrder.ocrUtrMatch}
+                      />
+                      <OcrField
+                        label="Amount in Screenshot"
+                        value={viewOrder.ocrAmount ? `₹${viewOrder.ocrAmount}` : null}
+                        storedMatch={viewOrder.ocrAmountMatch}
+                      />
+                      <OcrField label="Date/Time in Screenshot" value={viewOrder.ocrTimestamp} />
+                      <OcrField label="Bank/App Detected" value={viewOrder.ocrBank} />
+                    </div>
+                  )}
+                  {viewOrder.ocrRawText && (
+                    <details className="mt-2">
+                      <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">Raw OCR text</summary>
+                      <pre className="text-xs mt-1 bg-slate-50 p-2 rounded border max-h-32 overflow-y-auto whitespace-pre-wrap break-words">{viewOrder.ocrRawText}</pre>
+                    </details>
+                  )}
+                </div>
+              </div>
+            )}
+
             {viewOrder?.screenshotUrl && (
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Payment Screenshot</div>

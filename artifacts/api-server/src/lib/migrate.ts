@@ -60,6 +60,17 @@ export async function ensureSchema(): Promise<void> {
     // from heldBalance, debit balance directly at settle time").
     await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS held_amount NUMERIC(12,2) NOT NULL DEFAULT '0'`);
 
+    // orders OCR fields — populated by Tesseract.js after screenshot submission
+    await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS ocr_utr TEXT`);
+    await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS ocr_amount TEXT`);
+    await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS ocr_timestamp TEXT`);
+    await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS ocr_bank TEXT`);
+    await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS ocr_raw_text TEXT`);
+    await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS ocr_status TEXT`);
+    // Persisted match outcomes for immutable audit trail
+    await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS ocr_amount_match TEXT`);
+    await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS ocr_utr_match TEXT`);
+
     // Backfill: legacy users created before username column was required —
     // ensure username is populated (fall back to phone). Preserves uniqueness
     // because phone is itself unique.

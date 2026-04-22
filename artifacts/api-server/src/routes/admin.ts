@@ -65,6 +65,14 @@ function fOrder(o: any, user?: any) {
     utrNumber: o.utrNumber, screenshotUrl: o.screenshotUrl, recordingUrl: o.recordingUrl,
     notes: o.notes, lockedByUserId: o.lockedByUserId,
     createdAt: o.createdAt, updatedAt: o.updatedAt,
+    ocrUtr: o.ocrUtr ?? null,
+    ocrAmount: o.ocrAmount ?? null,
+    ocrTimestamp: o.ocrTimestamp ?? null,
+    ocrBank: o.ocrBank ?? null,
+    ocrRawText: o.ocrRawText ?? null,
+    ocrStatus: o.ocrStatus ?? null,
+    ocrAmountMatch: o.ocrAmountMatch ?? null,
+    ocrUtrMatch: o.ocrUtrMatch ?? null,
   };
   if (user) return { ...base, user: formatUser(user) };
   return base;

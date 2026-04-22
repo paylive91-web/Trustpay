@@ -59,6 +59,16 @@ export const ordersTable = pgTable("orders", {
   submittedAt: timestamp("submitted_at"),
   confirmDeadline: timestamp("confirm_deadline"),
   confirmedAt: timestamp("confirmed_at"),
+  // OCR fields — populated after Tesseract.js runs on the payment screenshot
+  ocrUtr: text("ocr_utr"),
+  ocrAmount: text("ocr_amount"),
+  ocrTimestamp: text("ocr_timestamp"),
+  ocrBank: text("ocr_bank"),
+  ocrRawText: text("ocr_raw_text"),
+  ocrStatus: text("ocr_status"), // 'pending' | 'done' | 'failed' | 'unreadable'
+  // Persisted match outcomes for immutable audit trail (null = not applicable/not extracted)
+  ocrAmountMatch: text("ocr_amount_match"), // 'match' | 'mismatch' | 'not_extracted'
+  ocrUtrMatch: text("ocr_utr_match"),       // 'match' | 'mismatch' | 'not_extracted'
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
