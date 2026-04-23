@@ -130,6 +130,7 @@ export const smsLearningQueueTable = pgTable("sms_learning_queue", {
   templateHash: text("template_hash"),
   userId: integer("user_id").references(() => usersTable.id),
   status: text("status").notNull().default("pending"),
+  reason: text("reason"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

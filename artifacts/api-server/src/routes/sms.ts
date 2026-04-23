@@ -9,7 +9,7 @@ const router = Router();
 
 router.post("/report", requireAuth, async (req: any, res: any) => {
   const user = (req as any).user;
-  const { sender, body, bucket, parsedUtr, parsedAmount, isDebit, hasReversal } = req.body || {};
+  const { sender, body, bucket, reason, parsedUtr, parsedAmount, isDebit, hasReversal } = req.body || {};
 
   if (!sender || typeof sender !== "string") {
     return res.status(400).json({ error: "sender required" });
@@ -28,6 +28,7 @@ router.post("/report", requireAuth, async (req: any, res: any) => {
     sender: String(sender).slice(0, 64),
     body: String(body).slice(0, 2000),
     bucket,
+    reason: reason ? String(reason).slice(0, 255) : null,
     parsedUtr: parsedUtr ? String(parsedUtr).slice(0, 20) : null,
     parsedAmount: parsedAmount != null ? Number(parsedAmount) : null,
     isDebit: Boolean(isDebit),

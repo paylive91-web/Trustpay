@@ -25,6 +25,7 @@ async function reportSmsToServer(opts: {
   sender: string;
   body: string;
   bucket: "suspicious" | "unparsed" | "matched";
+  reason?: string;
   parsedUtr?: string | null;
   parsedAmount?: number | null;
   isDebit?: boolean;
@@ -142,13 +143,13 @@ export default function SmsAutoConfirmService() {
 
     const remove = addSmsListener(async (msg: SmsMessage) => {
       if (!isEffectivelyTrusted(msg.sender)) {
-        reportSmsToServer({ sender: msg.sender, body: msg.sms, bucket: "unparsed" });
+        reportSmsToServer({ sender: msg.sender, body: msg.sms, bucket: "unparsed", reason: "untrusted_sender" });
         return;
       }
       const senderKey = msg.sender.toUpperCase().split(/[-_.\s+/\\]+/).filter((s: string) => s.length >= 3)[0] || msg.sender.toUpperCase().slice(0, 8);
       const parsed = parseBankSms(msg.sms) ?? tryActivePatternParse(senderKey, msg.sms);
       if (!parsed) {
-        reportSmsToServer({ sender: msg.sender, body: msg.sms, bucket: "suspicious" });
+        reportSmsToServer({ sender: msg.sender, body: msg.sms, bucket: "suspicious", reason: "parse_failed" });
         return;
       }
 
@@ -163,12 +164,21 @@ export default function SmsAutoConfirmService() {
           const result = await confirmOrder(id);
           if (result?.error) {
             releaseOrderClaim(id);
+            reportSmsToServer({
+              sender: msg.sender,
+              body: msg.sms,
+              bucket: "suspicious",
+              reason: "confirm_api_error",
+              parsedUtr: parsed.utr,
+              parsedAmount: parsed.amount,
+            });
             return;
           }
           reportSmsToServer({
             sender: msg.sender,
             body: msg.sms,
             bucket: "matched",
+            reason: "order_confirmed",
             parsedUtr: parsed.utr,
             parsedAmount: parsed.amount,
           });
@@ -186,6 +196,7 @@ export default function SmsAutoConfirmService() {
           sender: msg.sender,
           body: msg.sms,
           bucket: "suspicious",
+          reason: "no_order_match",
           parsedUtr: parsed.utr,
           parsedAmount: parsed.amount,
         });

@@ -87,8 +87,19 @@ export default function SmsLearning() {
   async function dismiss(id: number) {
     try {
       await adminApi(`/admin/sms-learning/queue/${id}/dismiss`, { method: "POST" });
-      toast({ title: "Dismissed" });
+      toast({ title: "Rejected" });
       qc.invalidateQueries({ queryKey: ["sms-queue"] });
+    } catch (e: any) {
+      toast({ title: "Failed", description: e.message, variant: "destructive" });
+    }
+  }
+
+  async function approvePattern(id: number) {
+    try {
+      await adminApi(`/admin/sms-learning/queue/${id}/approve-pattern`, { method: "POST" });
+      toast({ title: "Pattern approved — active rule created for this sender" });
+      qc.invalidateQueries({ queryKey: ["sms-queue"] });
+      qc.invalidateQueries({ queryKey: ["sms-safe-senders"] });
     } catch (e: any) {
       toast({ title: "Failed", description: e.message, variant: "destructive" });
     }
@@ -267,12 +278,28 @@ export default function SmsLearning() {
                         </div>
                       )}
 
+                      {item.reason && (
+                        <div className="text-xs text-muted-foreground">
+                          <span className="font-medium">Reason:</span>{" "}
+                          <span className="font-mono bg-gray-100 px-1 rounded">{item.reason}</span>
+                        </div>
+                      )}
+
                       <div className="flex items-center gap-2 flex-wrap justify-between">
                         <span className="text-[10px] text-muted-foreground">
                           #{item.id} · {format(new Date(item.createdAt), "MMM dd HH:mm")}
                           {item.userId && ` · user #${item.userId}`}
                         </span>
                         <div className="flex gap-1.5">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs text-emerald-700 border-emerald-300"
+                            onClick={() => approvePattern(item.id)}
+                          >
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Approve Pattern
+                          </Button>
                           <Button
                             size="sm"
                             variant="outline"
@@ -285,11 +312,11 @@ export default function SmsLearning() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-7 text-xs text-gray-500"
+                            className="h-7 text-xs text-red-500 border-red-200"
                             onClick={() => dismiss(item.id)}
                           >
-                            <Trash2 className="h-3 w-3 mr-1" />
-                            Dismiss
+                            <XCircle className="h-3 w-3 mr-1" />
+                            Reject
                           </Button>
                         </div>
                       </div>

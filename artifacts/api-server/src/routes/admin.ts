@@ -1057,7 +1057,7 @@ router.get("/sms-learning/queue", requireAdmin, async (req, res) => {
     bucket: r.bucket, parsedUtr: r.parsedUtr, parsedAmount: r.parsedAmount,
     isDebit: r.isDebit, hasReversal: r.hasReversal,
     templateBody: r.templateBody, templateHash: r.templateHash,
-    userId: r.userId, status: r.status, createdAt: r.createdAt,
+    userId: r.userId, status: r.status, reason: r.reason, createdAt: r.createdAt,
   })));
 });
 
@@ -1067,6 +1067,47 @@ router.post("/sms-learning/queue/:id/dismiss", requireAdmin, async (req, res) =>
   await db.update(smsLearningQueueTable).set({ status: "dismissed" })
     .where(eq(smsLearningQueueTable.id, id));
   await logAdminAction(adminId, "sms_queue_dismiss", "sms_queue", id, `Dismissed queue item ${id}`);
+  res.json({ ok: true });
+});
+
+router.post("/sms-learning/queue/:id/approve-pattern", requireAdmin, async (req, res) => {
+  const adminId = (req as any).user.id;
+  const id = parseInt(asString(req.params.id));
+
+  const [item] = await db.select().from(smsLearningQueueTable)
+    .where(eq(smsLearningQueueTable.id, id)).limit(1);
+  if (!item) return res.status(404).json({ error: "Queue item not found" });
+
+  const senderKey = item.senderKey.toUpperCase();
+
+  const safeExists = await db.select().from(smsSafeSendersTable)
+    .where(eq(smsSafeSendersTable.senderKey, senderKey)).limit(1);
+  if (safeExists.length === 0) {
+    await db.insert(smsSafeSendersTable).values({
+      senderKey,
+      label: `Admin-approved: ${item.sender}`,
+      addedBy: adminId,
+    });
+  }
+
+  const { utrRegex, amountRegex } = buildContextRegex(item.templateBody || "");
+  await db.insert(smsActivePatternsTable).values({
+    senderKey,
+    templateLabel: (item.templateBody || item.body).slice(0, 100),
+    utrRegex,
+    amountRegex,
+    creditOnly: true,
+    reversalBlocked: true,
+    sourceCandidateId: null,
+    createdBy: adminId,
+    isActive: true,
+  });
+
+  await db.update(smsLearningQueueTable).set({ status: "approved" })
+    .where(eq(smsLearningQueueTable.id, id));
+
+  await logAdminAction(adminId, "sms_queue_approve_pattern", "sms_queue", id,
+    `Approved pattern from queue item ${id} sender=${senderKey}`);
   res.json({ ok: true });
 });
 

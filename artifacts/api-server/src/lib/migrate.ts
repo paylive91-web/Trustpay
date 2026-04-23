@@ -142,6 +142,7 @@ export async function ensureSchema(): Promise<void> {
     await db.execute(sql`CREATE INDEX IF NOT EXISTS sms_queue_sender_key_idx ON sms_learning_queue(sender_key)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS sms_queue_template_hash_idx ON sms_learning_queue(template_hash)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS sms_queue_status_idx ON sms_learning_queue(status)`);
+    await db.execute(sql`ALTER TABLE sms_learning_queue ADD COLUMN IF NOT EXISTS reason TEXT`);
 
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS sms_safe_senders (

@@ -53,6 +53,7 @@ export async function storeSmsForLearning(opts: {
   sender: string;
   body: string;
   bucket: "suspicious" | "unparsed" | "matched";
+  reason?: string | null;
   parsedUtr?: string | null;
   parsedAmount?: number | null;
   isDebit?: boolean;
@@ -81,6 +82,7 @@ export async function storeSmsForLearning(opts: {
     templateHash,
     userId: opts.userId || null,
     status: opts.bucket === "matched" ? "matched" : "pending",
+    reason: opts.reason || null,
   });
 }
 
