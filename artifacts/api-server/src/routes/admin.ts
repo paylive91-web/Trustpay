@@ -7,6 +7,7 @@ import { signToken, requireAdmin, formatUser } from "../lib/auth.js";
 import { getSetting, getAllSettings, setSetting } from "../lib/settings.js";
 import { listFraudRules, setFraudRuleEnabled } from "../lib/fraud.js";
 import { proposePatterns, normalizeSenderKey, buildContextRegex } from "../lib/sms-bridge.js";
+import { getSmsLearningStatus, runSmsAutoCleanup } from "../lib/sms-cleanup.js";
 
 function asString(v: string | string[] | undefined): string {
   return Array.isArray(v) ? v[0] ?? "" : v ?? "";
@@ -1171,6 +1172,23 @@ router.post("/sms-learning/propose", requireAdmin, async (req, res) => {
   res.json(result);
 });
 
+router.get("/sms-learning/cleanup-status", requireAdmin, async (_req, res) => {
+  const status = await getSmsLearningStatus();
+  const autoDeleteEnabled = await getSetting("smsAutoDeleteEnabled");
+  res.json({ ...status, autoDeleteEnabled: autoDeleteEnabled === "true" });
+});
+
+router.post("/sms-learning/run-cleanup", requireAdmin, async (req, res) => {
+  const adminId = (req as any).user.id;
+  const { force } = req.body || {};
+  const result = await runSmsAutoCleanup({ force: !!force });
+  await logAdminAction(adminId, "sms_cleanup_run", undefined, undefined,
+    result.skipped
+      ? `Cleanup skipped: ${result.skipReason}`
+      : `Cleanup done: deleted ${result.deletedQueueRows} queue rows + ${result.deletedCandidateRows} candidates`);
+  res.json(result);
+});
+
 router.post("/sms-learning/candidates/:id/approve", requireAdmin, async (req, res) => {
   const adminId = (req as any).user.id;
   const id = parseInt(asString(req.params.id));
@@ -1215,6 +1233,9 @@ router.post("/sms-learning/candidates/:id/approve", requireAdmin, async (req, re
 
   await logAdminAction(adminId, "sms_candidate_approve", "sms_candidate", id,
     `Approved candidate ${id} sender=${candidate.senderKey} — safe sender + active pattern created`);
+
+  runSmsAutoCleanup().catch(() => {});
+
   res.json({ ok: true });
 });
 
@@ -1234,6 +1255,9 @@ router.post("/sms-learning/candidates/:id/reject", requireAdmin, async (req, res
 
   await logAdminAction(adminId, "sms_candidate_reject", "sms_candidate", id,
     `Rejected candidate ${id} sender=${candidate.senderKey}`);
+
+  runSmsAutoCleanup().catch(() => {});
+
   res.json({ ok: true });
 });
 
