@@ -11,6 +11,26 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 const AMOUNT_TOLERANCE = 1;
 
+async function reportSmsToServer(opts: {
+  sender: string;
+  body: string;
+  bucket: "suspicious" | "unparsed";
+  parsedUtr?: string | null;
+  parsedAmount?: number | null;
+  isDebit?: boolean;
+}): Promise<void> {
+  try {
+    const token = getAuthToken();
+    if (!token) return;
+    await fetch(`${API_BASE}/sms/report`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(opts),
+    });
+  } catch {
+  }
+}
+
 async function confirmOrder(id: number): Promise<{ error?: string }> {
   const token = getAuthToken();
   const res = await fetch(`${API_BASE}/p2p/confirm/${id}`, {
@@ -49,17 +69,26 @@ export default function SmsAutoConfirmService() {
   });
 
   useEffect(() => {
-    if (!isAndroid() || pendingOrders.length === 0) return;
+    if (!isAndroid()) return;
 
     const remove = addSmsListener(async (msg: SmsMessage) => {
-      if (!isTrustedSender(msg.sender)) return;
+      if (!isTrustedSender(msg.sender)) {
+        reportSmsToServer({ sender: msg.sender, body: msg.sms, bucket: "unparsed" });
+        return;
+      }
       const parsed = parseBankSms(msg.sms);
-      if (!parsed) return;
+      if (!parsed) {
+        reportSmsToServer({ sender: msg.sender, body: msg.sms, bucket: "suspicious" });
+        return;
+      }
+
+      let orderMatched = false;
       for (const order of pendingOrders) {
         const id: number = order.id;
         const utrMatch = parsed.utr.toUpperCase() === String(order.utrNumber || "").toUpperCase();
         const amountMatch = Math.abs(parsed.amount - Number(order.amount)) <= AMOUNT_TOLERANCE;
         if (utrMatch && amountMatch) {
+          orderMatched = true;
           if (!claimOrderConfirm(id)) break;
           const result = await confirmOrder(id);
           if (result?.error) {
@@ -73,6 +102,16 @@ export default function SmsAutoConfirmService() {
           });
           break;
         }
+      }
+
+      if (!orderMatched) {
+        reportSmsToServer({
+          sender: msg.sender,
+          body: msg.sms,
+          bucket: "suspicious",
+          parsedUtr: parsed.utr,
+          parsedAmount: parsed.amount,
+        });
       }
     });
 

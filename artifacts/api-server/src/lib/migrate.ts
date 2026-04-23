@@ -120,6 +120,75 @@ export async function ensureSchema(): Promise<void> {
     await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS agent_tier_awarded_date DATE`);
     await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS agent_tier_awarded_level INTEGER NOT NULL DEFAULT 0`);
 
+    // ── SMS Safe Learning tables ──────────────────────────────────────────────
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS sms_learning_queue (
+        id SERIAL PRIMARY KEY,
+        sender TEXT NOT NULL,
+        sender_key TEXT NOT NULL,
+        body TEXT NOT NULL,
+        bucket TEXT NOT NULL,
+        parsed_utr TEXT,
+        parsed_amount TEXT,
+        is_debit BOOLEAN NOT NULL DEFAULT false,
+        has_reversal BOOLEAN NOT NULL DEFAULT false,
+        template_body TEXT,
+        template_hash TEXT,
+        user_id INTEGER REFERENCES users(id),
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS sms_queue_sender_key_idx ON sms_learning_queue(sender_key)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS sms_queue_template_hash_idx ON sms_learning_queue(template_hash)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS sms_queue_status_idx ON sms_learning_queue(status)`);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS sms_safe_senders (
+        id SERIAL PRIMARY KEY,
+        sender_key TEXT NOT NULL,
+        label TEXT,
+        added_by INTEGER NOT NULL REFERENCES users(id),
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS sms_safe_senders_key_unique ON sms_safe_senders(sender_key)`);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS sms_candidate_patterns (
+        id SERIAL PRIMARY KEY,
+        sender_key TEXT NOT NULL,
+        template_hash TEXT NOT NULL,
+        template_body TEXT NOT NULL,
+        utr_sample TEXT,
+        amount_sample TEXT,
+        sample_count INTEGER NOT NULL DEFAULT 0,
+        sample_ids TEXT,
+        status TEXT NOT NULL DEFAULT 'proposed',
+        reviewed_by INTEGER,
+        reviewed_at TIMESTAMP,
+        notes TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS sms_candidates_hash_unique ON sms_candidate_patterns(sender_key, template_hash)`);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS sms_active_patterns (
+        id SERIAL PRIMARY KEY,
+        sender_key TEXT NOT NULL,
+        template_label TEXT NOT NULL,
+        utr_regex TEXT NOT NULL,
+        amount_regex TEXT NOT NULL,
+        credit_only BOOLEAN NOT NULL DEFAULT true,
+        reversal_blocked BOOLEAN NOT NULL DEFAULT true,
+        source_candidate_id INTEGER,
+        created_by INTEGER NOT NULL,
+        is_active BOOLEAN NOT NULL DEFAULT true,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
     logger.info("ensureSchema OK");
   } catch (err) {
     logger.error({ err }, "ensureSchema failed");

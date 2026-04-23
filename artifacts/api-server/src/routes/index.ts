@@ -10,6 +10,7 @@ import p2pRouter from "./p2p.js";
 import disputesRouter from "./disputes.js";
 import upiRouter from "./upi.js";
 import notificationsRouter from "./notifications.js";
+import smsRouter from "./sms.js";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use("/p2p", p2pRouter);
 router.use("/disputes", disputesRouter);
 router.use("/upi", upiRouter);
 router.use("/notifications", notificationsRouter);
+router.use("/sms", smsRouter);
 
 export default router;

@@ -116,6 +116,61 @@ export const tradePairBlocksTable = pgTable("trade_pair_blocks", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const smsLearningQueueTable = pgTable("sms_learning_queue", {
+  id: serial("id").primaryKey(),
+  sender: text("sender").notNull(),
+  senderKey: text("sender_key").notNull(),
+  body: text("body").notNull(),
+  bucket: text("bucket").notNull(),
+  parsedUtr: text("parsed_utr"),
+  parsedAmount: text("parsed_amount"),
+  isDebit: boolean("is_debit").notNull().default(false),
+  hasReversal: boolean("has_reversal").notNull().default(false),
+  templateBody: text("template_body"),
+  templateHash: text("template_hash"),
+  userId: integer("user_id").references(() => usersTable.id),
+  status: text("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const smsSafeSendersTable = pgTable("sms_safe_senders", {
+  id: serial("id").primaryKey(),
+  senderKey: text("sender_key").notNull(),
+  label: text("label"),
+  addedBy: integer("added_by").notNull().references(() => usersTable.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const smsCandidatePatternsTable = pgTable("sms_candidate_patterns", {
+  id: serial("id").primaryKey(),
+  senderKey: text("sender_key").notNull(),
+  templateHash: text("template_hash").notNull(),
+  templateBody: text("template_body").notNull(),
+  utrSample: text("utr_sample"),
+  amountSample: text("amount_sample"),
+  sampleCount: integer("sample_count").notNull().default(0),
+  sampleIds: text("sample_ids"),
+  status: text("status").notNull().default("proposed"),
+  reviewedBy: integer("reviewed_by"),
+  reviewedAt: timestamp("reviewed_at"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const smsActivePatternsTable = pgTable("sms_active_patterns", {
+  id: serial("id").primaryKey(),
+  senderKey: text("sender_key").notNull(),
+  templateLabel: text("template_label").notNull(),
+  utrRegex: text("utr_regex").notNull(),
+  amountRegex: text("amount_regex").notNull(),
+  creditOnly: boolean("credit_only").notNull().default(true),
+  reversalBlocked: boolean("reversal_blocked").notNull().default(true),
+  sourceCandidateId: integer("source_candidate_id"),
+  createdBy: integer("created_by").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export type UserUpiIdRow = typeof userUpiIdsTable.$inferSelect;
 export type Dispute = typeof disputesTable.$inferSelect;
 export type FraudAlert = typeof fraudAlertsTable.$inferSelect;
@@ -123,3 +178,7 @@ export type TrustEvent = typeof trustEventsTable.$inferSelect;
 export type UserNotification = typeof userNotificationsTable.$inferSelect;
 export type AdminLog = typeof adminLogsTable.$inferSelect;
 export type TradePairBlock = typeof tradePairBlocksTable.$inferSelect;
+export type SmsLearningQueue = typeof smsLearningQueueTable.$inferSelect;
+export type SmsSafeSender = typeof smsSafeSendersTable.$inferSelect;
+export type SmsCandidatePattern = typeof smsCandidatePatternsTable.$inferSelect;
+export type SmsActivePattern = typeof smsActivePatternsTable.$inferSelect;
