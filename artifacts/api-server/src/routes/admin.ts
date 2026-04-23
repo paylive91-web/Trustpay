@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db } from "@workspace/db";
-import { usersTable, ordersTable, transactionsTable, depositTasksTable, fraudAlertsTable, trustEventsTable, highValueEventsTable, userNotificationsTable, deviceFingerprintsTable, userUpiIdsTable, disputesTable, utrIndexTable, imageHashesTable, referralsTable, adminLogsTable, tradePairBlocksTable, smsLearningQueueTable, smsSafeSendersTable, smsCandidatePatternsTable } from "@workspace/db";
+import { usersTable, ordersTable, transactionsTable, depositTasksTable, fraudAlertsTable, trustEventsTable, highValueEventsTable, userNotificationsTable, deviceFingerprintsTable, userUpiIdsTable, disputesTable, utrIndexTable, imageHashesTable, referralsTable, adminLogsTable, tradePairBlocksTable, smsLearningQueueTable, smsSafeSendersTable, smsCandidatePatternsTable, smsActivePatternsTable } from "@workspace/db";
 import { eq, and, sql, inArray, or, desc, gte, lte } from "drizzle-orm";
 import { signToken, requireAdmin, formatUser } from "../lib/auth.js";
 import { getSetting, getAllSettings, setSetting } from "../lib/settings.js";
@@ -1105,6 +1105,7 @@ router.post("/sms-learning/candidates/:id/approve", requireAdmin, async (req, re
   }).where(eq(smsCandidatePatternsTable.id, id));
 
   const senderKey = candidate.senderKey.toUpperCase();
+
   const existing = await db.select().from(smsSafeSendersTable)
     .where(eq(smsSafeSendersTable.senderKey, senderKey)).limit(1);
   if (existing.length === 0) {
@@ -1114,8 +1115,24 @@ router.post("/sms-learning/candidates/:id/approve", requireAdmin, async (req, re
     });
   }
 
+  const existingActive = await db.select().from(smsActivePatternsTable)
+    .where(eq(smsActivePatternsTable.senderKey, senderKey)).limit(1);
+  if (existingActive.length === 0) {
+    await db.insert(smsActivePatternsTable).values({
+      senderKey,
+      templateLabel: candidate.templateBody.slice(0, 100),
+      utrRegex: String.raw`\b[A-Z0-9]{12}\b`,
+      amountRegex: String.raw`(?:Rs\.?|INR|₹)\s*[\d,]+(?:\.\d{1,2})?`,
+      creditOnly: true,
+      reversalBlocked: true,
+      sourceCandidateId: id,
+      createdBy: adminId,
+      isActive: true,
+    });
+  }
+
   await logAdminAction(adminId, "sms_candidate_approve", "sms_candidate", id,
-    `Approved candidate ${id} sender=${candidate.senderKey}`);
+    `Approved candidate ${id} sender=${candidate.senderKey} — safe sender + active pattern created`);
   res.json({ ok: true });
 });
 

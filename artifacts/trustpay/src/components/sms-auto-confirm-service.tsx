@@ -53,6 +53,23 @@ interface MatchedOrder {
 export default function SmsAutoConfirmService() {
   const [confirmedOrder, setConfirmedOrder] = useState<MatchedOrder | null>(null);
 
+  const { data: customTrustedSenders = [] } = useQuery<string[]>({
+    queryKey: ["sms-trusted-senders"],
+    queryFn: async () => {
+      const token = getAuthToken();
+      if (!token) return [];
+      const res = await fetch(`${API_BASE}/sms/trusted-senders`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data.senderKeys) ? data.senderKeys : [];
+    },
+    enabled: isAndroid() && !!getAuthToken(),
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
+  });
+
   const { data: pendingOrders = [] } = useQuery<any[]>({
     queryKey: ["my-pending-confirmations-bg"],
     queryFn: async () => {
@@ -68,11 +85,26 @@ export default function SmsAutoConfirmService() {
     refetchInterval: 4000,
   });
 
+  const customSendersSet = React.useMemo(
+    () => new Set(customTrustedSenders.map((k) => k.toUpperCase())),
+    [customTrustedSenders],
+  );
+
+  const isEffectivelyTrusted = React.useCallback(
+    (sender: string) => {
+      if (isTrustedSender(sender)) return true;
+      const upper = sender.toUpperCase().trim();
+      const segments = upper.split(/[-_.\s+/\\]+/).filter((s: string) => s.length >= 3);
+      return segments.some((seg: string) => customSendersSet.has(seg));
+    },
+    [customSendersSet],
+  );
+
   useEffect(() => {
     if (!isAndroid()) return;
 
     const remove = addSmsListener(async (msg: SmsMessage) => {
-      if (!isTrustedSender(msg.sender)) {
+      if (!isEffectivelyTrusted(msg.sender)) {
         reportSmsToServer({ sender: msg.sender, body: msg.sms, bucket: "unparsed" });
         return;
       }
@@ -95,6 +127,13 @@ export default function SmsAutoConfirmService() {
             releaseOrderClaim(id);
             return;
           }
+          reportSmsToServer({
+            sender: msg.sender,
+            body: msg.sms,
+            bucket: "matched",
+            parsedUtr: parsed.utr,
+            parsedAmount: parsed.amount,
+          });
           setConfirmedOrder({
             orderId: id,
             utrNumber: order.utrNumber,
@@ -116,7 +155,7 @@ export default function SmsAutoConfirmService() {
     });
 
     return remove;
-  }, [pendingOrders]);
+  }, [pendingOrders, isEffectivelyTrusted]);
 
   if (!confirmedOrder) return null;
 

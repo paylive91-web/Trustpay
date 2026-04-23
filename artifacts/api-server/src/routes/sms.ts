@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { requireAuth } from "../lib/auth.js";
 import { storeSmsForLearning } from "../lib/sms-bridge.js";
+import { db } from "@workspace/db";
+import { smsSafeSendersTable, smsActivePatternsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 
 const router = Router();
 
@@ -14,8 +17,8 @@ router.post("/report", requireAuth, async (req: any, res: any) => {
   if (!body || typeof body !== "string") {
     return res.status(400).json({ error: "body required" });
   }
-  if (!["suspicious", "unparsed"].includes(bucket)) {
-    return res.status(400).json({ error: "bucket must be suspicious or unparsed" });
+  if (!["suspicious", "unparsed", "matched"].includes(bucket)) {
+    return res.status(400).json({ error: "bucket must be suspicious, unparsed, or matched" });
   }
   if (body.length > 2000) {
     return res.status(400).json({ error: "SMS body too long" });
@@ -33,6 +36,22 @@ router.post("/report", requireAuth, async (req: any, res: any) => {
   });
 
   res.json({ ok: true });
+});
+
+router.get("/trusted-senders", requireAuth, async (_req, res) => {
+  const [safeSenders, activePatterns] = await Promise.all([
+    db.select({ senderKey: smsSafeSendersTable.senderKey }).from(smsSafeSendersTable),
+    db.select({ senderKey: smsActivePatternsTable.senderKey })
+      .from(smsActivePatternsTable)
+      .where(eq(smsActivePatternsTable.isActive, true)),
+  ]);
+
+  const keys = new Set<string>([
+    ...safeSenders.map((s) => s.senderKey.toUpperCase()),
+    ...activePatterns.map((p) => p.senderKey.toUpperCase()),
+  ]);
+
+  res.json({ senderKeys: Array.from(keys) });
 });
 
 export default router;

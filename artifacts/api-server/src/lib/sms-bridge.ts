@@ -2,6 +2,26 @@ import { db } from "@workspace/db";
 import { smsLearningQueueTable, smsSafeSendersTable, smsCandidatePatternsTable } from "@workspace/db";
 import { sql, and, eq } from "drizzle-orm";
 
+const DEBIT_HINT_RE =
+  /\b(debited|withdrawn|spent|paid\s+to|sent\s+to|sent\s+via|deducted|debit\s+alert|w\/d|wdl|purchase\s+at|atm\s+wdl)\b/i;
+const CREDIT_HINT_RE =
+  /\b(credited|received|deposited|credit\s+alert|added\s+to|money\s+received|payment\s+received|cr\.?|recd\.?)\b/i;
+const REVERSAL_HINT_RE = /\b(reversal|reversed|refund|chargeback|return\s+credit)\b/i;
+
+export function serverDetectDebit(body: string): boolean {
+  return DEBIT_HINT_RE.test(body) && !CREDIT_HINT_RE.test(body);
+}
+
+export function serverDetectReversal(body: string): boolean {
+  return REVERSAL_HINT_RE.test(body);
+}
+
+const VALID_SENDER_RE = /^[A-Z]{3,}/;
+
+export function looksLikeValidSenderKey(key: string): boolean {
+  return VALID_SENDER_RE.test(key.toUpperCase()) && key.length <= 12;
+}
+
 export function normalizeSenderKey(sender: string): string {
   const upper = sender.toUpperCase().trim();
   const segments = upper.split(/[-_.\s+/\\]+/).filter((s) => s.length >= 3);
@@ -32,7 +52,7 @@ export function computeTemplateHash(senderKey: string, templateBody: string): st
 export async function storeSmsForLearning(opts: {
   sender: string;
   body: string;
-  bucket: "suspicious" | "unparsed";
+  bucket: "suspicious" | "unparsed" | "matched";
   parsedUtr?: string | null;
   parsedAmount?: number | null;
   isDebit?: boolean;
@@ -43,6 +63,11 @@ export async function storeSmsForLearning(opts: {
   const templateBody = normalizeTemplate(opts.body);
   const templateHash = computeTemplateHash(senderKey, templateBody);
 
+  const serverIsDebit = serverDetectDebit(opts.body);
+  const serverHasReversal = serverDetectReversal(opts.body);
+  const isDebit = opts.isDebit || serverIsDebit;
+  const hasReversal = opts.hasReversal || serverHasReversal;
+
   await db.insert(smsLearningQueueTable).values({
     sender: opts.sender,
     senderKey,
@@ -50,18 +75,19 @@ export async function storeSmsForLearning(opts: {
     bucket: opts.bucket,
     parsedUtr: opts.parsedUtr || null,
     parsedAmount: opts.parsedAmount != null ? String(opts.parsedAmount) : null,
-    isDebit: opts.isDebit ?? false,
-    hasReversal: opts.hasReversal ?? false,
+    isDebit,
+    hasReversal,
     templateBody,
     templateHash,
     userId: opts.userId || null,
-    status: "pending",
+    status: opts.bucket === "matched" ? "matched" : "pending",
   });
 }
 
 const MIN_SAMPLES = 5;
+const UTR_CONSISTENCY_THRESHOLD = 0.6;
 
-export async function proposePatterns(): Promise<{ proposed: number; skipped: number }> {
+export async function proposePatterns(): Promise<{ proposed: number; skipped: number; reasons: Record<string, string> }> {
   const items = await db
     .select()
     .from(smsLearningQueueTable)
@@ -78,6 +104,9 @@ export async function proposePatterns(): Promise<{ proposed: number; skipped: nu
     existingCandidates.map((c) => c.senderKey + "|" + c.templateHash),
   );
 
+  const safeSenders = await db.select().from(smsSafeSendersTable);
+  const safeSenderKeys = new Set(safeSenders.map((s) => s.senderKey.toUpperCase()));
+
   const groups = new Map<string, typeof items>();
   for (const item of items) {
     if (!item.templateHash) continue;
@@ -89,18 +118,53 @@ export async function proposePatterns(): Promise<{ proposed: number; skipped: nu
 
   let proposed = 0;
   let skipped = 0;
+  const reasons: Record<string, string> = {};
 
   for (const [key, group] of groups) {
-    if (group.length < MIN_SAMPLES) {
-      skipped++;
-      continue;
-    }
+    const first = group[0];
+
     if (existingHashes.has(key)) {
+      reasons[key] = "already_proposed";
       skipped++;
       continue;
     }
 
-    const first = group[0];
+    if (group.length < MIN_SAMPLES) {
+      reasons[key] = `insufficient_samples(${group.length}<${MIN_SAMPLES})`;
+      skipped++;
+      continue;
+    }
+
+    if (!looksLikeValidSenderKey(first.senderKey)) {
+      reasons[key] = `invalid_sender_key(${first.senderKey})`;
+      skipped++;
+      continue;
+    }
+
+    const utrCount = group.filter((i) => i.parsedUtr).length;
+    const utrRatio = utrCount / group.length;
+    if (utrRatio < UTR_CONSISTENCY_THRESHOLD && !safeSenderKeys.has(first.senderKey.toUpperCase())) {
+      reasons[key] = `low_utr_consistency(${utrCount}/${group.length})`;
+      skipped++;
+      continue;
+    }
+
+    const amtCount = group.filter((i) => i.parsedAmount).length;
+    const amtRatio = amtCount / group.length;
+    if (amtRatio < UTR_CONSISTENCY_THRESHOLD && !safeSenderKeys.has(first.senderKey.toUpperCase())) {
+      reasons[key] = `low_amount_consistency(${amtCount}/${group.length})`;
+      skipped++;
+      continue;
+    }
+
+    const debitCount = group.filter((i) => i.isDebit).length;
+    const reversalCount = group.filter((i) => i.hasReversal).length;
+    if (debitCount > 0 || reversalCount > 0) {
+      reasons[key] = `debit_or_reversal_in_samples(debit:${debitCount},reversal:${reversalCount})`;
+      skipped++;
+      continue;
+    }
+
     const sampleIds = JSON.stringify(group.slice(0, 20).map((i) => i.id));
     const utrSamples = group.filter((i) => i.parsedUtr).map((i) => i.parsedUtr!);
     const amtSamples = group.filter((i) => i.parsedAmount).map((i) => i.parsedAmount!);
@@ -123,9 +187,10 @@ export async function proposePatterns(): Promise<{ proposed: number; skipped: nu
       .where(sql`${smsLearningQueueTable.id} = ANY(${ids})`);
 
     proposed++;
+    reasons[key] = "proposed";
   }
 
-  return { proposed, skipped };
+  return { proposed, skipped, reasons };
 }
 
 export async function isSafeAdminSender(senderKey: string): Promise<boolean> {
