@@ -1494,9 +1494,9 @@ INSERT INTO public.orders (id, user_id, type, amount, reward_percent, reward_amo
 
 INSERT INTO public.settings (id, key, value, updated_at) VALUES ('7', 'gatewayBaseUrl', 'https://payment-gateway-hub--atulusf3.replit.app', '2026-04-18 12:53:48.696508');
 INSERT INTO public.settings (id, key, value, updated_at) VALUES ('8', 'gatewayMerchantId', '0cb5695cfa01460dc19477a9', '2026-04-18 12:53:48.696508');
-INSERT INTO public.settings (id, key, value, updated_at) VALUES ('9', 'gatewayApiKey', 'pgk_930dd0184344858e81f092212cdf6cd1dd12badd1a7fb527', '2026-04-18 12:53:48.696508');
-INSERT INTO public.settings (id, key, value, updated_at) VALUES ('10', 'gatewayApiSecret', 'pgs_d62ef4708d20beb03c3fbc7daeaceffa7e7cc8f8ac5f3b8f', '2026-04-18 12:53:48.696508');
-INSERT INTO public.settings (id, key, value, updated_at) VALUES ('11', 'gatewayWebhookSecret', '273afd48d760a653c9340104be092f349fe2f4b483ec6b04d2a50d6522b98d44', '2026-04-18 12:53:48.696508');
+INSERT INTO public.settings (id, key, value, updated_at) VALUES ('9', 'gatewayApiKey', 'REDACTED', '2026-04-18 12:53:48.696508');
+INSERT INTO public.settings (id, key, value, updated_at) VALUES ('10', 'gatewayApiSecret', 'REDACTED', '2026-04-18 12:53:48.696508');
+INSERT INTO public.settings (id, key, value, updated_at) VALUES ('11', 'gatewayWebhookSecret', 'REDACTED', '2026-04-18 12:53:48.696508');
 INSERT INTO public.settings (id, key, value, updated_at) VALUES ('12', 'gatewayAuthMethod', 'bearer', '2026-04-18 12:53:48.696508');
 INSERT INTO public.settings (id, key, value, updated_at) VALUES ('13', 'gatewayCreatePaymentPath', '/payments', '2026-04-18 12:53:48.696508');
 INSERT INTO public.settings (id, key, value, updated_at) VALUES ('14', 'gatewayVerifyPaymentPath', '/payments/{id}/verify', '2026-04-18 12:53:48.696508');
