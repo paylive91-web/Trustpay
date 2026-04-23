@@ -10,26 +10,11 @@ import { useToast } from "@/hooks/use-toast";
 import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_1776335785514.png";
 import { useGetAppSettings } from "@workspace/api-client-react";
 import Layout from "@/components/layout";
-import { getPWAInstallPrompt, clearPWAInstallPrompt } from "@/lib/pwa-install";
 import { Download, ShieldCheck, Zap, Star, ShieldAlert, LogIn } from "lucide-react";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
 function PWAInstallPopup({ onDone, appName, logoUrl }: { onDone: () => void; appName: string; logoUrl: string }) {
-  const [installing, setInstalling] = useState(false);
-
-  const handleInstall = async () => {
-    const prompt = getPWAInstallPrompt();
-    if (!prompt) { onDone(); return; }
-    setInstalling(true);
-    try {
-      await prompt.prompt();
-      await prompt.userChoice;
-    } catch {}
-    clearPWAInstallPrompt();
-    onDone();
-  };
-
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
       {/* Locked backdrop — no click to dismiss */}
@@ -89,35 +74,19 @@ function PWAInstallPopup({ onDone, appName, logoUrl }: { onDone: () => void; app
 
           {/* Download button */}
           <button
-            onClick={handleInstall}
-            disabled={installing}
+            onClick={onDone}
             className="w-full h-14 rounded-2xl flex items-center justify-center gap-2.5 font-bold text-[17px] text-white relative overflow-hidden active:scale-[0.97] transition-transform disabled:opacity-70"
             style={{
               background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #9333ea 100%)",
               boxShadow: "0 8px 32px rgba(99,66,237,0.45), 0 2px 8px rgba(99,66,237,0.25)",
             }}
           >
-            {/* Shimmer */}
-            <span
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.18) 50%, transparent 60%)",
-                animation: "shimmer 2.4s infinite",
-              }}
-            />
             <Download className="w-5 h-5 relative z-10" />
-            <span className="relative z-10">{installing ? "Installing..." : "Download Now"}</span>
+            <span className="relative z-10">Download APK</span>
           </button>
 
         </div>
       </div>
-
-      <style>{`
-        @keyframes shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-      `}</style>
     </div>
   );
 }
@@ -139,6 +108,7 @@ export default function Register() {
 
   const appName = (brandSettings as any)?.appName || "TrustPay";
   const logoUrl = (brandSettings as any)?.appLogoUrl || logoPath;
+  const apkDownloadUrl = (brandSettings as any)?.apkDownloadUrl || "";
 
   useEffect(() => {
     if (user && !isUserLoading) setLocation("/");
@@ -178,8 +148,8 @@ export default function Register() {
       setAuthToken(data.token);
       toast({ title: "Account created successfully!" });
 
-      // Show install popup on Android if prompt is available, else go home
-      if (getPWAInstallPrompt()) {
+      // Show APK download popup after registration
+      if ((brandSettings as any)?.forceAppDownload || apkDownloadUrl) {
         setShowInstallPopup(true);
       } else {
         setLocation("/");
@@ -201,7 +171,11 @@ export default function Register() {
         <PWAInstallPopup
           appName={appName}
           logoUrl={logoUrl}
-          onDone={() => { setShowInstallPopup(false); setLocation("/"); }}
+          onDone={() => {
+            setShowInstallPopup(false);
+            if (apkDownloadUrl) window.open(apkDownloadUrl, "_blank");
+            setLocation("/");
+          }}
         />
       )}
 
