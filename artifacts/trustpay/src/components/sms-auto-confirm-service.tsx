@@ -11,6 +11,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 const AMOUNT_TOLERANCE = 1;
 
+const DEBIT_HINT_RE = /\b(debited|withdrawn|spent|paid\s+to|sent\s+to|sent\s+via|deducted|debit\s+alert|w\/d|wdl|purchase\s+at|atm\s+wdl)\b/i;
+const CREDIT_HINT_RE = /\b(credited|received|deposited|credit\s+alert|added\s+to|money\s+received|payment\s+received|cr\.?|recd\.?)\b/i;
+const REVERSAL_HINT_RE = /\b(reversal|reversed|refund|chargeback|return\s+credit)\b/i;
+
+function smsLooksLikeDebitOrReversal(body: string): boolean {
+  const isDebit = DEBIT_HINT_RE.test(body) && !CREDIT_HINT_RE.test(body);
+  const isReversal = REVERSAL_HINT_RE.test(body);
+  return isDebit || isReversal;
+}
+
 async function reportSmsToServer(opts: {
   sender: string;
   body: string;
@@ -107,6 +117,7 @@ export default function SmsAutoConfirmService() {
 
   const tryActivePatternParse = React.useCallback(
     (senderKey: string, body: string): { utr: string; amount: number } | null => {
+      if (smsLooksLikeDebitOrReversal(body)) return null;
       const upperKey = senderKey.toUpperCase();
       for (const pattern of serverActivePatterns) {
         if (pattern.senderKey !== upperKey) continue;
@@ -114,8 +125,8 @@ export default function SmsAutoConfirmService() {
           const utrMatch = body.match(new RegExp(pattern.utrRegex, "i"));
           const amtMatch = body.match(new RegExp(pattern.amountRegex, "i"));
           if (!utrMatch || !amtMatch) continue;
-          const utr = utrMatch[0].replace(/\s/g, "").toUpperCase();
-          const rawAmt = amtMatch[0].replace(/[^0-9.]/g, "").replace(/,/g, "");
+          const utr = (utrMatch[1] ?? utrMatch[0]).replace(/\s/g, "").toUpperCase();
+          const rawAmt = (amtMatch[1] ?? amtMatch[0]).replace(/[^0-9.]/g, "").replace(/,/g, "");
           const amount = parseFloat(rawAmt);
           if (utr && !isNaN(amount) && amount > 0) return { utr, amount };
         } catch {

@@ -6,7 +6,7 @@ import { eq, and, sql, inArray, or, desc, gte, lte } from "drizzle-orm";
 import { signToken, requireAdmin, formatUser } from "../lib/auth.js";
 import { getSetting, getAllSettings, setSetting } from "../lib/settings.js";
 import { listFraudRules, setFraudRuleEnabled } from "../lib/fraud.js";
-import { proposePatterns, normalizeSenderKey } from "../lib/sms-bridge.js";
+import { proposePatterns, normalizeSenderKey, buildContextRegex } from "../lib/sms-bridge.js";
 
 function asString(v: string | string[] | undefined): string {
   return Array.isArray(v) ? v[0] ?? "" : v ?? "";
@@ -1116,13 +1116,14 @@ router.post("/sms-learning/candidates/:id/approve", requireAdmin, async (req, re
   }
 
   const existingActive = await db.select().from(smsActivePatternsTable)
-    .where(eq(smsActivePatternsTable.senderKey, senderKey)).limit(1);
+    .where(eq(smsActivePatternsTable.sourceCandidateId, id)).limit(1);
   if (existingActive.length === 0) {
+    const { utrRegex, amountRegex } = buildContextRegex(candidate.templateBody || "");
     await db.insert(smsActivePatternsTable).values({
       senderKey,
       templateLabel: candidate.templateBody.slice(0, 100),
-      utrRegex: String.raw`\b[A-Z0-9]{12}\b`,
-      amountRegex: String.raw`(?:Rs\.?|INR|₹)\s*[\d,]+(?:\.\d{1,2})?`,
+      utrRegex,
+      amountRegex,
       creditOnly: true,
       reversalBlocked: true,
       sourceCandidateId: id,

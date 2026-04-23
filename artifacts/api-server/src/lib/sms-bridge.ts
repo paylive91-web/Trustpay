@@ -199,6 +199,28 @@ export async function proposePatterns(): Promise<{ proposed: number; skipped: nu
   return { proposed, skipped, reasons };
 }
 
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+export function buildContextRegex(templateBody: string): { utrRegex: string; amountRegex: string } {
+  const utrParts = templateBody.split(/\{utr\}/i);
+  const amtParts = templateBody.split(/\{amount\}/i);
+
+  const beforeUtrWords = (utrParts[0] || "").trim().split(/\s+/).filter(Boolean).slice(-2);
+  const beforeAmtWords = (amtParts[0] || "").trim().split(/\s+/).filter(Boolean).slice(-2);
+
+  const utrCtx = beforeUtrWords.map(escapeRegex).join("\\s+");
+  const amtCtx = beforeAmtWords.map(escapeRegex).join("\\s+");
+
+  const utrRegex = (utrCtx ? utrCtx + "\\s+" : "") + `([A-Z0-9]{12,22})`;
+  const amountRegex =
+    (amtCtx ? amtCtx + "\\s+" : "") +
+    `(?:Rs\\.?|INR|₹)?\\s*([\\d,]+(?:\\.\\d{1,2})?)`;
+
+  return { utrRegex, amountRegex };
+}
+
 export async function isSafeAdminSender(senderKey: string): Promise<boolean> {
   const rows = await db
     .select()
