@@ -50,6 +50,7 @@ function Router() {
       <Route path="/upi" component={UpiManage} />
 
       <Route path="/admin" component={AdminLogin} />
+      <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/orders" component={AdminOrders} />
       <Route path="/admin/disputes" component={AdminDisputes} />
