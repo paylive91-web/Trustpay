@@ -173,6 +173,14 @@ export async function proposePatterns(): Promise<{ proposed: number; skipped: nu
       continue;
     }
 
+    const distinctUtrs = new Set(group.filter((i) => i.parsedUtr).map((i) => i.parsedUtr!));
+    const distinctUsers = new Set(group.filter((i) => i.userId != null).map((i) => i.userId!));
+    if (group.length >= MIN_SAMPLES * 2 && distinctUtrs.size < 2) {
+      reasons[key] = `low_sample_diversity(utrs:${distinctUtrs.size},users:${distinctUsers.size})`;
+      skipped++;
+      continue;
+    }
+
     const sampleIds = JSON.stringify(group.slice(0, 20).map((i) => i.id));
     const utrSamples = group.filter((i) => i.parsedUtr).map((i) => i.parsedUtr!);
     const amtSamples = group.filter((i) => i.parsedAmount).map((i) => i.parsedAmount!);
