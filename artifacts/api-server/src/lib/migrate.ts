@@ -42,22 +42,26 @@ export async function ensureSchema(): Promise<void> {
     }
 
     // high_value_events — must match highValueEventsTable in devices.ts
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS high_value_events (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL REFERENCES users(id),
-        order_id INTEGER,
-        amount TEXT NOT NULL,
-        tier TEXT NOT NULL,
-        reviewed_by INTEGER,
-        reviewed_at TIMESTAMP,
-        notes TEXT,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW()
-      )
-    `);
-    await db.execute(sql`CREATE INDEX IF NOT EXISTS high_value_events_user_idx ON high_value_events(user_id)`);
-    await db.execute(sql`CREATE INDEX IF NOT EXISTS high_value_events_tier_idx ON high_value_events(tier)`);
-    await db.execute(sql`CREATE INDEX IF NOT EXISTS high_value_events_created_idx ON high_value_events(created_at)`);
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS high_value_events (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id),
+          order_id INTEGER,
+          amount TEXT NOT NULL,
+          tier TEXT NOT NULL,
+          reviewed_by INTEGER,
+          reviewed_at TIMESTAMP,
+          notes TEXT,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        )
+      `);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS high_value_events_user_idx ON high_value_events(user_id)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS high_value_events_tier_idx ON high_value_events(tier)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS high_value_events_created_idx ON high_value_events(created_at)`);
+    } catch (err) {
+      logger.error({ err }, "high_value_events bootstrap failed");
+    }
 
     // orders.held_amount — per-order reservation tracking. Defaults to 0
     // for any pre-existing rows so legacy locks behave correctly in
