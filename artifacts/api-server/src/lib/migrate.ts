@@ -192,6 +192,14 @@ export async function ensureSchema(): Promise<void> {
 
     await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS sms_active_patterns_dedup ON sms_active_patterns(sender_key, utr_regex)`);
 
+    // ── One-time cleanup: remove duplicate admin account (ID 22, username "admin") ──
+    // The real admin is ID 1 ("Storehsswis"). ID 22 is a leftover duplicate with
+    // no rows in any FK-constrained table, so a direct delete is safe.
+    // Scoped tightly to id=22 AND role='admin' — no-op if the user doesn't exist.
+    await db.execute(sql`
+      DELETE FROM users WHERE id = 22 AND role = 'admin'
+    `);
+
     logger.info("ensureSchema OK");
   } catch (err) {
     logger.error({ err }, "ensureSchema failed");
