@@ -1,3 +1,7 @@
+// Must be set before any TLS/SSL connection is made (including pg Pool connect).
+// This bypasses self-signed certificate errors from Supabase pooler on Render.
+process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
+
 import app from "./app";
 import { logger } from "./lib/logger";
 import { ensureSchema } from "./lib/migrate";
