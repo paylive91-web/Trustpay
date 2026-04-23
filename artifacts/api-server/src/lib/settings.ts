@@ -73,35 +73,50 @@ const DEFAULT_SETTINGS: Record<string, string> = {
 };
 
 export async function getSetting(key: string): Promise<string> {
-  const rows = await db.select().from(settingsTable).where(eq(settingsTable.key, key)).limit(1);
-  if (rows[0]) return rows[0].value;
+  try {
+    const rows = await db.select().from(settingsTable).where(eq(settingsTable.key, key)).limit(1);
+    if (rows[0]) return rows[0].value;
+  } catch {}
   return DEFAULT_SETTINGS[key] ?? "";
 }
 
 export async function getSettings(keys: string[]): Promise<Record<string, string>> {
-  const allRows = await db.select().from(settingsTable);
   const result: Record<string, string> = {};
-  for (const key of keys) {
-    const row = allRows.find((r) => r.key === key);
-    result[key] = row ? row.value : (DEFAULT_SETTINGS[key] ?? "");
+  try {
+    const allRows = await db.select().from(settingsTable);
+    for (const key of keys) {
+      const row = allRows.find((r) => r.key === key);
+      result[key] = row ? row.value : (DEFAULT_SETTINGS[key] ?? "");
+    }
+    return result;
+  } catch {
+    for (const key of keys) {
+      result[key] = DEFAULT_SETTINGS[key] ?? "";
+    }
+    return result;
   }
-  return result;
 }
 
 export async function getAllSettings(): Promise<Record<string, string>> {
-  const allRows = await db.select().from(settingsTable);
   const result: Record<string, string> = { ...DEFAULT_SETTINGS };
-  for (const row of allRows) {
-    result[row.key] = row.value;
-  }
+  try {
+    const allRows = await db.select().from(settingsTable);
+    for (const row of allRows) {
+      result[row.key] = row.value;
+    }
+  } catch {}
   return result;
 }
 
 export async function setSetting(key: string, value: string): Promise<void> {
-  const existing = await db.select().from(settingsTable).where(eq(settingsTable.key, key)).limit(1);
-  if (existing[0]) {
-    await db.update(settingsTable).set({ value, updatedAt: new Date() }).where(eq(settingsTable.key, key));
-  } else {
-    await db.insert(settingsTable).values({ key, value });
+  try {
+    const existing = await db.select().from(settingsTable).where(eq(settingsTable.key, key)).limit(1);
+    if (existing[0]) {
+      await db.update(settingsTable).set({ value, updatedAt: new Date() }).where(eq(settingsTable.key, key));
+    } else {
+      await db.insert(settingsTable).values({ key, value });
+    }
+  } catch {
+    return;
   }
 }
