@@ -19,40 +19,64 @@ async function logAdminAction(adminId: number, actionType: string, targetType?: 
 
 const router = Router();
 
+async function getCanonicalAdmin() {
+  const storedUsername = await getSetting("adminUsername");
+  const storedHash = await getSetting("adminPasswordHash");
+  const admins = await db.select().from(usersTable).where(eq(usersTable.role, "admin")).orderBy(sql`${usersTable.id} asc`);
+  const byUsername = admins.find((u) => u.username === storedUsername);
+  return { storedUsername, storedHash, admins, canonical: byUsername || admins[0] || null };
+}
+
+async function dedupeAdminUsers(canonicalId: number) {
+  const admins = await db.select().from(usersTable).where(eq(usersTable.role, "admin")).orderBy(sql`${usersTable.id} asc`);
+  const extras = admins.filter((u) => u.id !== canonicalId);
+  for (const admin of extras) {
+    await db.update(usersTable).set({ role: "user" }).where(eq(usersTable.id, admin.id));
+  }
+}
+
+async function ensureSingleAdminUser() {
+  const { canonical } = await getCanonicalAdmin();
+  if (!canonical) return null;
+  await dedupeAdminUsers(canonical.id);
+  return canonical;
+}
+
 router.post("/login", async (req, res) => {
   const { username, password } = req.body || {};
   if (!username || !password) { res.status(400).json({ error: "Username and password required" }); return; }
 
-  const storedUsername = await getSetting("adminUsername");
-  const storedHash = await getSetting("adminPasswordHash");
+  const { storedUsername, storedHash, canonical } = await getCanonicalAdmin();
+
+  if (!canonical) {
+    res.status(500).json({ error: "Admin account missing" });
+    return;
+  }
 
   if (username !== storedUsername) {
-    const [adminUser] = await db.select().from(usersTable)
-      .where(and(eq(usersTable.username, username), eq(usersTable.role, "admin"))).limit(1);
-    if (!adminUser) { res.status(401).json({ error: "Invalid credentials" }); return; }
-    const valid = await bcrypt.compare(password, adminUser.passwordHash);
+    if (username !== canonical.username) {
+      res.status(401).json({ error: "Invalid credentials" });
+      return;
+    }
+    const valid = await bcrypt.compare(password, canonical.passwordHash);
     if (!valid) { res.status(401).json({ error: "Invalid credentials" }); return; }
-    const token = signToken(adminUser.id, "admin");
-    res.json({ user: formatUser(adminUser), token });
+    const token = signToken(canonical.id, "admin");
+    res.json({ user: formatUser(canonical), token });
     return;
   }
 
   const valid = await bcrypt.compare(password, storedHash);
   if (!valid) { res.status(401).json({ error: "Invalid credentials" }); return; }
 
-  let adminUser = await db.select().from(usersTable).where(eq(usersTable.username, "admin")).limit(1);
-  if (!adminUser[0]) {
-    const [newAdmin] = await db.insert(usersTable).values({
-      username: "admin", passwordHash: storedHash, role: "admin",
-    }).returning();
-    adminUser = [newAdmin];
-  } else if (adminUser[0].role !== "admin") {
-    await db.update(usersTable).set({ role: "admin" }).where(eq(usersTable.id, adminUser[0].id));
-    adminUser[0].role = "admin";
+  if (canonical.username !== storedUsername) {
+    await db.update(usersTable).set({ username: storedUsername, passwordHash: storedHash, role: "admin" }).where(eq(usersTable.id, canonical.id));
+    canonical.username = storedUsername;
+    canonical.passwordHash = storedHash;
   }
+  await dedupeAdminUsers(canonical.id);
 
-  const token = signToken(adminUser[0].id, "admin");
-  res.json({ user: formatUser(adminUser[0]), token });
+  const token = signToken(canonical.id, "admin");
+  res.json({ user: formatUser(canonical), token });
 });
 
 function fOrder(o: any, user?: any) {
