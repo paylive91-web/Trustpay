@@ -485,6 +485,22 @@ function fSettings(s: any) {
     apkDownloadUrl: process.env.APK_DOWNLOAD_URL || s.apkDownloadUrl || "",
     apkVersion: s.apkVersion || "1.0.0",
     forceAppDownload: (s.forceAppDownload ?? "false") === "true",
+    buyRewardTiers: (() => {
+      // Empty string = not yet configured in DB (legacy mode). Return null so the
+      // UI can pre-populate default rows based on the legacy buyRewardPercent value.
+      if (!s.buyRewardTiers) return null;
+      try {
+        const raw = JSON.parse(s.buyRewardTiers);
+        if (Array.isArray(raw)) {
+          return raw.map((t: any) => ({
+            min: Number(t?.min),
+            max: Number(t?.max),
+            reward: Number(t?.reward),
+          })).filter((t) => Number.isFinite(t.min) && Number.isFinite(t.max) && Number.isFinite(t.reward));
+        }
+      } catch {}
+      return [];
+    })(),
     buyRewardPercent: parseFloat(s.buyRewardPercent || "5"),
     sellRewardPercent: parseFloat(s.sellRewardPercent || "0"),
     deviceRegistrationLimit: parseInt(s.deviceRegistrationLimit || "3"),
@@ -539,7 +555,7 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
     newUserChunkCap: b.newUserChunkCap, newUserTradeThreshold: b.newUserTradeThreshold,
     buyLockMinutes: b.buyLockMinutes, sellerConfirmMinutes: b.sellerConfirmMinutes,
     disputeWindowHours: b.disputeWindowHours,
-    buyRewardPercent: b.buyRewardPercent, sellRewardPercent: b.sellRewardPercent,
+    sellRewardPercent: b.sellRewardPercent,
     deviceRegistrationLimit: b.deviceRegistrationLimit,
     highValueThreshold: b.highValueThreshold, highValueCriticalThreshold: b.highValueCriticalThreshold,
     platformCommissionPerChunk: b.platformCommissionPerChunk,
@@ -554,6 +570,29 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
   if (b.bannerImages != null) await setSetting("bannerImages", JSON.stringify(b.bannerImages));
   if (cleanedTiers) {
     await setSetting("feeTiers", JSON.stringify(cleanedTiers));
+  }
+  if (Array.isArray(b.buyRewardTiers)) {
+    const cleanedBuyTiers: Array<{ min: number; max: number; reward: number }> = [];
+    for (const t of b.buyRewardTiers) {
+      const min = Number(t?.min), max = Number(t?.max), reward = Number(t?.reward);
+      if (!Number.isFinite(min) || !Number.isFinite(max) || !Number.isFinite(reward)) {
+        return res.status(400).json({ error: "Each buy reward tier needs numeric min, max and reward" });
+      }
+      if (min < 0 || max <= min) {
+        return res.status(400).json({ error: `Invalid buy reward tier range: min must be strictly less than max (got ${min}-${max})` });
+      }
+      if (reward < 0) {
+        return res.status(400).json({ error: "Buy reward % cannot be negative" });
+      }
+      cleanedBuyTiers.push({ min: Math.floor(min), max: Math.floor(max), reward: Math.max(0, reward) });
+    }
+    cleanedBuyTiers.sort((a, b) => a.min - b.min);
+    for (let i = 1; i < cleanedBuyTiers.length; i++) {
+      if (cleanedBuyTiers[i].min <= cleanedBuyTiers[i - 1].max) {
+        return res.status(400).json({ error: `Buy reward tiers overlap: ${cleanedBuyTiers[i - 1].min}-${cleanedBuyTiers[i - 1].max} and ${cleanedBuyTiers[i].min}-${cleanedBuyTiers[i].max}` });
+      }
+    }
+    await setSetting("buyRewardTiers", JSON.stringify(cleanedBuyTiers));
   }
   if (Array.isArray(b.agentTiers)) {
     const cleanedAgent: Array<{ minActiveDeposits: number; reward: number; label: string }> = [];

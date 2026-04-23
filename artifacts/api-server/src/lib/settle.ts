@@ -20,9 +20,30 @@ export async function settleConfirmedTrade(chunkOrderId: number, isAutoConfirm =
   const amount = parseFloat(chunk.amount);
 
   // Fetch admin-configured reward percentages
-  const rewardSettings = await getSettings(["buyRewardPercent", "sellRewardPercent"]);
-  const buyRewardPercent = Math.max(0, parseFloat(rewardSettings.buyRewardPercent) || 5);
+  const rewardSettings = await getSettings(["buyRewardTiers", "buyRewardPercent", "sellRewardPercent"]);
   const sellRewardPct = Math.max(0, parseFloat(rewardSettings.sellRewardPercent) || 0);
+
+  // Resolve buy reward %:
+  // - Empty string ("") means tiers not yet configured in DB → fall back to legacy flat buyRewardPercent.
+  // - Any JSON value (including "[]") means admin has configured tiers:
+  //   empty array → 0% reward; non-empty array → match by amount (no match → 0%).
+  let buyRewardPercent = 0;
+  const rawBuyTiers = rewardSettings.buyRewardTiers;
+  if (rawBuyTiers === "" || rawBuyTiers == null) {
+    buyRewardPercent = Math.max(0, parseFloat(rewardSettings.buyRewardPercent) || 5);
+  } else {
+    try {
+      const tiers: Array<{ min: number; max: number; reward: number }> = JSON.parse(rawBuyTiers);
+      if (Array.isArray(tiers) && tiers.length > 0) {
+        const matched = tiers.find((t) => amount >= t.min && amount <= t.max);
+        buyRewardPercent = matched ? Math.max(0, matched.reward) : 0;
+      } else {
+        buyRewardPercent = 0;
+      }
+    } catch {
+      buyRewardPercent = Math.max(0, parseFloat(rewardSettings.buyRewardPercent) || 5);
+    }
+  }
 
   // Per-order reservation tracking: chunk.heldAmount records exactly what was
   // moved into seller.heldBalance at lock time (0 for legacy locks created

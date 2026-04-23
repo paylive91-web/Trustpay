@@ -106,6 +106,12 @@ interface AgentTier {
   label: string;
 }
 
+interface BuyRewardTier {
+  min: number;
+  max: number;
+  reward: number;
+}
+
 export default function AdminSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -138,7 +144,10 @@ export default function AdminSettings() {
   const [apkDownloadUrl, setApkDownloadUrl] = useState("");
   const [apkVersion, setApkVersion] = useState("");
   const [forceAppDownload, setForceAppDownload] = useState(true);
-  const [buyRewardPercent, setBuyRewardPercent] = useState<number>(5);
+  const [buyRewardTiers, setBuyRewardTiers] = useState<BuyRewardTier[]>([
+    { min: 100, max: 500, reward: 5 },
+    { min: 501, max: 50000, reward: 5 },
+  ]);
   const [sellRewardPercent, setSellRewardPercent] = useState<number>(0);
   const [deviceRegistrationLimit, setDeviceRegistrationLimit] = useState<number>(3);
 
@@ -173,7 +182,14 @@ export default function AdminSettings() {
       setApkDownloadUrl((settings as any).apkDownloadUrl || "");
       setApkVersion((settings as any).apkVersion || "1.0.0");
       setForceAppDownload((settings as any).forceAppDownload === true);
-      setBuyRewardPercent(Number((settings as any).buyRewardPercent) || 5);
+      const bTiersRaw = (settings as any).buyRewardTiers;
+      if (bTiersRaw === null || bTiersRaw === undefined) {
+        // Not yet configured in DB — pre-populate default rows using legacy flat percent
+        const legacyPct = Number((settings as any).buyRewardPercent) || 5;
+        setBuyRewardTiers([{ min: 100, max: 500, reward: legacyPct }, { min: 501, max: 50000, reward: legacyPct }]);
+      } else if (Array.isArray(bTiersRaw)) {
+        setBuyRewardTiers(bTiersRaw.map((t: any) => ({ min: Number(t.min) || 0, max: Number(t.max) || 0, reward: Number(t.reward) || 0 })));
+      }
       setSellRewardPercent(Number((settings as any).sellRewardPercent) || 0);
       setDeviceRegistrationLimit(Number((settings as any).deviceRegistrationLimit) || 3);
       setAdminPassword("");
@@ -213,6 +229,15 @@ export default function AdminSettings() {
   const updateAgentTier = (i: number, field: keyof AgentTier, val: any) =>
     setAgentTiers((prev) => prev.map((t, idx) => idx === i ? { ...t, [field]: val } : t));
 
+  const addBuyRewardTier = () => setBuyRewardTiers((prev) => {
+    const last = prev[prev.length - 1];
+    const min = last ? last.max + 1 : 100;
+    return [...prev, { min, max: min + 499, reward: 5 }];
+  });
+  const removeBuyRewardTier = (i: number) => setBuyRewardTiers((prev) => prev.filter((_, idx) => idx !== i));
+  const updateBuyRewardTier = (i: number, field: keyof BuyRewardTier, val: number) =>
+    setBuyRewardTiers((prev) => prev.map((t, idx) => idx === i ? { ...t, [field]: val } : t));
+
   const addFeeTier = () => setFeeTiers((prev) => {
     // Default the new tier just after the last one to make it easy to extend
     // the table without typing both bounds from scratch.
@@ -239,11 +264,31 @@ export default function AdminSettings() {
     return null;
   };
 
+  const validateBuyRewardTiers = (tiers: BuyRewardTier[]): string | null => {
+    const sorted = [...tiers].sort((a, b) => a.min - b.min);
+    for (const t of sorted) {
+      if (!Number.isFinite(t.min) || !Number.isFinite(t.max) || !Number.isFinite(t.reward)) return "Each buy reward tier needs Min, Max and Reward %";
+      if (t.min < 0 || t.max <= t.min) return `Invalid range: min must be strictly less than max (${t.min}-${t.max})`;
+      if (t.reward < 0) return "Reward % cannot be negative";
+    }
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i].min <= sorted[i - 1].max) {
+        return `Buy reward tiers overlap: ${sorted[i - 1].min}-${sorted[i - 1].max} and ${sorted[i].min}-${sorted[i].max}`;
+      }
+    }
+    return null;
+  };
+
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const tierError = validateFeeTiers(feeTiers);
     if (tierError) {
       toast({ title: "Fee tiers error", description: tierError, variant: "destructive" });
+      return;
+    }
+    const buyTierError = validateBuyRewardTiers(buyRewardTiers);
+    if (buyTierError) {
+      toast({ title: "Buy reward tiers error", description: buyTierError, variant: "destructive" });
       return;
     }
     const payload: any = {
@@ -267,7 +312,7 @@ export default function AdminSettings() {
       apkDownloadUrl,
       apkVersion,
       forceAppDownload,
-      buyRewardPercent,
+      buyRewardTiers,
       sellRewardPercent,
       deviceRegistrationLimit,
     };
@@ -543,34 +588,87 @@ export default function AdminSettings() {
                   Buy reward: buyer ko har successful trade pe milega (order amount ka %). Sell reward: seller ko milega (0% = band hai, future mein enable karo).
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Buy Reward %</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      max={100}
-                      step={0.1}
-                      value={buyRewardPercent}
-                      onChange={(e) => setBuyRewardPercent(parseFloat(e.target.value) || 0)}
-                      placeholder="e.g. 5"
-                    />
-                    <p className="text-[11px] text-muted-foreground">Buyer ko ₹100 trade pe ₹{(100 * buyRewardPercent / 100).toFixed(2)} milega</p>
+              <CardContent className="space-y-6">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium">Buy Reward Tiers</Label>
+                    <Button type="button" variant="outline" size="sm" onClick={addBuyRewardTier}>
+                      <Plus className="w-3 h-3 mr-1" /> Add Tier
+                    </Button>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Sell Reward %</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      max={100}
-                      step={0.1}
-                      value={sellRewardPercent}
-                      onChange={(e) => setSellRewardPercent(parseFloat(e.target.value) || 0)}
-                      placeholder="e.g. 1"
-                    />
-                    <p className="text-[11px] text-muted-foreground">Seller ko ₹100 trade pe ₹{(100 * sellRewardPercent / 100).toFixed(2)} milega</p>
-                  </div>
+                  {buyRewardTiers.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No tiers configured — reward will be 0% for all trades.</p>
+                  ) : (
+                    <div className="border rounded-md overflow-hidden">
+                      <table className="w-full text-xs">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            <th className="text-left px-3 py-2 font-medium">Min (₹)</th>
+                            <th className="text-left px-3 py-2 font-medium">Max (₹)</th>
+                            <th className="text-left px-3 py-2 font-medium">Reward %</th>
+                            <th className="px-2 py-2" />
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {buyRewardTiers.map((t, i) => (
+                            <tr key={i} className="border-t">
+                              <td className="px-2 py-1.5">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  step={1}
+                                  className="h-7 text-xs"
+                                  value={t.min}
+                                  onChange={(e) => updateBuyRewardTier(i, "min", parseFloat(e.target.value) || 0)}
+                                />
+                              </td>
+                              <td className="px-2 py-1.5">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  step={1}
+                                  className="h-7 text-xs"
+                                  value={t.max}
+                                  onChange={(e) => updateBuyRewardTier(i, "max", parseFloat(e.target.value) || 0)}
+                                />
+                              </td>
+                              <td className="px-2 py-1.5">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  max={100}
+                                  step={0.1}
+                                  className="h-7 text-xs"
+                                  value={t.reward}
+                                  onChange={(e) => updateBuyRewardTier(i, "reward", parseFloat(e.target.value) || 0)}
+                                />
+                              </td>
+                              <td className="px-2 py-1.5">
+                                <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeBuyRewardTier(i)}>
+                                  <Trash2 className="w-3 h-3 text-destructive" />
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  <p className="text-[11px] text-muted-foreground">Amount ranges must not overlap. If no tier matches an order amount, reward is 0%.</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Sell Reward %</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.1}
+                    value={sellRewardPercent}
+                    onChange={(e) => setSellRewardPercent(parseFloat(e.target.value) || 0)}
+                    placeholder="e.g. 1"
+                    className="max-w-[180px]"
+                  />
+                  <p className="text-[11px] text-muted-foreground">Seller ko ₹100 trade pe ₹{(100 * sellRewardPercent / 100).toFixed(2)} milega</p>
                 </div>
               </CardContent>
             </Card>
