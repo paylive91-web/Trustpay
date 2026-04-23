@@ -2,7 +2,7 @@ services:
   - type: web
     name: trustpay
     runtime: node
+    plan: free
     rootDir: artifacts/trustpay
     buildCommand: pnpm install && pnpm build
     startCommand: pnpm serve
-    plan: free
