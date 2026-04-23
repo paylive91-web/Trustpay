@@ -69,6 +69,7 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   sellRewardPercent: "0",  // seller reward % on each trade (default 0%, can enable anytime)
   // Max accounts allowed per device fingerprint (default 3)
   deviceRegistrationLimit: "3",
+  smsAutoDeleteEnabled: "false",
 };
 
 export async function getSetting(key: string): Promise<string> {

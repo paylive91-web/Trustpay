@@ -150,6 +150,7 @@ export default function AdminSettings() {
   ]);
   const [sellRewardPercent, setSellRewardPercent] = useState<number>(0);
   const [deviceRegistrationLimit, setDeviceRegistrationLimit] = useState<number>(3);
+  const [smsAutoDeleteEnabled, setSmsAutoDeleteEnabled] = useState(false);
 
   useEffect(() => {
     if (settings) {
@@ -192,6 +193,7 @@ export default function AdminSettings() {
       }
       setSellRewardPercent(Number((settings as any).sellRewardPercent) || 0);
       setDeviceRegistrationLimit(Number((settings as any).deviceRegistrationLimit) || 3);
+      setSmsAutoDeleteEnabled((settings as any).smsAutoDeleteEnabled === true || (settings as any).smsAutoDeleteEnabled === "true");
       setAdminPassword("");
     }
   }, [settings]);
@@ -315,6 +317,7 @@ export default function AdminSettings() {
       buyRewardTiers,
       sellRewardPercent,
       deviceRegistrationLimit,
+      smsAutoDeleteEnabled,
     };
     if (adminPassword) payload.adminPassword = adminPassword;
     updateSettingsMut.mutate({ data: payload });
@@ -803,6 +806,32 @@ export default function AdminSettings() {
                   <p className="text-[11px] text-muted-foreground">
                     Currently: ek phone se <strong>{deviceRegistrationLimit}</strong> account{deviceRegistrationLimit !== 1 ? "s" : ""} ban sakte hain
                   </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>SMS Auto Delete</CardTitle>
+                <CardDescription>
+                  SMS data retention cleanup. Default OFF rahega; later tum manually ON kar sakte ho jab DB load zyada ho.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between gap-3 border rounded-xl p-4">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Auto Delete SMS Data</p>
+                    <p className="text-xs text-muted-foreground">
+                      Current status: <strong>{smsAutoDeleteEnabled ? "ON" : "OFF"}</strong>
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant={smsAutoDeleteEnabled ? "destructive" : "default"}
+                    onClick={() => setSmsAutoDeleteEnabled((v) => !v)}
+                  >
+                    {smsAutoDeleteEnabled ? "Turn OFF" : "Turn ON"}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
