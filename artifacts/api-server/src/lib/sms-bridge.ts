@@ -141,9 +141,15 @@ export async function proposePatterns(): Promise<{ proposed: number; skipped: nu
       continue;
     }
 
+    if (!safeSenderKeys.has(first.senderKey.toUpperCase())) {
+      reasons[key] = `sender_not_admin_approved(${first.senderKey})`;
+      skipped++;
+      continue;
+    }
+
     const utrCount = group.filter((i) => i.parsedUtr).length;
     const utrRatio = utrCount / group.length;
-    if (utrRatio < UTR_CONSISTENCY_THRESHOLD && !safeSenderKeys.has(first.senderKey.toUpperCase())) {
+    if (utrRatio < UTR_CONSISTENCY_THRESHOLD) {
       reasons[key] = `low_utr_consistency(${utrCount}/${group.length})`;
       skipped++;
       continue;
@@ -151,7 +157,7 @@ export async function proposePatterns(): Promise<{ proposed: number; skipped: nu
 
     const amtCount = group.filter((i) => i.parsedAmount).length;
     const amtRatio = amtCount / group.length;
-    if (amtRatio < UTR_CONSISTENCY_THRESHOLD && !safeSenderKeys.has(first.senderKey.toUpperCase())) {
+    if (amtRatio < UTR_CONSISTENCY_THRESHOLD) {
       reasons[key] = `low_amount_consistency(${amtCount}/${group.length})`;
       skipped++;
       continue;

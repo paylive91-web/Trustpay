@@ -14,7 +14,7 @@ const AMOUNT_TOLERANCE = 1;
 async function reportSmsToServer(opts: {
   sender: string;
   body: string;
-  bucket: "suspicious" | "unparsed";
+  bucket: "suspicious" | "unparsed" | "matched";
   parsedUtr?: string | null;
   parsedAmount?: number | null;
   isDebit?: boolean;
@@ -53,22 +53,27 @@ interface MatchedOrder {
 export default function SmsAutoConfirmService() {
   const [confirmedOrder, setConfirmedOrder] = useState<MatchedOrder | null>(null);
 
-  const { data: customTrustedSenders = [] } = useQuery<string[]>({
+  interface ActivePattern { senderKey: string; utrRegex: string; amountRegex: string; }
+  interface TrustedSendersResponse { senderKeys: string[]; activePatterns: ActivePattern[]; }
+
+  const { data: trustedData } = useQuery<TrustedSendersResponse>({
     queryKey: ["sms-trusted-senders"],
     queryFn: async () => {
       const token = getAuthToken();
-      if (!token) return [];
+      if (!token) return { senderKeys: [], activePatterns: [] };
       const res = await fetch(`${API_BASE}/sms/trusted-senders`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) return [];
-      const data = await res.json();
-      return Array.isArray(data.senderKeys) ? data.senderKeys : [];
+      if (!res.ok) return { senderKeys: [], activePatterns: [] };
+      return res.json();
     },
     enabled: isAndroid() && !!getAuthToken(),
     staleTime: 5 * 60 * 1000,
     refetchInterval: 5 * 60 * 1000,
   });
+
+  const customTrustedSenders = trustedData?.senderKeys ?? [];
+  const serverActivePatterns = trustedData?.activePatterns ?? [];
 
   const { data: pendingOrders = [] } = useQuery<any[]>({
     queryKey: ["my-pending-confirmations-bg"],
@@ -100,6 +105,27 @@ export default function SmsAutoConfirmService() {
     [customSendersSet],
   );
 
+  const tryActivePatternParse = React.useCallback(
+    (senderKey: string, body: string): { utr: string; amount: number } | null => {
+      const upperKey = senderKey.toUpperCase();
+      for (const pattern of serverActivePatterns) {
+        if (pattern.senderKey !== upperKey) continue;
+        try {
+          const utrMatch = body.match(new RegExp(pattern.utrRegex, "i"));
+          const amtMatch = body.match(new RegExp(pattern.amountRegex, "i"));
+          if (!utrMatch || !amtMatch) continue;
+          const utr = utrMatch[0].replace(/\s/g, "").toUpperCase();
+          const rawAmt = amtMatch[0].replace(/[^0-9.]/g, "").replace(/,/g, "");
+          const amount = parseFloat(rawAmt);
+          if (utr && !isNaN(amount) && amount > 0) return { utr, amount };
+        } catch {
+        }
+      }
+      return null;
+    },
+    [serverActivePatterns],
+  );
+
   useEffect(() => {
     if (!isAndroid()) return;
 
@@ -108,7 +134,8 @@ export default function SmsAutoConfirmService() {
         reportSmsToServer({ sender: msg.sender, body: msg.sms, bucket: "unparsed" });
         return;
       }
-      const parsed = parseBankSms(msg.sms);
+      const senderKey = msg.sender.toUpperCase().split(/[-_.\s+/\\]+/).filter((s: string) => s.length >= 3)[0] || msg.sender.toUpperCase().slice(0, 8);
+      const parsed = parseBankSms(msg.sms) ?? tryActivePatternParse(senderKey, msg.sms);
       if (!parsed) {
         reportSmsToServer({ sender: msg.sender, body: msg.sms, bucket: "suspicious" });
         return;
@@ -155,7 +182,7 @@ export default function SmsAutoConfirmService() {
     });
 
     return remove;
-  }, [pendingOrders, isEffectivelyTrusted]);
+  }, [pendingOrders, isEffectivelyTrusted, tryActivePatternParse]);
 
   if (!confirmedOrder) return null;
 

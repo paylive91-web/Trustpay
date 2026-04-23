@@ -41,7 +41,11 @@ router.post("/report", requireAuth, async (req: any, res: any) => {
 router.get("/trusted-senders", requireAuth, async (_req, res) => {
   const [safeSenders, activePatterns] = await Promise.all([
     db.select({ senderKey: smsSafeSendersTable.senderKey }).from(smsSafeSendersTable),
-    db.select({ senderKey: smsActivePatternsTable.senderKey })
+    db.select({
+      senderKey: smsActivePatternsTable.senderKey,
+      utrRegex: smsActivePatternsTable.utrRegex,
+      amountRegex: smsActivePatternsTable.amountRegex,
+    })
       .from(smsActivePatternsTable)
       .where(eq(smsActivePatternsTable.isActive, true)),
   ]);
@@ -51,7 +55,14 @@ router.get("/trusted-senders", requireAuth, async (_req, res) => {
     ...activePatterns.map((p) => p.senderKey.toUpperCase()),
   ]);
 
-  res.json({ senderKeys: Array.from(keys) });
+  res.json({
+    senderKeys: Array.from(keys),
+    activePatterns: activePatterns.map((p) => ({
+      senderKey: p.senderKey.toUpperCase(),
+      utrRegex: p.utrRegex,
+      amountRegex: p.amountRegex,
+    })),
+  });
 });
 
 export default router;
