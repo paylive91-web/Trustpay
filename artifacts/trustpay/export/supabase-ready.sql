@@ -1,7 +1,8 @@
 -- ============================================================
--- TrustPay -- Supabase-compatible SQL
+-- TrustPay -- Supabase / Render Compatible SQL
 -- Clean version: no psql commands, COPY converted to INSERT
--- Run directly in Supabase SQL Editor
+-- E-string notation used for values with special characters
+-- Run directly in Supabase SQL Editor or Render SQL Editor
 -- ============================================================
 
 --
@@ -1120,12 +1121,13 @@ INSERT INTO public.admin_logs (id, admin_id, action_type, target_type, target_id
 INSERT INTO public.admin_logs (id, admin_id, action_type, target_type, target_id, details, created_at) VALUES ('15', '1', 'sms_safe_sender_remove', NULL, NULL, 'Removed safe sender ICICI', '2026-04-23 04:56:54.724656');
 INSERT INTO public.admin_logs (id, admin_id, action_type, target_type, target_id, details, created_at) VALUES ('16', '1', 'sms_safe_sender_add', NULL, NULL, 'Added safe sender AXIS', '2026-04-23 05:06:33.541394');
 INSERT INTO public.admin_logs (id, admin_id, action_type, target_type, target_id, details, created_at) VALUES ('17', '1', 'sms_safe_sender_remove', NULL, NULL, 'Removed safe sender AXIS', '2026-04-23 05:06:50.615474');
-INSERT INTO public.admin_logs (id, admin_id, action_type, target_type, target_id, details, created_at) VALUES ('');
-INSERT INTO public.admin_logs (id, admin_id, action_type, target_type, target_id, details, created_at) VALUES ('');
-INSERT INTO public.admin_logs (id, admin_id, action_type, target_type, target_id, details, created_at) VALUES ('--');
-INSERT INTO public.admin_logs (id, admin_id, action_type, target_type, target_id, details, created_at) VALUES ('-- Data for Name: deposit_tasks; Type: TABLE DATA; Schema: public; Owner: postgres');
-INSERT INTO public.admin_logs (id, admin_id, action_type, target_type, target_id, details, created_at) VALUES ('--');
-INSERT INTO public.admin_logs (id, admin_id, action_type, target_type, target_id, details, created_at) VALUES ('');
+
+
+
+--
+-- Data for Name: deposit_tasks; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
 INSERT INTO public.deposit_tasks (id, amount, reward_percent, is_active, created_at) VALUES ('1', '101.00', '4.00', 't', '2026-04-16 10:44:07.439641');
 INSERT INTO public.deposit_tasks (id, amount, reward_percent, is_active, created_at) VALUES ('2', '106.00', '4.00', 't', '2026-04-16 10:44:07.439641');
 INSERT INTO public.deposit_tasks (id, amount, reward_percent, is_active, created_at) VALUES ('3', '110.00', '4.00', 't', '2026-04-16 10:44:07.439641');
@@ -1136,22 +1138,24 @@ INSERT INTO public.deposit_tasks (id, amount, reward_percent, is_active, created
 INSERT INTO public.deposit_tasks (id, amount, reward_percent, is_active, created_at) VALUES ('8', '200.00', '4.00', 't', '2026-04-16 10:44:07.439641');
 INSERT INTO public.deposit_tasks (id, amount, reward_percent, is_active, created_at) VALUES ('9', '500.00', '4.00', 't', '2026-04-16 10:44:07.439641');
 INSERT INTO public.deposit_tasks (id, amount, reward_percent, is_active, created_at) VALUES ('10', '1000.00', '4.00', 't', '2026-04-16 10:44:07.439641');
-INSERT INTO public.deposit_tasks (id, amount, reward_percent, is_active, created_at) VALUES ('');
-INSERT INTO public.deposit_tasks (id, amount, reward_percent, is_active, created_at) VALUES ('');
-INSERT INTO public.deposit_tasks (id, amount, reward_percent, is_active, created_at) VALUES ('--');
-INSERT INTO public.deposit_tasks (id, amount, reward_percent, is_active, created_at) VALUES ('-- Data for Name: device_fingerprints; Type: TABLE DATA; Schema: public; Owner: postgres');
-INSERT INTO public.deposit_tasks (id, amount, reward_percent, is_active, created_at) VALUES ('--');
-INSERT INTO public.deposit_tasks (id, amount, reward_percent, is_active, created_at) VALUES ('');
+
+
+
+--
+-- Data for Name: device_fingerprints; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
 INSERT INTO public.device_fingerprints (id, user_id, fingerprint, ip, user_agent, last_seen_at, created_at) VALUES ('2', '4', 'TW96aWxsYS81LjAgKExpbnV4OyBBbmRyb2lkIDEwOyBLKSBBcHBsZVdlYktpdC81', '112.79.220.58', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2026-04-20 17:49:57.384569', '2026-04-20 17:49:57.384569');
 INSERT INTO public.device_fingerprints (id, user_id, fingerprint, ip, user_agent, last_seen_at, created_at) VALUES ('3', '142', 'fp-dup-test-001', '::1', 'curl/8.14.1', '2026-04-21 08:09:51.922892', '2026-04-21 08:09:51.922892');
 INSERT INTO public.device_fingerprints (id, user_id, fingerprint, ip, user_agent, last_seen_at, created_at) VALUES ('4', '143', 'fp-agent-1', '::1', 'curl/8.14.1', '2026-04-21 08:14:59.753794', '2026-04-21 08:14:59.753794');
 INSERT INTO public.device_fingerprints (id, user_id, fingerprint, ip, user_agent, last_seen_at, created_at) VALUES ('1', '1', 'TW96aWxsYS81LjAgKFgxMTsgTGludXggeDg2XzY0KSBBcHBsZVdlYktpdC81Mzcu', '34.66.204.134', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', '2026-04-23 04:26:40.27', '2026-04-20 15:54:31.147048');
-INSERT INTO public.device_fingerprints (id, user_id, fingerprint, ip, user_agent, last_seen_at, created_at) VALUES ('');
-INSERT INTO public.device_fingerprints (id, user_id, fingerprint, ip, user_agent, last_seen_at, created_at) VALUES ('');
-INSERT INTO public.device_fingerprints (id, user_id, fingerprint, ip, user_agent, last_seen_at, created_at) VALUES ('--');
-INSERT INTO public.device_fingerprints (id, user_id, fingerprint, ip, user_agent, last_seen_at, created_at) VALUES ('-- Data for Name: disputes; Type: TABLE DATA; Schema: public; Owner: postgres');
-INSERT INTO public.device_fingerprints (id, user_id, fingerprint, ip, user_agent, last_seen_at, created_at) VALUES ('--');
-INSERT INTO public.device_fingerprints (id, user_id, fingerprint, ip, user_agent, last_seen_at, created_at) VALUES ('');
+
+
+
+--
+-- Data for Name: disputes; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
 INSERT INTO public.disputes (id, order_id, buyer_id, seller_id, reason, status, buyer_bank_statement_url, seller_bank_statement_url, seller_recording_url, seller_last_txn_screenshot_url, buyer_proof_deadline, seller_proof_deadline, buyer_proof_at, seller_proof_at, resolved_at, resolved_by, admin_notes, created_at, trigger_reason, buyer_tx_history_url) VALUES ('1', '11', '7', '6', 'No money received in my bank', 'buyer_won', NULL, NULL, NULL, NULL, '2026-04-19 17:55:43.484', '2026-04-19 17:55:43.484', NULL, NULL, '2026-04-18 17:55:43.506', '1', 'Test resolution', '2026-04-18 17:55:43.486959', NULL, NULL);
 INSERT INTO public.disputes (id, order_id, buyer_id, seller_id, reason, status, buyer_bank_statement_url, seller_bank_statement_url, seller_recording_url, seller_last_txn_screenshot_url, buyer_proof_deadline, seller_proof_deadline, buyer_proof_at, seller_proof_at, resolved_at, resolved_by, admin_notes, created_at, trigger_reason, buyer_tx_history_url) VALUES ('2', '12', '7', '6', 'Not received', 'buyer_won', NULL, NULL, NULL, NULL, '2026-04-19 17:59:57.511', '2026-04-19 17:59:57.511', NULL, NULL, '2026-04-18 17:59:57.566', '1', 'Verified', '2026-04-18 17:59:57.514895', NULL, NULL);
 INSERT INTO public.disputes (id, order_id, buyer_id, seller_id, reason, status, buyer_bank_statement_url, seller_bank_statement_url, seller_recording_url, seller_last_txn_screenshot_url, buyer_proof_deadline, seller_proof_deadline, buyer_proof_at, seller_proof_at, resolved_at, resolved_by, admin_notes, created_at, trigger_reason, buyer_tx_history_url) VALUES ('3', '27', '25', '24', 'no payment', 'open', 'data:application/pdf;base64,JVBERi0xLjQKJUVPRgo=', NULL, NULL, NULL, '2026-04-19 21:03:08.223', '2026-04-19 21:03:08.223', '2026-04-18 21:03:08.273', NULL, NULL, NULL, NULL, '2026-04-18 21:03:08.227026', NULL, NULL);
@@ -1169,12 +1173,13 @@ INSERT INTO public.disputes (id, order_id, buyer_id, seller_id, reason, status, 
 INSERT INTO public.disputes (id, order_id, buyer_id, seller_id, reason, status, buyer_bank_statement_url, seller_bank_statement_url, seller_recording_url, seller_last_txn_screenshot_url, buyer_proof_deadline, seller_proof_deadline, buyer_proof_at, seller_proof_at, resolved_at, resolved_by, admin_notes, created_at, trigger_reason, buyer_tx_history_url) VALUES ('15', '84', '131', '130', 'no payment', 'open', 'data:application/pdf;base64,JVBERi0xLjQKJUVPRgo=', NULL, NULL, NULL, '2026-04-19 21:10:52.769', '2026-04-19 21:10:52.769', '2026-04-18 21:10:52.856', NULL, NULL, NULL, NULL, '2026-04-18 21:10:52.774428', NULL, NULL);
 INSERT INTO public.disputes (id, order_id, buyer_id, seller_id, reason, status, buyer_bank_statement_url, seller_bank_statement_url, seller_recording_url, seller_last_txn_screenshot_url, buyer_proof_deadline, seller_proof_deadline, buyer_proof_at, seller_proof_at, resolved_at, resolved_by, admin_notes, created_at, trigger_reason, buyer_tx_history_url) VALUES ('16', '85', '133', '132', 'no payment', 'open', NULL, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', '2026-04-19 21:10:53.128', '2026-04-19 21:10:53.128', NULL, '2026-04-18 21:10:53.166', NULL, NULL, NULL, '2026-04-18 21:10:53.132622', NULL, NULL);
 INSERT INTO public.disputes (id, order_id, buyer_id, seller_id, reason, status, buyer_bank_statement_url, seller_bank_statement_url, seller_recording_url, seller_last_txn_screenshot_url, buyer_proof_deadline, seller_proof_deadline, buyer_proof_at, seller_proof_at, resolved_at, resolved_by, admin_notes, created_at, trigger_reason, buyer_tx_history_url) VALUES ('17', '86', '135', '134', 'no payment', 'open', NULL, NULL, NULL, NULL, '2026-04-19 21:10:53.421', '2026-04-19 21:10:53.421', NULL, NULL, NULL, NULL, NULL, '2026-04-18 21:10:53.424235', NULL, NULL);
-INSERT INTO public.disputes (id, order_id, buyer_id, seller_id, reason, status, buyer_bank_statement_url, seller_bank_statement_url, seller_recording_url, seller_last_txn_screenshot_url, buyer_proof_deadline, seller_proof_deadline, buyer_proof_at, seller_proof_at, resolved_at, resolved_by, admin_notes, created_at, trigger_reason, buyer_tx_history_url) VALUES ('');
-INSERT INTO public.disputes (id, order_id, buyer_id, seller_id, reason, status, buyer_bank_statement_url, seller_bank_statement_url, seller_recording_url, seller_last_txn_screenshot_url, buyer_proof_deadline, seller_proof_deadline, buyer_proof_at, seller_proof_at, resolved_at, resolved_by, admin_notes, created_at, trigger_reason, buyer_tx_history_url) VALUES ('');
-INSERT INTO public.disputes (id, order_id, buyer_id, seller_id, reason, status, buyer_bank_statement_url, seller_bank_statement_url, seller_recording_url, seller_last_txn_screenshot_url, buyer_proof_deadline, seller_proof_deadline, buyer_proof_at, seller_proof_at, resolved_at, resolved_by, admin_notes, created_at, trigger_reason, buyer_tx_history_url) VALUES ('--');
-INSERT INTO public.disputes (id, order_id, buyer_id, seller_id, reason, status, buyer_bank_statement_url, seller_bank_statement_url, seller_recording_url, seller_last_txn_screenshot_url, buyer_proof_deadline, seller_proof_deadline, buyer_proof_at, seller_proof_at, resolved_at, resolved_by, admin_notes, created_at, trigger_reason, buyer_tx_history_url) VALUES ('-- Data for Name: fraud_alerts; Type: TABLE DATA; Schema: public; Owner: postgres');
-INSERT INTO public.disputes (id, order_id, buyer_id, seller_id, reason, status, buyer_bank_statement_url, seller_bank_statement_url, seller_recording_url, seller_last_txn_screenshot_url, buyer_proof_deadline, seller_proof_deadline, buyer_proof_at, seller_proof_at, resolved_at, resolved_by, admin_notes, created_at, trigger_reason, buyer_tx_history_url) VALUES ('--');
-INSERT INTO public.disputes (id, order_id, buyer_id, seller_id, reason, status, buyer_bank_statement_url, seller_bank_statement_url, seller_recording_url, seller_last_txn_screenshot_url, buyer_proof_deadline, seller_proof_deadline, buyer_proof_at, seller_proof_at, resolved_at, resolved_by, admin_notes, created_at, trigger_reason, buyer_tx_history_url) VALUES ('');
+
+
+
+--
+-- Data for Name: fraud_alerts; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
 INSERT INTO public.fraud_alerts (id, user_id, order_id, rule, severity, evidence, resolved, created_at, notified_at, notified_by) VALUES ('1', '7', '10', 'fake_utr_sequential', 'warn', 'UTR 987654321099 starts with sequential digits', 'f', '2026-04-18 17:53:41.667048', NULL, NULL);
 INSERT INTO public.fraud_alerts (id, user_id, order_id, rule, severity, evidence, resolved, created_at, notified_at, notified_by) VALUES ('2', '19', NULL, 'new_account_high_value', 'critical', 'Account <24h old attempting ₹6000', 'f', '2026-04-18 21:03:07.259332', '2026-04-18 21:03:07.259', NULL);
 INSERT INTO public.fraud_alerts (id, user_id, order_id, rule, severity, evidence, resolved, created_at, notified_at, notified_by) VALUES ('3', '21', NULL, 'new_account_high_value', 'critical', 'Account <24h old attempting ₹11000', 'f', '2026-04-18 21:03:07.564129', '2026-04-18 21:03:07.563', NULL);
@@ -1195,12 +1200,13 @@ INSERT INTO public.fraud_alerts (id, user_id, order_id, rule, severity, evidence
 INSERT INTO public.fraud_alerts (id, user_id, order_id, rule, severity, evidence, resolved, created_at, notified_at, notified_by) VALUES ('18', '127', NULL, 'new_account_high_value', 'critical', 'Account <24h old attempting ₹11000', 'f', '2026-04-18 21:10:52.058472', '2026-04-18 21:10:52.058', NULL);
 INSERT INTO public.fraud_alerts (id, user_id, order_id, rule, severity, evidence, resolved, created_at, notified_at, notified_by) VALUES ('19', '129', NULL, 'new_account_high_value', 'critical', 'Account <24h old attempting ₹8000', 'f', '2026-04-18 21:10:52.441812', '2026-04-18 21:10:52.441', NULL);
 INSERT INTO public.fraud_alerts (id, user_id, order_id, rule, severity, evidence, resolved, created_at, notified_at, notified_by) VALUES ('20', '141', '90', 'duplicate_utr', 'critical', 'UTR FRDUP624566387 previously used by user #139 on order #88', 'f', '2026-04-18 21:11:23.502035', '2026-04-18 21:11:23.501', NULL);
-INSERT INTO public.fraud_alerts (id, user_id, order_id, rule, severity, evidence, resolved, created_at, notified_at, notified_by) VALUES ('');
-INSERT INTO public.fraud_alerts (id, user_id, order_id, rule, severity, evidence, resolved, created_at, notified_at, notified_by) VALUES ('');
-INSERT INTO public.fraud_alerts (id, user_id, order_id, rule, severity, evidence, resolved, created_at, notified_at, notified_by) VALUES ('--');
-INSERT INTO public.fraud_alerts (id, user_id, order_id, rule, severity, evidence, resolved, created_at, notified_at, notified_by) VALUES ('-- Data for Name: high_value_events; Type: TABLE DATA; Schema: public; Owner: postgres');
-INSERT INTO public.fraud_alerts (id, user_id, order_id, rule, severity, evidence, resolved, created_at, notified_at, notified_by) VALUES ('--');
-INSERT INTO public.fraud_alerts (id, user_id, order_id, rule, severity, evidence, resolved, created_at, notified_at, notified_by) VALUES ('');
+
+
+
+--
+-- Data for Name: high_value_events; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
 INSERT INTO public.high_value_events (id, user_id, order_id, amount, tier, reviewed_by, reviewed_at, notes, created_at) VALUES ('1', '19', '24', '6000', 'warn', NULL, NULL, NULL, '2026-04-18 21:03:07.251544');
 INSERT INTO public.high_value_events (id, user_id, order_id, amount, tier, reviewed_by, reviewed_at, notes, created_at) VALUES ('2', '21', '25', '11000', 'critical', NULL, NULL, NULL, '2026-04-18 21:03:07.560273');
 INSERT INTO public.high_value_events (id, user_id, order_id, amount, tier, reviewed_by, reviewed_at, notes, created_at) VALUES ('3', '23', '26', '8000', 'warn', NULL, NULL, NULL, '2026-04-18 21:03:07.946924');
@@ -1216,12 +1222,13 @@ INSERT INTO public.high_value_events (id, user_id, order_id, amount, tier, revie
 INSERT INTO public.high_value_events (id, user_id, order_id, amount, tier, reviewed_by, reviewed_at, notes, created_at) VALUES ('13', '125', '81', '6000', 'warn', NULL, NULL, NULL, '2026-04-18 21:10:51.767828');
 INSERT INTO public.high_value_events (id, user_id, order_id, amount, tier, reviewed_by, reviewed_at, notes, created_at) VALUES ('14', '127', '82', '11000', 'critical', NULL, NULL, NULL, '2026-04-18 21:10:52.055864');
 INSERT INTO public.high_value_events (id, user_id, order_id, amount, tier, reviewed_by, reviewed_at, notes, created_at) VALUES ('15', '129', '83', '8000', 'warn', NULL, NULL, NULL, '2026-04-18 21:10:52.438717');
-INSERT INTO public.high_value_events (id, user_id, order_id, amount, tier, reviewed_by, reviewed_at, notes, created_at) VALUES ('');
-INSERT INTO public.high_value_events (id, user_id, order_id, amount, tier, reviewed_by, reviewed_at, notes, created_at) VALUES ('');
-INSERT INTO public.high_value_events (id, user_id, order_id, amount, tier, reviewed_by, reviewed_at, notes, created_at) VALUES ('--');
-INSERT INTO public.high_value_events (id, user_id, order_id, amount, tier, reviewed_by, reviewed_at, notes, created_at) VALUES ('-- Data for Name: image_hashes; Type: TABLE DATA; Schema: public; Owner: postgres');
-INSERT INTO public.high_value_events (id, user_id, order_id, amount, tier, reviewed_by, reviewed_at, notes, created_at) VALUES ('--');
-INSERT INTO public.high_value_events (id, user_id, order_id, amount, tier, reviewed_by, reviewed_at, notes, created_at) VALUES ('');
+
+
+
+--
+-- Data for Name: image_hashes; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
 INSERT INTO public.image_hashes (id, hash, user_id, order_id, kind, created_at) VALUES ('1', '739030080', '7', '10', 'screenshot', '2026-04-18 17:53:41.674222');
 INSERT INTO public.image_hashes (id, hash, user_id, order_id, kind, created_at) VALUES ('2', '-862726592', '7', '10', 'recording', '2026-04-18 17:53:41.677842');
 INSERT INTO public.image_hashes (id, hash, user_id, order_id, kind, created_at) VALUES ('3', '1338735744', '7', '11', 'screenshot', '2026-04-18 17:55:43.469117');
@@ -1322,35 +1329,20 @@ INSERT INTO public.image_hashes (id, hash, user_id, order_id, kind, created_at) 
 INSERT INTO public.image_hashes (id, hash, user_id, order_id, kind, created_at) VALUES ('98', '967739360', '140', '89', 'recording', '2026-04-18 21:11:17.735659');
 INSERT INTO public.image_hashes (id, hash, user_id, order_id, kind, created_at) VALUES ('99', '-732817170', '141', '90', 'screenshot', '2026-04-18 21:11:23.513539');
 INSERT INTO public.image_hashes (id, hash, user_id, order_id, kind, created_at) VALUES ('100', '1565236936', '141', '90', 'recording', '2026-04-18 21:11:23.518142');
-INSERT INTO public.image_hashes (id, hash, user_id, order_id, kind, created_at) VALUES ('');
-INSERT INTO public.image_hashes (id, hash, user_id, order_id, kind, created_at) VALUES ('');
-INSERT INTO public.image_hashes (id, hash, user_id, order_id, kind, created_at) VALUES ('--');
-INSERT INTO public.image_hashes (id, hash, user_id, order_id, kind, created_at) VALUES ('-- Data for Name: orders; Type: TABLE DATA; Schema: public; Owner: postgres');
-INSERT INTO public.image_hashes (id, hash, user_id, order_id, kind, created_at) VALUES ('--');
-INSERT INTO public.image_hashes (id, hash, user_id, order_id, kind, created_at) VALUES ('');
+
+
+
+--
+-- Data for Name: orders; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
 INSERT INTO public.orders (id, user_id, type, amount, reward_percent, reward_amount, total_amount, status, upi_id, upi_name, user_upi_id, user_upi_name, user_name, notes, created_at, updated_at, utr_number, screenshot_url, recording_url, parent_sell_id, locked_at, locked_by_user_id, submitted_at, confirm_deadline, confirmed_at, held_amount, fee_amount, sell_reward_percent, sell_reward_amount, ocr_utr, ocr_amount, ocr_timestamp, ocr_bank, ocr_raw_text, ocr_status, ocr_amount_match, ocr_utr_match) VALUES ('1', '3', 'deposit', '101.00', '4.00', '4.04', '105.04', 'approved', 'trustpay@upi', 'TrustPay', NULL, NULL, NULL, NULL, '2026-04-16 11:20:28.176451', '2026-04-16 11:25:41.177', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '0.00', '0.00', '0.00', '0.00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO public.orders (id, user_id, type, amount, reward_percent, reward_amount, total_amount, status, upi_id, upi_name, user_upi_id, user_upi_name, user_name, notes, created_at, updated_at, utr_number, screenshot_url, recording_url, parent_sell_id, locked_at, locked_by_user_id, submitted_at, confirm_deadline, confirmed_at, held_amount, fee_amount, sell_reward_percent, sell_reward_amount, ocr_utr, ocr_amount, ocr_timestamp, ocr_bank, ocr_raw_text, ocr_status, ocr_amount_match, ocr_utr_match) VALUES ('2', '3', 'withdrawal', '100.00', '5.00', '5.00', '105.00', 'approved', 'trustpay@upi', 'TrustPay', 'usfatul3@gmail.com', '1000', 'Atul', NULL, '2026-04-16 11:22:26.941355', '2026-04-16 11:25:43.117', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '0.00', '0.00', '0.00', '0.00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO public.orders (id, user_id, type, amount, reward_percent, reward_amount, total_amount, status, upi_id, upi_name, user_upi_id, user_upi_name, user_name, notes, created_at, updated_at, utr_number, screenshot_url, recording_url, parent_sell_id, locked_at, locked_by_user_id, submitted_at, confirm_deadline, confirmed_at, held_amount, fee_amount, sell_reward_percent, sell_reward_amount, ocr_utr, ocr_amount, ocr_timestamp, ocr_bank, ocr_raw_text, ocr_status, ocr_amount_match, ocr_utr_match) VALUES ('3', '3', 'withdrawal', '500.00', '5.00', '25.00', '525.00', 'approved', 'trustpay@upi', 'TrustPay', '2828e8e', 'Uejeie', 'Atul', NULL, '2026-04-16 11:23:38.359718', '2026-04-16 11:25:43.683', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '0.00', '0.00', '0.00', '0.00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO public.orders (id, user_id, type, amount, reward_percent, reward_amount, total_amount, status, upi_id, upi_name, user_upi_id, user_upi_name, user_name, notes, created_at, updated_at, utr_number, screenshot_url, recording_url, parent_sell_id, locked_at, locked_by_user_id, submitted_at, confirm_deadline, confirmed_at, held_amount, fee_amount, sell_reward_percent, sell_reward_amount, ocr_utr, ocr_amount, ocr_timestamp, ocr_bank, ocr_raw_text, ocr_status, ocr_amount_match, ocr_utr_match) VALUES ('4', '3', 'withdrawal', '400.00', '5.00', '20.00', '420.00', 'approved', 'trustpay@upi', 'TrustPay', 'Hsjsjs', 'Jejeje', 'Atul', NULL, '2026-04-16 11:23:56.719018', '2026-04-16 11:25:44.097', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '0.00', '0.00', '0.00', '0.00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO public.orders (id, user_id, type, amount, reward_percent, reward_amount, total_amount, status, upi_id, upi_name, user_upi_id, user_upi_name, user_name, notes, created_at, updated_at, utr_number, screenshot_url, recording_url, parent_sell_id, locked_at, locked_by_user_id, submitted_at, confirm_deadline, confirmed_at, held_amount, fee_amount, sell_reward_percent, sell_reward_amount, ocr_utr, ocr_amount, ocr_timestamp, ocr_bank, ocr_raw_text, ocr_status, ocr_amount_match, ocr_utr_match) VALUES ('5', '4', 'deposit', '150.00', '4.00', '6.00', '156.00', 'pending', 'trustpay@upi', 'TrustPay', NULL, NULL, NULL, NULL, '2026-04-16 12:27:17.301802', '2026-04-16 12:27:17.301802', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '0.00', '0.00', '0.00', '0.00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO public.orders (id, user_id, type, amount, reward_percent, reward_amount, total_amount, status, upi_id, upi_name, user_upi_id, user_upi_name, user_name, notes, created_at, updated_at, utr_number, screenshot_url, recording_url, parent_sell_id, locked_at, locked_by_user_id, submitted_at, confirm_deadline, confirmed_at, held_amount, fee_amount, sell_reward_percent, sell_reward_amount, ocr_utr, ocr_amount, ocr_timestamp, ocr_bank, ocr_raw_text, ocr_status, ocr_amount_match, ocr_utr_match) VALUES ('6', '5', 'deposit', '500.00', '4.00', '20.00', '520.00', 'rejected', 'trustpay@upi', 'TrustPay', NULL, NULL, '7379587444', 'gateway_error:<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>Error</title>
-</head>
-<body>
-<pre>Internal Server Error</pre>
-<script src="https://replit-cdn.com/replit-pill/replit-pill.global.j', '2026-04-18 10:50:21.585577', '2026-04-18 10:50:22.611', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '0.00', '0.00', '0.00', '0.00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO public.orders (id, user_id, type, amount, reward_percent, reward_amount, total_amount, status, upi_id, upi_name, user_upi_id, user_upi_name, user_name, notes, created_at, updated_at, utr_number, screenshot_url, recording_url, parent_sell_id, locked_at, locked_by_user_id, submitted_at, confirm_deadline, confirmed_at, held_amount, fee_amount, sell_reward_percent, sell_reward_amount, ocr_utr, ocr_amount, ocr_timestamp, ocr_bank, ocr_raw_text, ocr_status, ocr_amount_match, ocr_utr_match) VALUES ('7', '5', 'deposit', '117.00', '4.00', '4.68', '121.68', 'rejected', 'trustpay@upi', 'TrustPay', NULL, NULL, '7379587444', 'gateway_error:<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>Error</title>
-</head>
-<body>
-<pre>Internal Server Error</pre>
-<script src="https://replit-cdn.com/replit-pill/replit-pill.global.j', '2026-04-18 10:50:39.670061', '2026-04-18 10:50:40.004', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '0.00', '0.00', '0.00', '0.00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO public.orders (id, user_id, type, amount, reward_percent, reward_amount, total_amount, status, upi_id, upi_name, user_upi_id, user_upi_name, user_name, notes, created_at, updated_at, utr_number, screenshot_url, recording_url, parent_sell_id, locked_at, locked_by_user_id, submitted_at, confirm_deadline, confirmed_at, held_amount, fee_amount, sell_reward_percent, sell_reward_amount, ocr_utr, ocr_amount, ocr_timestamp, ocr_bank, ocr_raw_text, ocr_status, ocr_amount_match, ocr_utr_match) VALUES ('6', '5', 'deposit', '500.00', '4.00', '20.00', '520.00', 'rejected', 'trustpay@upi', 'TrustPay', NULL, NULL, '7379587444', E'gateway_error:<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<title>Error</title>\n</head>\n<body>\n<pre>Internal Server Error</pre>\n<script src="https://replit-cdn.com/replit-pill/replit-pill.global.j', '2026-04-18 10:50:21.585577', '2026-04-18 10:50:22.611', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '0.00', '0.00', '0.00', '0.00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO public.orders (id, user_id, type, amount, reward_percent, reward_amount, total_amount, status, upi_id, upi_name, user_upi_id, user_upi_name, user_name, notes, created_at, updated_at, utr_number, screenshot_url, recording_url, parent_sell_id, locked_at, locked_by_user_id, submitted_at, confirm_deadline, confirmed_at, held_amount, fee_amount, sell_reward_percent, sell_reward_amount, ocr_utr, ocr_amount, ocr_timestamp, ocr_bank, ocr_raw_text, ocr_status, ocr_amount_match, ocr_utr_match) VALUES ('7', '5', 'deposit', '117.00', '4.00', '4.68', '121.68', 'rejected', 'trustpay@upi', 'TrustPay', NULL, NULL, '7379587444', E'gateway_error:<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<title>Error</title>\n</head>\n<body>\n<pre>Internal Server Error</pre>\n<script src="https://replit-cdn.com/replit-pill/replit-pill.global.j', '2026-04-18 10:50:39.670061', '2026-04-18 10:50:40.004', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '0.00', '0.00', '0.00', '0.00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO public.orders (id, user_id, type, amount, reward_percent, reward_amount, total_amount, status, upi_id, upi_name, user_upi_id, user_upi_name, user_name, notes, created_at, updated_at, utr_number, screenshot_url, recording_url, parent_sell_id, locked_at, locked_by_user_id, submitted_at, confirm_deadline, confirmed_at, held_amount, fee_amount, sell_reward_percent, sell_reward_amount, ocr_utr, ocr_amount, ocr_timestamp, ocr_bank, ocr_raw_text, ocr_status, ocr_amount_match, ocr_utr_match) VALUES ('8', '1', 'deposit', '100.00', '4.00', '4.00', '104.00', 'rejected', 'trustpay@upi', 'TrustPay', NULL, NULL, 'admin', 'gateway_error:{"error":"internal_error","message":"Failed to create payment"}', '2026-04-18 12:54:20.818396', '2026-04-18 12:54:22.284', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '0.00', '0.00', '0.00', '0.00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO public.orders (id, user_id, type, amount, reward_percent, reward_amount, total_amount, status, upi_id, upi_name, user_upi_id, user_upi_name, user_name, notes, created_at, updated_at, utr_number, screenshot_url, recording_url, parent_sell_id, locked_at, locked_by_user_id, submitted_at, confirm_deadline, confirmed_at, held_amount, fee_amount, sell_reward_percent, sell_reward_amount, ocr_utr, ocr_amount, ocr_timestamp, ocr_bank, ocr_raw_text, ocr_status, ocr_amount_match, ocr_utr_match) VALUES ('9', '1', 'deposit', '150.00', '4.00', '6.00', '156.00', 'pending', 'trustpay@upi', 'TrustPay', NULL, NULL, 'admin', 'gateway:created', '2026-04-18 13:41:39.550973', '2026-04-18 13:41:40.214', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '0.00', '0.00', '0.00', '0.00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO public.orders (id, user_id, type, amount, reward_percent, reward_amount, total_amount, status, upi_id, upi_name, user_upi_id, user_upi_name, user_name, notes, created_at, updated_at, utr_number, screenshot_url, recording_url, parent_sell_id, locked_at, locked_by_user_id, submitted_at, confirm_deadline, confirmed_at, held_amount, fee_amount, sell_reward_percent, sell_reward_amount, ocr_utr, ocr_amount, ocr_timestamp, ocr_bank, ocr_raw_text, ocr_status, ocr_amount_match, ocr_utr_match) VALUES ('13', '6', 'withdrawal', '307.00', '0.00', '0.00', '307.00', 'available', NULL, NULL, 'test1@okhdfc', 'Test User 1', 'Test User 1', NULL, '2026-04-18 17:53:21.457467', '2026-04-18 17:53:21.457467', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '0.00', '0.00', '0.00', '0.00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
@@ -1486,18 +1478,20 @@ INSERT INTO public.orders (id, user_id, type, amount, reward_percent, reward_amo
 INSERT INTO public.orders (id, user_id, type, amount, reward_percent, reward_amount, total_amount, status, upi_id, upi_name, user_upi_id, user_upi_name, user_name, notes, created_at, updated_at, utr_number, screenshot_url, recording_url, parent_sell_id, locked_at, locked_by_user_id, submitted_at, confirm_deadline, confirmed_at, held_amount, fee_amount, sell_reward_percent, sell_reward_amount, ocr_utr, ocr_amount, ocr_timestamp, ocr_bank, ocr_raw_text, ocr_status, ocr_amount_match, ocr_utr_match) VALUES ('124', '212', 'withdrawal', '8000.00', '0.00', '0.00', '8000.00', 'cancelled', NULL, NULL, 'seed212@upi', 'Seed 212', 'Seed 212', NULL, '2026-04-22 20:57:13.288552', '2026-04-22 20:57:13.301', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '0.00', '0.00', '0.00', '0.00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO public.orders (id, user_id, type, amount, reward_percent, reward_amount, total_amount, status, upi_id, upi_name, user_upi_id, user_upi_name, user_name, notes, created_at, updated_at, utr_number, screenshot_url, recording_url, parent_sell_id, locked_at, locked_by_user_id, submitted_at, confirm_deadline, confirmed_at, held_amount, fee_amount, sell_reward_percent, sell_reward_amount, ocr_utr, ocr_amount, ocr_timestamp, ocr_bank, ocr_raw_text, ocr_status, ocr_amount_match, ocr_utr_match) VALUES ('125', '214', 'withdrawal', '250.00', '0.00', '0.00', '250.00', 'cancelled', NULL, NULL, 'seed214@upi', 'Seed 214', 'Seed 214', NULL, '2026-04-22 20:57:13.575867', '2026-04-22 20:57:13.587', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '0.00', '0.00', '0.00', '0.00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO public.orders (id, user_id, type, amount, reward_percent, reward_amount, total_amount, status, upi_id, upi_name, user_upi_id, user_upi_name, user_name, notes, created_at, updated_at, utr_number, screenshot_url, recording_url, parent_sell_id, locked_at, locked_by_user_id, submitted_at, confirm_deadline, confirmed_at, held_amount, fee_amount, sell_reward_percent, sell_reward_amount, ocr_utr, ocr_amount, ocr_timestamp, ocr_bank, ocr_raw_text, ocr_status, ocr_amount_match, ocr_utr_match) VALUES ('137', '239', 'withdrawal', '8000.00', '0.00', '0.00', '8000.00', 'cancelled', NULL, NULL, 'seed239@upi', 'Seed 239', 'Seed 239', NULL, '2026-04-22 20:57:59.075466', '2026-04-22 20:57:59.085', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '0.00', '0.00', '0.00', '0.00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO public.orders (id, user_id, type, amount, reward_percent, reward_amount, total_amount, status, upi_id, upi_name, user_upi_id, user_upi_name, user_name, notes, created_at, updated_at, utr_number, screenshot_url, recording_url, parent_sell_id, locked_at, locked_by_user_id, submitted_at, confirm_deadline, confirmed_at, held_amount, fee_amount, sell_reward_percent, sell_reward_amount, ocr_utr, ocr_amount, ocr_timestamp, ocr_bank, ocr_raw_text, ocr_status, ocr_amount_match, ocr_utr_match) VALUES ('');
-INSERT INTO public.orders (id, user_id, type, amount, reward_percent, reward_amount, total_amount, status, upi_id, upi_name, user_upi_id, user_upi_name, user_name, notes, created_at, updated_at, utr_number, screenshot_url, recording_url, parent_sell_id, locked_at, locked_by_user_id, submitted_at, confirm_deadline, confirmed_at, held_amount, fee_amount, sell_reward_percent, sell_reward_amount, ocr_utr, ocr_amount, ocr_timestamp, ocr_bank, ocr_raw_text, ocr_status, ocr_amount_match, ocr_utr_match) VALUES ('');
-INSERT INTO public.orders (id, user_id, type, amount, reward_percent, reward_amount, total_amount, status, upi_id, upi_name, user_upi_id, user_upi_name, user_name, notes, created_at, updated_at, utr_number, screenshot_url, recording_url, parent_sell_id, locked_at, locked_by_user_id, submitted_at, confirm_deadline, confirmed_at, held_amount, fee_amount, sell_reward_percent, sell_reward_amount, ocr_utr, ocr_amount, ocr_timestamp, ocr_bank, ocr_raw_text, ocr_status, ocr_amount_match, ocr_utr_match) VALUES ('--');
-INSERT INTO public.orders (id, user_id, type, amount, reward_percent, reward_amount, total_amount, status, upi_id, upi_name, user_upi_id, user_upi_name, user_name, notes, created_at, updated_at, utr_number, screenshot_url, recording_url, parent_sell_id, locked_at, locked_by_user_id, submitted_at, confirm_deadline, confirmed_at, held_amount, fee_amount, sell_reward_percent, sell_reward_amount, ocr_utr, ocr_amount, ocr_timestamp, ocr_bank, ocr_raw_text, ocr_status, ocr_amount_match, ocr_utr_match) VALUES ('-- Data for Name: referrals; Type: TABLE DATA; Schema: public; Owner: postgres');
-INSERT INTO public.orders (id, user_id, type, amount, reward_percent, reward_amount, total_amount, status, upi_id, upi_name, user_upi_id, user_upi_name, user_name, notes, created_at, updated_at, utr_number, screenshot_url, recording_url, parent_sell_id, locked_at, locked_by_user_id, submitted_at, confirm_deadline, confirmed_at, held_amount, fee_amount, sell_reward_percent, sell_reward_amount, ocr_utr, ocr_amount, ocr_timestamp, ocr_bank, ocr_raw_text, ocr_status, ocr_amount_match, ocr_utr_match) VALUES ('--');
-INSERT INTO public.orders (id, user_id, type, amount, reward_percent, reward_amount, total_amount, status, upi_id, upi_name, user_upi_id, user_upi_name, user_name, notes, created_at, updated_at, utr_number, screenshot_url, recording_url, parent_sell_id, locked_at, locked_by_user_id, submitted_at, confirm_deadline, confirmed_at, held_amount, fee_amount, sell_reward_percent, sell_reward_amount, ocr_utr, ocr_amount, ocr_timestamp, ocr_bank, ocr_raw_text, ocr_status, ocr_amount_match, ocr_utr_match) VALUES ('');
-INSERT INTO public.referrals (id, referrer_id, referred_user_id, order_id, level, commission_amount, created_at) VALUES ('');
-INSERT INTO public.referrals (id, referrer_id, referred_user_id, order_id, level, commission_amount, created_at) VALUES ('');
-INSERT INTO public.referrals (id, referrer_id, referred_user_id, order_id, level, commission_amount, created_at) VALUES ('--');
-INSERT INTO public.referrals (id, referrer_id, referred_user_id, order_id, level, commission_amount, created_at) VALUES ('-- Data for Name: settings; Type: TABLE DATA; Schema: public; Owner: postgres');
-INSERT INTO public.referrals (id, referrer_id, referred_user_id, order_id, level, commission_amount, created_at) VALUES ('--');
-INSERT INTO public.referrals (id, referrer_id, referred_user_id, order_id, level, commission_amount, created_at) VALUES ('');
+
+
+
+--
+-- Data for Name: referrals; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+
+
+
+--
+-- Data for Name: settings; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
 INSERT INTO public.settings (id, key, value, updated_at) VALUES ('7', 'gatewayBaseUrl', 'https://payment-gateway-hub--atulusf3.replit.app', '2026-04-18 12:53:48.696508');
 INSERT INTO public.settings (id, key, value, updated_at) VALUES ('8', 'gatewayMerchantId', '0cb5695cfa01460dc19477a9', '2026-04-18 12:53:48.696508');
 INSERT INTO public.settings (id, key, value, updated_at) VALUES ('9', 'gatewayApiKey', 'pgk_930dd0184344858e81f092212cdf6cd1dd12badd1a7fb527', '2026-04-18 12:53:48.696508');
@@ -1516,45 +1510,51 @@ INSERT INTO public.settings (id, key, value, updated_at) VALUES ('3', 'popupMess
 INSERT INTO public.settings (id, key, value, updated_at) VALUES ('4', 'popupImageUrl', 'https://img.sanishtech.com/u/3e73a4627bc1eaca4d11875e068cc88d.png', '2026-04-16 11:37:32.111');
 INSERT INTO public.settings (id, key, value, updated_at) VALUES ('5', 'telegramLink', 'https://t.me/trustpay', '2026-04-16 11:37:32.115');
 INSERT INTO public.settings (id, key, value, updated_at) VALUES ('6', 'bannerImages', '["https://img.sanishtech.com/u/632f7d0021ce2b6163c1f1b1cb9e49c8.png"]', '2026-04-16 11:37:32.119');
-INSERT INTO public.settings (id, key, value, updated_at) VALUES ('');
-INSERT INTO public.settings (id, key, value, updated_at) VALUES ('');
-INSERT INTO public.settings (id, key, value, updated_at) VALUES ('--');
-INSERT INTO public.settings (id, key, value, updated_at) VALUES ('-- Data for Name: sms_active_patterns; Type: TABLE DATA; Schema: public; Owner: postgres');
-INSERT INTO public.settings (id, key, value, updated_at) VALUES ('--');
-INSERT INTO public.settings (id, key, value, updated_at) VALUES ('');
-INSERT INTO public.sms_active_patterns (id, sender_key, template_label, utr_regex, amount_regex, credit_only, reversal_blocked, source_candidate_id, created_by, is_active, created_at) VALUES ('');
-INSERT INTO public.sms_active_patterns (id, sender_key, template_label, utr_regex, amount_regex, credit_only, reversal_blocked, source_candidate_id, created_by, is_active, created_at) VALUES ('');
-INSERT INTO public.sms_active_patterns (id, sender_key, template_label, utr_regex, amount_regex, credit_only, reversal_blocked, source_candidate_id, created_by, is_active, created_at) VALUES ('--');
-INSERT INTO public.sms_active_patterns (id, sender_key, template_label, utr_regex, amount_regex, credit_only, reversal_blocked, source_candidate_id, created_by, is_active, created_at) VALUES ('-- Data for Name: sms_candidate_patterns; Type: TABLE DATA; Schema: public; Owner: postgres');
-INSERT INTO public.sms_active_patterns (id, sender_key, template_label, utr_regex, amount_regex, credit_only, reversal_blocked, source_candidate_id, created_by, is_active, created_at) VALUES ('--');
-INSERT INTO public.sms_active_patterns (id, sender_key, template_label, utr_regex, amount_regex, credit_only, reversal_blocked, source_candidate_id, created_by, is_active, created_at) VALUES ('');
-INSERT INTO public.sms_candidate_patterns (id, sender_key, template_hash, template_body, utr_sample, amount_sample, sample_count, sample_ids, status, reviewed_by, reviewed_at, notes, created_at) VALUES ('');
-INSERT INTO public.sms_candidate_patterns (id, sender_key, template_hash, template_body, utr_sample, amount_sample, sample_count, sample_ids, status, reviewed_by, reviewed_at, notes, created_at) VALUES ('');
-INSERT INTO public.sms_candidate_patterns (id, sender_key, template_hash, template_body, utr_sample, amount_sample, sample_count, sample_ids, status, reviewed_by, reviewed_at, notes, created_at) VALUES ('--');
-INSERT INTO public.sms_candidate_patterns (id, sender_key, template_hash, template_body, utr_sample, amount_sample, sample_count, sample_ids, status, reviewed_by, reviewed_at, notes, created_at) VALUES ('-- Data for Name: sms_learning_queue; Type: TABLE DATA; Schema: public; Owner: postgres');
-INSERT INTO public.sms_candidate_patterns (id, sender_key, template_hash, template_body, utr_sample, amount_sample, sample_count, sample_ids, status, reviewed_by, reviewed_at, notes, created_at) VALUES ('--');
-INSERT INTO public.sms_candidate_patterns (id, sender_key, template_hash, template_body, utr_sample, amount_sample, sample_count, sample_ids, status, reviewed_by, reviewed_at, notes, created_at) VALUES ('');
+
+
+
+--
+-- Data for Name: sms_active_patterns; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+
+
+
+--
+-- Data for Name: sms_candidate_patterns; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+
+
+
+--
+-- Data for Name: sms_learning_queue; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
 INSERT INTO public.sms_learning_queue (id, sender, sender_key, body, bucket, parsed_utr, parsed_amount, is_debit, has_reversal, template_body, template_hash, user_id, status, created_at, reason) VALUES ('1', 'NEWCOOP', 'NEWCOOP', 'Credited Rs.100', 'suspicious', NULL, NULL, 'f', 'f', 'credited {amount}', 'dc96c230', '1', 'pending', '2026-04-23 05:02:54.599936', 'server_override:matched_missing_utr_or_amount');
 INSERT INTO public.sms_learning_queue (id, sender, sender_key, body, bucket, parsed_utr, parsed_amount, is_debit, has_reversal, template_body, template_hash, user_id, status, created_at, reason) VALUES ('2', 'UNKNOWNBK', 'UNKNOWNBK', 'Some SMS', 'unparsed', NULL, NULL, 'f', 'f', 'some sms', '248db341', '1', 'pending', '2026-04-23 05:02:54.652576', 'server_override:untrusted_sender;parse_failed');
-INSERT INTO public.sms_learning_queue (id, sender, sender_key, body, bucket, parsed_utr, parsed_amount, is_debit, has_reversal, template_body, template_hash, user_id, status, created_at, reason) VALUES ('');
-INSERT INTO public.sms_learning_queue (id, sender, sender_key, body, bucket, parsed_utr, parsed_amount, is_debit, has_reversal, template_body, template_hash, user_id, status, created_at, reason) VALUES ('');
-INSERT INTO public.sms_learning_queue (id, sender, sender_key, body, bucket, parsed_utr, parsed_amount, is_debit, has_reversal, template_body, template_hash, user_id, status, created_at, reason) VALUES ('--');
-INSERT INTO public.sms_learning_queue (id, sender, sender_key, body, bucket, parsed_utr, parsed_amount, is_debit, has_reversal, template_body, template_hash, user_id, status, created_at, reason) VALUES ('-- Data for Name: sms_safe_senders; Type: TABLE DATA; Schema: public; Owner: postgres');
-INSERT INTO public.sms_learning_queue (id, sender, sender_key, body, bucket, parsed_utr, parsed_amount, is_debit, has_reversal, template_body, template_hash, user_id, status, created_at, reason) VALUES ('--');
-INSERT INTO public.sms_learning_queue (id, sender, sender_key, body, bucket, parsed_utr, parsed_amount, is_debit, has_reversal, template_body, template_hash, user_id, status, created_at, reason) VALUES ('');
+
+
+
+--
+-- Data for Name: sms_safe_senders; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
 INSERT INTO public.sms_safe_senders (id, sender_key, label, added_by, created_at) VALUES ('2', 'NEWCOOP', 'New Cooperative Bank', '1', '2026-04-23 04:27:26.143523');
-INSERT INTO public.sms_safe_senders (id, sender_key, label, added_by, created_at) VALUES ('');
-INSERT INTO public.sms_safe_senders (id, sender_key, label, added_by, created_at) VALUES ('');
-INSERT INTO public.sms_safe_senders (id, sender_key, label, added_by, created_at) VALUES ('--');
-INSERT INTO public.sms_safe_senders (id, sender_key, label, added_by, created_at) VALUES ('-- Data for Name: trade_pair_blocks; Type: TABLE DATA; Schema: public; Owner: postgres');
-INSERT INTO public.sms_safe_senders (id, sender_key, label, added_by, created_at) VALUES ('--');
-INSERT INTO public.sms_safe_senders (id, sender_key, label, added_by, created_at) VALUES ('');
-INSERT INTO public.trade_pair_blocks (id, user_id_1, user_id_2, reason, created_at) VALUES ('');
-INSERT INTO public.trade_pair_blocks (id, user_id_1, user_id_2, reason, created_at) VALUES ('');
-INSERT INTO public.trade_pair_blocks (id, user_id_1, user_id_2, reason, created_at) VALUES ('--');
-INSERT INTO public.trade_pair_blocks (id, user_id_1, user_id_2, reason, created_at) VALUES ('-- Data for Name: transactions; Type: TABLE DATA; Schema: public; Owner: postgres');
-INSERT INTO public.trade_pair_blocks (id, user_id_1, user_id_2, reason, created_at) VALUES ('--');
-INSERT INTO public.trade_pair_blocks (id, user_id_1, user_id_2, reason, created_at) VALUES ('');
+
+
+
+--
+-- Data for Name: trade_pair_blocks; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+
+
+
+--
+-- Data for Name: transactions; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
 INSERT INTO public.transactions (id, user_id, order_id, type, amount, description, created_at) VALUES ('1', '2', NULL, 'credit', '1000.00', 'Admin adjustment', '2026-04-16 10:54:11.097795');
 INSERT INTO public.transactions (id, user_id, order_id, type, amount, description, created_at) VALUES ('2', '2', NULL, 'credit', '0.00', 'Admin adjustment', '2026-04-16 11:14:15.534466');
 INSERT INTO public.transactions (id, user_id, order_id, type, amount, description, created_at) VALUES ('3', '3', NULL, 'credit', '1000.00', 'Admin adjustment', '2026-04-16 11:14:20.115177');
@@ -1640,12 +1640,13 @@ INSERT INTO public.transactions (id, user_id, order_id, type, amount, descriptio
 INSERT INTO public.transactions (id, user_id, order_id, type, amount, description, created_at) VALUES ('83', '141', '90', 'credit', '105.00', 'Buy confirmed +5% reward (chunk #90)', '2026-04-20 17:14:36.766876');
 INSERT INTO public.transactions (id, user_id, order_id, type, amount, description, created_at) VALUES ('84', '138', '90', 'debit', '100.00', 'Chunk sold to buyer #141 (chunk #90)', '2026-04-20 17:14:36.766876');
 INSERT INTO public.transactions (id, user_id, order_id, type, amount, description, created_at) VALUES ('85', '1', '90', 'credit', '1.00', 'Admin 1% override from buyer #141 (chunk #90)', '2026-04-20 17:14:36.789838');
-INSERT INTO public.transactions (id, user_id, order_id, type, amount, description, created_at) VALUES ('');
-INSERT INTO public.transactions (id, user_id, order_id, type, amount, description, created_at) VALUES ('');
-INSERT INTO public.transactions (id, user_id, order_id, type, amount, description, created_at) VALUES ('--');
-INSERT INTO public.transactions (id, user_id, order_id, type, amount, description, created_at) VALUES ('-- Data for Name: trust_events; Type: TABLE DATA; Schema: public; Owner: postgres');
-INSERT INTO public.transactions (id, user_id, order_id, type, amount, description, created_at) VALUES ('--');
-INSERT INTO public.transactions (id, user_id, order_id, type, amount, description, created_at) VALUES ('');
+
+
+
+--
+-- Data for Name: trust_events; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
 INSERT INTO public.trust_events (id, user_id, delta, reason, order_id, created_at) VALUES ('1', '7', '1', 'trade_success', '10', '2026-04-18 17:53:41.794451');
 INSERT INTO public.trust_events (id, user_id, delta, reason, order_id, created_at) VALUES ('2', '6', '1', 'trade_success', '10', '2026-04-18 17:53:41.801074');
 INSERT INTO public.trust_events (id, user_id, delta, reason, order_id, created_at) VALUES ('3', '6', '-10', 'dispute_loss', '11', '2026-04-18 17:55:43.499618');
@@ -1716,69 +1717,32 @@ INSERT INTO public.trust_events (id, user_id, delta, reason, order_id, created_a
 INSERT INTO public.trust_events (id, user_id, delta, reason, order_id, created_at) VALUES ('68', '138', '-2', 'late_confirm', '89', '2026-04-20 17:14:36.748559');
 INSERT INTO public.trust_events (id, user_id, delta, reason, order_id, created_at) VALUES ('69', '141', '1', 'auto_confirm_win', '90', '2026-04-20 17:14:36.770704');
 INSERT INTO public.trust_events (id, user_id, delta, reason, order_id, created_at) VALUES ('70', '138', '-2', 'late_confirm', '90', '2026-04-20 17:14:36.775315');
-INSERT INTO public.trust_events (id, user_id, delta, reason, order_id, created_at) VALUES ('');
-INSERT INTO public.trust_events (id, user_id, delta, reason, order_id, created_at) VALUES ('');
-INSERT INTO public.trust_events (id, user_id, delta, reason, order_id, created_at) VALUES ('--');
-INSERT INTO public.trust_events (id, user_id, delta, reason, order_id, created_at) VALUES ('-- Data for Name: user_notifications; Type: TABLE DATA; Schema: public; Owner: postgres');
-INSERT INTO public.trust_events (id, user_id, delta, reason, order_id, created_at) VALUES ('--');
-INSERT INTO public.trust_events (id, user_id, delta, reason, order_id, created_at) VALUES ('');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('1', '19', 'fraud_alert', 'Critical: High-value action on new account', 'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.
 
-Details: Account <24h old attempting ₹6000', 'critical', '2', NULL, '2026-04-18 21:03:07.264393');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('2', '21', 'fraud_alert', 'Critical: High-value action on new account', 'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.
 
-Details: Account <24h old attempting ₹11000', 'critical', '3', NULL, '2026-04-18 21:03:07.566335');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('3', '23', 'fraud_alert', 'Critical: High-value action on new account', 'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.
 
-Details: Account <24h old attempting ₹8000', 'critical', '4', NULL, '2026-04-18 21:03:07.951954');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('4', '41', 'fraud_alert', 'Critical: High-value action on new account', 'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.
+--
+-- Data for Name: user_notifications; Type: TABLE DATA; Schema: public; Owner: postgres
+--
 
-Details: Account <24h old attempting ₹6000', 'critical', '5', NULL, '2026-04-18 21:08:21.004277');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('5', '43', 'fraud_alert', 'Critical: High-value action on new account', 'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.
-
-Details: Account <24h old attempting ₹11000', 'critical', '6', NULL, '2026-04-18 21:08:21.322961');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('6', '45', 'fraud_alert', 'Critical: High-value action on new account', 'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.
-
-Details: Account <24h old attempting ₹8000', 'critical', '7', NULL, '2026-04-18 21:08:21.724015');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('7', '57', 'fraud_alert', 'Critical: Duplicate payment reference flagged', 'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.
-
-Details: UTR FRDUP2299326431 previously used by user #55 on order #43', 'critical', '8', NULL, '2026-04-18 21:08:52.747202');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('8', '69', 'fraud_alert', 'Critical: High-value action on new account', 'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.
-
-Details: Account <24h old attempting ₹6000', 'critical', '9', NULL, '2026-04-18 21:09:07.850845');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('9', '71', 'fraud_alert', 'Critical: High-value action on new account', 'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.
-
-Details: Account <24h old attempting ₹11000', 'critical', '10', NULL, '2026-04-18 21:09:08.176156');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('10', '73', 'fraud_alert', 'Critical: High-value action on new account', 'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.
-
-Details: Account <24h old attempting ₹8000', 'critical', '11', NULL, '2026-04-18 21:09:08.604');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('11', '85', 'fraud_alert', 'Critical: Duplicate payment reference flagged', 'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.
-
-Details: UTR FRDUP6433751739 previously used by user #83 on order #58', 'critical', '12', NULL, '2026-04-18 21:09:39.55865');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('12', '97', 'fraud_alert', 'Critical: High-value action on new account', 'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.
-
-Details: Account <24h old attempting ₹6000', 'critical', '13', NULL, '2026-04-18 21:10:07.100119');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('13', '99', 'fraud_alert', 'Critical: High-value action on new account', 'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.
-
-Details: Account <24h old attempting ₹11000', 'critical', '14', NULL, '2026-04-18 21:10:07.428923');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('14', '101', 'fraud_alert', 'Critical: High-value action on new account', 'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.
-
-Details: Account <24h old attempting ₹8000', 'critical', '15', NULL, '2026-04-18 21:10:07.832336');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('15', '113', 'fraud_alert', 'Critical: Duplicate payment reference flagged', 'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.
-
-Details: UTR FRDUP86008813 previously used by user #111 on order #73', 'critical', '16', NULL, '2026-04-18 21:10:38.781405');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('16', '125', 'fraud_alert', 'Critical: High-value action on new account', 'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.
-
-Details: Account <24h old attempting ₹6000', 'critical', '17', NULL, '2026-04-18 21:10:51.773638');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('17', '127', 'fraud_alert', 'Critical: High-value action on new account', 'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.
-
-Details: Account <24h old attempting ₹11000', 'critical', '18', NULL, '2026-04-18 21:10:52.061328');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('18', '129', 'fraud_alert', 'Critical: High-value action on new account', 'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.
-
-Details: Account <24h old attempting ₹8000', 'critical', '19', NULL, '2026-04-18 21:10:52.444566');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('19', '141', 'fraud_alert', 'Critical: Duplicate payment reference flagged', 'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.
-
-Details: UTR FRDUP624566387 previously used by user #139 on order #88', 'critical', '20', NULL, '2026-04-18 21:11:23.504266');
+INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('1', '19', 'fraud_alert', 'Critical: High-value action on new account', E'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.\n\nDetails: Account <24h old attempting ₹6000', 'critical', '2', NULL, '2026-04-18 21:03:07.264393');
+INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('2', '21', 'fraud_alert', 'Critical: High-value action on new account', E'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.\n\nDetails: Account <24h old attempting ₹11000', 'critical', '3', NULL, '2026-04-18 21:03:07.566335');
+INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('3', '23', 'fraud_alert', 'Critical: High-value action on new account', E'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.\n\nDetails: Account <24h old attempting ₹8000', 'critical', '4', NULL, '2026-04-18 21:03:07.951954');
+INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('4', '41', 'fraud_alert', 'Critical: High-value action on new account', E'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.\n\nDetails: Account <24h old attempting ₹6000', 'critical', '5', NULL, '2026-04-18 21:08:21.004277');
+INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('5', '43', 'fraud_alert', 'Critical: High-value action on new account', E'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.\n\nDetails: Account <24h old attempting ₹11000', 'critical', '6', NULL, '2026-04-18 21:08:21.322961');
+INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('6', '45', 'fraud_alert', 'Critical: High-value action on new account', E'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.\n\nDetails: Account <24h old attempting ₹8000', 'critical', '7', NULL, '2026-04-18 21:08:21.724015');
+INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('7', '57', 'fraud_alert', 'Critical: Duplicate payment reference flagged', E'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.\n\nDetails: UTR FRDUP2299326431 previously used by user #55 on order #43', 'critical', '8', NULL, '2026-04-18 21:08:52.747202');
+INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('8', '69', 'fraud_alert', 'Critical: High-value action on new account', E'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.\n\nDetails: Account <24h old attempting ₹6000', 'critical', '9', NULL, '2026-04-18 21:09:07.850845');
+INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('9', '71', 'fraud_alert', 'Critical: High-value action on new account', E'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.\n\nDetails: Account <24h old attempting ₹11000', 'critical', '10', NULL, '2026-04-18 21:09:08.176156');
+INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('10', '73', 'fraud_alert', 'Critical: High-value action on new account', E'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.\n\nDetails: Account <24h old attempting ₹8000', 'critical', '11', NULL, '2026-04-18 21:09:08.604');
+INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('11', '85', 'fraud_alert', 'Critical: Duplicate payment reference flagged', E'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.\n\nDetails: UTR FRDUP6433751739 previously used by user #83 on order #58', 'critical', '12', NULL, '2026-04-18 21:09:39.55865');
+INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('12', '97', 'fraud_alert', 'Critical: High-value action on new account', E'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.\n\nDetails: Account <24h old attempting ₹6000', 'critical', '13', NULL, '2026-04-18 21:10:07.100119');
+INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('13', '99', 'fraud_alert', 'Critical: High-value action on new account', E'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.\n\nDetails: Account <24h old attempting ₹11000', 'critical', '14', NULL, '2026-04-18 21:10:07.428923');
+INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('14', '101', 'fraud_alert', 'Critical: High-value action on new account', E'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.\n\nDetails: Account <24h old attempting ₹8000', 'critical', '15', NULL, '2026-04-18 21:10:07.832336');
+INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('15', '113', 'fraud_alert', 'Critical: Duplicate payment reference flagged', E'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.\n\nDetails: UTR FRDUP86008813 previously used by user #111 on order #73', 'critical', '16', NULL, '2026-04-18 21:10:38.781405');
+INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('16', '125', 'fraud_alert', 'Critical: High-value action on new account', E'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.\n\nDetails: Account <24h old attempting ₹6000', 'critical', '17', NULL, '2026-04-18 21:10:51.773638');
+INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('17', '127', 'fraud_alert', 'Critical: High-value action on new account', E'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.\n\nDetails: Account <24h old attempting ₹11000', 'critical', '18', NULL, '2026-04-18 21:10:52.061328');
+INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('18', '129', 'fraud_alert', 'Critical: High-value action on new account', E'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.\n\nDetails: Account <24h old attempting ₹8000', 'critical', '19', NULL, '2026-04-18 21:10:52.444566');
+INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('19', '141', 'fraud_alert', 'Critical: Duplicate payment reference flagged', E'Our fraud system flagged your account. Your account has been frozen for review — please contact support to resolve.\n\nDetails: UTR FRDUP624566387 previously used by user #139 on order #88', 'critical', '20', NULL, '2026-04-18 21:11:23.504266');
 INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('20', '142', 'google_verification', 'Google verification kar lo', 'Apna Gmail bind karo — bhulne par password apne aap reset kar sakoge. Profile → Google Verification.', 'info', NULL, NULL, '2026-04-21 08:09:51.912562');
 INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('21', '143', 'google_verification', 'Google verification kar lo', 'Apna Gmail bind karo — bhulne par password apne aap reset kar sakoge. Profile → Google Verification.', 'info', NULL, NULL, '2026-04-21 08:14:59.749613');
 INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('22', '144', 'google_verification', 'Google verification kar lo', 'Apna Gmail bind karo — bhulne par password apne aap reset kar sakoge. Profile → Google Verification.', 'info', NULL, NULL, '2026-04-22 20:55:30.465626');
@@ -1889,12 +1853,13 @@ INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity,
 INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('127', '249', 'google_verification', 'Google verification kar lo', 'Apna Gmail bind karo — bhulne par password apne aap reset kar sakoge. Profile → Google Verification.', 'info', NULL, NULL, '2026-04-22 20:58:18.350521');
 INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('128', '250', 'google_verification', 'Google verification kar lo', 'Apna Gmail bind karo — bhulne par password apne aap reset kar sakoge. Profile → Google Verification.', 'info', NULL, NULL, '2026-04-22 20:58:18.457485');
 INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('129', '251', 'google_verification', 'Google verification kar lo', 'Apna Gmail bind karo — bhulne par password apne aap reset kar sakoge. Profile → Google Verification.', 'info', NULL, NULL, '2026-04-22 20:58:18.569506');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('--');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('-- Data for Name: user_upi_ids; Type: TABLE DATA; Schema: public; Owner: postgres');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('--');
-INSERT INTO public.user_notifications (id, user_id, kind, title, body, severity, fraud_alert_id, read_at, created_at) VALUES ('');
+
+
+
+--
+-- Data for Name: user_upi_ids; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
 INSERT INTO public.user_upi_ids (id, user_id, upi_id, platform, bank_name, holder_name, is_active, created_at) VALUES ('1', '6', 'test1@okhdfc', 'PhonePe', 'HDFC', 'Test User 1', 't', '2026-04-18 17:53:21.436903');
 INSERT INTO public.user_upi_ids (id, user_id, upi_id, platform, bank_name, holder_name, is_active, created_at) VALUES ('2', '10', 'seed10@upi', 'PhonePe', 'HDFC', 'Seed 10', 't', '2026-04-18 21:03:06.143971');
 INSERT INTO public.user_upi_ids (id, user_id, upi_id, platform, bank_name, holder_name, is_active, created_at) VALUES ('3', '12', 'seed12@upi', 'PhonePe', 'HDFC', 'Seed 12', 't', '2026-04-18 21:03:06.401094');
@@ -1998,12 +1963,13 @@ INSERT INTO public.user_upi_ids (id, user_id, upi_id, platform, bank_name, holde
 INSERT INTO public.user_upi_ids (id, user_id, upi_id, platform, bank_name, holder_name, is_active, created_at) VALUES ('101', '243', 'seed243@upi', 'PhonePe', 'HDFC', 'Seed 243', 't', '2026-04-22 20:57:59.586415');
 INSERT INTO public.user_upi_ids (id, user_id, upi_id, platform, bank_name, holder_name, is_active, created_at) VALUES ('102', '245', 'seed245@upi', 'PhonePe', 'HDFC', 'Seed 245', 't', '2026-04-22 20:57:59.830597');
 INSERT INTO public.user_upi_ids (id, user_id, upi_id, platform, bank_name, holder_name, is_active, created_at) VALUES ('103', '248', 'seed248@upi', 'PhonePe', 'HDFC', 'Seed 248', 't', '2026-04-22 20:58:24.119538');
-INSERT INTO public.user_upi_ids (id, user_id, upi_id, platform, bank_name, holder_name, is_active, created_at) VALUES ('');
-INSERT INTO public.user_upi_ids (id, user_id, upi_id, platform, bank_name, holder_name, is_active, created_at) VALUES ('');
-INSERT INTO public.user_upi_ids (id, user_id, upi_id, platform, bank_name, holder_name, is_active, created_at) VALUES ('--');
-INSERT INTO public.user_upi_ids (id, user_id, upi_id, platform, bank_name, holder_name, is_active, created_at) VALUES ('-- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: postgres');
-INSERT INTO public.user_upi_ids (id, user_id, upi_id, platform, bank_name, holder_name, is_active, created_at) VALUES ('--');
-INSERT INTO public.user_upi_ids (id, user_id, upi_id, platform, bank_name, holder_name, is_active, created_at) VALUES ('');
+
+
+
+--
+-- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
 INSERT INTO public.users (id, username, password_hash, phone, balance, total_deposits, total_withdrawals, role, created_at, invite_earnings, invite_earnings_l2, referral_code, referred_by, held_balance, trust_score, successful_trades, is_blocked, blocked_reason, blocked_at, is_frozen, auto_sell_enabled, last_seen_at, fraud_warning_count, matching_expires_at, display_name, must_install_app, email, google_sub, is_verified_agent, agent_tier_awarded_date, agent_tier_awarded_level, is_trusted, freeze_reason) VALUES ('11', 'buy_oov5hn', '$2b$10$l8/puCRjLQkgyRNp4F.OougPYN1DzXVRJyp6dbRG5XLaaOqDN7gTm', '6185938595', '0.00', '0.00', '0.00', 'user', '2026-04-18 21:03:06.092203', '0.00', '0.00', 'TP000011', NULL, '0.00', '0', '0', 'f', NULL, NULL, 'f', 'f', NULL, '0', NULL, NULL, 'f', NULL, NULL, 'f', NULL, '0', 'f', NULL);
 INSERT INTO public.users (id, username, password_hash, phone, balance, total_deposits, total_withdrawals, role, created_at, invite_earnings, invite_earnings_l2, referral_code, referred_by, held_balance, trust_score, successful_trades, is_blocked, blocked_reason, blocked_at, is_frozen, auto_sell_enabled, last_seen_at, fraud_warning_count, matching_expires_at, display_name, must_install_app, email, google_sub, is_verified_agent, agent_tier_awarded_date, agent_tier_awarded_level, is_trusted, freeze_reason) VALUES ('21', 'hvcb_n76zte', '$2b$10$zFEuB53b0Ul9YGB9sRSaneS6kRAGwdYs0F.Hkd28y5oOW7YYKyxty', '8506199093', '11330.00', '11000.00', '0.00', 'user', '2026-04-18 21:03:07.460588', '0.00', '0.00', 'TP000021', NULL, '0.00', '1', '1', 'f', NULL, NULL, 't', 'f', NULL, '0', NULL, NULL, 'f', NULL, NULL, 'f', NULL, '0', 'f', NULL);
 INSERT INTO public.users (id, username, password_hash, phone, balance, total_deposits, total_withdrawals, role, created_at, invite_earnings, invite_earnings_l2, referral_code, referred_by, held_balance, trust_score, successful_trades, is_blocked, blocked_reason, blocked_at, is_frozen, auto_sell_enabled, last_seen_at, fraud_warning_count, matching_expires_at, display_name, must_install_app, email, google_sub, is_verified_agent, agent_tier_awarded_date, agent_tier_awarded_level, is_trusted, freeze_reason) VALUES ('16', 'selx_vov2r7', '$2b$10$BBrm.QCgKccxNa.74TZ2fOhfmzIpPz.YwnXze.WG/USlWch5fEBUK', '8160719479', '1000.00', '0.00', '0.00', 'user', '2026-04-18 21:03:06.827242', '0.00', '0.00', 'TP000016', NULL, '0.00', '0', '0', 'f', NULL, NULL, 'f', 'f', NULL, '0', NULL, NULL, 'f', NULL, NULL, 'f', NULL, '0', 'f', NULL);
@@ -2255,12 +2221,13 @@ INSERT INTO public.users (id, username, password_hash, phone, balance, total_dep
 INSERT INTO public.users (id, username, password_hash, phone, balance, total_deposits, total_withdrawals, role, created_at, invite_earnings, invite_earnings_l2, referral_code, referred_by, held_balance, trust_score, successful_trades, is_blocked, blocked_reason, blocked_at, is_frozen, auto_sell_enabled, last_seen_at, fraud_warning_count, matching_expires_at, display_name, must_install_app, email, google_sub, is_verified_agent, agent_tier_awarded_date, agent_tier_awarded_level, is_trusted, freeze_reason) VALUES ('251', 'frfbb_29ttnp', '$2b$10$JE4.MBQntNg.M1egngmQkenqMUrMNm0zH7VLIEkIZ2yzGLCGP75Fe', '6904412622', '0.00', '0.00', '0.00', 'user', '2026-04-22 20:58:18.562579', '0.00', '0.00', 'TP000251', '1', '0.00', '0', '0', 'f', NULL, NULL, 'f', 'f', NULL, '0', NULL, NULL, 'f', NULL, NULL, 'f', NULL, '0', 'f', NULL);
 INSERT INTO public.users (id, username, password_hash, phone, balance, total_deposits, total_withdrawals, role, created_at, invite_earnings, invite_earnings_l2, referral_code, referred_by, held_balance, trust_score, successful_trades, is_blocked, blocked_reason, blocked_at, is_frozen, auto_sell_enabled, last_seen_at, fraud_warning_count, matching_expires_at, display_name, must_install_app, email, google_sub, is_verified_agent, agent_tier_awarded_date, agent_tier_awarded_level, is_trusted, freeze_reason) VALUES ('248', 'frfsa_nfpigf', '$2b$10$1VLdEJZaM.406pDAR9RwLOThUO.VWDL/Fwpw03..ZWk7fNrwIOFwu', '6125353442', '600.00', '0.00', '0.00', 'user', '2026-04-22 20:58:18.234708', '0.00', '0.00', 'TP000248', '1', '0.00', '0', '0', 'f', NULL, NULL, 'f', 'f', NULL, '0', NULL, NULL, 'f', NULL, NULL, 'f', NULL, '0', 'f', NULL);
 INSERT INTO public.users (id, username, password_hash, phone, balance, total_deposits, total_withdrawals, role, created_at, invite_earnings, invite_earnings_l2, referral_code, referred_by, held_balance, trust_score, successful_trades, is_blocked, blocked_reason, blocked_at, is_frozen, auto_sell_enabled, last_seen_at, fraud_warning_count, matching_expires_at, display_name, must_install_app, email, google_sub, is_verified_agent, agent_tier_awarded_date, agent_tier_awarded_level, is_trusted, freeze_reason) VALUES ('249', 'frfsb_xr48pg', '$2b$10$MP8zhL9TFw4DyqgEogcGf.Eq5gw/.aPXDNrNPuQ./6BuMwYGILziS', '7081243289', '600.00', '0.00', '0.00', 'user', '2026-04-22 20:58:18.343662', '0.00', '0.00', 'TP000249', '1', '0.00', '0', '0', 'f', NULL, NULL, 'f', 'f', NULL, '0', NULL, NULL, 'f', NULL, NULL, 'f', NULL, '0', 'f', NULL);
-INSERT INTO public.users (id, username, password_hash, phone, balance, total_deposits, total_withdrawals, role, created_at, invite_earnings, invite_earnings_l2, referral_code, referred_by, held_balance, trust_score, successful_trades, is_blocked, blocked_reason, blocked_at, is_frozen, auto_sell_enabled, last_seen_at, fraud_warning_count, matching_expires_at, display_name, must_install_app, email, google_sub, is_verified_agent, agent_tier_awarded_date, agent_tier_awarded_level, is_trusted, freeze_reason) VALUES ('');
-INSERT INTO public.users (id, username, password_hash, phone, balance, total_deposits, total_withdrawals, role, created_at, invite_earnings, invite_earnings_l2, referral_code, referred_by, held_balance, trust_score, successful_trades, is_blocked, blocked_reason, blocked_at, is_frozen, auto_sell_enabled, last_seen_at, fraud_warning_count, matching_expires_at, display_name, must_install_app, email, google_sub, is_verified_agent, agent_tier_awarded_date, agent_tier_awarded_level, is_trusted, freeze_reason) VALUES ('');
-INSERT INTO public.users (id, username, password_hash, phone, balance, total_deposits, total_withdrawals, role, created_at, invite_earnings, invite_earnings_l2, referral_code, referred_by, held_balance, trust_score, successful_trades, is_blocked, blocked_reason, blocked_at, is_frozen, auto_sell_enabled, last_seen_at, fraud_warning_count, matching_expires_at, display_name, must_install_app, email, google_sub, is_verified_agent, agent_tier_awarded_date, agent_tier_awarded_level, is_trusted, freeze_reason) VALUES ('--');
-INSERT INTO public.users (id, username, password_hash, phone, balance, total_deposits, total_withdrawals, role, created_at, invite_earnings, invite_earnings_l2, referral_code, referred_by, held_balance, trust_score, successful_trades, is_blocked, blocked_reason, blocked_at, is_frozen, auto_sell_enabled, last_seen_at, fraud_warning_count, matching_expires_at, display_name, must_install_app, email, google_sub, is_verified_agent, agent_tier_awarded_date, agent_tier_awarded_level, is_trusted, freeze_reason) VALUES ('-- Data for Name: utr_index; Type: TABLE DATA; Schema: public; Owner: postgres');
-INSERT INTO public.users (id, username, password_hash, phone, balance, total_deposits, total_withdrawals, role, created_at, invite_earnings, invite_earnings_l2, referral_code, referred_by, held_balance, trust_score, successful_trades, is_blocked, blocked_reason, blocked_at, is_frozen, auto_sell_enabled, last_seen_at, fraud_warning_count, matching_expires_at, display_name, must_install_app, email, google_sub, is_verified_agent, agent_tier_awarded_date, agent_tier_awarded_level, is_trusted, freeze_reason) VALUES ('--');
-INSERT INTO public.users (id, username, password_hash, phone, balance, total_deposits, total_withdrawals, role, created_at, invite_earnings, invite_earnings_l2, referral_code, referred_by, held_balance, trust_score, successful_trades, is_blocked, blocked_reason, blocked_at, is_frozen, auto_sell_enabled, last_seen_at, fraud_warning_count, matching_expires_at, display_name, must_install_app, email, google_sub, is_verified_agent, agent_tier_awarded_date, agent_tier_awarded_level, is_trusted, freeze_reason) VALUES ('');
+
+
+
+--
+-- Data for Name: utr_index; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
 INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('1', '987654321099', '7', '10', '2026-04-18 17:53:41.670913');
 INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('2', 'BADUTR123456', '7', '11', '2026-04-18 17:55:43.464582');
 INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('3', 'U1776535197487', '7', '12', '2026-04-18 17:59:57.493073');
@@ -2311,670 +2278,670 @@ INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('4
 INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('48', 'FRDUP624566387', '139', '88', '2026-04-18 21:11:17.677032');
 INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('49', 'FRDUP624566387', '140', '89', '2026-04-18 21:11:17.728863');
 INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('50', 'FRDUP624566387', '141', '90', '2026-04-18 21:11:23.510006');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: admin_logs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('SELECT pg_catalog.setval(''public.admin_logs_id_seq'', 17, true);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: deposit_tasks_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('SELECT pg_catalog.setval(''public.deposit_tasks_id_seq'', 10, true);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: device_fingerprints_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('SELECT pg_catalog.setval(''public.device_fingerprints_id_seq'', 4, true);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: disputes_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('SELECT pg_catalog.setval(''public.disputes_id_seq'', 17, true);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: fraud_alerts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('SELECT pg_catalog.setval(''public.fraud_alerts_id_seq'', 20, true);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: high_value_events_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('SELECT pg_catalog.setval(''public.high_value_events_id_seq'', 15, true);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: image_hashes_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('SELECT pg_catalog.setval(''public.image_hashes_id_seq'', 100, true);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: orders_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('SELECT pg_catalog.setval(''public.orders_id_seq'', 142, true);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: referrals_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('SELECT pg_catalog.setval(''public.referrals_id_seq'', 1, false);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: settings_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('SELECT pg_catalog.setval(''public.settings_id_seq'', 28, true);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: sms_active_patterns_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('SELECT pg_catalog.setval(''public.sms_active_patterns_id_seq'', 1, false);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: sms_candidate_patterns_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('SELECT pg_catalog.setval(''public.sms_candidate_patterns_id_seq'', 1, false);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: sms_learning_queue_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('SELECT pg_catalog.setval(''public.sms_learning_queue_id_seq'', 2, true);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: sms_safe_senders_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('SELECT pg_catalog.setval(''public.sms_safe_senders_id_seq'', 8, true);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: trade_pair_blocks_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('SELECT pg_catalog.setval(''public.trade_pair_blocks_id_seq'', 1, false);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: transactions_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('SELECT pg_catalog.setval(''public.transactions_id_seq'', 85, true);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: trust_events_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('SELECT pg_catalog.setval(''public.trust_events_id_seq'', 70, true);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: user_notifications_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('SELECT pg_catalog.setval(''public.user_notifications_id_seq'', 129, true);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: user_upi_ids_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('SELECT pg_catalog.setval(''public.user_upi_ids_id_seq'', 103, true);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('SELECT pg_catalog.setval(''public.users_id_seq'', 251, true);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: utr_index_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('SELECT pg_catalog.setval(''public.utr_index_id_seq'', 50, true);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: admin_logs admin_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.admin_logs');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT admin_logs_pkey PRIMARY KEY (id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: deposit_tasks deposit_tasks_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.deposit_tasks');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT deposit_tasks_pkey PRIMARY KEY (id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: device_fingerprints device_fingerprints_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.device_fingerprints');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT device_fingerprints_pkey PRIMARY KEY (id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: disputes disputes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.disputes');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT disputes_pkey PRIMARY KEY (id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: fraud_alerts fraud_alerts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.fraud_alerts');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT fraud_alerts_pkey PRIMARY KEY (id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: high_value_events high_value_events_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.high_value_events');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT high_value_events_pkey PRIMARY KEY (id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: image_hashes image_hashes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.image_hashes');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT image_hashes_pkey PRIMARY KEY (id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: orders orders_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.orders');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT orders_pkey PRIMARY KEY (id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: referrals referrals_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.referrals');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT referrals_pkey PRIMARY KEY (id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: settings settings_key_unique; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.settings');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT settings_key_unique UNIQUE (key);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: settings settings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.settings');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT settings_pkey PRIMARY KEY (id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: sms_active_patterns sms_active_patterns_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.sms_active_patterns');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT sms_active_patterns_pkey PRIMARY KEY (id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: sms_candidate_patterns sms_candidate_patterns_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.sms_candidate_patterns');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT sms_candidate_patterns_pkey PRIMARY KEY (id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: sms_learning_queue sms_learning_queue_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.sms_learning_queue');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT sms_learning_queue_pkey PRIMARY KEY (id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: sms_safe_senders sms_safe_senders_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.sms_safe_senders');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT sms_safe_senders_pkey PRIMARY KEY (id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: trade_pair_blocks trade_pair_blocks_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.trade_pair_blocks');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT trade_pair_blocks_pkey PRIMARY KEY (id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: transactions transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.transactions');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT transactions_pkey PRIMARY KEY (id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: trust_events trust_events_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.trust_events');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT trust_events_pkey PRIMARY KEY (id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: user_notifications user_notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.user_notifications');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT user_notifications_pkey PRIMARY KEY (id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: user_upi_ids user_upi_ids_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.user_upi_ids');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT user_upi_ids_pkey PRIMARY KEY (id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.users');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT users_pkey PRIMARY KEY (id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: users users_referral_code_unique; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.users');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT users_referral_code_unique UNIQUE (referral_code);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: users users_username_unique; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.users');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT users_username_unique UNIQUE (username);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: utr_index utr_index_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.utr_index');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT utr_index_pkey PRIMARY KEY (id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: device_fingerprints_fp_idx; Type: INDEX; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('CREATE INDEX device_fingerprints_fp_idx ON public.device_fingerprints USING btree (fingerprint);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: device_fingerprints_user_idx; Type: INDEX; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('CREATE INDEX device_fingerprints_user_idx ON public.device_fingerprints USING btree (user_id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: high_value_events_created_idx; Type: INDEX; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('CREATE INDEX high_value_events_created_idx ON public.high_value_events USING btree (created_at);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: high_value_events_tier_idx; Type: INDEX; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('CREATE INDEX high_value_events_tier_idx ON public.high_value_events USING btree (tier);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: high_value_events_user_idx; Type: INDEX; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('CREATE INDEX high_value_events_user_idx ON public.high_value_events USING btree (user_id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: image_hashes_hash_idx; Type: INDEX; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('CREATE INDEX image_hashes_hash_idx ON public.image_hashes USING btree (hash);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: sms_active_patterns_dedup; Type: INDEX; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('CREATE UNIQUE INDEX sms_active_patterns_dedup ON public.sms_active_patterns USING btree (sender_key, utr_regex);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: sms_candidates_hash_unique; Type: INDEX; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('CREATE UNIQUE INDEX sms_candidates_hash_unique ON public.sms_candidate_patterns USING btree (sender_key, template_hash);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: sms_queue_sender_key_idx; Type: INDEX; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('CREATE INDEX sms_queue_sender_key_idx ON public.sms_learning_queue USING btree (sender_key);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: sms_queue_status_idx; Type: INDEX; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('CREATE INDEX sms_queue_status_idx ON public.sms_learning_queue USING btree (status);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: sms_queue_template_hash_idx; Type: INDEX; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('CREATE INDEX sms_queue_template_hash_idx ON public.sms_learning_queue USING btree (template_hash);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: sms_safe_senders_key_unique; Type: INDEX; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('CREATE UNIQUE INDEX sms_safe_senders_key_unique ON public.sms_safe_senders USING btree (sender_key);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: user_notifications_read_idx; Type: INDEX; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('CREATE INDEX user_notifications_read_idx ON public.user_notifications USING btree (user_id, read_at);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: user_notifications_user_idx; Type: INDEX; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('CREATE INDEX user_notifications_user_idx ON public.user_notifications USING btree (user_id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: users_google_sub_unique; Type: INDEX; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('CREATE UNIQUE INDEX users_google_sub_unique ON public.users USING btree (google_sub) WHERE (google_sub IS NOT NULL);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: utr_index_utr_idx; Type: INDEX; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('CREATE INDEX utr_index_utr_idx ON public.utr_index USING btree (utr);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: admin_logs admin_logs_admin_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.admin_logs');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT admin_logs_admin_id_fkey FOREIGN KEY (admin_id) REFERENCES public.users(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: device_fingerprints device_fingerprints_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.device_fingerprints');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT device_fingerprints_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: disputes disputes_buyer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.disputes');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT disputes_buyer_id_fkey FOREIGN KEY (buyer_id) REFERENCES public.users(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: disputes disputes_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.disputes');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT disputes_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: disputes disputes_seller_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.disputes');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT disputes_seller_id_fkey FOREIGN KEY (seller_id) REFERENCES public.users(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: fraud_alerts fraud_alerts_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.fraud_alerts');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT fraud_alerts_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: fraud_alerts fraud_alerts_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.fraud_alerts');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT fraud_alerts_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: high_value_events high_value_events_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.high_value_events');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT high_value_events_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: image_hashes image_hashes_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.image_hashes');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT image_hashes_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: image_hashes image_hashes_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.image_hashes');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT image_hashes_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: orders orders_user_id_users_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.orders');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT orders_user_id_users_id_fk FOREIGN KEY (user_id) REFERENCES public.users(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: referrals referrals_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.referrals');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT referrals_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: referrals referrals_referred_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.referrals');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT referrals_referred_user_id_fkey FOREIGN KEY (referred_user_id) REFERENCES public.users(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: referrals referrals_referrer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.referrals');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT referrals_referrer_id_fkey FOREIGN KEY (referrer_id) REFERENCES public.users(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: sms_learning_queue sms_learning_queue_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.sms_learning_queue');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT sms_learning_queue_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: sms_safe_senders sms_safe_senders_added_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.sms_safe_senders');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT sms_safe_senders_added_by_fkey FOREIGN KEY (added_by) REFERENCES public.users(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: trade_pair_blocks trade_pair_blocks_user_id_1_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.trade_pair_blocks');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT trade_pair_blocks_user_id_1_fkey FOREIGN KEY (user_id_1) REFERENCES public.users(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: trade_pair_blocks trade_pair_blocks_user_id_2_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.trade_pair_blocks');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT trade_pair_blocks_user_id_2_fkey FOREIGN KEY (user_id_2) REFERENCES public.users(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: transactions transactions_order_id_orders_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.transactions');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT transactions_order_id_orders_id_fk FOREIGN KEY (order_id) REFERENCES public.orders(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: transactions transactions_user_id_users_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.transactions');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT transactions_user_id_users_id_fk FOREIGN KEY (user_id) REFERENCES public.users(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: trust_events trust_events_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.trust_events');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT trust_events_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: trust_events trust_events_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.trust_events');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT trust_events_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: user_notifications user_notifications_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.user_notifications');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT user_notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: user_upi_ids user_upi_ids_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.user_upi_ids');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT user_upi_ids_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: utr_index utr_index_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.utr_index');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT utr_index_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- Name: utr_index utr_index_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('ALTER TABLE ONLY public.utr_index');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('    ADD CONSTRAINT utr_index_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('-- PostgreSQL database dump complete');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('--');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
-INSERT INTO public.utr_index (id, utr, user_id, order_id, created_at) VALUES ('');
+
+
+
+--
+-- Name: admin_logs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.admin_logs_id_seq', 17, true);
+
+
+--
+-- Name: deposit_tasks_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.deposit_tasks_id_seq', 10, true);
+
+
+--
+-- Name: device_fingerprints_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.device_fingerprints_id_seq', 4, true);
+
+
+--
+-- Name: disputes_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.disputes_id_seq', 17, true);
+
+
+--
+-- Name: fraud_alerts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.fraud_alerts_id_seq', 20, true);
+
+
+--
+-- Name: high_value_events_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.high_value_events_id_seq', 15, true);
+
+
+--
+-- Name: image_hashes_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.image_hashes_id_seq', 100, true);
+
+
+--
+-- Name: orders_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.orders_id_seq', 142, true);
+
+
+--
+-- Name: referrals_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.referrals_id_seq', 1, false);
+
+
+--
+-- Name: settings_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.settings_id_seq', 28, true);
+
+
+--
+-- Name: sms_active_patterns_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.sms_active_patterns_id_seq', 1, false);
+
+
+--
+-- Name: sms_candidate_patterns_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.sms_candidate_patterns_id_seq', 1, false);
+
+
+--
+-- Name: sms_learning_queue_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.sms_learning_queue_id_seq', 2, true);
+
+
+--
+-- Name: sms_safe_senders_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.sms_safe_senders_id_seq', 8, true);
+
+
+--
+-- Name: trade_pair_blocks_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.trade_pair_blocks_id_seq', 1, false);
+
+
+--
+-- Name: transactions_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.transactions_id_seq', 85, true);
+
+
+--
+-- Name: trust_events_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.trust_events_id_seq', 70, true);
+
+
+--
+-- Name: user_notifications_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.user_notifications_id_seq', 129, true);
+
+
+--
+-- Name: user_upi_ids_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.user_upi_ids_id_seq', 103, true);
+
+
+--
+-- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.users_id_seq', 251, true);
+
+
+--
+-- Name: utr_index_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.utr_index_id_seq', 50, true);
+
+
+--
+-- Name: admin_logs admin_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.admin_logs
+    ADD CONSTRAINT admin_logs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: deposit_tasks deposit_tasks_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.deposit_tasks
+    ADD CONSTRAINT deposit_tasks_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: device_fingerprints device_fingerprints_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.device_fingerprints
+    ADD CONSTRAINT device_fingerprints_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: disputes disputes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.disputes
+    ADD CONSTRAINT disputes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: fraud_alerts fraud_alerts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.fraud_alerts
+    ADD CONSTRAINT fraud_alerts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: high_value_events high_value_events_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.high_value_events
+    ADD CONSTRAINT high_value_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: image_hashes image_hashes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.image_hashes
+    ADD CONSTRAINT image_hashes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: orders orders_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.orders
+    ADD CONSTRAINT orders_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: referrals referrals_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.referrals
+    ADD CONSTRAINT referrals_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: settings settings_key_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.settings
+    ADD CONSTRAINT settings_key_unique UNIQUE (key);
+
+
+--
+-- Name: settings settings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.settings
+    ADD CONSTRAINT settings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: sms_active_patterns sms_active_patterns_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sms_active_patterns
+    ADD CONSTRAINT sms_active_patterns_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: sms_candidate_patterns sms_candidate_patterns_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sms_candidate_patterns
+    ADD CONSTRAINT sms_candidate_patterns_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: sms_learning_queue sms_learning_queue_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sms_learning_queue
+    ADD CONSTRAINT sms_learning_queue_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: sms_safe_senders sms_safe_senders_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sms_safe_senders
+    ADD CONSTRAINT sms_safe_senders_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: trade_pair_blocks trade_pair_blocks_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.trade_pair_blocks
+    ADD CONSTRAINT trade_pair_blocks_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: transactions transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.transactions
+    ADD CONSTRAINT transactions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: trust_events trust_events_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.trust_events
+    ADD CONSTRAINT trust_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_notifications user_notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_notifications
+    ADD CONSTRAINT user_notifications_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_upi_ids user_upi_ids_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_upi_ids
+    ADD CONSTRAINT user_upi_ids_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: users users_referral_code_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_referral_code_unique UNIQUE (referral_code);
+
+
+--
+-- Name: users users_username_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_username_unique UNIQUE (username);
+
+
+--
+-- Name: utr_index utr_index_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.utr_index
+    ADD CONSTRAINT utr_index_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: device_fingerprints_fp_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX device_fingerprints_fp_idx ON public.device_fingerprints USING btree (fingerprint);
+
+
+--
+-- Name: device_fingerprints_user_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX device_fingerprints_user_idx ON public.device_fingerprints USING btree (user_id);
+
+
+--
+-- Name: high_value_events_created_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX high_value_events_created_idx ON public.high_value_events USING btree (created_at);
+
+
+--
+-- Name: high_value_events_tier_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX high_value_events_tier_idx ON public.high_value_events USING btree (tier);
+
+
+--
+-- Name: high_value_events_user_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX high_value_events_user_idx ON public.high_value_events USING btree (user_id);
+
+
+--
+-- Name: image_hashes_hash_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX image_hashes_hash_idx ON public.image_hashes USING btree (hash);
+
+
+--
+-- Name: sms_active_patterns_dedup; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX sms_active_patterns_dedup ON public.sms_active_patterns USING btree (sender_key, utr_regex);
+
+
+--
+-- Name: sms_candidates_hash_unique; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX sms_candidates_hash_unique ON public.sms_candidate_patterns USING btree (sender_key, template_hash);
+
+
+--
+-- Name: sms_queue_sender_key_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX sms_queue_sender_key_idx ON public.sms_learning_queue USING btree (sender_key);
+
+
+--
+-- Name: sms_queue_status_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX sms_queue_status_idx ON public.sms_learning_queue USING btree (status);
+
+
+--
+-- Name: sms_queue_template_hash_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX sms_queue_template_hash_idx ON public.sms_learning_queue USING btree (template_hash);
+
+
+--
+-- Name: sms_safe_senders_key_unique; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX sms_safe_senders_key_unique ON public.sms_safe_senders USING btree (sender_key);
+
+
+--
+-- Name: user_notifications_read_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX user_notifications_read_idx ON public.user_notifications USING btree (user_id, read_at);
+
+
+--
+-- Name: user_notifications_user_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX user_notifications_user_idx ON public.user_notifications USING btree (user_id);
+
+
+--
+-- Name: users_google_sub_unique; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX users_google_sub_unique ON public.users USING btree (google_sub) WHERE (google_sub IS NOT NULL);
+
+
+--
+-- Name: utr_index_utr_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX utr_index_utr_idx ON public.utr_index USING btree (utr);
+
+
+--
+-- Name: admin_logs admin_logs_admin_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.admin_logs
+    ADD CONSTRAINT admin_logs_admin_id_fkey FOREIGN KEY (admin_id) REFERENCES public.users(id);
+
+
+--
+-- Name: device_fingerprints device_fingerprints_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.device_fingerprints
+    ADD CONSTRAINT device_fingerprints_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: disputes disputes_buyer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.disputes
+    ADD CONSTRAINT disputes_buyer_id_fkey FOREIGN KEY (buyer_id) REFERENCES public.users(id);
+
+
+--
+-- Name: disputes disputes_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.disputes
+    ADD CONSTRAINT disputes_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id);
+
+
+--
+-- Name: disputes disputes_seller_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.disputes
+    ADD CONSTRAINT disputes_seller_id_fkey FOREIGN KEY (seller_id) REFERENCES public.users(id);
+
+
+--
+-- Name: fraud_alerts fraud_alerts_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.fraud_alerts
+    ADD CONSTRAINT fraud_alerts_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id);
+
+
+--
+-- Name: fraud_alerts fraud_alerts_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.fraud_alerts
+    ADD CONSTRAINT fraud_alerts_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: high_value_events high_value_events_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.high_value_events
+    ADD CONSTRAINT high_value_events_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: image_hashes image_hashes_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.image_hashes
+    ADD CONSTRAINT image_hashes_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id);
+
+
+--
+-- Name: image_hashes image_hashes_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.image_hashes
+    ADD CONSTRAINT image_hashes_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: orders orders_user_id_users_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.orders
+    ADD CONSTRAINT orders_user_id_users_id_fk FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: referrals referrals_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.referrals
+    ADD CONSTRAINT referrals_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id);
+
+
+--
+-- Name: referrals referrals_referred_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.referrals
+    ADD CONSTRAINT referrals_referred_user_id_fkey FOREIGN KEY (referred_user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: referrals referrals_referrer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.referrals
+    ADD CONSTRAINT referrals_referrer_id_fkey FOREIGN KEY (referrer_id) REFERENCES public.users(id);
+
+
+--
+-- Name: sms_learning_queue sms_learning_queue_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sms_learning_queue
+    ADD CONSTRAINT sms_learning_queue_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: sms_safe_senders sms_safe_senders_added_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sms_safe_senders
+    ADD CONSTRAINT sms_safe_senders_added_by_fkey FOREIGN KEY (added_by) REFERENCES public.users(id);
+
+
+--
+-- Name: trade_pair_blocks trade_pair_blocks_user_id_1_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.trade_pair_blocks
+    ADD CONSTRAINT trade_pair_blocks_user_id_1_fkey FOREIGN KEY (user_id_1) REFERENCES public.users(id);
+
+
+--
+-- Name: trade_pair_blocks trade_pair_blocks_user_id_2_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.trade_pair_blocks
+    ADD CONSTRAINT trade_pair_blocks_user_id_2_fkey FOREIGN KEY (user_id_2) REFERENCES public.users(id);
+
+
+--
+-- Name: transactions transactions_order_id_orders_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.transactions
+    ADD CONSTRAINT transactions_order_id_orders_id_fk FOREIGN KEY (order_id) REFERENCES public.orders(id);
+
+
+--
+-- Name: transactions transactions_user_id_users_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.transactions
+    ADD CONSTRAINT transactions_user_id_users_id_fk FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: trust_events trust_events_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.trust_events
+    ADD CONSTRAINT trust_events_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id);
+
+
+--
+-- Name: trust_events trust_events_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.trust_events
+    ADD CONSTRAINT trust_events_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: user_notifications user_notifications_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_notifications
+    ADD CONSTRAINT user_notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: user_upi_ids user_upi_ids_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_upi_ids
+    ADD CONSTRAINT user_upi_ids_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: utr_index utr_index_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.utr_index
+    ADD CONSTRAINT utr_index_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id);
+
+
+--
+-- Name: utr_index utr_index_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.utr_index
+    ADD CONSTRAINT utr_index_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+
