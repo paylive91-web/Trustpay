@@ -4,7 +4,7 @@ import {
   smsCandidatePatternsTable,
   smsActivePatternsTable,
 } from "@workspace/db";
-import { eq, inArray, sql, lt } from "drizzle-orm";
+import { eq, inArray, sql, and, lt } from "drizzle-orm";
 import { getSetting } from "./settings.js";
 
 export interface SmsLearningStatus {
@@ -93,7 +93,10 @@ export async function runSmsAutoCleanup(opts?: {
   const deletedQueue = await db
     .delete(smsLearningQueueTable)
     .where(
-      sql`${smsLearningQueueTable.status} = ANY(${CLEANABLE_QUEUE_STATUSES}) AND ${smsLearningQueueTable.createdAt} < ${cutoff}`
+      and(
+        inArray(smsLearningQueueTable.status, [...CLEANABLE_QUEUE_STATUSES]),
+        lt(smsLearningQueueTable.createdAt, cutoff)
+      )
     )
     .returning({ id: smsLearningQueueTable.id });
 
