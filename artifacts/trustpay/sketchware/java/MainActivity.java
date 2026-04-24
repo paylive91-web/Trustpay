@@ -251,8 +251,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     String[] perms = new String[]{
-                            Manifest.permission.READ_SMS,
-                            Manifest.permission.RECEIVE_SMS
+                            Manifest.permission.READ_SMS
                     };
                     ActivityCompat.requestPermissions(MainActivity.this, perms, SMS_PERM_REQ);
                 }
