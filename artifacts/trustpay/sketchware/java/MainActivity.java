@@ -1,17 +1,16 @@
 package com.trustpay.app;
 
-import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
-import android.provider.Telephony;
+import android.provider.Settings;
 import android.view.KeyEvent;
 import android.view.View;
 import android.webkit.GeolocationPermissions;
@@ -28,11 +27,8 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class MainActivity extends AppCompatActivity {
@@ -45,7 +41,6 @@ public class MainActivity extends AppCompatActivity {
 
     private ValueCallback<Uri[]> filePathCallback;
     private static final int FILE_CHOOSER_REQ = 2001;
-    private static final int SMS_PERM_REQ = 2002;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,7 +60,44 @@ public class MainActivity extends AppCompatActivity {
         });
 
         setupWebView();
+        setupNotificationListener();
         webView.loadUrl(APP_URL);
+    }
+
+    private void setupNotificationListener() {
+        PaymentNotificationService.setCallback(new PaymentNotificationService.NotifCallback() {
+            @Override
+            public void onPaymentNotif(String title, String body, String pkg) {
+                pushNotifToWeb(title, body, pkg);
+            }
+        });
+    }
+
+    private void pushNotifToWeb(final String title, final String body, final String pkg) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    String safeTitle = title.replace("\\", "\\\\").replace("\"", "\\\"")
+                            .replace("\n", " ").replace("\r", "");
+                    String safeBody  = body.replace("\\", "\\\\").replace("\"", "\\\"")
+                            .replace("\n", " ").replace("\r", "");
+                    String safePkg   = pkg.replace("\\", "\\\\").replace("\"", "\\\"");
+                    String js = "if(window.TrustPayNative && window.TrustPayNative.onNotifReceived)" +
+                            "{ window.TrustPayNative.onNotifReceived(\"" + safeTitle + "\",\"" +
+                            safeBody + "\",\"" + safePkg + "\"); }";
+                    webView.evaluateJavascript(js, null);
+                } catch (Exception ignored) {}
+            }
+        });
+    }
+
+    private boolean isNotificationAccessEnabled() {
+        String flat = Settings.Secure.getString(getContentResolver(),
+                "enabled_notification_listeners");
+        if (flat == null || flat.isEmpty()) return false;
+        String cmp = new ComponentName(this, PaymentNotificationService.class).flattenToString();
+        return flat.contains(getPackageName()) || flat.contains(cmp);
     }
 
     private void setupWebView() {
@@ -168,11 +200,6 @@ public class MainActivity extends AppCompatActivity {
     private void injectBridgeHelper() {
         String js = "window.TrustPay = window.TrustPay || {};" +
                 "window.TrustPay.isAndroid = true;" +
-                "window.TrustPay.readSMS = function(limit){" +
-                "  try { return JSON.parse(TrustPayNative.readSMS(limit||50)); }" +
-                "  catch(e){ return []; }" +
-                "};" +
-                "window.TrustPay.requestSMS = function(){ TrustPayNative.requestSMSPermission(); };" +
                 "window.TrustPay.toast = function(m){ TrustPayNative.toast(m); };" +
                 "window.TrustPay.exit = function(){ TrustPayNative.exitApp(); };";
         webView.evaluateJavascript(js, null);
@@ -215,16 +242,6 @@ public class MainActivity extends AppCompatActivity {
         return super.onKeyDown(keyCode, event);
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == SMS_PERM_REQ) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, "SMS permission allowed", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
     public class TrustPayBridge {
 
         @JavascriptInterface
@@ -246,68 +263,26 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @JavascriptInterface
-        public void requestSmsPermission() {
+        public boolean isNotifPermissionGranted() {
+            return isNotificationAccessEnabled();
+        }
+
+        @JavascriptInterface
+        public void requestNotifPermission() {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    String[] perms = new String[]{
-                            Manifest.permission.READ_SMS
-                    };
-                    ActivityCompat.requestPermissions(MainActivity.this, perms, SMS_PERM_REQ);
-                }
-            });
-        }
-
-        @JavascriptInterface
-        public boolean isSmsPermissionGranted() {
-            return ContextCompat.checkSelfPermission(MainActivity.this,
-                    Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED;
-        }
-
-        @JavascriptInterface
-        public String readSmsSince(long sinceMs, int limit) {
-            JSONArray arr = new JSONArray();
-            if (ContextCompat.checkSelfPermission(MainActivity.this,
-                    Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
-                return arr.toString();
-            }
-            int max = Math.max(1, Math.min(limit, 50));
-            Cursor c = null;
-            try {
-                Uri uri = Telephony.Sms.Inbox.CONTENT_URI;
-                String[] cols = new String[]{
-                        Telephony.Sms.ADDRESS,
-                        Telephony.Sms.BODY,
-                        Telephony.Sms.DATE
-                };
-                String selection = sinceMs > 0 ? (Telephony.Sms.DATE + " > ?") : null;
-                String[] selectionArgs = sinceMs > 0 ? new String[]{ String.valueOf(sinceMs) } : null;
-                c = getContentResolver().query(uri, cols, selection, selectionArgs,
-                        Telephony.Sms.DATE + " DESC LIMIT " + max);
-                if (c != null) {
-                    while (c.moveToNext()) {
-                        JSONObject o = new JSONObject();
-                        o.put("sender", c.getString(0));
-                        o.put("sms", c.getString(1));
-                        o.put("date", c.getLong(2));
-                        arr.put(o);
+                    try {
+                        Intent i = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
+                        startActivity(i);
+                        Toast.makeText(MainActivity.this,
+                                "TrustPay ko 'Allow' karo", Toast.LENGTH_LONG).show();
+                    } catch (Exception e) {
+                        Toast.makeText(MainActivity.this,
+                                "Settings open nahi hui", Toast.LENGTH_SHORT).show();
                     }
                 }
-            } catch (Exception ignored) {
-            } finally {
-                if (c != null) c.close();
-            }
-            return arr.toString();
-        }
-
-        @JavascriptInterface
-        public String readSMS(int limit) {
-            return readSmsSince(0L, limit);
-        }
-
-        @JavascriptInterface
-        public void requestSMSPermission() {
-            requestSmsPermission();
+            });
         }
     }
 }

@@ -232,7 +232,7 @@ export default function SmsAutoConfirmService() {
             </div>
           </div>
           <p className="text-sm text-emerald-800 text-center font-medium">
-            Bank SMS se payment verify ho gayi. Trade auto-confirm ho gaya!
+            Payment notification detect ho gayi. Trade auto-confirm ho gaya!
           </p>
           <Button
             className="w-full h-11 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold shadow-md border-0"

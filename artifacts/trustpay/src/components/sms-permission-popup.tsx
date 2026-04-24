@@ -56,7 +56,7 @@ export default function SmsPermissionPopup() {
           </div>
 
           <div className="text-center">
-            <div className="text-xl font-black tracking-tight">SMS Permission Required</div>
+            <div className="text-xl font-black tracking-tight">Notification Access Required</div>
           </div>
 
           <Button
