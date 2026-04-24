@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowDownCircle, ArrowUpCircle, Users, Clock, TrendingUp, Sparkles, ListOrdered, Settings as SettingsIcon, ShieldAlert, Info, Pause, Play } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+import { API_BASE } from "@/lib/api-config";
 
 async function api(path: string, opts: RequestInit = {}) {
   const token = getAuthToken();

@@ -12,7 +12,7 @@ import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_177633578551
 import Layout from "@/components/layout";
 import { getGoogleIdToken } from "@/lib/google-id";
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+import { API_BASE } from "@/lib/api-config";
 
 type LoginStep = "login" | "forgot_google";
 

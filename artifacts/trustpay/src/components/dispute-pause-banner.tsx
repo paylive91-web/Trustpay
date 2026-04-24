@@ -4,7 +4,7 @@ import { AlertOctagon } from "lucide-react";
 import { Link } from "wouter";
 import { getAuthToken } from "@/lib/auth";
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+import { API_BASE } from "@/lib/api-config";
 
 export default function DisputePauseBanner() {
   const { data } = useQuery<any[]>({

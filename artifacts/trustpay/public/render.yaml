@@ -5,3 +5,6 @@ services:
     plan: free
     buildCommand: pnpm install && pnpm --filter @workspace/trustpay run build
     startCommand: pnpm --filter @workspace/trustpay run serve
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://trustpay-api.onrender.com/api

@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Gift, Copy, Share2, Users, TrendingUp, IndianRupee, Award, Flame, Download } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
+import { API_BASE } from "@/lib/api-config";
 
 export default function Invite() {
   const { toast } = useToast();
@@ -21,7 +22,7 @@ export default function Invite() {
     queryKey: ["invitees"],
     queryFn: async () => {
       const token = getAuthToken();
-      const res = await fetch(`${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/auth/invitees`, {
+      const res = await fetch(`${API_BASE}/auth/invitees`, {
         headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       });
       return res.json();
@@ -36,7 +37,7 @@ export default function Invite() {
     .filter((tier: any) => todayActiveCount >= Number(tier.minActiveDeposits || 0))
     .reduce((sum: number, tier: any) => sum + Number(tier.reward || 0), 0);
   const inviteShareImageUrl = (appSettings as any)?.inviteShareImageUrl || "";
-  const shareUrl = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}/register?ref=${referralCode}`;
+  const shareUrl = `${window.location.origin}/register?ref=${referralCode}`;
 
   const handleCopyCode = () => {
     if (!referralCode) return;

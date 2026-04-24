@@ -12,7 +12,7 @@ import { format } from "date-fns";
 import { getAuthToken } from "@/lib/auth";
 import { MessageSquare, Shield, Zap, Trash2, CheckCircle2, XCircle, RefreshCw, Plus, Info } from "lucide-react";
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+import { API_BASE } from "@/lib/api-config";
 
 async function adminApi(path: string, opts: RequestInit = {}) {
   const token = getAuthToken();

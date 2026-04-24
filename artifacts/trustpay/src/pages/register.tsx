@@ -12,7 +12,7 @@ import { useGetAppSettings } from "@workspace/api-client-react";
 import Layout from "@/components/layout";
 import { Download, ShieldCheck, Zap, Star, ShieldAlert, LogIn } from "lucide-react";
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+import { API_BASE } from "@/lib/api-config";
 
 function PWAInstallPopup({ onDone, appName, logoUrl }: { onDone: () => void; appName: string; logoUrl: string }) {
   return (

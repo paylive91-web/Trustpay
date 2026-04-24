@@ -15,7 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Trash2, Pencil, ShieldOff, ShieldCheck, Star, RefreshCw, BlocksIcon, Info } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+import { API_BASE } from "@/lib/api-config";
 
 async function api(path: string, opts: RequestInit = {}) {
   const token = getAuthToken();

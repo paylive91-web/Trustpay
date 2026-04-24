@@ -14,7 +14,7 @@ import { useState } from "react";
 import { getGoogleIdToken } from "@/lib/google-id";
 import { getAuthToken } from "@/lib/auth";
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+import { API_BASE } from "@/lib/api-config";
 
 export default function Profile() {
   const [, setLocation] = useLocation();

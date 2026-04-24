@@ -8,7 +8,7 @@ import { parseBankSms } from "@/lib/utr-validator";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+import { API_BASE } from "@/lib/api-config";
 const AMOUNT_TOLERANCE = 1;
 
 const DEBIT_HINT_RE = /\b(debited|withdrawn|spent|paid\s+to|sent\s+to|sent\s+via|deducted|debit\s+alert|w\/d|wdl|purchase\s+at|atm\s+wdl)\b/i;

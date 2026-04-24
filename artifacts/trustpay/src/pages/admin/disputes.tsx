@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { ShieldAlert, Eye, Clock, Info } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+import { API_BASE } from "@/lib/api-config";
 
 async function api(path: string, opts: RequestInit = {}) {
   const token = getAuthToken();

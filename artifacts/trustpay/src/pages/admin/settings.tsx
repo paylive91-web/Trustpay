@@ -14,7 +14,7 @@ import { getAdminGetSettingsQueryKey, getGetAppSettingsQueryKey } from "@workspa
 import { getAuthToken } from "@/lib/auth";
 import { Plus, Trash2, Bell, Upload, Award, Info } from "lucide-react";
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+import { BASE_ORIGIN as BASE } from "@/lib/api-config";
 
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {

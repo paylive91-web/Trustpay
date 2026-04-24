@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getAuthToken } from "@/lib/auth";
 import { BarChart3, Download, Info, TrendingUp, TrendingDown, DollarSign, ShieldAlert, Trash2, Ban } from "lucide-react";
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+import { API_BASE } from "@/lib/api-config";
 
 async function apiFetch(path: string, opts: RequestInit = {}) {
   const token = getAuthToken();

@@ -11,7 +11,7 @@ interface LayoutProps {
   showBottomNav?: boolean;
 }
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+import { API_BASE } from "@/lib/api-config";
 
 // Global heartbeat — fires every 30s on every authenticated screen so that
 // `lastSeenAt` stays fresh and buyers can submit proof while the seller is on

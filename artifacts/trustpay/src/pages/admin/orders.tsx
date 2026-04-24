@@ -40,7 +40,7 @@ function OcrField({ label, value, storedMatch }: {
 }
 
 const STATUS_OPTIONS = ["all", "available", "locked", "pending_confirmation", "disputed", "confirmed", "cancelled", "expired"];
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+import { API_BASE } from "@/lib/api-config";
 
 async function api(path: string, opts: RequestInit = {}) {
   const token = getAuthToken();

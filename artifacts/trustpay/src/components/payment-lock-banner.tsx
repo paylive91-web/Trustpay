@@ -8,7 +8,7 @@ import { getAuthToken } from "@/lib/auth";
 import React, { useEffect, useRef, useState } from "react";
 import { playAlarm } from "@/lib/alarm";
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+import { API_BASE } from "@/lib/api-config";
 
 async function api(path: string) {
   const token = getAuthToken();

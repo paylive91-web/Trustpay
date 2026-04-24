@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getAuthToken } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+import { API_BASE } from "@/lib/api-config";
 
 async function api(path: string, opts: RequestInit = {}) {
   const token = getAuthToken();

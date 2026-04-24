@@ -11,7 +11,7 @@ import { getAuthToken } from "@/lib/auth";
 import { format } from "date-fns";
 import { Activity, Info, RefreshCw, Filter } from "lucide-react";
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+import { API_BASE } from "@/lib/api-config";
 
 async function apiFetch(path: string) {
   const token = getAuthToken();

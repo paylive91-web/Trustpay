@@ -22,7 +22,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
 import { Snowflake, BellRing, Check, ShieldCheck, Trash2, Info } from "lucide-react";
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+import { API_BASE } from "@/lib/api-config";
 
 async function adminApi(path: string, opts: RequestInit = {}) {
   const token = getAuthToken();

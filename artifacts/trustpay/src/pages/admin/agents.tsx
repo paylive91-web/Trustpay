@@ -13,7 +13,7 @@ import { getAuthToken } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Users, Award, Flame, IndianRupee, ShieldCheck, Plus, Trash2, Pencil, Check, X, Info } from "lucide-react";
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+import { BASE_ORIGIN as BASE } from "@/lib/api-config";
 
 interface AgentTier {
   minActiveDeposits: number;
