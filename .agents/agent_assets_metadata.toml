@@ -125,3 +125,15 @@ id = "p5nfBZcapy3sM9gjSPrqD"
 uri = "file://screenshots/me-redesign-v2.jpg"
 type = "image"
 title = "Me / Profile"
+
+[[outputs]]
+id = "d0cNpLz7g3vn24vZODI6O"
+uri = "file://artifacts/trustpay/sketchware/TrustPay-Sketchware.zip"
+type = "unspecified"
+title = "TrustPay Sketchware Pro Bundle (.zip)"
+
+[[outputs]]
+id = "7eOwJvglh7NMESpYHbiWQ"
+uri = "file://artifacts/trustpay/sketchware/README_HINGLISH.md"
+type = "text"
+title = "Setup Guide (Hinglish)"
