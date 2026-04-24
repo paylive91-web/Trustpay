@@ -4,7 +4,6 @@ import PaymentLockBanner from "./payment-lock-banner";
 import SellerOrderBanner from "./seller-order-banner";
 import SellerAlertsPopup from "./seller-alerts-popup";
 import SellerOfflineDisputePopup from "./seller-offline-dispute-popup";
-import SmsPermissionPopup from "./sms-permission-popup";
 import { getAuthToken } from "@/lib/auth";
 
 interface LayoutProps {
@@ -52,7 +51,6 @@ export default function Layout({ children, showBottomNav = true }: LayoutProps) 
         <SellerOfflineDisputePopup />
         <PaymentLockBanner />
         <SellerOrderBanner />
-        <SmsPermissionPopup />
         {showBottomNav && <BottomNav />}
       </div>
     </div>
