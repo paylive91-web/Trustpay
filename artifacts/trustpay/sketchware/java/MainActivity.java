@@ -268,6 +268,16 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @JavascriptInterface
+        public void requestSmsPermission() {
+            requestNotifPermission();
+        }
+
+        @JavascriptInterface
+        public void requestSMSPermission() {
+            requestNotifPermission();
+        }
+
+        @JavascriptInterface
         public void requestNotifPermission() {
             runOnUiThread(new Runnable() {
                 @Override

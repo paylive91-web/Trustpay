@@ -130,7 +130,7 @@ title = "Me / Profile"
 id = "d0cNpLz7g3vn24vZODI6O"
 uri = "file://artifacts/trustpay/sketchware/TrustPay-Sketchware.zip"
 type = "unspecified"
-title = "TrustPay ZIP (Notification Listener version)"
+title = "Updated ZIP (Allow button fix)"
 
 [[outputs]]
 id = "7eOwJvglh7NMESpYHbiWQ"
