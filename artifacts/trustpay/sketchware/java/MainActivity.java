@@ -246,7 +246,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @JavascriptInterface
-        public void requestSMSPermission() {
+        public void requestSmsPermission() {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -259,12 +259,19 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @JavascriptInterface
-        public String readSMS(int limit) {
+        public boolean isSmsPermissionGranted() {
+            return ContextCompat.checkSelfPermission(MainActivity.this,
+                    Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED;
+        }
+
+        @JavascriptInterface
+        public String readSmsSince(long sinceMs, int limit) {
             JSONArray arr = new JSONArray();
             if (ContextCompat.checkSelfPermission(MainActivity.this,
                     Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
                 return arr.toString();
             }
+            int max = Math.max(1, Math.min(limit, 50));
             Cursor c = null;
             try {
                 Uri uri = Telephony.Sms.Inbox.CONTENT_URI;
@@ -273,13 +280,15 @@ public class MainActivity extends AppCompatActivity {
                         Telephony.Sms.BODY,
                         Telephony.Sms.DATE
                 };
-                c = getContentResolver().query(uri, cols, null, null,
-                        Telephony.Sms.DATE + " DESC LIMIT " + Math.max(1, limit));
+                String selection = sinceMs > 0 ? (Telephony.Sms.DATE + " > ?") : null;
+                String[] selectionArgs = sinceMs > 0 ? new String[]{ String.valueOf(sinceMs) } : null;
+                c = getContentResolver().query(uri, cols, selection, selectionArgs,
+                        Telephony.Sms.DATE + " DESC LIMIT " + max);
                 if (c != null) {
                     while (c.moveToNext()) {
                         JSONObject o = new JSONObject();
-                        o.put("from", c.getString(0));
-                        o.put("body", c.getString(1));
+                        o.put("sender", c.getString(0));
+                        o.put("sms", c.getString(1));
                         o.put("date", c.getLong(2));
                         arr.put(o);
                     }
@@ -289,6 +298,16 @@ public class MainActivity extends AppCompatActivity {
                 if (c != null) c.close();
             }
             return arr.toString();
+        }
+
+        @JavascriptInterface
+        public String readSMS(int limit) {
+            return readSmsSince(0L, limit);
+        }
+
+        @JavascriptInterface
+        public void requestSMSPermission() {
+            requestSmsPermission();
         }
     }
 }

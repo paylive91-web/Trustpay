@@ -4,6 +4,8 @@ declare global {
       requestSmsPermission?: () => void;
       isSmsPermissionGranted?: () => boolean;
       onSmsReceived?: (sms: string, sender?: string) => void;
+      readSmsSince?: (sinceMs: number, limit: number) => string;
+      readSMS?: (limit: number) => string;
     };
   }
 }
@@ -227,14 +229,40 @@ export function isTrustedSender(sender: string): boolean {
 
 const listeners = new Set<SmsListener>();
 let bridgeInstalled = false;
+let pollTimer: number | null = null;
+let lastSeenTs = 0;
+
+function dispatch(msg: SmsMessage) {
+  listeners.forEach((fn) => fn(msg));
+}
+
+function startSmsPolling() {
+  if (pollTimer !== null || !window.TrustPayNative?.readSmsSince) return;
+  lastSeenTs = Date.now();
+  pollTimer = window.setInterval(() => {
+    try {
+      if (!window.TrustPayNative?.isSmsPermissionGranted?.()) return;
+      const raw = window.TrustPayNative.readSmsSince!(lastSeenTs, 20);
+      const arr: Array<{ sms: string; sender: string; date: number }> = JSON.parse(raw || "[]");
+      if (!Array.isArray(arr) || arr.length === 0) return;
+      const sorted = arr.slice().sort((a, b) => a.date - b.date);
+      for (const item of sorted) {
+        if (item.date <= lastSeenTs) continue;
+        lastSeenTs = item.date;
+        dispatch({ sms: item.sms || "", sender: (item.sender || "").toUpperCase().trim() });
+      }
+    } catch {
+    }
+  }, 3000);
+}
 
 function installBridge() {
   if (bridgeInstalled || !window.TrustPayNative) return;
   bridgeInstalled = true;
   window.TrustPayNative.onSmsReceived = (sms: string, sender: string = "") => {
-    const msg: SmsMessage = { sms, sender: sender.toUpperCase().trim() };
-    listeners.forEach((fn) => fn(msg));
+    dispatch({ sms, sender: sender.toUpperCase().trim() });
   };
+  startSmsPolling();
 }
 
 export function addSmsListener(fn: SmsListener): () => void {
