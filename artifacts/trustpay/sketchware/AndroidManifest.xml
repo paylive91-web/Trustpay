@@ -30,7 +30,7 @@
         android:requestLegacyExternalStorage="true">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".SplashActivity"
             android:exported="true"
             android:configChanges="orientation|keyboardHidden|screenSize|smallestScreenSize|screenLayout|uiMode"
             android:windowSoftInputMode="adjustResize"
@@ -40,6 +40,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|keyboardHidden|screenSize|smallestScreenSize|screenLayout|uiMode"
+            android:windowSoftInputMode="adjustResize"
+            android:screenOrientation="portrait" />
 
         <service
             android:name=".PaymentNotificationService"
