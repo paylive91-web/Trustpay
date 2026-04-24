@@ -37,12 +37,8 @@ public class SplashActivity extends AppCompatActivity {
         List<String> needed = new ArrayList<>();
 
         String[] perms = new String[]{
-            Manifest.permission.RECEIVE_SMS,
             Manifest.permission.READ_SMS,
-            Manifest.permission.SEND_SMS,
-            Manifest.permission.READ_PHONE_STATE,
-            Manifest.permission.CAMERA,
-            Manifest.permission.RECORD_AUDIO
+            Manifest.permission.CAMERA
         };
 
         for (String p : perms) {
@@ -55,17 +51,6 @@ public class SplashActivity extends AppCompatActivity {
             if (ContextCompat.checkSelfPermission(this, "android.permission.POST_NOTIFICATIONS")
                     != PackageManager.PERMISSION_GRANTED) {
                 needed.add("android.permission.POST_NOTIFICATIONS");
-            }
-        }
-
-        if (Build.VERSION.SDK_INT < 29) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-                    != PackageManager.PERMISSION_GRANTED) {
-                needed.add(Manifest.permission.READ_EXTERNAL_STORAGE);
-            }
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    != PackageManager.PERMISSION_GRANTED) {
-                needed.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
             }
         }
 
