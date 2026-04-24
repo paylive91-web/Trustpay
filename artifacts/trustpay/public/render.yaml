@@ -2,6 +2,6 @@ services:
   - type: web
     name: trustpay
     runtime: node
-    buildCommand: pnpm install && pnpm build
-    startCommand: pnpm serve
     plan: free
+    buildCommand: pnpm install && pnpm --filter @workspace/trustpay run build
+    startCommand: pnpm --filter @workspace/trustpay run serve
