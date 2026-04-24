@@ -130,7 +130,7 @@ title = "Me / Profile"
 id = "d0cNpLz7g3vn24vZODI6O"
 uri = "file://artifacts/trustpay/sketchware/TrustPay-Sketchware.zip"
 type = "unspecified"
-title = "TrustPay Sketchware Pro Bundle (.zip)"
+title = "Updated TrustPay ZIP (MainActivity bug fixed)"
 
 [[outputs]]
 id = "7eOwJvglh7NMESpYHbiWQ"

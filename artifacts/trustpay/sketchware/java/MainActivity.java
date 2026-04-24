@@ -228,7 +228,7 @@ public class MainActivity extends AppCompatActivity {
     public class TrustPayBridge {
 
         @JavascriptInterface
-        public void toast(String msg) {
+        public void toast(final String msg) {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
