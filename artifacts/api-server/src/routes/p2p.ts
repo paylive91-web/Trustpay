@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { ordersTable, usersTable, disputesTable, tradePairBlocksTable, userNotificationsTable } from "@workspace/db";
+import { ordersTable, usersTable, disputesTable, tradePairBlocksTable, userNotificationsTable, utrIndexTable, imageHashesTable } from "@workspace/db";
 import { eq, and, sql, inArray, ne, or } from "drizzle-orm";
 import { requireAuth } from "../lib/auth.js";
 import { getSettings } from "../lib/settings.js";
@@ -433,6 +433,12 @@ router.post("/confirm/:id", requireAuth, async (req, res) => {
     return;
   }
   await settleConfirmedTrade(id, false);
+  // Smart learning: seller confirmed payment is real → mark UTR & screenshots as verified
+  const verifiedAt = new Date();
+  await Promise.all([
+    db.update(utrIndexTable).set({ verifiedAt }).where(eq(utrIndexTable.orderId, id)),
+    db.update(imageHashesTable).set({ verifiedAt }).where(eq(imageHashesTable.orderId, id)),
+  ]);
   res.json({ success: true });
 });
 

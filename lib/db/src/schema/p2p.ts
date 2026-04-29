@@ -86,6 +86,7 @@ export const utrIndexTable = pgTable("utr_index", {
   utr: text("utr").notNull(),
   userId: integer("user_id").notNull().references(() => usersTable.id),
   orderId: integer("order_id").notNull().references(() => ordersTable.id),
+  verifiedAt: timestamp("verified_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -95,6 +96,7 @@ export const imageHashesTable = pgTable("image_hashes", {
   userId: integer("user_id").notNull().references(() => usersTable.id),
   orderId: integer("order_id").notNull().references(() => ordersTable.id),
   kind: text("kind").notNull(), // "screenshot" | "recording"
+  verifiedAt: timestamp("verified_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

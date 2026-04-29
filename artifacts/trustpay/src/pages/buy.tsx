@@ -197,7 +197,7 @@ export default function Buy() {
       <div className="px-4 pt-3"><DisputePauseBanner /></div>
       <div className="p-4 space-y-4">
         {myBuy ? (
-          <ActiveBuyCard buy={myBuy} refetch={refetchBuy} />
+          <ActiveBuyCard buy={myBuy} refetch={refetchBuy} user={user} />
         ) : (
           <>
             <div className="flex items-center justify-between">
@@ -224,7 +224,7 @@ export default function Buy() {
   );
 }
 
-function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
+function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; user?: any }) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const { data: settings } = useGetAppSettings();
@@ -311,8 +311,20 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
 
   const qrUrl = makeQrUrl(buy.upiId, buy.amount);
 
+  const warnCount = user?.fraudWarningCount ?? 0;
+  const warningsLeft = 3 - warnCount;
+
   return (
     <div className="space-y-3">
+      {warnCount > 0 && warnCount < 3 && (
+        <div className="flex items-start gap-2 bg-orange-50 border border-orange-300 rounded-2xl px-4 py-3 text-sm text-orange-800">
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-orange-500" />
+          <div>
+            <div className="font-semibold">Warning ({warnCount}/3): Suspicious payment activity detected.</div>
+            <div className="text-xs mt-0.5">{warningsLeft} more warning{warningsLeft > 1 ? "s" : ""} will freeze your account. Please submit valid payment proof.</div>
+          </div>
+        </div>
+      )}
       <Card className="rounded-[28px] shadow-xl border border-white/70 bg-gradient-to-br from-white via-sky-50 to-indigo-50 overflow-hidden">
         <CardContent className="p-4 space-y-4 relative">
           <div className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-sky-300 to-transparent" />
@@ -407,7 +419,7 @@ function ActiveBuyCard({ buy, refetch }: { buy: any; refetch: () => void }) {
                 {utr && !utrError(utr) && (
                   <p className="text-xs text-emerald-600 flex items-center gap-1">
                     <CheckCircle className="h-3 w-3" />
-                    UTR format sahi hai
+                    UTR format is valid
                   </p>
                 )}
               </div>
