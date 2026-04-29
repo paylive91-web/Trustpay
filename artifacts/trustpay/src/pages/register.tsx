@@ -142,11 +142,11 @@ export default function Register() {
   const apkDownloadUrl = (brandSettings as any)?.apkDownloadUrl || "https://github.com/paylive91-web/Trustpay/releases/download/v1.0/base.apk";
 
   useEffect(() => {
-    if (user && !isUserLoading) setLocation("/");
+    if (user && !isUserLoading && !showInstallPopup) setLocation("/");
     const params = new URLSearchParams(window.location.search);
     const ref = params.get("ref");
     if (ref) setReferralCode(ref.toUpperCase());
-  }, [user, isUserLoading, setLocation]);
+  }, [user, isUserLoading, setLocation, showInstallPopup]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
