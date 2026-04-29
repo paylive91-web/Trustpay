@@ -149,3 +149,9 @@ id = "BGapLy-1lMJgpzeW-qZS4"
 uri = "file://artifacts/trustpay/sketchware/AndroidManifest.xml"
 type = "unspecified"
 title = "AndroidManifest.xml — download karo"
+
+[[outputs]]
+id = "VNIBqVUvvVy5mwLY8Z35R"
+uri = "file://artifacts/trustpay/sketchware/TrustPay-Splash-Files.tar.gz"
+type = "unspecified"
+title = "TrustPay Splash Files - Download karo"
