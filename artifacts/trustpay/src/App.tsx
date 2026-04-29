@@ -33,6 +33,7 @@ import AdminAgents from "@/pages/admin/agents";
 import AdminReports from "@/pages/admin/reports";
 import AdminActivityLog from "@/pages/admin/activity-log";
 import AdminSmsLearning from "@/pages/admin/sms-learning";
+import AdminPaymentLearning from "@/pages/admin/payment-learning";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,7 @@ function Router() {
       <Route path="/admin/reports" component={AdminReports} />
       <Route path="/admin/activity-log" component={AdminActivityLog} />
       <Route path="/admin/sms-learning" component={AdminSmsLearning} />
+      <Route path="/admin/payment-learning" component={AdminPaymentLearning} />
 
       <Route component={NotFound} />
     </Switch>

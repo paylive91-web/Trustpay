@@ -584,4 +584,29 @@ router.get("/matching-status", requireAuth, async (req, res) => {
   });
 });
 
+router.post("/check-screenshot", requireAuth, async (req, res) => {
+  const { screenshotUrl } = req.body || {};
+  if (!screenshotUrl || screenshotUrl.length < 100) {
+    res.status(400).json({ error: "No screenshot provided" });
+    return;
+  }
+  try {
+    const { analyzeImage, checkDuplicate } = await import("../lib/imageAnalysis.js");
+    const analysis = await analyzeImage(screenshotUrl);
+    const dupResult = await checkDuplicate(analysis.hash, analysis.pHash, (req as any).user.id, -1, "screenshot");
+    res.json({
+      isExactDuplicate: dupResult.isExactDuplicate,
+      isSimilarDuplicate: dupResult.isSimilarDuplicate,
+      isSameUser: dupResult.isSameUser,
+      pHashDistance: dupResult.pHashDistance,
+      qualityIssue: analysis.qualityIssue,
+      hasPaymentIndicators: analysis.hasPaymentIndicators,
+      width: analysis.width,
+      height: analysis.height,
+    });
+  } catch (e: any) {
+    res.json({ isExactDuplicate: false, isSimilarDuplicate: false, isSameUser: false, qualityIssue: null, hasPaymentIndicators: true });
+  }
+});
+
 export default router;

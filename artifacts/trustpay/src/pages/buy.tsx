@@ -233,6 +233,13 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
   const [screenshotUrl, setScreenshot] = useState("");
   const [recordingUrl, setRecording] = useState("");
   const [uploading, setUploading] = useState<"shot" | "rec" | null>(null);
+  const [screenshotCheck, setScreenshotCheck] = useState<{
+    isExactDuplicate?: boolean;
+    isSimilarDuplicate?: boolean;
+    qualityIssue?: string | null;
+    hasPaymentIndicators?: boolean;
+    checking?: boolean;
+  } | null>(null);
   const [qrError, setQrError] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
 
@@ -276,7 +283,18 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
     setUploading(kind);
     try {
       const url = await fileToDataUrl(f);
-      if (kind === "shot") setScreenshot(url); else setRecording(url);
+      if (kind === "shot") {
+        setScreenshot(url);
+        setScreenshotCheck({ checking: true });
+        try {
+          const res = await api("/p2p/check-screenshot", { method: "POST", body: JSON.stringify({ screenshotUrl: url }) });
+          setScreenshotCheck(res);
+        } catch {
+          setScreenshotCheck(null);
+        }
+      } else {
+        setRecording(url);
+      }
     } finally { setUploading(null); }
   }
 
@@ -433,6 +451,29 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
                   <div className="text-[11px] text-muted-foreground">JPG / PNG · max 5 MB</div>
                   <input type="file" accept="image/*" onChange={(e) => handleFile(e, "shot")} className="hidden" />
                 </label>
+                {screenshotCheck?.checking && (
+                  <p className="text-xs text-sky-600 flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Verifying screenshot...
+                  </p>
+                )}
+                {screenshotCheck && !screenshotCheck.checking && (screenshotCheck.isExactDuplicate || screenshotCheck.isSimilarDuplicate) && (
+                  <p className="text-xs text-red-600 flex items-center gap-1 font-semibold">
+                    <AlertTriangle className="h-3 w-3" />
+                    {screenshotCheck.isExactDuplicate
+                      ? "This screenshot has already been used in a previous transaction."
+                      : "This screenshot looks very similar to one already used — please upload a fresh screenshot."}
+                  </p>
+                )}
+                {screenshotCheck && !screenshotCheck.checking && screenshotCheck.qualityIssue && (
+                  <p className="text-xs text-orange-600 flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" /> {screenshotCheck.qualityIssue}
+                  </p>
+                )}
+                {screenshotCheck && !screenshotCheck.checking && !screenshotCheck.isExactDuplicate && !screenshotCheck.isSimilarDuplicate && !screenshotCheck.qualityIssue && (
+                  <p className="text-xs text-emerald-600 flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3" /> Screenshot looks valid
+                  </p>
+                )}
               </div>
               <div className="text-[11px] text-muted-foreground bg-gradient-to-r from-slate-50 to-rose-50 rounded-xl p-2.5 leading-snug border border-rose-100">
                 Optional: also record your screen while paying. You'll need it only if a dispute opens later.

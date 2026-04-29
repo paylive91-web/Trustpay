@@ -93,6 +93,11 @@ export const utrIndexTable = pgTable("utr_index", {
 export const imageHashesTable = pgTable("image_hashes", {
   id: serial("id").primaryKey(),
   hash: text("hash").notNull(),
+  pHash: text("p_hash"),
+  width: integer("width"),
+  height: integer("height"),
+  fileSize: integer("file_size"),
+  hasPaymentIndicators: boolean("has_payment_indicators"),
   userId: integer("user_id").notNull().references(() => usersTable.id),
   orderId: integer("order_id").notNull().references(() => ordersTable.id),
   kind: text("kind").notNull(), // "screenshot" | "recording"

@@ -1331,4 +1331,31 @@ router.post("/sms-learning/queue/:id/safe-sender", requireAdmin, async (req, res
   res.json({ ok: true });
 });
 
+router.get("/payment-learning", requireAdmin, async (_req, res) => {
+  const { getLearningStats } = await import("../lib/imageAnalysis.js");
+  const { db } = await import("@workspace/db");
+  const { utrIndexTable } = await import("@workspace/db");
+  const { isNotNull } = await import("drizzle-orm");
+
+  const imgStats = await getLearningStats();
+
+  const allUtrs = await db.select().from(utrIndexTable);
+  const verifiedUtrs = allUtrs.filter((u: any) => u.verifiedAt);
+  const uniqueUtrs = new Set(allUtrs.map((u: any) => u.utr)).size;
+  const duplicateUtrAttempts = allUtrs.length - uniqueUtrs;
+
+  res.json({
+    screenshots: imgStats,
+    utrs: {
+      total: allUtrs.length,
+      verified: verifiedUtrs.length,
+      unique: uniqueUtrs,
+      duplicateAttempts: Math.max(0, duplicateUtrAttempts),
+      learningProgress: allUtrs.length > 0
+        ? Math.round((verifiedUtrs.length / allUtrs.length) * 100)
+        : 0,
+    },
+  });
+});
+
 export default router;

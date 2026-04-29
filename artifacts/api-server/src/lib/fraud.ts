@@ -244,23 +244,46 @@ export async function checkUtrFraud(utr: string, userId: number, orderId: number
   return issues;
 }
 
-export async function checkImageHash(dataUrl: string, userId: number, orderId: number, kind: "screenshot" | "recording"): Promise<string[]> {
+export async function checkImageHash(dataUrl: string, userId: number, orderId: number, kind: "screenshot" | "recording", ocrText?: string): Promise<string[]> {
   const issues: string[] = [];
   if (!dataUrl || dataUrl.length < 100) return issues;
-  const hash = hashString(dataUrl.slice(0, 5000));
-  // Extended window: any duplicate (not just recent)
-  const dupes = await db.select().from(imageHashesTable).where(and(eq(imageHashesTable.hash, hash), eq(imageHashesTable.kind, kind)));
-  if (dupes.length > 0) {
-    const otherUser = dupes.find((d) => d.userId !== userId);
-    if (otherUser) {
+
+  const { analyzeImage, checkDuplicate } = await import("./imageAnalysis.js");
+  const analysis = await analyzeImage(dataUrl, ocrText);
+
+  // Quality check
+  if (analysis.qualityIssue && kind === "screenshot") {
+    issues.push("low_quality_screenshot");
+    await logAlert(userId, orderId, "ocr_unreadable", "warn",
+      `Screenshot quality issue: ${analysis.qualityIssue}`);
+  }
+
+  // Duplicate check (exact + perceptual)
+  const dupResult = await checkDuplicate(analysis.hash, analysis.pHash, userId, orderId, kind);
+  if (dupResult.isExactDuplicate || dupResult.isSimilarDuplicate) {
+    const label = dupResult.isExactDuplicate ? "identical" : `visually similar (distance: ${dupResult.pHashDistance})`;
+    if (!dupResult.isSameUser) {
       issues.push(`duplicate_${kind}_other_user`);
-      await logAlert(userId, orderId, `duplicate_${kind}_cross_user`, "critical", `${kind} matches user #${otherUser.userId} order #${otherUser.orderId}`);
+      await logAlert(userId, orderId, `duplicate_${kind}_cross_user`, "critical",
+        `${kind} is ${label} to user #${dupResult.duplicateUserId} order #${dupResult.duplicateOrderId}`);
     } else {
       issues.push(`duplicate_${kind}_same_user`);
-      await logAlert(userId, orderId, `duplicate_${kind}_same_user`, "warn", `Same user reused ${kind}`);
+      await logAlert(userId, orderId, `duplicate_${kind}_same_user`, "warn",
+        `Same user reused ${kind} (${label})`);
     }
   }
-  await db.insert(imageHashesTable).values({ hash, userId, orderId, kind });
+
+  await db.insert(imageHashesTable).values({
+    hash: analysis.hash,
+    pHash: analysis.pHash,
+    width: analysis.width,
+    height: analysis.height,
+    fileSize: analysis.fileSize,
+    hasPaymentIndicators: analysis.hasPaymentIndicators,
+    userId,
+    orderId,
+    kind,
+  });
   return issues;
 }
 
