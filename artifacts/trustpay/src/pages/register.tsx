@@ -106,7 +106,7 @@ function PWAInstallPopup({ onDownload, appName, logoUrl }: { onDownload: () => v
               <div className="text-center">
                 <p className="text-[17px] font-bold text-slate-800 mb-1">Download Started!</p>
                 <p className="text-[13px] text-slate-500 leading-relaxed">
-                  Install the APK, then open the app and <span className="font-semibold text-indigo-600">Login</span> with your username and password.
+                  Install the APK, then open the app and <span className="font-semibold text-indigo-600">Login</span> with your mobile number and password.
                 </p>
               </div>
               <div className="w-full rounded-2xl bg-indigo-50 border border-indigo-100 px-4 py-3 text-center">
