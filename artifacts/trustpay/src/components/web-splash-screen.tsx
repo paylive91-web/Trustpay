@@ -3,10 +3,11 @@ import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_177633578551
 
 export function WebSplashScreen({ onDone }: { onDone: () => void }) {
   const [fading, setFading] = useState(false);
+  const [logoReady, setLogoReady] = useState(false);
 
   useEffect(() => {
-    const fadeTimer = setTimeout(() => setFading(true), 2000);
-    const doneTimer = setTimeout(() => onDone(), 2500);
+    const fadeTimer = setTimeout(() => setFading(true), 2500);
+    const doneTimer = setTimeout(() => onDone(), 3100);
     return () => {
       clearTimeout(fadeTimer);
       clearTimeout(doneTimer);
@@ -23,131 +24,157 @@ export function WebSplashScreen({ onDone }: { onDone: () => void }) {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        background:
-          "radial-gradient(circle at top, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 32%), linear-gradient(180deg, #3b0f7a 0%, #5b21b6 45%, #6d28d9 100%)",
-        transition: "opacity 0.5s ease",
+        background: "linear-gradient(160deg, #1a0533 0%, #2d0d6e 35%, #4c1d95 65%, #1e0e47 100%)",
+        transition: "opacity 0.6s cubic-bezier(0.4,0,0.2,1)",
         opacity: fading ? 0 : 1,
         pointerEvents: fading ? "none" : "all",
+        overflow: "hidden",
       }}
     >
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background:
-            "radial-gradient(circle at 50% 30%, rgba(255,255,255,0.16), transparent 38%), radial-gradient(circle at 20% 80%, rgba(255,255,255,0.08), transparent 22%), radial-gradient(circle at 80% 75%, rgba(255,255,255,0.08), transparent 18%)",
-        }}
-      />
-      <div
-        style={{
-          position: "relative",
-          textAlign: "center",
-          padding: "28px 22px 34px",
+      <style>{`
+        @keyframes splashProgress {
+          from { transform: scaleX(0); }
+          to { transform: scaleX(1); }
+        }
+        @keyframes logoPulse {
+          0%,100% { box-shadow: 0 0 0 0 rgba(167,139,250,0), 0 20px 60px rgba(0,0,0,0.5); }
+          50% { box-shadow: 0 0 0 18px rgba(167,139,250,0.12), 0 20px 60px rgba(0,0,0,0.5); }
+        }
+        @keyframes floatUp {
+          from { opacity: 0; transform: translateY(28px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes shimmer {
+          0% { transform: translateX(-100%) rotate(30deg); }
+          100% { transform: translateX(300%) rotate(30deg); }
+        }
+        @keyframes glowOrb {
+          0%,100% { opacity: 0.55; transform: scale(1); }
+          50% { opacity: 0.75; transform: scale(1.08); }
+        }
+      `}</style>
+
+      {/* Background glow orbs */}
+      <div style={{
+        position: "absolute", top: "-18%", left: "50%", transform: "translateX(-50%)",
+        width: 360, height: 360, borderRadius: "50%",
+        background: "radial-gradient(circle, rgba(139,92,246,0.45) 0%, transparent 70%)",
+        animation: "glowOrb 4s ease-in-out infinite",
+        pointerEvents: "none",
+      }} />
+      <div style={{
+        position: "absolute", bottom: "-12%", right: "-10%",
+        width: 260, height: 260, borderRadius: "50%",
+        background: "radial-gradient(circle, rgba(109,40,217,0.35) 0%, transparent 70%)",
+        animation: "glowOrb 5s ease-in-out infinite 1s",
+        pointerEvents: "none",
+      }} />
+      <div style={{
+        position: "absolute", bottom: "10%", left: "-8%",
+        width: 200, height: 200, borderRadius: "50%",
+        background: "radial-gradient(circle, rgba(167,139,250,0.2) 0%, transparent 70%)",
+        animation: "glowOrb 6s ease-in-out infinite 2s",
+        pointerEvents: "none",
+      }} />
+
+      {/* Main content */}
+      <div style={{
+        position: "relative",
+        textAlign: "center",
+        animation: "floatUp 0.7s cubic-bezier(0.22,1,0.36,1) both",
+      }}>
+        {/* Logo container */}
+        <div style={{
+          width: 120, height: 120,
           borderRadius: 32,
-          background: "rgba(255,255,255,0.08)",
-          border: "1px solid rgba(255,255,255,0.16)",
-          boxShadow: "0 24px 80px rgba(0,0,0,0.28)",
-          backdropFilter: "blur(18px)",
-          WebkitBackdropFilter: "blur(18px)",
-          maxWidth: 340,
-          width: "calc(100% - 40px)",
-        }}
-      >
-        <div
-          style={{
-            width: 112,
-            height: 112,
-            borderRadius: 32,
-            background: "linear-gradient(180deg, rgba(255,255,255,0.28), rgba(255,255,255,0.12))",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            margin: "0 auto 22px",
-            boxShadow:
-              "inset 0 1px 0 rgba(255,255,255,0.35), 0 18px 40px rgba(0,0,0,0.28)",
-            position: "relative",
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              inset: 10,
-              borderRadius: 24,
-              background: "rgba(255,255,255,0.10)",
-              filter: "blur(1px)",
-            }}
-          />
+          background: "linear-gradient(145deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 100%)",
+          border: "1px solid rgba(255,255,255,0.22)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          margin: "0 auto 28px",
+          animation: "logoPulse 2.5s ease-in-out infinite",
+          position: "relative",
+          overflow: "hidden",
+          backdropFilter: "blur(12px)",
+        }}>
+          {/* Shimmer effect */}
+          <div style={{
+            position: "absolute", inset: 0,
+            background: "linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%)",
+            animation: "shimmer 2.2s ease-in-out infinite 0.5s",
+            pointerEvents: "none",
+          }} />
           <img
             src={logoPath}
             alt="TrustPay"
+            onLoad={() => setLogoReady(true)}
             style={{
-              width: 72,
-              height: 72,
+              width: 80, height: 80,
               objectFit: "contain",
-              position: "relative",
-              zIndex: 1,
-              filter: "drop-shadow(0 10px 18px rgba(0,0,0,0.22))",
+              borderRadius: 18,
+              opacity: logoReady ? 1 : 0,
+              transition: "opacity 0.3s ease",
             }}
           />
         </div>
 
-        <h1
-          style={{
-            color: "white",
-            fontSize: 34,
-            fontWeight: 800,
-            margin: "0 0 8px",
-            letterSpacing: "-0.8px",
-            fontFamily: "Inter, system-ui, sans-serif",
-            textShadow: "0 4px 22px rgba(0,0,0,0.24)",
-          }}
-        >
+        {/* App name */}
+        <h1 style={{
+          color: "white",
+          fontSize: 38,
+          fontWeight: 800,
+          margin: "0 0 10px",
+          letterSpacing: "-1px",
+          fontFamily: "Inter, system-ui, sans-serif",
+          textShadow: "0 2px 24px rgba(167,139,250,0.6)",
+          lineHeight: 1,
+        }}>
           TrustPay
         </h1>
-        <p
-          style={{
-            color: "rgba(255,255,255,0.82)",
-            fontSize: 13,
-            fontWeight: 700,
-            letterSpacing: "1.9px",
-            margin: 0,
-            fontFamily: "Inter, system-ui, sans-serif",
-          }}
-        >
-          SECURE P2P UPI TRADING
+
+        {/* Tagline */}
+        <p style={{
+          color: "rgba(196,181,253,0.9)",
+          fontSize: 11.5,
+          fontWeight: 700,
+          letterSpacing: "3px",
+          margin: "0 0 44px",
+          fontFamily: "Inter, system-ui, sans-serif",
+          textTransform: "uppercase",
+        }}>
+          Secure P2P UPI Trading
         </p>
 
-        <div style={{ marginTop: 34 }}>
-          <div
-            style={{
-              width: 92,
-              height: 6,
+        {/* Progress bar */}
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <div style={{
+            width: 120, height: 3,
+            borderRadius: 999,
+            background: "rgba(255,255,255,0.12)",
+            overflow: "hidden",
+          }}>
+            <div style={{
+              width: "100%", height: "100%",
               borderRadius: 999,
-              background: "rgba(255,255,255,0.18)",
-              margin: "0 auto",
-              overflow: "hidden",
-              boxShadow: "inset 0 1px 2px rgba(0,0,0,0.18)",
-            }}
-          >
-            <div
-              style={{
-                height: "100%",
-                borderRadius: 999,
-                background: "linear-gradient(90deg, #fff 0%, #f5d0fe 45%, #fff 100%)",
-                animation: "splashProgress 2s ease forwards",
-                boxShadow: "0 0 18px rgba(255,255,255,0.55)",
-              }}
-            />
+              background: "linear-gradient(90deg, #a78bfa, #7c3aed, #c4b5fd)",
+              transformOrigin: "left center",
+              animation: "splashProgress 2.5s cubic-bezier(0.4,0,0.2,1) forwards",
+              boxShadow: "0 0 12px rgba(167,139,250,0.8)",
+            }} />
           </div>
         </div>
       </div>
 
-      <style>{`
-        @keyframes splashProgress {
-          from { width: 0%; }
-          to { width: 100%; }
-        }
-      `}</style>
+      {/* Bottom brand */}
+      <div style={{
+        position: "absolute", bottom: 40,
+        color: "rgba(167,139,250,0.45)",
+        fontSize: 11,
+        fontFamily: "Inter, system-ui, sans-serif",
+        letterSpacing: "1.5px",
+        fontWeight: 500,
+      }}>
+        POWERED BY TRUSTPAY
+      </div>
     </div>
   );
 }
