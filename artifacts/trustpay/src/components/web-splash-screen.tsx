@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import logoPath from "@assets/trustpay-logo-transparent.png";
+import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_1776335785514.png";
 
 export function WebSplashScreen({ onDone }: { onDone: () => void }) {
   const [fading, setFading] = useState(false);
@@ -68,33 +68,31 @@ export function WebSplashScreen({ onDone }: { onDone: () => void }) {
         textAlign: "center",
         animation: "floatIn 0.7s cubic-bezier(0.22,1,0.36,1) both",
       }}>
-        {/* Logo — transparent, no box */}
+        {/* Logo card */}
         <div style={{
-          width: 150, height: 150,
+          width: 120, height: 120,
+          borderRadius: 30,
+          background: "linear-gradient(145deg, rgba(30,10,80,0.85) 0%, rgba(60,20,120,0.75) 100%)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.1)",
           display: "flex", alignItems: "center", justifyContent: "center",
           margin: "0 auto 26px",
           animation: "logoIn 0.8s cubic-bezier(0.22,1,0.36,1) both",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          overflow: "hidden",
           position: "relative",
         }}>
-          {/* Soft glow ring behind logo */}
-          <div style={{
-            position: "absolute", inset: -10,
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(124,58,237,0.4) 0%, transparent 70%)",
-            filter: "blur(12px)",
-          }} />
           <img
             src={logoPath}
             alt="TrustPay"
             onLoad={() => setLogoReady(true)}
             style={{
-              width: 140, height: 140,
+              width: 82, height: 82,
               objectFit: "contain",
+              borderRadius: 14,
               opacity: logoReady ? 1 : 0,
               transition: "opacity 0.3s ease",
-              position: "relative",
-              zIndex: 1,
-              filter: "drop-shadow(0 8px 24px rgba(99,102,241,0.55)) drop-shadow(0 2px 8px rgba(0,0,0,0.4))",
             }}
           />
         </div>
