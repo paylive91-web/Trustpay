@@ -137,3 +137,15 @@ id = "7eOwJvglh7NMESpYHbiWQ"
 uri = "file://artifacts/trustpay/sketchware/README_HINGLISH.md"
 type = "text"
 title = "Setup Guide (Hinglish)"
+
+[[outputs]]
+id = "i9Kaoayt8wK64kRCyArvj"
+uri = "file://artifacts/trustpay/sketchware/SplashActivity.txt"
+type = "text"
+title = "SplashActivity.java (isko .txt se .java rename karo)"
+
+[[outputs]]
+id = "BGapLy-1lMJgpzeW-qZS4"
+uri = "file://artifacts/trustpay/sketchware/AndroidManifest.xml"
+type = "unspecified"
+title = "AndroidManifest.xml"
