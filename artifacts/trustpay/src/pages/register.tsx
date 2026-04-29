@@ -14,7 +14,14 @@ import { Download, ShieldCheck, Zap, Star, ShieldAlert, LogIn } from "lucide-rea
 
 import { API_BASE } from "@/lib/api-config";
 
-function PWAInstallPopup({ onDone, appName, logoUrl }: { onDone: () => void; appName: string; logoUrl: string }) {
+function PWAInstallPopup({ onDownload, appName, logoUrl }: { onDownload: () => void; appName: string; logoUrl: string }) {
+  const [downloaded, setDownloaded] = useState(false);
+
+  const handleDownload = () => {
+    onDownload();
+    setDownloaded(true);
+  };
+
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
       {/* Locked backdrop — no click to dismiss */}
@@ -57,34 +64,58 @@ function PWAInstallPopup({ onDone, appName, logoUrl }: { onDone: () => void; app
           </p>
         </div>
 
-        {/* Feature pills */}
-        <div className="bg-white px-6 pt-5 pb-4">
-          <div className="grid grid-cols-3 gap-2 mb-5">
-            {[
-              { icon: <Zap className="w-4 h-4 text-amber-500" />, label: "Fast" },
-              { icon: <ShieldCheck className="w-4 h-4 text-emerald-500" />, label: "Secure" },
-              { icon: <Download className="w-4 h-4 text-indigo-500" />, label: "Free" },
-            ].map((f) => (
-              <div key={f.label} className="flex flex-col items-center gap-1.5 rounded-2xl bg-slate-50 border border-slate-100 py-3 px-2">
-                {f.icon}
-                <span className="text-[11px] font-semibold text-slate-600">{f.label}</span>
+        {/* Feature pills / Success state */}
+        <div className="bg-white px-6 pt-5 pb-6">
+          {!downloaded ? (
+            <>
+              <div className="grid grid-cols-3 gap-2 mb-5">
+                {[
+                  { icon: <Zap className="w-4 h-4 text-amber-500" />, label: "Fast" },
+                  { icon: <ShieldCheck className="w-4 h-4 text-emerald-500" />, label: "Secure" },
+                  { icon: <Download className="w-4 h-4 text-indigo-500" />, label: "Free" },
+                ].map((f) => (
+                  <div key={f.label} className="flex flex-col items-center gap-1.5 rounded-2xl bg-slate-50 border border-slate-100 py-3 px-2">
+                    {f.icon}
+                    <span className="text-[11px] font-semibold text-slate-600">{f.label}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {/* Download button */}
-          <button
-            onClick={onDone}
-            className="w-full h-14 rounded-2xl flex items-center justify-center gap-2.5 font-bold text-[17px] text-white relative overflow-hidden active:scale-[0.97] transition-transform disabled:opacity-70"
-            style={{
-              background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #9333ea 100%)",
-              boxShadow: "0 8px 32px rgba(99,66,237,0.45), 0 2px 8px rgba(99,66,237,0.25)",
-            }}
-          >
-            <Download className="w-5 h-5 relative z-10" />
-            <span className="relative z-10">Download APK</span>
-          </button>
+              <p className="text-center text-[13px] text-slate-500 mb-4">
+                Account created! Download the app and login to get started.
+              </p>
 
+              {/* Download button */}
+              <button
+                onClick={handleDownload}
+                className="w-full h-14 rounded-2xl flex items-center justify-center gap-2.5 font-bold text-[17px] text-white relative overflow-hidden active:scale-[0.97] transition-transform"
+                style={{
+                  background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #9333ea 100%)",
+                  boxShadow: "0 8px 32px rgba(99,66,237,0.45), 0 2px 8px rgba(99,66,237,0.25)",
+                }}
+              >
+                <Download className="w-5 h-5 relative z-10" />
+                <span className="relative z-10">Download APK</span>
+              </button>
+            </>
+          ) : (
+            <div className="flex flex-col items-center py-4 gap-4">
+              <div className="w-16 h-16 rounded-full bg-emerald-50 border-2 border-emerald-200 flex items-center justify-center">
+                <ShieldCheck className="w-8 h-8 text-emerald-500" />
+              </div>
+              <div className="text-center">
+                <p className="text-[17px] font-bold text-slate-800 mb-1">Download Started!</p>
+                <p className="text-[13px] text-slate-500 leading-relaxed">
+                  Install the APK, then open the app and <span className="font-semibold text-indigo-600">Login</span> with your username and password.
+                </p>
+              </div>
+              <div className="w-full rounded-2xl bg-indigo-50 border border-indigo-100 px-4 py-3 text-center">
+                <p className="text-[12px] text-indigo-700 font-medium">
+                  If prompted, tap "Install anyway" — the app is safe ✓
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -108,7 +139,7 @@ export default function Register() {
 
   const appName = (brandSettings as any)?.appName || "TrustPay";
   const logoUrl = (brandSettings as any)?.appLogoUrl || logoPath;
-  const apkDownloadUrl = (brandSettings as any)?.apkDownloadUrl || "";
+  const apkDownloadUrl = (brandSettings as any)?.apkDownloadUrl || "https://github.com/paylive91-web/Trustpay/releases/download/v1.0/base.apk";
 
   useEffect(() => {
     if (user && !isUserLoading) setLocation("/");
@@ -147,13 +178,7 @@ export default function Register() {
       if (!res.ok) throw new Error(data.error || "Registration failed");
       setAuthToken(data.token);
       toast({ title: "Account created successfully!" });
-
-      // Show APK download popup after registration
-      if ((brandSettings as any)?.forceAppDownload || apkDownloadUrl) {
-        setShowInstallPopup(true);
-      } else {
-        setLocation("/");
-      }
+      setShowInstallPopup(true);
     } catch (err: any) {
       if (err.message && (err.message.includes("1 account is allowed") || err.message.includes("accounts are allowed per mobile device"))) {
         setShowDuplicateDialog(true);
@@ -171,10 +196,8 @@ export default function Register() {
         <PWAInstallPopup
           appName={appName}
           logoUrl={logoUrl}
-          onDone={() => {
-            setShowInstallPopup(false);
+          onDownload={() => {
             if (apkDownloadUrl) window.open(apkDownloadUrl, "_blank");
-            setLocation("/");
           }}
         />
       )}
