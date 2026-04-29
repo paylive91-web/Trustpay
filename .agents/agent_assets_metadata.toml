@@ -155,3 +155,9 @@ id = "VNIBqVUvvVy5mwLY8Z35R"
 uri = "file://artifacts/trustpay/sketchware/TrustPay-Splash-Files.tar.gz"
 type = "unspecified"
 title = "TrustPay Splash Files (SplashActivity.java + AndroidManifest.xml)"
+
+[[outputs]]
+id = "vOljrII5ImYqXWEONZp5U"
+uri = "file://attached_assets/file_00000000da60720ba5a8a74acd96c937_1776335785514.png"
+type = "image"
+title = "TrustPay Logo - Download karo"
