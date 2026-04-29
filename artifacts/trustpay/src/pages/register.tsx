@@ -196,8 +196,13 @@ export default function Register() {
         <PWAInstallPopup
           appName={appName}
           logoUrl={logoUrl}
-          onDownload={() => {
-            if (apkDownloadUrl) window.open(apkDownloadUrl, "_blank");
+          onDownload={async () => {
+            const prompt = (window as any).__pwaPrompt;
+            if (prompt) {
+              await prompt.prompt();
+            } else if (apkDownloadUrl) {
+              window.open(apkDownloadUrl, "_blank");
+            }
           }}
         />
       )}
