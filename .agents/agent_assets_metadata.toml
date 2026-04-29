@@ -142,10 +142,10 @@ title = "Setup Guide (Hinglish)"
 id = "i9Kaoayt8wK64kRCyArvj"
 uri = "file://artifacts/trustpay/sketchware/SplashActivity.txt"
 type = "text"
-title = "SplashActivity.java (isko .txt se .java rename karo)"
+title = "SplashActivity.java — download karo, .java rename karo"
 
 [[outputs]]
 id = "BGapLy-1lMJgpzeW-qZS4"
 uri = "file://artifacts/trustpay/sketchware/AndroidManifest.xml"
 type = "unspecified"
-title = "AndroidManifest.xml"
+title = "AndroidManifest.xml — download karo"
