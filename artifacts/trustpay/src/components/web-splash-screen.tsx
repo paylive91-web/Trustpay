@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_1776335785514.png";
+import logoPath from "@assets/1000279069-removebg-preview_(1)_1777443970849.png";
 
 export function WebSplashScreen({ onDone }: { onDone: () => void }) {
   const [fading, setFading] = useState(false);
@@ -103,6 +103,28 @@ export function WebSplashScreen({ onDone }: { onDone: () => void }) {
             animation: "shimmer 2.2s ease-in-out infinite 0.5s",
             pointerEvents: "none",
           }} />
+          {/* White fill layer for dark tick area */}
+          <div style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 0,
+          }}>
+            <img
+              src={logoPath}
+              alt=""
+              aria-hidden
+              style={{
+                width: 80, height: 80,
+                objectFit: "contain",
+                filter: "brightness(0) invert(1)",
+                opacity: logoReady ? 0.35 : 0,
+                transition: "opacity 0.3s ease",
+              }}
+            />
+          </div>
           <img
             src={logoPath}
             alt="TrustPay"
@@ -110,9 +132,11 @@ export function WebSplashScreen({ onDone }: { onDone: () => void }) {
             style={{
               width: 80, height: 80,
               objectFit: "contain",
-              borderRadius: 18,
               opacity: logoReady ? 1 : 0,
               transition: "opacity 0.3s ease",
+              position: "relative",
+              zIndex: 1,
+              filter: "drop-shadow(0 4px 16px rgba(0,100,255,0.4))",
             }}
           />
         </div>
