@@ -101,12 +101,10 @@ export default function Invite() {
       // Text + link share
       try {
         await navigator.share({ title: "Join TrustPay", text: `Join TrustPay and start earning! 6% earning platform. Use my referral code: ${referralCode}`, url: shareUrl });
-        return;
       } catch {}
+    } else {
+      handleCopyLink();
     }
-    // Fallback: open WhatsApp share
-    const waText = encodeURIComponent(`Join TrustPay and start earning! 6% earning platform.\nUse my referral code: ${referralCode}\nDownload: ${shareUrl}`);
-    window.open(`https://wa.me/?text=${waText}`, "_blank");
   };
 
   if (isLoading) {
