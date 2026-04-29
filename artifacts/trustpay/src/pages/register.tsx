@@ -82,10 +82,10 @@ function PWAInstallPopup({ onDownload, appName, logoUrl }: { onDownload: () => v
               </div>
 
               <p className="text-center text-[13px] text-slate-500 mb-4">
-                Account created! Open the app and login to get started.
+                Account created! Download the app and login to get started.
               </p>
 
-              {/* Install button */}
+              {/* Download button */}
               <button
                 onClick={handleDownload}
                 className="w-full h-14 rounded-2xl flex items-center justify-center gap-2.5 font-bold text-[17px] text-white relative overflow-hidden active:scale-[0.97] transition-transform"
@@ -95,7 +95,7 @@ function PWAInstallPopup({ onDownload, appName, logoUrl }: { onDownload: () => v
                 }}
               >
                 <Download className="w-5 h-5 relative z-10" />
-                <span className="relative z-10">Install App</span>
+                <span className="relative z-10">Download APK</span>
               </button>
             </>
           ) : (
@@ -104,9 +104,14 @@ function PWAInstallPopup({ onDownload, appName, logoUrl }: { onDownload: () => v
                 <ShieldCheck className="w-8 h-8 text-emerald-500" />
               </div>
               <div className="text-center">
-                <p className="text-[17px] font-bold text-slate-800 mb-1">App Ready!</p>
+                <p className="text-[17px] font-bold text-slate-800 mb-1">Download Started!</p>
                 <p className="text-[13px] text-slate-500 leading-relaxed">
-                  Login with your mobile number and password to start using <span className="font-semibold text-indigo-600">TrustPay</span>.
+                  Install the APK, then open the app and <span className="font-semibold text-indigo-600">Login</span> with your mobile number and password.
+                </p>
+              </div>
+              <div className="w-full rounded-2xl bg-indigo-50 border border-indigo-100 px-4 py-3 text-center">
+                <p className="text-[12px] text-indigo-700 font-medium">
+                  If prompted, tap "Install anyway" — the app is safe ✓
                 </p>
               </div>
             </div>
