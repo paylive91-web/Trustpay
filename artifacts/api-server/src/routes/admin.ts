@@ -4,7 +4,7 @@ import { db } from "@workspace/db";
 import { usersTable, ordersTable, transactionsTable, depositTasksTable, fraudAlertsTable, trustEventsTable, highValueEventsTable, userNotificationsTable, deviceFingerprintsTable, userUpiIdsTable, disputesTable, utrIndexTable, imageHashesTable, referralsTable, adminLogsTable, tradePairBlocksTable, smsLearningQueueTable, smsSafeSendersTable, smsCandidatePatternsTable, smsActivePatternsTable } from "@workspace/db";
 import { eq, and, sql, inArray, or, desc, gte, lte } from "drizzle-orm";
 import { signToken, requireAdmin, formatUser } from "../lib/auth.js";
-import { getSetting, getAllSettings, setSetting } from "../lib/settings.js";
+import { getSetting, getAllSettings, setSetting, setSettings } from "../lib/settings.js";
 import { listFraudRules, setFraudRuleEnabled } from "../lib/fraud.js";
 import { proposePatterns, normalizeSenderKey, buildContextRegex } from "../lib/sms-bridge.js";
 import { getSmsLearningStatus, runSmsAutoCleanup } from "../lib/sms-cleanup.js";
@@ -545,35 +545,31 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
       }
     }
   }
-  const map: Record<string, any> = {
-    upiId: b.upiId, upiName: b.upiName,
-    popupMessage: b.popupMessage, popupImageUrl: b.popupImageUrl,
-    telegramLink: b.telegramLink, inviteShareImageUrl: b.inviteShareImageUrl,
-    appName: b.appName, appLogoUrl: b.appLogoUrl, popupSoundUrl: b.popupSoundUrl,
-    buyRules: b.buyRules, sellRules: b.sellRules,
-    buyRulesImageUrl: b.buyRulesImageUrl, sellRulesImageUrl: b.sellRulesImageUrl,
-    chunkMin: b.chunkMin, chunkMax: b.chunkMax,
-    adminChunkMin: b.adminChunkMin, adminChunkMax: b.adminChunkMax,
-    newUserChunkCap: b.newUserChunkCap, newUserTradeThreshold: b.newUserTradeThreshold,
-    buyLockMinutes: b.buyLockMinutes, sellerConfirmMinutes: b.sellerConfirmMinutes,
-    disputeWindowHours: b.disputeWindowHours,
-    sellRewardPercent: b.sellRewardPercent,
-    deviceRegistrationLimit: b.deviceRegistrationLimit,
-    smsAutoDeleteEnabled: b.smsAutoDeleteEnabled,
-    highValueThreshold: b.highValueThreshold, highValueCriticalThreshold: b.highValueCriticalThreshold,
-    platformCommissionPerChunk: b.platformCommissionPerChunk,
-    apkDownloadUrl: b.apkDownloadUrl, apkVersion: b.apkVersion,
-    forceAppDownload: typeof b.forceAppDownload === "boolean" ? String(b.forceAppDownload) : b.forceAppDownload,
-  };
-  for (const [k, v] of Object.entries(map)) {
-    if (v != null) await setSetting(k, String(v));
-  }
-  if (b.multipleUpiIds != null) await setSetting("multipleUpiIds", JSON.stringify(b.multipleUpiIds));
-  if (b.announcements != null) await setSetting("announcements", JSON.stringify(b.announcements));
-  if (b.bannerImages != null) await setSetting("bannerImages", JSON.stringify(b.bannerImages));
-  if (cleanedTiers) {
-    await setSetting("feeTiers", JSON.stringify(cleanedTiers));
-  }
+  const scalarMap: Record<string, string> = {};
+  const addScalar = (k: string, v: any) => { if (v != null) scalarMap[k] = String(v); };
+  addScalar("upiId", b.upiId); addScalar("upiName", b.upiName);
+  addScalar("popupMessage", b.popupMessage); addScalar("popupImageUrl", b.popupImageUrl);
+  addScalar("telegramLink", b.telegramLink); addScalar("inviteShareImageUrl", b.inviteShareImageUrl);
+  addScalar("appName", b.appName); addScalar("appLogoUrl", b.appLogoUrl); addScalar("popupSoundUrl", b.popupSoundUrl);
+  addScalar("buyRules", b.buyRules); addScalar("sellRules", b.sellRules);
+  addScalar("buyRulesImageUrl", b.buyRulesImageUrl); addScalar("sellRulesImageUrl", b.sellRulesImageUrl);
+  addScalar("chunkMin", b.chunkMin); addScalar("chunkMax", b.chunkMax);
+  addScalar("adminChunkMin", b.adminChunkMin); addScalar("adminChunkMax", b.adminChunkMax);
+  addScalar("newUserChunkCap", b.newUserChunkCap); addScalar("newUserTradeThreshold", b.newUserTradeThreshold);
+  addScalar("buyLockMinutes", b.buyLockMinutes); addScalar("sellerConfirmMinutes", b.sellerConfirmMinutes);
+  addScalar("disputeWindowHours", b.disputeWindowHours);
+  addScalar("sellRewardPercent", b.sellRewardPercent);
+  addScalar("deviceRegistrationLimit", b.deviceRegistrationLimit);
+  addScalar("smsAutoDeleteEnabled", b.smsAutoDeleteEnabled);
+  addScalar("highValueThreshold", b.highValueThreshold); addScalar("highValueCriticalThreshold", b.highValueCriticalThreshold);
+  addScalar("platformCommissionPerChunk", b.platformCommissionPerChunk);
+  addScalar("apkDownloadUrl", b.apkDownloadUrl); addScalar("apkVersion", b.apkVersion);
+  if (b.forceAppDownload != null) scalarMap["forceAppDownload"] = typeof b.forceAppDownload === "boolean" ? String(b.forceAppDownload) : b.forceAppDownload;
+  if (b.multipleUpiIds != null) scalarMap["multipleUpiIds"] = JSON.stringify(b.multipleUpiIds);
+  if (b.announcements != null) scalarMap["announcements"] = JSON.stringify(b.announcements);
+  if (b.bannerImages != null) scalarMap["bannerImages"] = JSON.stringify(b.bannerImages);
+  if (cleanedTiers) scalarMap["feeTiers"] = JSON.stringify(cleanedTiers);
+  await setSettings(scalarMap);
   if (Array.isArray(b.buyRewardTiers)) {
     const cleanedBuyTiers: Array<{ min: number; max: number; reward: number }> = [];
     for (const t of b.buyRewardTiers) {

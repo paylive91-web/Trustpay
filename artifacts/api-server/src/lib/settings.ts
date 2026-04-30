@@ -1,6 +1,6 @@
 import { db } from "@workspace/db";
 import { settingsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 const DEFAULT_SETTINGS: Record<string, string> = {
   upiId: "trustpay@upi",
@@ -110,12 +110,31 @@ export async function getAllSettings(): Promise<Record<string, string>> {
 
 export async function setSetting(key: string, value: string): Promise<void> {
   try {
-    const existing = await db.select().from(settingsTable).where(eq(settingsTable.key, key)).limit(1);
-    if (existing[0]) {
-      await db.update(settingsTable).set({ value, updatedAt: new Date() }).where(eq(settingsTable.key, key));
-    } else {
-      await db.insert(settingsTable).values({ key, value });
-    }
+    await db.insert(settingsTable)
+      .values({ key, value })
+      .onConflictDoUpdate({
+        target: settingsTable.key,
+        set: { value, updatedAt: sql`now()` },
+      });
+  } catch {
+    return;
+  }
+}
+
+export async function setSettings(entries: Record<string, string>): Promise<void> {
+  const pairs = Object.entries(entries).filter(([, v]) => v != null);
+  if (pairs.length === 0) return;
+  try {
+    await Promise.all(
+      pairs.map(([key, value]) =>
+        db.insert(settingsTable)
+          .values({ key, value })
+          .onConflictDoUpdate({
+            target: settingsTable.key,
+            set: { value, updatedAt: sql`now()` },
+          })
+      )
+    );
   } catch {
     return;
   }
