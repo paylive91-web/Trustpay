@@ -228,34 +228,51 @@ export default function Sell() {
                   <span className="text-xs bg-white/15 px-2.5 py-1 rounded-full">Idle</span>
                 )}
               </div>
-              <div className="flex items-center gap-2 text-white/80 text-xs uppercase tracking-widest">
-                <Sparkles className="w-3.5 h-3.5" /> Sell Matching
-              </div>
-              <div className="mt-3 text-3xl sm:text-4xl font-black tracking-tight">
-                {isMatching ? "Matching in progress…" : "Ready to sell?"}
-              </div>
-              <p className="mt-2 text-sm text-white/85 leading-relaxed max-w-md">
-                {isMatching
-                  ? "Aap dusri apps use kar sakte ho — jaise hi buyer payment karega, loud alarm bajega aur vibration hogi. Wapas aao aur confirm karo."
-                  : "Start Selling dabao — aapke orders 15 minute ke liye buy queue mein live ho jayenge."}
-              </p>
+              {!isMatching && (
+                <div className="flex items-center gap-2 text-white/80 text-xs uppercase tracking-widest">
+                  <Sparkles className="w-3.5 h-3.5" /> Sell Matching
+                </div>
+              )}
 
               {isMatching ? (
-                <div className="mt-5 grid grid-cols-3 gap-3">
-                  <div className="rounded-2xl bg-white/15 backdrop-blur p-3 text-center">
-                    <div className="text-[11px] uppercase tracking-wider text-white/75">Time left</div>
-                    <div className="font-mono text-2xl font-black mt-0.5">{fmtCountdown(remaining)}</div>
+                /* ── Creative radar / searching animation ── */
+                <div className="py-2">
+                  {/* Radar rings */}
+                  <div className="flex items-center justify-center mt-1 mb-4">
+                    <div className="relative flex items-center justify-center w-28 h-28">
+                      <span className="absolute w-28 h-28 rounded-full bg-white/10 animate-ping" style={{ animationDuration: "2s" }} />
+                      <span className="absolute w-20 h-20 rounded-full bg-white/10 animate-ping" style={{ animationDuration: "2s", animationDelay: "0.4s" }} />
+                      <span className="absolute w-12 h-12 rounded-full bg-white/15 animate-ping" style={{ animationDuration: "2s", animationDelay: "0.8s" }} />
+                      <span className="relative z-10 flex items-center justify-center w-14 h-14 rounded-full bg-white/25 backdrop-blur shadow-lg">
+                        <Radio className="w-7 h-7 text-white animate-pulse" />
+                      </span>
+                    </div>
                   </div>
-                  <div className="rounded-2xl bg-white/15 backdrop-blur p-3 text-center">
-                    <div className="text-[11px] uppercase tracking-wider text-white/75">In queue</div>
-                    <div className="text-2xl font-black mt-0.5">{matching?.available || 0}</div>
+                  <div className="text-center">
+                    <div className="text-2xl font-black tracking-tight">Matching is ON</div>
+                    <p className="text-sm text-white/75 mt-1">Searching for buyers — please wait.</p>
                   </div>
-                  <div className="rounded-2xl bg-white/15 backdrop-blur p-3 text-center">
-                    <div className="text-[11px] uppercase tracking-wider text-white/75">Locked</div>
-                    <div className="text-2xl font-black mt-0.5">{matching?.locked || 0}</div>
+                  <div className="mt-5 grid grid-cols-3 gap-3">
+                    <div className="rounded-2xl bg-white/15 backdrop-blur p-3 text-center">
+                      <div className="text-[11px] uppercase tracking-wider text-white/75">Time left</div>
+                      <div className="font-mono text-2xl font-black mt-0.5">{fmtCountdown(remaining)}</div>
+                    </div>
+                    <div className="rounded-2xl bg-white/15 backdrop-blur p-3 text-center">
+                      <div className="text-[11px] uppercase tracking-wider text-white/75">In queue</div>
+                      <div className="text-2xl font-black mt-0.5">{matching?.available || 0}</div>
+                    </div>
+                    <div className="rounded-2xl bg-white/15 backdrop-blur p-3 text-center">
+                      <div className="text-[11px] uppercase tracking-wider text-white/75">Locked</div>
+                      <div className="text-2xl font-black mt-0.5">{matching?.locked || 0}</div>
+                    </div>
                   </div>
                 </div>
               ) : (
+                <>
+                <div className="mt-3 text-3xl sm:text-4xl font-black tracking-tight">Ready to sell?</div>
+                <p className="mt-2 text-sm text-white/85 leading-relaxed max-w-md">
+                  Tap Start Selling to go live in the buy queue for the next 15 minutes.
+                </p>
                 <div className="mt-5 grid grid-cols-3 gap-3">
                   <div className="rounded-2xl bg-white/15 backdrop-blur p-3 text-center">
                     <Wallet className="w-4 h-4 mx-auto opacity-80" />
@@ -273,6 +290,7 @@ export default function Sell() {
                     <div className="text-base font-bold">{trustScore}</div>
                   </div>
                 </div>
+                </>
               )}
 
               <div className="mt-5">
