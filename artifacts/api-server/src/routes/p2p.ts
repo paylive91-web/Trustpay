@@ -9,11 +9,32 @@ import { settleConfirmedTrade } from "../lib/settle.js";
 import { applyTrustDelta } from "../lib/trust.js";
 import {
   checkUtrFraud, checkImageHash, checkVelocity, checkCancelRate,
-  checkRapidLockRelease, checkBalanceDrain, checkOcrFraud,
+  checkRapidLockRelease, checkBalanceDrain, checkOcrFraud, logAlert,
 } from "../lib/fraud.js";
 import { runOcr } from "../lib/ocr.js";
 
 const router = Router();
+
+// --- Rate Limiter: screenshot uploads per user ---
+// Max 10 submissions per 10-minute sliding window per user
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const RATE_LIMIT_MAX = 10;
+const uploadRateMap = new Map<number, number[]>();
+
+function checkUploadRateLimit(userId: number): boolean {
+  const now = Date.now();
+  const cutoff = now - RATE_LIMIT_WINDOW_MS;
+  const timestamps = (uploadRateMap.get(userId) ?? []).filter((t) => t > cutoff);
+  if (timestamps.length >= RATE_LIMIT_MAX) return false;
+  uploadRateMap.set(userId, [...timestamps, now]);
+  // Cleanup old entries occasionally to prevent memory leak
+  if (uploadRateMap.size > 5000) {
+    for (const [uid, ts] of uploadRateMap) {
+      if (ts.every((t) => t <= cutoff)) uploadRateMap.delete(uid);
+    }
+  }
+  return true;
+}
 
 function parseMultipleUpiIds(raw: string | undefined) {
   try {
@@ -260,6 +281,14 @@ router.post("/submit/:id", requireAuth, async (req, res) => {
   if (!screenshotUrl) { res.status(400).json({ error: "Payment screenshot required" }); return; }
   if (!screenshotUrl.startsWith("data:image/")) {
     res.status(400).json({ error: "Screenshot must be a base64-encoded image (data URL)" });
+    return;
+  }
+
+  // Rate limit: max 10 screenshot submissions per user per 10 minutes
+  if (!checkUploadRateLimit(u.id)) {
+    await logAlert(u.id, id, "upload_rate_limit", "warn",
+      `User exceeded screenshot upload rate limit (10 per 10 min)`);
+    res.status(429).json({ error: "Too many payment submissions. Please wait a few minutes before trying again." });
     return;
   }
 

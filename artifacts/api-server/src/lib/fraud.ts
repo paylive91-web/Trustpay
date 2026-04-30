@@ -44,6 +44,9 @@ export const FRAUD_RULES: Array<{ rule: string; severity: Severity; label: strin
   { rule: "ocr_amount_mismatch", severity: "critical", label: "Screenshot amount doesn't match order" },
   { rule: "ocr_utr_mismatch", severity: "critical", label: "Screenshot UTR doesn't match submitted UTR" },
   { rule: "ocr_unreadable", severity: "warn", label: "Payment screenshot unreadable or blank" },
+  { rule: "ela_tampering", severity: "critical", label: "Screenshot shows signs of digital tampering (ELA)" },
+  { rule: "exif_editing_software", severity: "critical", label: "Screenshot edited with photo editing software" },
+  { rule: "upload_rate_limit", severity: "warn", label: "Too many screenshot submissions in short time" },
 ];
 
 // Per-rule state is stored as a JSON object so each rule keeps its own
@@ -151,7 +154,7 @@ function describeRule(rule: string, severity: Severity): { title: string; body: 
   return { title: `${sevLabel}: ${title}`, body: `Our fraud system flagged your account.${frozenNote}` };
 }
 
-async function logAlert(userId: number | null, orderId: number | null, rule: string, severity: Severity, evidence: string) {
+export async function logAlert(userId: number | null, orderId: number | null, rule: string, severity: Severity, evidence: string) {
   // Admin can disable individual rules from the Fraud Watch UI. When disabled,
   // skip the alert insert, the user notification, and any auto-freeze side effect.
   if (!(await isFraudRuleEnabled(rule))) return;
@@ -258,7 +261,21 @@ export async function checkImageHash(dataUrl: string, userId: number, orderId: n
       `Screenshot quality issue: ${analysis.qualityIssue}`);
   }
 
-  // Duplicate check (exact + perceptual)
+  // ELA Tampering Detection
+  if (kind === "screenshot" && analysis.elaTampered) {
+    issues.push("ela_tampering");
+    await logAlert(userId, orderId, "ela_tampering", "critical",
+      `ELA detected digital tampering — score: ${analysis.elaScore}. Screenshot may be edited.`);
+  }
+
+  // EXIF Editing Software Detection
+  if (kind === "screenshot" && analysis.exifSuspicious) {
+    issues.push("exif_editing_software");
+    await logAlert(userId, orderId, "exif_editing_software", "critical",
+      `EXIF metadata contains editing software signature: "${analysis.exifSoftware}". Screenshot likely manipulated.`);
+  }
+
+  // Duplicate check (exact + perceptual with stronger 16x16 pHash)
   const dupResult = await checkDuplicate(analysis.hash, analysis.pHash, userId, orderId, kind);
   if (dupResult.isExactDuplicate || dupResult.isSimilarDuplicate) {
     const label = dupResult.isExactDuplicate ? "identical" : `visually similar (distance: ${dupResult.pHashDistance})`;

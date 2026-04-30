@@ -3,10 +3,20 @@ import { db } from "@workspace/db";
 import { imageHashesTable } from "@workspace/db";
 import { eq, and, ne } from "drizzle-orm";
 
-const PHASH_SIZE = 8;
+// --- Upgraded pHash: 16x16 = 256 bits (was 8x8 = 64 bits) ---
+const PHASH_SIZE = 16;
 const MIN_WIDTH = 100;
 const MIN_HEIGHT = 150;
-const MAX_PHASH_DISTANCE = 10;
+// Scale threshold proportionally: 10/64 ≈ 15.6% → 40/256
+const MAX_PHASH_DISTANCE = 40;
+
+// EXIF editing software signatures to flag
+const EDITING_SOFTWARE = [
+  "photoshop", "gimp", "lightroom", "picsart", "snapseed", "facetune",
+  "adobe", "pixlr", "canva", "afterlight", "vsco", "inshot",
+  "meitu", "beautycam", "airbrush", "retouch", "picmonkey",
+  "fotor", "polarr", "remini", "photo editor", "photo studio",
+];
 
 const PAYMENT_KEYWORDS = [
   "success", "successful", "paid", "payment sent", "money sent",
@@ -24,6 +34,10 @@ export interface ImageAnalysisResult {
   fileSize: number | null;
   hasPaymentIndicators: boolean;
   qualityIssue: string | null;
+  elaScore: number | null;
+  elaTampered: boolean;
+  exifSoftware: string | null;
+  exifSuspicious: boolean;
 }
 
 export interface DuplicateCheckResult {
@@ -53,10 +67,11 @@ function hammingDistance(a: string, b: string): number {
   return dist;
 }
 
+// --- Stronger pHash: 16x16 gradient-based ---
 async function computePHash(buffer: Buffer): Promise<string | null> {
   try {
     const img = await Jimp.fromBuffer(buffer);
-    const small = img.clone().resize(PHASH_SIZE + 1, PHASH_SIZE).greyscale();
+    const small = img.clone().resize({ w: PHASH_SIZE + 1, h: PHASH_SIZE }).greyscale();
     let bits = "";
     for (let y = 0; y < PHASH_SIZE; y++) {
       for (let x = 0; x < PHASH_SIZE; x++) {
@@ -68,6 +83,87 @@ async function computePHash(buffer: Buffer): Promise<string | null> {
     return bits;
   } catch {
     return null;
+  }
+}
+
+// --- ELA: Error Level Analysis for tamper detection ---
+async function computeELA(buffer: Buffer): Promise<{ elaScore: number; isTampered: boolean }> {
+  try {
+    const original = await Jimp.fromBuffer(buffer);
+    const W = original.width;
+    const H = original.height;
+
+    // Resize to max 320px wide for speed — keeps aspect ratio
+    const scale = Math.min(1, 320 / W);
+    const rW = Math.max(16, Math.round(W * scale));
+    const rH = Math.max(16, Math.round(H * scale));
+    const resized = original.clone().resize({ w: rW, h: rH });
+
+    // Re-encode as JPEG (lossy) then reload → simulates one compression cycle
+    const jpegBuf = await resized.getBuffer("image/jpeg");
+    const recompressed = await Jimp.fromBuffer(jpegBuf);
+
+    const blockSize = 8;
+    const blockErrors: number[] = [];
+
+    for (let by = 0; by + blockSize <= rH; by += blockSize) {
+      for (let bx = 0; bx + blockSize <= rW; bx += blockSize) {
+        let err = 0;
+        for (let y = by; y < by + blockSize; y++) {
+          for (let x = bx; x < bx + blockSize; x++) {
+            const o = intToRGBA(resized.getPixelColor(x, y));
+            const r = intToRGBA(recompressed.getPixelColor(x, y));
+            err += Math.abs(o.r - r.r) + Math.abs(o.g - r.g) + Math.abs(o.b - r.b);
+          }
+        }
+        blockErrors.push(err / (blockSize * blockSize * 3));
+      }
+    }
+
+    if (blockErrors.length < 4) return { elaScore: 0, isTampered: false };
+
+    const mean = blockErrors.reduce((a, b) => a + b, 0) / blockErrors.length;
+    const variance = blockErrors.reduce((a, b) => a + (b - mean) ** 2, 0) / blockErrors.length;
+    const stdDev = Math.sqrt(variance);
+
+    // High std-deviation relative to mean = inconsistent compression = likely tampered
+    const elaScore = Math.round(stdDev * 10) / 10;
+    // Threshold: stdDev > 18 AND mean in a reasonable range (not just a blank/solid image)
+    const isTampered = stdDev > 18 && mean > 1 && mean < 60;
+
+    return { elaScore, isTampered };
+  } catch {
+    return { elaScore: 0, isTampered: false };
+  }
+}
+
+// --- EXIF Validation: scan raw buffer for editing software strings ---
+function validateExif(buffer: Buffer): { software: string | null; suspicious: boolean } {
+  try {
+    // Scan first 64KB of raw bytes for EXIF/metadata software strings
+    const scan = buffer.slice(0, Math.min(buffer.length, 65536)).toString("latin1").toLowerCase();
+
+    for (const sw of EDITING_SOFTWARE) {
+      if (scan.includes(sw)) {
+        return { software: sw, suspicious: true };
+      }
+    }
+
+    // Check for APP1/EXIF marker in JPEG (0xFF 0xE1)
+    // and look for unrealistic dates (year < 2018 or > current year)
+    const currentYear = new Date().getFullYear();
+    for (let y = 2000; y < 2018; y++) {
+      if (scan.includes(`:${y}:`) || scan.includes(`${y}:01:`) || scan.includes(`${y}:00:`)) {
+        return { software: `old-date:${y}`, suspicious: true };
+      }
+    }
+    if (scan.includes(`:${currentYear + 1}:`) || scan.includes(`:${currentYear + 2}:`)) {
+      return { software: `future-date`, suspicious: true };
+    }
+
+    return { software: null, suspicious: false };
+  } catch {
+    return { software: null, suspicious: false };
   }
 }
 
@@ -92,16 +188,32 @@ export async function analyzeImage(
   let width: number | null = null;
   let height: number | null = null;
   let qualityIssue: string | null = null;
+  let elaScore: number | null = null;
+  let elaTampered = false;
+  let exifSoftware: string | null = null;
+  let exifSuspicious = false;
 
   try {
     const base64 = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
     const buffer = Buffer.from(base64, "base64");
     const img = await Jimp.fromBuffer(buffer);
-    width = img.getWidth();
-    height = img.getHeight();
-    pHash = await computePHash(buffer);
+    width = img.width;
+    height = img.height;
 
-    if (width < MIN_WIDTH || height < MIN_HEIGHT) {
+    // Run pHash, ELA, and EXIF in parallel for speed
+    const [pHashResult, elaResult, exifResult] = await Promise.all([
+      computePHash(buffer),
+      computeELA(buffer),
+      Promise.resolve(validateExif(buffer)),
+    ]);
+
+    pHash = pHashResult;
+    elaScore = elaResult.elaScore;
+    elaTampered = elaResult.isTampered;
+    exifSoftware = exifResult.software;
+    exifSuspicious = exifResult.suspicious;
+
+    if (width !== null && height !== null && (width < MIN_WIDTH || height < MIN_HEIGHT)) {
       qualityIssue = `Image too small: ${width}x${height}px (minimum ${MIN_WIDTH}x${MIN_HEIGHT})`;
     }
   } catch {
@@ -114,7 +226,12 @@ export async function analyzeImage(
 
   const hasPaymentIndicators = detectPaymentIndicators(ocrText || "");
 
-  return { hash, pHash, width, height, fileSize, hasPaymentIndicators, qualityIssue };
+  return {
+    hash, pHash, width, height, fileSize,
+    hasPaymentIndicators, qualityIssue,
+    elaScore, elaTampered,
+    exifSoftware, exifSuspicious,
+  };
 }
 
 export async function checkDuplicate(
