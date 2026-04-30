@@ -142,8 +142,6 @@ export default function AdminSettings() {
   const [telegramLink, setTelegramLink] = useState("");
   const [bannerImages, setBannerImages] = useState<string[]>([]);
   const [adminPassword, setAdminPassword] = useState("");
-  const [buyRulesImageUrl, setBuyRulesImageUrl] = useState("");
-  const [sellRulesImageUrl, setSellRulesImageUrl] = useState("");
   const [feeTiers, setFeeTiers] = useState<FeeTier[]>([]);
   const [agentTiers, setAgentTiers] = useState<AgentTier[]>([]);
   const [apkDownloadUrl, setApkDownloadUrl] = useState("");
@@ -222,8 +220,6 @@ export default function AdminSettings() {
       setAdminChunkMax(Number((settings as any).adminChunkMax) || 50000);
       setTelegramLink((settings as any).telegramLink || "");
       setBannerImages(Array.isArray((settings as any).bannerImages) ? (settings as any).bannerImages : []);
-      setBuyRulesImageUrl((settings as any).buyRulesImageUrl || "");
-      setSellRulesImageUrl((settings as any).sellRulesImageUrl || "");
       const tiers = Array.isArray((settings as any).feeTiers) ? (settings as any).feeTiers : [];
       setFeeTiers(tiers.map((t: any) => ({ min: Number(t.min) || 0, max: Number(t.max) || 0, fee: Number(t.fee) || 0 })));
       const aTiers = Array.isArray((settings as any).agentTiers) ? (settings as any).agentTiers : [];
@@ -361,8 +357,6 @@ export default function AdminSettings() {
       chunkMax,
       adminChunkMin,
       adminChunkMax,
-      buyRulesImageUrl,
-      sellRulesImageUrl,
       feeTiers,
       agentTiers,
       apkDownloadUrl,
@@ -550,28 +544,6 @@ export default function AdminSettings() {
                 <Button type="button" variant="outline" onClick={addUpiEntry} className="w-full">
                   <Plus className="w-4 h-4 mr-2" /> Add UPI ID
                 </Button>
-              </CardContent>
-            </Card>
-
-            {/* Buy Rules */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Buy Rules</CardTitle>
-                <CardDescription>Rules displayed to users on the home screen under "Buy Rules".</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <ImagePicker label="Buy Rules Image" value={buyRulesImageUrl} onChange={setBuyRulesImageUrl} />
-              </CardContent>
-            </Card>
-
-            {/* Sell Rules */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Sell Rules</CardTitle>
-                <CardDescription>Rules displayed to users on the home screen under "Sell Rules".</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <ImagePicker label="Sell Rules Image" value={sellRulesImageUrl} onChange={setSellRulesImageUrl} />
               </CardContent>
             </Card>
 

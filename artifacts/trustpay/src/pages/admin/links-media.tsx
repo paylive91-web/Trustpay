@@ -30,6 +30,8 @@ export default function AdminLinksMedia() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const inviteImageInputRef = useRef<HTMLInputElement | null>(null);
+  const buyRulesInputRef = useRef<HTMLInputElement | null>(null);
+  const sellRulesInputRef = useRef<HTMLInputElement | null>(null);
 
   const {
     data: settings,
@@ -40,6 +42,8 @@ export default function AdminLinksMedia() {
   const [telegramLink, setTelegramLink] = useState("");
   const [bannerImages, setBannerImages] = useState<string[]>([]);
   const [inviteShareImageUrl, setInviteShareImageUrl] = useState("");
+  const [buyRulesImageUrl, setBuyRulesImageUrl] = useState("");
+  const [sellRulesImageUrl, setSellRulesImageUrl] = useState("");
 
   // Whenever fresh settings arrive, normalise & strip junk so UI is clean.
   useEffect(() => {
@@ -52,6 +56,8 @@ export default function AdminLinksMedia() {
       .filter((u: string) => u.length > 0);
     setBannerImages(clean);
     setInviteShareImageUrl((settings as any).inviteShareImageUrl || "");
+    setBuyRulesImageUrl((settings as any).buyRulesImageUrl || "");
+    setSellRulesImageUrl((settings as any).sellRulesImageUrl || "");
   }, [settings]);
 
   const uploadMut = useAdminUploadImage();
@@ -103,6 +109,30 @@ export default function AdminLinksMedia() {
     }
   };
 
+  const onPickRulesImage = async (
+    file: File | null,
+    which: "buy" | "sell",
+  ) => {
+    if (!file) return;
+    const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+    if (file.size > 20 * 1024 * 1024) {
+      toast({ title: `Image too large (${sizeMb} MB)`, description: "Maximum 20 MB.", variant: "destructive" });
+      return;
+    }
+    const ref = which === "buy" ? buyRulesInputRef : sellRulesInputRef;
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      const d = await uploadMut.mutateAsync({ data: { dataUrl } });
+      if (which === "buy") setBuyRulesImageUrl(d.url);
+      else setSellRulesImageUrl(d.url);
+      toast({ title: `${which === "buy" ? "Buy" : "Sell"} Rules image uploaded — remember to Save Changes` });
+    } catch (e: any) {
+      toast({ title: "Upload failed", description: e?.message, variant: "destructive" });
+    } finally {
+      if (ref.current) ref.current.value = "";
+    }
+  };
+
   const onSave = (e: React.FormEvent) => {
     e.preventDefault();
     updateMut.mutate({
@@ -110,6 +140,8 @@ export default function AdminLinksMedia() {
         telegramLink: telegramLink.trim(),
         bannerImages: bannerImages.map((u) => u.trim()).filter(Boolean),
         inviteShareImageUrl: inviteShareImageUrl.trim(),
+        buyRulesImageUrl: buyRulesImageUrl.trim(),
+        sellRulesImageUrl: sellRulesImageUrl.trim(),
       } as any,
     });
   };
@@ -215,6 +247,130 @@ export default function AdminLinksMedia() {
                     type="button"
                     variant="outline"
                     onClick={() => inviteImageInputRef.current?.click()}
+                    disabled={uploading}
+                  >
+                    {uploading ? (
+                      <><Upload className="w-4 h-4 mr-2 animate-pulse" />Uploading...</>
+                    ) : (
+                      <><Upload className="w-4 h-4 mr-2" />Upload Image</>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Buy Rules Image */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5 text-primary" />
+                  Buy Rules Image
+                </CardTitle>
+                <CardDescription>
+                  Image shown to users on the home screen under "Buy Rules". Recommended portrait or square layout.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {buyRulesImageUrl ? (
+                  <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
+                    <div className="aspect-video bg-muted flex items-center justify-center overflow-hidden">
+                      <img
+                        src={buyRulesImageUrl}
+                        alt="Buy Rules Image"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <div className="p-3 flex items-center justify-between gap-2">
+                      <span className="text-sm font-semibold text-muted-foreground">Current image</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setBuyRulesImageUrl("")}
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" /> Remove
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground border-2 border-dashed rounded-md p-8 text-center">
+                    No image yet — click Upload below.
+                  </div>
+                )}
+                <div>
+                  <input
+                    ref={buyRulesInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => onPickRulesImage(e.target.files?.[0] || null, "buy")}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => buyRulesInputRef.current?.click()}
+                    disabled={uploading}
+                  >
+                    {uploading ? (
+                      <><Upload className="w-4 h-4 mr-2 animate-pulse" />Uploading...</>
+                    ) : (
+                      <><Upload className="w-4 h-4 mr-2" />Upload Image</>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Sell Rules Image */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5 text-primary" />
+                  Sell Rules Image
+                </CardTitle>
+                <CardDescription>
+                  Image shown to users on the home screen under "Sell Rules". Recommended portrait or square layout.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {sellRulesImageUrl ? (
+                  <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
+                    <div className="aspect-video bg-muted flex items-center justify-center overflow-hidden">
+                      <img
+                        src={sellRulesImageUrl}
+                        alt="Sell Rules Image"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <div className="p-3 flex items-center justify-between gap-2">
+                      <span className="text-sm font-semibold text-muted-foreground">Current image</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSellRulesImageUrl("")}
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" /> Remove
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground border-2 border-dashed rounded-md p-8 text-center">
+                    No image yet — click Upload below.
+                  </div>
+                )}
+                <div>
+                  <input
+                    ref={sellRulesInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => onPickRulesImage(e.target.files?.[0] || null, "sell")}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => sellRulesInputRef.current?.click()}
                     disabled={uploading}
                   >
                     {uploading ? (
