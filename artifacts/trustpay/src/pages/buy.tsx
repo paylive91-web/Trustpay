@@ -199,7 +199,12 @@ export default function Buy() {
     onSuccess: () => { refetchBuy(); qc.invalidateQueries({ queryKey: ["p2p-queue"] }); toast({ title: "Order locked! Pay now." }); },
     onError: (e: any) => {
       if (e.message === "buyer_cooldown") { refetchCooldown(); return; }
-      toast({ title: "This order may be bought by someone else", description: e.message, variant: "destructive" });
+      if (e.message === "order_being_locked" || e.message === "Race - chunk just taken" || (e.status === 409)) {
+        toast({ title: "Order already taken!", description: "Another buyer got there first. Choose a different order.", variant: "destructive" });
+        qc.invalidateQueries({ queryKey: ["p2p-queue"] });
+        return;
+      }
+      toast({ title: "Could not lock order", description: e.message, variant: "destructive" });
     },
   });
 

@@ -16,6 +16,11 @@ import { runOcr } from "../lib/ocr.js";
 
 const router = Router();
 
+// --- In-memory mutex: prevents concurrent lock attempts on the same chunk ---
+// Node.js is single-threaded so Map operations are atomic — no two requests
+// can pass the "has" check simultaneously for the same chunk ID.
+const chunkLockInProgress = new Set<number>();
+
 // --- Rate Limiter: screenshot uploads per user ---
 // Max 10 submissions per 10-minute sliding window per user
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
@@ -193,6 +198,15 @@ router.post("/lock/:id", requireAuth, async (req, res) => {
 
   const id = parseInt(asString(req.params.id));
 
+  // Mutex check: if another request is already processing this chunk, reject instantly
+  if (chunkLockInProgress.has(id)) {
+    res.status(409).json({ error: "order_being_locked" });
+    return;
+  }
+  chunkLockInProgress.add(id);
+
+  try {
+
   const existing = await getActiveBuy(u.id);
   if (existing) {
     res.status(400).json({ error: "You already have an active buy. Complete it first." });
@@ -280,6 +294,10 @@ router.post("/lock/:id", requireAuth, async (req, res) => {
       }))
     : [base];
   res.json(response);
+
+  } finally {
+    chunkLockInProgress.delete(id);
+  }
 });
 
 router.post("/submit/:id", requireAuth, async (req, res) => {
