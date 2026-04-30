@@ -25,9 +25,8 @@ export default function DisputePauseBanner() {
     <div className="bg-red-50 border border-red-200 text-red-800 rounded-md p-3 flex items-start gap-2 text-sm">
       <AlertOctagon className="w-4 h-4 mt-0.5 shrink-0" />
       <div className="flex-1">
-        <div className="font-semibold">Account paused — {open.length} open dispute{open.length > 1 ? "s" : ""}</div>
+        <div className="font-semibold">{open.length} open dispute{open.length > 1 ? "s" : ""}</div>
         <div className="text-xs">
-          Auto-sell is paused, but you can still place new orders.{" "}
           <Link href="/orders" className="underline font-medium">Resolve now</Link>
         </div>
       </div>

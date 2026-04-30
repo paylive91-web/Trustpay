@@ -56,12 +56,6 @@ export async function regenerateChunksForUser(userId: number) {
   if (!isAdminSeller) {
     if (!user.matchingExpiresAt || new Date(user.matchingExpiresAt).getTime() < Date.now()) return;
   }
-  // Pause auto-sell if user has any open dispute
-  const [openDispute] = await db.select().from(disputesTable).where(and(
-    or(eq(disputesTable.buyerId, userId), eq(disputesTable.sellerId, userId)),
-    eq(disputesTable.status, "open"),
-  )).limit(1);
-  if (openDispute) return;
   // Pull EVERY active UPI for this seller — chunks are distributed across them
   // round-robin so no single UPI bears all the inbound payment volume.
   const upis = await db.select().from(userUpiIdsTable)

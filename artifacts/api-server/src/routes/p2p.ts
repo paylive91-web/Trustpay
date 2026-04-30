@@ -191,10 +191,6 @@ router.post("/lock/:id", requireAuth, async (req, res) => {
     return;
   }
 
-  if (await hasOpenDispute(u.id)) {
-    res.status(403).json({ error: "Account paused — you have an open dispute. Resolve it before starting a new buy." });
-    return;
-  }
   const id = parseInt(asString(req.params.id));
 
   const existing = await getActiveBuy(u.id);
