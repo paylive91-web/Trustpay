@@ -30,6 +30,12 @@ uri = "file://attached_assets/generated_images/banner_invite_earn.png"
 type = "image"
 title = "trustpay invite earn banner"
 
+[[generated]]
+id = "d4QbsGnhVLVihiuv5hCG8"
+uri = "file://attached_assets/generated_images/trustpay_logo_premium.png"
+type = "image"
+title = "trustpay premium logo"
+
 [[outputs]]
 id = "9i2SMWhGKDU824ilpyHpE"
 uri = "file://screenshots/home-redesign.jpg"
@@ -185,3 +191,9 @@ id = "Oyf1ZBsWDb_rGQhoWP0Hu"
 uri = "file://attached_assets/generated_images/banner_invite_earn.png"
 type = "image"
 title = "Banner 2 — Invite & Earn (1% per trade)"
+
+[[outputs]]
+id = "u_eZtJLYeImCOF465WJzo"
+uri = "file://attached_assets/generated_images/trustpay_logo_premium.png"
+type = "image"
+title = "TrustPay Premium Logo"
