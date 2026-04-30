@@ -522,9 +522,13 @@ router.post("/dispute/:id", requireAuth, async (req, res) => {
 router.post("/buyer-dispute/:id", requireAuth, async (req, res) => {
   const u = (req as any).user;
   const id = parseInt(asString(req.params.id));
-  const { bankStatementUrl, txHistoryUrl, reason } = req.body || {};
+  const { bankStatementUrl, txHistoryUrl, recordingUrl, reason } = req.body || {};
   if (!bankStatementUrl || !String(bankStatementUrl).startsWith("data:image/")) {
     res.status(400).json({ error: "Bank statement screenshot is required (image)" });
+    return;
+  }
+  if (recordingUrl && !String(recordingUrl).startsWith("data:video/") && !String(recordingUrl).startsWith("data:image/")) {
+    res.status(400).json({ error: "Screen recording must be a video file" });
     return;
   }
   const [chunk] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
@@ -564,6 +568,7 @@ router.post("/buyer-dispute/:id", requireAuth, async (req, res) => {
     status: "open",
     buyerBankStatementUrl: bankStatementUrl,
     buyerTxHistoryUrl: txHistoryUrl || null,
+    buyerRecordingUrl: recordingUrl || null,
     buyerProofAt: now,
     buyerProofDeadline: proofDeadline,
     sellerProofDeadline: proofDeadline,
@@ -589,22 +594,25 @@ router.post("/buyer-dispute/:id", requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
-// Combined recent activity for the home screen — last N orders the user
-// either bought (locked) or sold (created sell chunk that was traded).
+// Live orders for the home screen — only orders currently in progress
+// (locked / pending_confirmation / disputed). Completed, expired,
+// cancelled, or refunded orders are NOT shown here — those live in the
+// full Orders history page.
 router.get("/recent-orders", requireAuth, async (req, res) => {
   const u = (req as any).user;
   const limit = Math.min(20, parseInt(asString(req.query.limit)) || 5);
+  const ACTIVE_STATUSES = ["locked", "pending_confirmation", "disputed"] as const;
   // Buys: orders user locked (regardless of who created the sell chunk)
   const buys = await db.select().from(ordersTable).where(and(
     eq(ordersTable.lockedByUserId, u.id),
     eq(ordersTable.type, "withdrawal"),
-    inArray(ordersTable.status, ["locked", "pending_confirmation", "confirmed", "disputed", "refunded", "expired", "cancelled"]),
+    inArray(ordersTable.status, [...ACTIVE_STATUSES]),
   )).orderBy(sql`${ordersTable.updatedAt} desc`).limit(limit);
-  // Sells: chunks user owns (created) that have moved past available
+  // Sells: chunks user owns (created) that are mid-trade
   const sells = await db.select().from(ordersTable).where(and(
     eq(ordersTable.userId, u.id),
     eq(ordersTable.type, "withdrawal"),
-    inArray(ordersTable.status, ["locked", "pending_confirmation", "confirmed", "disputed", "refunded"]),
+    inArray(ordersTable.status, [...ACTIVE_STATUSES]),
   )).orderBy(sql`${ordersTable.updatedAt} desc`).limit(limit);
   const merged = [...buys.map((r) => ({ ...f(r), side: "buy" as const })), ...sells.map((r) => ({ ...f(r), side: "sell" as const }))];
   // Dedup by id (a row could match both, keep buy if user locked their own — rare)
