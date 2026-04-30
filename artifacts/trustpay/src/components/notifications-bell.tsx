@@ -58,10 +58,17 @@ export default function NotificationsBell() {
       initialized.current = true;
       return;
     }
-    const newCritical = items.filter(
-      (n) => !seenIds.current.has(n.id) && (n.severity === "critical" || n.severity === "warn") && !n.readAt
+    // Only alarm for payment-critical events — not for system alerts, fraud
+    // warnings, trust score changes, or broadcast messages.
+    const ALARM_KINDS = new Set([
+      "payment_pending_confirmation",
+      "payment_locked",
+      "seller_offline_dispute_buyer",
+    ]);
+    const newAlarm = items.filter(
+      (n) => !seenIds.current.has(n.id) && ALARM_KINDS.has(n.kind) && !n.readAt
     );
-    if (newCritical.length > 0) {
+    if (newAlarm.length > 0) {
       playLoudAlarm();
     }
     items.forEach((n) => seenIds.current.add(n.id));
