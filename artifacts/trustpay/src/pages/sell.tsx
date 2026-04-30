@@ -239,23 +239,78 @@ export default function Sell() {
                     </div>
 
                     {/* Central radar animation */}
-                    <div className="flex justify-center mb-5">
-                      <div className="relative flex items-center justify-center w-36 h-36">
-                        <span className="absolute w-36 h-36 rounded-full border border-white/20 animate-ping" style={{ animationDuration: "2.8s" }} />
-                        <span className="absolute w-28 h-28 rounded-full border border-white/20 animate-ping" style={{ animationDuration: "2.8s", animationDelay: "0.6s" }} />
-                        <span className="absolute w-20 h-20 rounded-full border border-white/25 animate-ping" style={{ animationDuration: "2.8s", animationDelay: "1.2s" }} />
-                        <span className="absolute w-36 h-36 rounded-full bg-violet-400/10 animate-pulse" style={{ animationDuration: "3s" }} />
-                        <div className="relative z-10 flex flex-col items-center justify-center w-20 h-20 rounded-full shadow-2xl border border-white/30" style={{ background: "radial-gradient(circle, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.1) 100%)" }}>
-                          <Radio className="w-6 h-6 text-white mb-0.5 animate-pulse" />
-                          <span className="text-[10px] text-white/70 font-medium">Matching</span>
+                    <>
+                      <style>{`
+                        @keyframes radarSweep{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+                        @keyframes orbit-a{from{transform:rotate(0deg) translateX(52px) rotate(0deg)}to{transform:rotate(360deg) translateX(52px) rotate(-360deg)}}
+                        @keyframes orbit-b{from{transform:rotate(120deg) translateX(70px) rotate(-120deg)}to{transform:rotate(480deg) translateX(70px) rotate(-480deg)}}
+                        @keyframes orbit-c{from{transform:rotate(240deg) translateX(44px) rotate(-240deg)}to{transform:rotate(600deg) translateX(44px) rotate(-600deg)}}
+                        @keyframes orbit-d{from{transform:rotate(60deg) translateX(63px) rotate(-60deg)}to{transform:rotate(420deg) translateX(63px) rotate(-420deg)}}
+                        @keyframes corePulse{0%,100%{box-shadow:0 0 18px 7px rgba(139,92,246,0.55),0 0 36px 14px rgba(139,92,246,0.22)}50%{box-shadow:0 0 28px 12px rgba(139,92,246,0.8),0 0 56px 24px rgba(139,92,246,0.38)}}
+                        @keyframes dpGreen{0%,100%{box-shadow:0 0 7px 2px rgba(52,211,153,0.7),0 0 14px 5px rgba(52,211,153,0.3)}50%{box-shadow:0 0 12px 5px rgba(52,211,153,1),0 0 24px 10px rgba(52,211,153,0.5)}}
+                        @keyframes dpSky{0%,100%{box-shadow:0 0 7px 2px rgba(56,189,248,0.7),0 0 14px 5px rgba(56,189,248,0.3)}50%{box-shadow:0 0 12px 5px rgba(56,189,248,1),0 0 24px 10px rgba(56,189,248,0.5)}}
+                        @keyframes dpFuchsia{0%,100%{box-shadow:0 0 7px 2px rgba(232,121,249,0.7),0 0 14px 5px rgba(232,121,249,0.3)}50%{box-shadow:0 0 12px 5px rgba(232,121,249,1),0 0 24px 10px rgba(232,121,249,0.5)}}
+                        @keyframes dpYellow{0%,100%{box-shadow:0 0 7px 2px rgba(250,204,21,0.7),0 0 14px 5px rgba(250,204,21,0.3)}50%{box-shadow:0 0 12px 5px rgba(250,204,21,1),0 0 24px 10px rgba(250,204,21,0.5)}}
+                      `}</style>
+                      <div className="flex justify-center mb-5">
+                        <div className="relative flex items-center justify-center" style={{ width: 204, height: 204 }}>
+                          {/* SVG radar grid */}
+                          <svg className="absolute inset-0" width="204" height="204" style={{ overflow: "visible" }}>
+                            <defs>
+                              <radialGradient id="rgFade" cx="50%" cy="50%" r="50%">
+                                <stop offset="60%" stopColor="rgba(255,255,255,0)" />
+                                <stop offset="100%" stopColor="rgba(255,255,255,0.06)" />
+                              </radialGradient>
+                            </defs>
+                            <circle cx="102" cy="102" r="92" fill="url(#rgFade)" stroke="rgba(255,255,255,0.18)" strokeWidth="1" />
+                            <circle cx="102" cy="102" r="66" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="0.75" />
+                            <circle cx="102" cy="102" r="40" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="0.75" />
+                            <line x1="102" y1="6" x2="102" y2="198" stroke="rgba(255,255,255,0.07)" strokeWidth="0.75" />
+                            <line x1="6" y1="102" x2="198" y2="102" stroke="rgba(255,255,255,0.07)" strokeWidth="0.75" />
+                            <line x1="28" y1="28" x2="176" y2="176" stroke="rgba(255,255,255,0.04)" strokeWidth="0.6" />
+                            <line x1="176" y1="28" x2="28" y2="176" stroke="rgba(255,255,255,0.04)" strokeWidth="0.6" />
+                            {[0,30,60,90,120,150,180,210,240,270,300,330].map(a => {
+                              const r = (a - 90) * Math.PI / 180;
+                              return <line key={a} x1={102 + 87*Math.cos(r)} y1={102 + 87*Math.sin(r)} x2={102 + 92*Math.cos(r)} y2={102 + 92*Math.sin(r)} stroke="rgba(255,255,255,0.28)" strokeWidth="1.5" strokeLinecap="round" />;
+                            })}
+                          </svg>
+
+                          {/* Sweep gradient layer */}
+                          <div className="absolute rounded-full overflow-hidden" style={{ width: 184, height: 184, animation: "radarSweep 3s linear infinite" }}>
+                            <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "conic-gradient(from 0deg, transparent 0deg, rgba(52,211,153,0.7) 4deg, rgba(52,211,153,0.35) 35deg, rgba(52,211,153,0.08) 75deg, transparent 75deg)" }} />
+                          </div>
+                          {/* Sweep arm */}
+                          <div className="absolute" style={{ width: 184, height: 184, animation: "radarSweep 3s linear infinite" }}>
+                            <div style={{ position: "absolute", top: "50%", left: "50%", width: "50%", height: "1.5px", transformOrigin: "left center", background: "linear-gradient(to right, rgba(52,211,153,0.95), rgba(52,211,153,0.2), transparent)", borderRadius: 2 }} />
+                          </div>
+
+                          {/* Orbiting buyer dots */}
+                          <div className="absolute" style={{ top:"50%", left:"50%", marginTop:-10, marginLeft:-10, animation:"orbit-a 3.5s linear infinite" }}>
+                            <div style={{ width:20, height:20, borderRadius:"50%", background:"linear-gradient(135deg,#6ee7b7,#10b981)", border:"2px solid rgba(255,255,255,0.85)", animation:"dpGreen 2s ease-in-out infinite" }} />
+                          </div>
+                          <div className="absolute" style={{ top:"50%", left:"50%", marginTop:-8, marginLeft:-8, animation:"orbit-b 5.5s linear infinite" }}>
+                            <div style={{ width:16, height:16, borderRadius:"50%", background:"linear-gradient(135deg,#7dd3fc,#0ea5e9)", border:"2px solid rgba(255,255,255,0.85)", animation:"dpSky 1.8s ease-in-out infinite 0.4s" }} />
+                          </div>
+                          <div className="absolute" style={{ top:"50%", left:"50%", marginTop:-7, marginLeft:-7, animation:"orbit-c 4s linear infinite" }}>
+                            <div style={{ width:14, height:14, borderRadius:"50%", background:"linear-gradient(135deg,#f0abfc,#d946ef)", border:"2px solid rgba(255,255,255,0.85)", animation:"dpFuchsia 2.2s ease-in-out infinite 0.9s" }} />
+                          </div>
+                          <div className="absolute" style={{ top:"50%", left:"50%", marginTop:-6, marginLeft:-6, animation:"orbit-d 6.5s linear infinite" }}>
+                            <div style={{ width:12, height:12, borderRadius:"50%", background:"linear-gradient(135deg,#fde68a,#f59e0b)", border:"2px solid rgba(255,255,255,0.85)", animation:"dpYellow 1.6s ease-in-out infinite 1.4s" }} />
+                          </div>
+
+                          {/* Center core */}
+                          <div className="relative z-20 flex flex-col items-center justify-center rounded-full" style={{
+                            width:78, height:78,
+                            background:"radial-gradient(circle at 38% 32%, rgba(216,180,254,0.9) 0%, rgba(124,58,237,0.95) 45%, rgba(76,29,149,1) 100%)",
+                            border:"1.5px solid rgba(255,255,255,0.45)",
+                            animation:"corePulse 2.5s ease-in-out infinite",
+                          }}>
+                            <Radio className="w-6 h-6 text-white mb-0.5" style={{ filter:"drop-shadow(0 0 5px rgba(255,255,255,0.9))" }} />
+                            <span className="text-[9px] font-black tracking-widest text-emerald-300 uppercase">LIVE</span>
+                          </div>
                         </div>
-                        {/* Floating buyer dots */}
-                        <span className="absolute w-5 h-5 rounded-full bg-emerald-400 shadow-lg border-2 border-white animate-bounce" style={{ top: 4, right: 16, animationDuration: "1.8s" }} />
-                        <span className="absolute w-4 h-4 rounded-full bg-sky-400 shadow-lg border-2 border-white animate-bounce" style={{ bottom: 10, left: 10, animationDuration: "2.2s", animationDelay: "0.4s" }} />
-                        <span className="absolute w-4 h-4 rounded-full bg-fuchsia-400 shadow-lg border-2 border-white animate-bounce" style={{ top: 20, left: 4, animationDuration: "1.6s", animationDelay: "0.8s" }} />
-                        <span className="absolute w-3 h-3 rounded-full bg-yellow-400 shadow-lg border-2 border-white animate-bounce" style={{ bottom: 4, right: 8, animationDuration: "2.0s", animationDelay: "1.2s" }} />
                       </div>
-                    </div>
+                    </>
 
                     {/* Balance + Earnings */}
                     <div className="rounded-2xl bg-white/10 border border-white/20 p-4 mb-4 text-center backdrop-blur">
