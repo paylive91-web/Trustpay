@@ -1339,6 +1339,14 @@ components:
           properties:
             adminPassword:
               type: string
+            buyRules:
+              type: string
+            sellRules:
+              type: string
+            buyRulesImageUrl:
+              type: string
+            sellRulesImageUrl:
+              type: string
             feeTiers:
               type: array
               items:
@@ -1378,6 +1386,14 @@ components:
         appLogoUrl:
           type: string
         popupSoundUrl:
+          type: string
+        buyRules:
+          type: string
+        sellRules:
+          type: string
+        buyRulesImageUrl:
+          type: string
+        sellRulesImageUrl:
           type: string
         adminPassword:
           type: string

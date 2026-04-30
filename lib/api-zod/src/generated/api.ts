@@ -621,6 +621,10 @@ export const AdminGetSettingsResponse = zod
   .and(
     zod.object({
       adminPassword: zod.string().optional(),
+      buyRules: zod.string().optional(),
+      sellRules: zod.string().optional(),
+      buyRulesImageUrl: zod.string().optional(),
+      sellRulesImageUrl: zod.string().optional(),
       feeTiers: zod
         .array(
           zod.object({
@@ -659,6 +663,10 @@ export const AdminUpdateSettingsBody = zod.object({
   appName: zod.string().optional(),
   appLogoUrl: zod.string().optional(),
   popupSoundUrl: zod.string().optional(),
+  buyRules: zod.string().optional(),
+  sellRules: zod.string().optional(),
+  buyRulesImageUrl: zod.string().optional(),
+  sellRulesImageUrl: zod.string().optional(),
   adminPassword: zod.string().optional(),
   feeTiers: zod
     .array(
@@ -703,6 +711,10 @@ export const AdminUpdateSettingsResponse = zod
   .and(
     zod.object({
       adminPassword: zod.string().optional(),
+      buyRules: zod.string().optional(),
+      sellRules: zod.string().optional(),
+      buyRulesImageUrl: zod.string().optional(),
+      sellRulesImageUrl: zod.string().optional(),
       feeTiers: zod
         .array(
           zod.object({

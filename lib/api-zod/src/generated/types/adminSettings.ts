@@ -11,6 +11,10 @@ import type { FeeTier } from "./feeTier";
 
 export type AdminSettings = AppSettings & {
   adminPassword?: string;
+  buyRules?: string;
+  sellRules?: string;
+  buyRulesImageUrl?: string;
+  sellRulesImageUrl?: string;
   feeTiers?: FeeTier[];
   agentTiers?: AgentTier[];
   apkDownloadUrl?: string;

@@ -18,6 +18,10 @@ export interface AdminUpdateSettingsBody {
   appName?: string;
   appLogoUrl?: string;
   popupSoundUrl?: string;
+  buyRules?: string;
+  sellRules?: string;
+  buyRulesImageUrl?: string;
+  sellRulesImageUrl?: string;
   adminPassword?: string;
   feeTiers?: FeeTier[];
   agentTiers?: AgentTier[];
