@@ -42,6 +42,12 @@ uri = "file://attached_assets/generated_images/trustpay_logo_rupay.png"
 type = "image"
 title = "trustpay rupay logo"
 
+[[generated]]
+id = "JMO-bwtDVLM1DxcnDprCA"
+uri = "file://attached_assets/generated_images/trustpay_logo_clean.png"
+type = "image"
+title = "trustpay clean shield logo"
+
 [[outputs]]
 id = "9i2SMWhGKDU824ilpyHpE"
 uri = "file://screenshots/home-redesign.jpg"
@@ -209,3 +215,9 @@ id = "vppVPzVxa63K0x0FNQ3Cd"
 uri = "file://attached_assets/generated_images/trustpay_logo_rupay.png"
 type = "image"
 title = "TrustPay Logo with RuPay"
+
+[[outputs]]
+id = "ZiPDXdaxdqVEZpM1qvAkv"
+uri = "file://attached_assets/generated_images/trustpay_logo_clean.png"
+type = "image"
+title = "TrustPay Logo — Clean Shield Style"
