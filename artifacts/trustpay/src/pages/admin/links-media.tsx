@@ -114,11 +114,6 @@ export default function AdminLinksMedia() {
     which: "buy" | "sell",
   ) => {
     if (!file) return;
-    const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
-    if (file.size > 20 * 1024 * 1024) {
-      toast({ title: `Image too large (${sizeMb} MB)`, description: "Maximum 20 MB.", variant: "destructive" });
-      return;
-    }
     const ref = which === "buy" ? buyRulesInputRef : sellRulesInputRef;
     try {
       const dataUrl = await fileToDataUrl(file);
@@ -273,11 +268,11 @@ export default function AdminLinksMedia() {
               <CardContent className="space-y-4">
                 {buyRulesImageUrl ? (
                   <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
-                    <div className="aspect-video bg-muted flex items-center justify-center overflow-hidden">
+                    <div className="bg-muted flex items-center justify-center overflow-hidden p-2">
                       <img
                         src={buyRulesImageUrl}
                         alt="Buy Rules Image"
-                        className="w-full h-full object-contain"
+                        className="max-h-[480px] w-auto h-auto object-contain rounded"
                       />
                     </div>
                     <div className="p-3 flex items-center justify-between gap-2">
@@ -294,7 +289,7 @@ export default function AdminLinksMedia() {
                   </div>
                 ) : (
                   <div className="text-sm text-muted-foreground border-2 border-dashed rounded-md p-8 text-center">
-                    No image yet — click Upload below.
+                    No image yet — click Upload below. Portrait or square images work best.
                   </div>
                 )}
                 <div>
@@ -335,11 +330,11 @@ export default function AdminLinksMedia() {
               <CardContent className="space-y-4">
                 {sellRulesImageUrl ? (
                   <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
-                    <div className="aspect-video bg-muted flex items-center justify-center overflow-hidden">
+                    <div className="bg-muted flex items-center justify-center overflow-hidden p-2">
                       <img
                         src={sellRulesImageUrl}
                         alt="Sell Rules Image"
-                        className="w-full h-full object-contain"
+                        className="max-h-[480px] w-auto h-auto object-contain rounded"
                       />
                     </div>
                     <div className="p-3 flex items-center justify-between gap-2">
@@ -356,7 +351,7 @@ export default function AdminLinksMedia() {
                   </div>
                 ) : (
                   <div className="text-sm text-muted-foreground border-2 border-dashed rounded-md p-8 text-center">
-                    No image yet — click Upload below.
+                    No image yet — click Upload below. Portrait or square images work best.
                   </div>
                 )}
                 <div>
