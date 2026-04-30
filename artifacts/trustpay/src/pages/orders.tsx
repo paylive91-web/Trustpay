@@ -275,18 +275,18 @@ export default function Orders() {
               </>
             ) : activeProof?.role === "buyer" ? (
               <>
-                <UploadTile label="Bank Statement" required file={bankFile} onChange={setBankFile} accept="image/*,application/pdf" hint="PDF or image" />
+                <UploadTile label="Bank Statement" required file={bankFile} onChange={setBankFile} accept="application/pdf" hint="PDF only" />
                 <UploadTile label="Payment Screenshot" required file={recordingFile} onChange={setRecordingFile} accept="image/*" hint="Upload the payment screenshot" />
                 <UploadTile label="Payment Recording" required file={lastTxnFile} onChange={setLastTxnFile} accept="image/*,video/*" hint="Upload the payment recording" />
               </>
             ) : (
               <>
-                <UploadTile label="Bank Statement" required file={bankFile} onChange={setBankFile} accept="image/*,application/pdf" hint="PDF or image" />
+                <UploadTile label="Bank Statement" required file={bankFile} onChange={setBankFile} accept="application/pdf" hint="PDF only" />
                 <UploadTile label="Screen Recording" required file={recordingFile} onChange={setRecordingFile} accept="image/*,video/*" hint="Image or short video" />
                 <UploadTile label="Last Transaction Screenshot" required file={lastTxnFile} onChange={setLastTxnFile} accept="image/*" hint="Most recent UPI txn from your bank app" />
               </>
             )}
-            <div className="text-xs text-muted-foreground">Bank statement: PDF or image. Recording: image or video.</div>
+            <div className="text-xs text-muted-foreground">Bank statement must be PDF. Recording: image or video.</div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setActiveProof(null)}>Cancel</Button>

@@ -38,10 +38,7 @@ const MAX_IMAGE_BYTES = 20 * 1024 * 1024; // 20 MB for screenshots
 function validateProof(dataUrl: unknown, kind: "image" | "pdf" | "recording"): string | null {
   if (typeof dataUrl !== "string" || dataUrl.length < 32) return "Invalid file";
   if (kind === "pdf") {
-    // Accept both PDF and image for bank statements
-    if (!PDF_PROOF_MIME.test(dataUrl) && !IMAGE_PROOF_MIME.test(dataUrl)) {
-      return "Only PDF or image files allowed for bank statements";
-    }
+    if (!PDF_PROOF_MIME.test(dataUrl)) return "Only PDF files allowed for bank statements";
     return null;
   }
   if (kind === "recording") {
