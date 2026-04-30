@@ -120,6 +120,30 @@ uri = "file://attached_assets/generated_images/base_banner4.png"
 type = "image"
 title = "invite earn base banner"
 
+[[generated]]
+id = "GpageW3v_AKhECmop0DOd"
+uri = "file://attached_assets/generated_images/dk_base1.png"
+type = "image"
+title = "dark buy earn banner base"
+
+[[generated]]
+id = "TslsmbX_d1v2xBJ1orUSx"
+uri = "file://attached_assets/generated_images/dk_base2.png"
+type = "image"
+title = "dark sell reward banner base"
+
+[[generated]]
+id = "eF6oN6tXJQQsIQIIOiuSm"
+uri = "file://attached_assets/generated_images/dk_base3.png"
+type = "image"
+title = "dark agent earn banner base"
+
+[[generated]]
+id = "ldXX48aYF70ibDVUY2jwf"
+uri = "file://attached_assets/generated_images/dk_base4.png"
+type = "image"
+title = "dark invite earn banner base"
+
 [[outputs]]
 id = "9i2SMWhGKDU824ilpyHpE"
 uri = "file://screenshots/home-redesign.jpg"
@@ -363,5 +387,29 @@ title = "Banner 3 — Agent Earning"
 [[outputs]]
 id = "I82_R5Tp2ljspWpOC2ZzU"
 uri = "file://attached_assets/generated_images/final_banner4_invite.png"
+type = "image"
+title = "Banner 4 — Invite & Earn"
+
+[[outputs]]
+id = "8rlzJmm2i4P5XcbO3TPM1"
+uri = "file://attached_assets/generated_images/final_dk_banner1.png"
+type = "image"
+title = "Banner 1 — Buy & Earn"
+
+[[outputs]]
+id = "8NezC27uZUCsDsyG6_FE-"
+uri = "file://attached_assets/generated_images/final_dk_banner2.png"
+type = "image"
+title = "Banner 2 — Sell Reward"
+
+[[outputs]]
+id = "L8JPpa1Isn8fnoLh1Jn_u"
+uri = "file://attached_assets/generated_images/final_dk_banner3.png"
+type = "image"
+title = "Banner 3 — Agent Earning"
+
+[[outputs]]
+id = "j-0VBolft7cn5o8xeQ9EM"
+uri = "file://attached_assets/generated_images/final_dk_banner4.png"
 type = "image"
 title = "Banner 4 — Invite & Earn"
