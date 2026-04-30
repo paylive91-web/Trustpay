@@ -48,13 +48,7 @@ function LiveOrdersSection() {
     staleTime: 0,
   });
 
-  if (isLoading) return (
-    <Card className="border-none shadow-sm bg-primary/5">
-      <CardContent className="p-4">
-        <Skeleton className="h-16 w-full" />
-      </CardContent>
-    </Card>
-  );
+  if (isLoading) return null;
 
   if (liveOrders.length === 0) {
     return (

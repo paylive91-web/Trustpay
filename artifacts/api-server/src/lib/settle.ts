@@ -156,6 +156,9 @@ export async function settleConfirmedTrade(chunkOrderId: number, isAutoConfirm =
   await bumpSuccessfulTrade(buyerId);
   await bumpSuccessfulTrade(sellerId);
 
+  // Good behaviour resets warnings: a successful trade wipes all fraud warnings for the buyer.
+  await db.update(usersTable).set({ fraudWarningCount: 0 }).where(eq(usersTable.id, buyerId));
+
   // High-value tracking — log + alert, but never block settlement on a logging failure.
   try {
     const s = await getSettings(["highValueThreshold", "highValueCriticalThreshold"]);

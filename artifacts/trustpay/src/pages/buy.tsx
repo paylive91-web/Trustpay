@@ -445,7 +445,23 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
           <div className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-sky-300 to-transparent" />
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-2xl font-black tracking-tight">₹{buy.amount}</div>
+              <div className="flex items-center gap-2">
+                <div className="text-2xl font-black tracking-tight">₹{buy.amount}</div>
+                <button
+                  type="button"
+                  className="flex items-center justify-center w-7 h-7 rounded-full bg-sky-100 hover:bg-sky-200 transition-colors"
+                  title="Copy amount"
+                  onClick={() => {
+                    navigator.clipboard.writeText(String(buy.amount)).then(() => {
+                      toast({ title: "Amount copied!", description: `₹${buy.amount} copied to clipboard` });
+                    }).catch(() => {
+                      toast({ title: "Copy failed", description: "Please copy manually", variant: "destructive" });
+                    });
+                  }}
+                >
+                  <Copy className="w-3.5 h-3.5 text-sky-600" />
+                </button>
+              </div>
               <div className="inline-flex items-center gap-1 mt-1 text-xs text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                 +₹{Number(buy.rewardAmount || 0).toFixed(2)} reward ({buy.rewardPercent}%)
@@ -509,6 +525,13 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
               />
             </Button>
           </div>
+
+          {!expired && !isOnline(buy.seller?.lastSeenAt) && (
+            <div className="flex items-start gap-2 rounded-2xl border border-orange-200 bg-orange-50 px-3 py-2.5 text-xs text-orange-800">
+              <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0 text-orange-500" />
+              <span>Seller appears offline right now. You can still submit your payment proof — it will be accepted and reviewed.</span>
+            </div>
+          )}
 
           {expired ? (
             <Button variant="destructive" className="w-full" onClick={() => cancelMut.mutate()}>

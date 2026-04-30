@@ -269,7 +269,7 @@ export async function autoConfirmExpired() {
       userId: o.userId,
       kind: "seller_offline_penalty",
       title: "⚠️ -1 Trust — Order Dispute",
-      body: `Aapka order ₹${parseFloat(o.amount).toFixed(2)} dispute mein chala gaya kyunki aap matching ke dauran offline ho gaye. Agla baar order lock ho to online rahiye.`,
+      body: `Your order ₹${parseFloat(o.amount).toFixed(2)} went to dispute because you went offline during matching. Please stay online when an order is locked.`,
       severity: "warn",
     });
 
@@ -277,8 +277,8 @@ export async function autoConfirmExpired() {
     await db.insert(userNotificationsTable).values({
       userId: o.lockedByUserId,
       kind: "seller_offline_dispute_buyer",
-      title: "Seller Offline — Dispute Khula",
-      body: `Seller offline the isliye aapka ₹${parseFloat(o.amount).toFixed(2)} ka order dispute mein gaya. Apna payment proof 24 ghante mein upload karein.`,
+      title: "Seller Offline — Dispute Opened",
+      body: `The seller went offline, so your ₹${parseFloat(o.amount).toFixed(2)} order has been moved to dispute. Please upload your payment proof within 24 hours.`,
       severity: "info",
     });
   }

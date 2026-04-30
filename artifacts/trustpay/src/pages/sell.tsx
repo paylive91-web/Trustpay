@@ -184,7 +184,7 @@ export default function Sell() {
                 return await r.json();
               },
               refetchInterval: 30000,
-            }).data || []).filter((d) => d.status === "open").length)} dispute open hai — aap sell page par kaam continue kar sakte ho.
+            }).data || []).filter((d) => d.status === "open").length)} dispute open — you can continue selling while it's being reviewed.
           </div>
         </div>
       )}
@@ -212,99 +212,160 @@ export default function Sell() {
 
       <div className="p-4 space-y-4">
         {/* Premium matching hero */}
-        <Card className="overflow-hidden border-none shadow-2xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 text-white">
+        <Card className="overflow-hidden border-none shadow-2xl text-white" style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #4c1d95 35%, #7c3aed 65%, #c026d3 100%)" }}>
           <CardContent className="p-0">
-            <div className="p-5 relative">
-              <div className="absolute top-3 right-3">
-                {isMatching ? (
-                  <span className="flex items-center gap-1.5 text-xs bg-white/20 backdrop-blur px-2.5 py-1 rounded-full">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
-                    </span>
-                    LIVE
-                  </span>
-                ) : (
-                  <span className="text-xs bg-white/15 px-2.5 py-1 rounded-full">Idle</span>
-                )}
-              </div>
-              {!isMatching && (
-                <div className="flex items-center gap-2 text-white/80 text-xs uppercase tracking-widest">
-                  <Sparkles className="w-3.5 h-3.5" /> Sell Matching
-                </div>
-              )}
+            {/* Animated background grid */}
+            <div className="relative overflow-hidden">
+              <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "24px 24px" }} />
 
-              {isMatching ? (
-                /* ── Creative radar / searching animation ── */
-                <div className="py-2">
-                  {/* Radar rings */}
-                  <div className="flex items-center justify-center mt-1 mb-4">
-                    <div className="relative flex items-center justify-center w-28 h-28">
-                      <span className="absolute w-28 h-28 rounded-full bg-white/10 animate-ping" style={{ animationDuration: "2s" }} />
-                      <span className="absolute w-20 h-20 rounded-full bg-white/10 animate-ping" style={{ animationDuration: "2s", animationDelay: "0.4s" }} />
-                      <span className="absolute w-12 h-12 rounded-full bg-white/15 animate-ping" style={{ animationDuration: "2s", animationDelay: "0.8s" }} />
-                      <span className="relative z-10 flex items-center justify-center w-14 h-14 rounded-full bg-white/25 backdrop-blur shadow-lg">
-                        <Radio className="w-7 h-7 text-white animate-pulse" />
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-black tracking-tight">Matching is ON</div>
-                    <p className="text-sm text-white/75 mt-1">Searching for buyers — please wait.</p>
-                  </div>
-                  <div className="mt-5 grid grid-cols-3 gap-3">
-                    <div className="rounded-2xl bg-white/15 backdrop-blur p-3 text-center">
-                      <div className="text-[11px] uppercase tracking-wider text-white/75">Time left</div>
-                      <div className="font-mono text-2xl font-black mt-0.5">{fmtCountdown(remaining)}</div>
-                    </div>
-                    <div className="rounded-2xl bg-white/15 backdrop-blur p-3 text-center">
-                      <div className="text-[11px] uppercase tracking-wider text-white/75">In queue</div>
-                      <div className="text-2xl font-black mt-0.5">{matching?.available || 0}</div>
-                    </div>
-                    <div className="rounded-2xl bg-white/15 backdrop-blur p-3 text-center">
-                      <div className="text-[11px] uppercase tracking-wider text-white/75">Locked</div>
-                      <div className="text-2xl font-black mt-0.5">{matching?.locked || 0}</div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <>
-                <div className="mt-3 text-3xl sm:text-4xl font-black tracking-tight">Ready to sell?</div>
-                <p className="mt-2 text-sm text-white/85 leading-relaxed max-w-md">
-                  Tap Start Selling to go live in the buy queue for the next 15 minutes.
-                </p>
-                <div className="mt-5 grid grid-cols-3 gap-3">
-                  <div className="rounded-2xl bg-white/15 backdrop-blur p-3 text-center">
-                    <Wallet className="w-4 h-4 mx-auto opacity-80" />
-                    <div className="text-[10px] uppercase tracking-wider text-white/75 mt-1">Balance</div>
-                    <div className="text-base font-bold">₹{balance.toFixed(0)}</div>
-                  </div>
-                  <div className="rounded-2xl bg-white/15 backdrop-blur p-3 text-center">
-                    <Clock className="w-4 h-4 mx-auto opacity-80" />
-                    <div className="text-[10px] uppercase tracking-wider text-white/75 mt-1">Held</div>
-                    <div className="text-base font-bold">₹{Number(heldBalance).toFixed(0)}</div>
-                  </div>
-                  <div className="rounded-2xl bg-white/15 backdrop-blur p-3 text-center">
-                    <ShieldCheck className="w-4 h-4 mx-auto opacity-80" />
-                    <div className="text-[10px] uppercase tracking-wider text-white/75 mt-1">Trust</div>
-                    <div className="text-base font-bold">{trustScore}</div>
-                  </div>
-                </div>
-                </>
-              )}
-
-              <div className="mt-5">
+              <div className="p-5 relative z-10">
                 {isMatching ? (
-                  <Button onClick={() => stopMut.mutate()} disabled={stopMut.isPending} className="w-full h-12 text-base font-bold rounded-2xl bg-white text-violet-700 hover:bg-white/90 shadow-lg">
-                    {stopMut.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                    Stop Matching
-                  </Button>
+                  /* ── LIVE matching state ── */
+                  <div>
+                    {/* Top bar */}
+                    <div className="flex items-center justify-between mb-5">
+                      <div className="flex items-center gap-2 bg-emerald-400/20 border border-emerald-400/40 rounded-full px-3 py-1">
+                        <span className="relative flex h-2.5 w-2.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
+                        </span>
+                        <span className="text-xs font-black tracking-widest text-emerald-300 uppercase">You're Live</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-[10px] text-white/60 uppercase tracking-wider">Time left</div>
+                        <div className="font-mono text-xl font-black text-white">{fmtCountdown(remaining)}</div>
+                      </div>
+                    </div>
+
+                    {/* Central radar animation */}
+                    <div className="flex justify-center mb-5">
+                      <div className="relative flex items-center justify-center w-36 h-36">
+                        <span className="absolute w-36 h-36 rounded-full border border-white/20 animate-ping" style={{ animationDuration: "2.8s" }} />
+                        <span className="absolute w-28 h-28 rounded-full border border-white/20 animate-ping" style={{ animationDuration: "2.8s", animationDelay: "0.6s" }} />
+                        <span className="absolute w-20 h-20 rounded-full border border-white/25 animate-ping" style={{ animationDuration: "2.8s", animationDelay: "1.2s" }} />
+                        <span className="absolute w-36 h-36 rounded-full bg-violet-400/10 animate-pulse" style={{ animationDuration: "3s" }} />
+                        <div className="relative z-10 flex flex-col items-center justify-center w-20 h-20 rounded-full shadow-2xl border border-white/30" style={{ background: "radial-gradient(circle, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.1) 100%)" }}>
+                          <Radio className="w-6 h-6 text-white mb-0.5 animate-pulse" />
+                          <span className="text-[10px] text-white/70 font-medium">Matching</span>
+                        </div>
+                        {/* Floating buyer dots */}
+                        <span className="absolute w-5 h-5 rounded-full bg-emerald-400 shadow-lg border-2 border-white animate-bounce" style={{ top: 4, right: 16, animationDuration: "1.8s" }} />
+                        <span className="absolute w-4 h-4 rounded-full bg-sky-400 shadow-lg border-2 border-white animate-bounce" style={{ bottom: 10, left: 10, animationDuration: "2.2s", animationDelay: "0.4s" }} />
+                        <span className="absolute w-4 h-4 rounded-full bg-fuchsia-400 shadow-lg border-2 border-white animate-bounce" style={{ top: 20, left: 4, animationDuration: "1.6s", animationDelay: "0.8s" }} />
+                        <span className="absolute w-3 h-3 rounded-full bg-yellow-400 shadow-lg border-2 border-white animate-bounce" style={{ bottom: 4, right: 8, animationDuration: "2.0s", animationDelay: "1.2s" }} />
+                      </div>
+                    </div>
+
+                    {/* Balance + Earnings */}
+                    <div className="rounded-2xl bg-white/10 border border-white/20 p-4 mb-4 text-center backdrop-blur">
+                      <div className="text-sm text-white/70 mb-1">Your amount being matched</div>
+                      <div className="text-4xl font-black tracking-tight">₹{balance.toFixed(0)}</div>
+                      <div className="flex items-center justify-center gap-2 mt-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="text-sm text-emerald-300 font-semibold animate-pulse">
+                          Buyers are watching right now
+                        </span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      </div>
+                    </div>
+
+                    {/* Earnings potential */}
+                    <div className="rounded-2xl bg-emerald-500/20 border border-emerald-400/30 px-4 py-3 mb-4 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-emerald-400/30 flex items-center justify-center flex-shrink-0">
+                        <Sparkles className="w-5 h-5 text-emerald-300" />
+                      </div>
+                      <div>
+                        <div className="text-[11px] text-emerald-200 uppercase tracking-wider">Potential earnings today</div>
+                        <div className="text-xl font-black text-emerald-300">+₹{(balance * 0.05).toFixed(0)} <span className="text-sm font-normal text-emerald-400">at 5% reward</span></div>
+                      </div>
+                    </div>
+
+                    {/* Stats row */}
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      <div className="rounded-2xl bg-white/10 backdrop-blur p-3 text-center border border-white/10">
+                        <div className="text-[11px] uppercase tracking-wider text-white/60">In Queue</div>
+                        <div className="text-3xl font-black mt-0.5">{matching?.available || 0}</div>
+                      </div>
+                      <div className={`rounded-2xl p-3 text-center border ${(matching?.locked || 0) > 0 ? "bg-emerald-500/25 border-emerald-400/40" : "bg-white/10 border-white/10"}`}>
+                        <div className={`text-[11px] uppercase tracking-wider ${(matching?.locked || 0) > 0 ? "text-emerald-300" : "text-white/60"}`}>Locked 🔒</div>
+                        <div className={`text-3xl font-black mt-0.5 ${(matching?.locked || 0) > 0 ? "text-emerald-300" : ""}`}>{matching?.locked || 0}</div>
+                      </div>
+                    </div>
+
+                    {/* Stay online urge */}
+                    <div className="rounded-2xl bg-amber-400/20 border border-amber-400/30 px-4 py-3 mb-4 text-center">
+                      <div className="text-sm text-amber-200 font-semibold">🔥 Don't leave — a buyer could lock any second!</div>
+                    </div>
+                  </div>
                 ) : (
-                  <Button onClick={() => startMut.mutate()} disabled={startMut.isPending || isFrozen} className="w-full h-12 text-base font-bold rounded-2xl bg-white text-violet-700 hover:bg-white/90 shadow-lg">
-                    {startMut.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Radio className="w-4 h-4 mr-2" />}
-                    Start Selling — 15 min
-                  </Button>
+                  /* ── Idle state ── */
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2 text-white/60 text-xs uppercase tracking-widest">
+                        <Sparkles className="w-3.5 h-3.5" /> Sell Matching
+                      </div>
+                      <span className="text-xs bg-white/10 px-2.5 py-1 rounded-full text-white/60">Idle</span>
+                    </div>
+
+                    <div className="text-3xl sm:text-4xl font-black tracking-tight leading-tight">
+                      Turn your balance<br />
+                      <span className="text-fuchsia-300">into earnings.</span>
+                    </div>
+                    <p className="mt-2 text-sm text-white/75 leading-relaxed">
+                      Go live for 15 minutes and let buyers pay you directly.
+                    </p>
+
+                    {/* Earnings preview */}
+                    {balance > 0 && (
+                      <div className="mt-4 rounded-2xl bg-white/10 border border-white/15 p-4">
+                        <div className="text-xs text-white/60 uppercase tracking-wider mb-2">If you sell now</div>
+                        <div className="flex items-end gap-3">
+                          <div>
+                            <div className="text-[11px] text-white/50">Your balance</div>
+                            <div className="text-xl font-black">₹{balance.toFixed(0)}</div>
+                          </div>
+                          <div className="text-white/40 text-xl mb-0.5">→</div>
+                          <div>
+                            <div className="text-[11px] text-emerald-300">You earn</div>
+                            <div className="text-xl font-black text-emerald-300">+₹{(balance * 0.05).toFixed(0)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="mt-4 grid grid-cols-3 gap-2">
+                      <div className="rounded-2xl bg-white/10 p-3 text-center">
+                        <Wallet className="w-4 h-4 mx-auto opacity-60 mb-1" />
+                        <div className="text-[10px] uppercase tracking-wider text-white/60">Balance</div>
+                        <div className="text-sm font-bold">₹{balance.toFixed(0)}</div>
+                      </div>
+                      <div className="rounded-2xl bg-white/10 p-3 text-center">
+                        <Clock className="w-4 h-4 mx-auto opacity-60 mb-1" />
+                        <div className="text-[10px] uppercase tracking-wider text-white/60">Held</div>
+                        <div className="text-sm font-bold">₹{Number(heldBalance).toFixed(0)}</div>
+                      </div>
+                      <div className="rounded-2xl bg-white/10 p-3 text-center">
+                        <ShieldCheck className="w-4 h-4 mx-auto opacity-60 mb-1" />
+                        <div className="text-[10px] uppercase tracking-wider text-white/60">Trust</div>
+                        <div className="text-sm font-bold">{trustScore}</div>
+                      </div>
+                    </div>
+                  </div>
                 )}
+
+                <div className="mt-4">
+                  {isMatching ? (
+                    <Button onClick={() => stopMut.mutate()} disabled={stopMut.isPending} className="w-full h-12 text-base font-bold rounded-2xl bg-white/15 hover:bg-white/25 border border-white/30 text-white shadow-lg backdrop-blur">
+                      {stopMut.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <WifiOff className="w-4 h-4 mr-2" />}
+                      Stop Matching
+                    </Button>
+                  ) : (
+                    <Button onClick={() => startMut.mutate()} disabled={startMut.isPending || isFrozen} className="w-full h-13 text-base font-bold rounded-2xl shadow-xl border border-white/30 text-violet-900 hover:scale-[1.01] transition-transform" style={{ background: "linear-gradient(135deg, #fff 0%, #e9d5ff 50%, #fdf4ff 100%)" }}>
+                      {startMut.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Radio className="w-4 h-4 mr-2" />}
+                      Start Selling — Go Live 🚀
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -370,7 +431,7 @@ function LockedOrderTabs({
         {lockedChunks.length === 0 ? (
           <Card>
             <CardContent className="p-6 text-center text-sm text-muted-foreground">
-              Koi order abhi lock nahi hai.
+              No orders locked right now.
             </CardContent>
           </Card>
         ) : (
@@ -410,7 +471,7 @@ function LockedOrderTabs({
                     )}
                   </div>
                   <div className="rounded-xl border border-dashed border-amber-300 bg-amber-50 p-3 text-xs text-amber-800 leading-relaxed">
-                    Buyer ne aapka order lock kar liya hai. Jab buyer payment proof bhejega, aapko confirm karna hoga.
+                    A buyer has locked your order. Once they submit payment proof, you will need to confirm it.
                   </div>
                 </CardContent>
               </Card>
