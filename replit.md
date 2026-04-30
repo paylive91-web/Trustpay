@@ -1,5 +1,10 @@
 # TrustPay - P2P Payment Platform
 
+## UI Copy Rules (read first)
+
+- **Language: English only** in every user-facing string. Hinglish/Hindi only allowed inside dev comments.
+- **Never call the platform "admin"** in user-facing copy. To end users the platform is **TrustPay** — replace any phrase like "by admin", "by the admin", "admin has...", "blocked by admin", "frozen by admin", "paused by admin" with the equivalent using **TrustPay**. The word "admin" is fine in internal admin-only screens (e.g. the admin panel itself), error logs, and code comments.
+
 ## Overview
 
 TrustPay is a self-contained P2P (peer-to-peer) UPI payment platform. Users can BUY balance from other users (paying via UPI directly to seller) and SELL balance via Auto-Sell (UPI Connect activates random chunking of balance into the buy queue). Buyers earn 3-5% reward depending on amount tier. The platform never holds the UPI rails — it only matches and arbitrates trades.

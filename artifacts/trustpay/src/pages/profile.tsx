@@ -179,7 +179,7 @@ export default function Profile() {
               <div>
                 <p className="font-semibold text-red-800 text-sm">Account Frozen</p>
                 <p className="text-xs text-red-700 mt-0.5">
-                  {(user as any)?.freezeReason || "Your account has been frozen by admin. Please contact support."}
+                  {(user as any)?.freezeReason || "Your account has been frozen by TrustPay. Please contact support."}
                 </p>
               </div>
             </CardContent>

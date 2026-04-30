@@ -213,7 +213,7 @@ router.post("/users/:id/block", requireAdmin, async (req, res) => {
   const id = parseInt(asString(req.params.id));
   const { reason } = req.body || {};
   await db.update(usersTable).set({
-    isBlocked: true, blockedReason: reason || "Blocked by admin", blockedAt: new Date(),
+    isBlocked: true, blockedReason: reason || "Blocked by TrustPay", blockedAt: new Date(),
   }).where(eq(usersTable.id, id));
   res.json({ success: true });
 });
@@ -387,7 +387,7 @@ router.post("/fraud-alerts/:id/notify", requireAdmin, async (req, res) => {
       userId: alert.userId,
       kind: "fraud_alert",
       title: `${sevLabel}: Account flagged (${alert.rule})`,
-      body: `An admin has reviewed activity on your account and asked us to notify you.${alert.evidence ? `\n\nDetails: ${alert.evidence}` : ""}`,
+      body: `TrustPay has reviewed activity on your account and asked us to notify you.${alert.evidence ? `\n\nDetails: ${alert.evidence}` : ""}`,
       severity: alert.severity,
       fraudAlertId: alert.id,
     });

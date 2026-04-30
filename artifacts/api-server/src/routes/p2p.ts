@@ -229,7 +229,7 @@ router.post("/lock/:id", requireAuth, async (req, res) => {
     )
   ).limit(1);
   if (pairBlock) {
-    res.status(403).json({ error: "This trade pair is blocked by admin" });
+    res.status(403).json({ error: "This trade pair is blocked by TrustPay" });
     return;
   }
   // Seller must be online — reject lock if seller went offline
@@ -775,7 +775,7 @@ router.get("/matching-status", requireAuth, async (req, res) => {
   const diag = await getMatchingDiagnostics(u.id);
   let emptyReason: string | null = null;
   if (isActive && (byStatus.available || 0) === 0 && (byStatus.locked || 0) === 0) {
-    if (diag.matchingPaused) emptyReason = "Matching is paused by admin.";
+    if (diag.matchingPaused) emptyReason = "Matching is paused by TrustPay.";
     else if (diag.isFrozen) emptyReason = "Your account is frozen — sells paused.";
     else if (!diag.hasActiveUpi) emptyReason = "No active UPI ID found. Add a UPI ID to receive payments.";
     else if (diag.availableForChunks < diag.chunkMin) {
