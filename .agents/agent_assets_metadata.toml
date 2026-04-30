@@ -48,6 +48,30 @@ uri = "file://attached_assets/generated_images/trustpay_logo_clean.png"
 type = "image"
 title = "trustpay clean shield logo"
 
+[[generated]]
+id = "4NACe76T6NuHps3_xTkfb"
+uri = "file://attached_assets/generated_images/banner1_buy_reward.png"
+type = "image"
+title = "trustpay buy reward banner"
+
+[[generated]]
+id = "cETmImZLt2X9hp4xCHMPl"
+uri = "file://attached_assets/generated_images/banner2_sell_reward.png"
+type = "image"
+title = "trustpay sell reward banner"
+
+[[generated]]
+id = "h0BMeaiUaefcRMdBv3sXC"
+uri = "file://attached_assets/generated_images/banner3_agent_earn.png"
+type = "image"
+title = "trustpay agent earning banner"
+
+[[generated]]
+id = "ehfbtuVQxH7fbnJtMPkPL"
+uri = "file://attached_assets/generated_images/banner4_invite_earn.png"
+type = "image"
+title = "trustpay invite earn banner"
+
 [[outputs]]
 id = "9i2SMWhGKDU824ilpyHpE"
 uri = "file://screenshots/home-redesign.jpg"
@@ -221,3 +245,27 @@ id = "ZiPDXdaxdqVEZpM1qvAkv"
 uri = "file://attached_assets/generated_images/trustpay_logo_clean.png"
 type = "image"
 title = "TrustPay Logo — Clean Shield Style"
+
+[[outputs]]
+id = "v9B9V2kWcmhCF9iiVpZa0"
+uri = "file://attached_assets/generated_images/banner1_buy_reward.png"
+type = "image"
+title = "Banner 1 — Buy & Earn (₹10K=₹300, ₹50K=₹1500)"
+
+[[outputs]]
+id = "Hd8_uqOloP4DUoWf513h3"
+uri = "file://attached_assets/generated_images/banner2_sell_reward.png"
+type = "image"
+title = "Banner 2 — Sell Reward (1% har sell pe)"
+
+[[outputs]]
+id = "IttEz5_s2y3EmZiLsLTjd"
+uri = "file://attached_assets/generated_images/banner3_agent_earn.png"
+type = "image"
+title = "Banner 3 — Agent Earning"
+
+[[outputs]]
+id = "f6rsQaVQWO-JbsdNQcxo-"
+uri = "file://attached_assets/generated_images/banner4_invite_earn.png"
+type = "image"
+title = "Banner 4 — Invite & Earn"
