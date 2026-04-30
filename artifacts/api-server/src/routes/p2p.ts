@@ -298,11 +298,14 @@ router.post("/submit/:id", requireAuth, async (req, res) => {
     return;
   }
 
+  // Track whether seller was offline at submission time. We no longer block
+  // the submission, but if seller stays offline >15 min the buyer is allowed
+  // to escalate the order to dispute (see /buyer-dispute/:id).
   const [sellerPresence] = await db.select({ lastSeenAt: usersTable.lastSeenAt }).from(usersTable).where(eq(usersTable.id, chunk.userId)).limit(1);
-  if (!sellerPresence?.lastSeenAt || Date.now() - new Date(sellerPresence.lastSeenAt).getTime() > 2 * 60 * 1000) {
-    res.status(400).json({ error: "Seller is offline right now. Please wait until seller comes online." });
-    return;
-  }
+  const sellerOfflineMs = sellerPresence?.lastSeenAt
+    ? Date.now() - new Date(sellerPresence.lastSeenAt).getTime()
+    : Number.MAX_SAFE_INTEGER;
+  const sellerWasOffline = sellerOfflineMs > 2 * 60 * 1000;
 
   const utrIssues = await checkUtrFraud(utrClean, u.id, id);
   await checkImageHash(screenshotUrl, u.id, id, "screenshot");
@@ -327,6 +330,21 @@ router.post("/submit/:id", requireAuth, async (req, res) => {
   }).where(eq(ordersTable.id, id));
   const [updated] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
   res.json(f(updated));
+
+  // Immediate critical alert to seller — drives the loud alarm sound on
+  // their device. Sent regardless of OCR result so the seller wakes up
+  // even if they had switched apps.
+  await db.insert(userNotificationsTable).values({
+    userId: chunk.userId,
+    kind: "payment_pending_confirmation",
+    title: sellerWasOffline
+      ? `🚨 URGENT: Buyer paid ₹${chunk.amount} — confirm now!`
+      : `Buyer paid ₹${chunk.amount} — please confirm`,
+    body: sellerWasOffline
+      ? `A buyer has submitted payment proof for order #${id} while you were away from the app. Open the app NOW and confirm the payment, otherwise the buyer can open a dispute in 15 minutes.`
+      : `A buyer has submitted payment proof for order #${id}. Please review the screenshot and UTR, then confirm or dispute.`,
+    severity: "critical",
+  }).catch(() => {});
 
   // Run OCR asynchronously — don't block the response
   (async () => {
@@ -495,6 +513,109 @@ router.post("/dispute/:id", requireAuth, async (req, res) => {
     sellerProofDeadline: proofDeadline,
   });
   res.json({ success: true });
+});
+
+// Buyer-initiated dispute: only allowed when buyer has submitted payment
+// proof, the order is still pending_confirmation, AND the seller has been
+// offline for at least 15 minutes since submission. Buyer must attach a
+// bank statement screenshot proving the debit.
+router.post("/buyer-dispute/:id", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  const id = parseInt(asString(req.params.id));
+  const { bankStatementUrl, txHistoryUrl, reason } = req.body || {};
+  if (!bankStatementUrl || !String(bankStatementUrl).startsWith("data:image/")) {
+    res.status(400).json({ error: "Bank statement screenshot is required (image)" });
+    return;
+  }
+  const [chunk] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
+  if (!chunk || chunk.lockedByUserId !== u.id || chunk.status !== "pending_confirmation") {
+    res.status(400).json({ error: "You can only dispute an order you have submitted payment for" });
+    return;
+  }
+  const submittedAt = chunk.submittedAt ? new Date(chunk.submittedAt).getTime() : 0;
+  const sinceSubmissionMs = Date.now() - submittedAt;
+  const MIN_WAIT_MS = 15 * 60 * 1000;
+  if (!submittedAt || sinceSubmissionMs < MIN_WAIT_MS) {
+    const minsLeft = Math.ceil((MIN_WAIT_MS - sinceSubmissionMs) / 60000);
+    res.status(400).json({ error: `Please wait ${Math.max(1, minsLeft)} more minute(s) before opening a dispute. Sellers have 15 minutes to confirm.` });
+    return;
+  }
+  // Check seller has actually been offline since submission. If they've
+  // logged in during the wait window we still allow it (they had time to act).
+  const [sellerPresence] = await db.select({ lastSeenAt: usersTable.lastSeenAt }).from(usersTable).where(eq(usersTable.id, chunk.userId)).limit(1);
+  const sellerLastSeen = sellerPresence?.lastSeenAt ? new Date(sellerPresence.lastSeenAt).getTime() : 0;
+
+  await checkImageHash(bankStatementUrl, u.id, id, "screenshot").catch(() => {});
+  if (txHistoryUrl && String(txHistoryUrl).startsWith("data:image/")) {
+    await checkImageHash(txHistoryUrl, u.id, id, "screenshot").catch(() => {});
+  }
+
+  const settings = await getSettings(["disputeWindowHours"]);
+  const winHrs = parseInt(settings.disputeWindowHours) || 24;
+  const now = new Date();
+  const proofDeadline = new Date(now.getTime() + winHrs * 60 * 60 * 1000);
+  await db.update(ordersTable).set({ status: "disputed", updatedAt: now }).where(eq(ordersTable.id, id));
+  await db.insert(disputesTable).values({
+    orderId: id,
+    buyerId: u.id,
+    sellerId: chunk.userId,
+    reason: reason || "Seller did not confirm payment within 15 minutes (was offline)",
+    triggerReason: "seller_offline",
+    status: "open",
+    buyerBankStatementUrl: bankStatementUrl,
+    buyerTxHistoryUrl: txHistoryUrl || null,
+    buyerProofAt: now,
+    buyerProofDeadline: proofDeadline,
+    sellerProofDeadline: proofDeadline,
+  });
+  // Notify both parties
+  await db.insert(userNotificationsTable).values({
+    userId: chunk.userId,
+    kind: "buyer_opened_dispute",
+    title: `⚠️ Buyer opened a dispute for order #${id}`,
+    body: `The buyer has opened a dispute because you did not confirm their payment of ₹${chunk.amount} within 15 minutes. Upload your bank statement and proof in the disputes section before the deadline, or admin will rule in the buyer's favor.`,
+    severity: "critical",
+  }).catch(() => {});
+  await db.insert(userNotificationsTable).values({
+    userId: u.id,
+    kind: "dispute_opened",
+    title: `Dispute opened for order #${id}`,
+    body: `Your dispute has been submitted to admin for review. Please keep your payment proof ready in case admin asks for more details.`,
+    severity: "info",
+  }).catch(() => {});
+  // Telemetry: log how long the seller stayed offline
+  await logAlert(chunk.userId, id, "seller_offline_dispute", "warn",
+    `Buyer opened dispute. Seller last seen ${sellerLastSeen ? `${Math.round((Date.now() - sellerLastSeen) / 60000)} min ago` : "never"}, submission was ${Math.round(sinceSubmissionMs / 60000)} min ago.`).catch(() => {});
+  res.json({ success: true });
+});
+
+// Combined recent activity for the home screen — last N orders the user
+// either bought (locked) or sold (created sell chunk that was traded).
+router.get("/recent-orders", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  const limit = Math.min(20, parseInt(asString(req.query.limit)) || 5);
+  // Buys: orders user locked (regardless of who created the sell chunk)
+  const buys = await db.select().from(ordersTable).where(and(
+    eq(ordersTable.lockedByUserId, u.id),
+    eq(ordersTable.type, "withdrawal"),
+    inArray(ordersTable.status, ["locked", "pending_confirmation", "confirmed", "disputed", "refunded", "expired", "cancelled"]),
+  )).orderBy(sql`${ordersTable.updatedAt} desc`).limit(limit);
+  // Sells: chunks user owns (created) that have moved past available
+  const sells = await db.select().from(ordersTable).where(and(
+    eq(ordersTable.userId, u.id),
+    eq(ordersTable.type, "withdrawal"),
+    inArray(ordersTable.status, ["locked", "pending_confirmation", "confirmed", "disputed", "refunded"]),
+  )).orderBy(sql`${ordersTable.updatedAt} desc`).limit(limit);
+  const merged = [...buys.map((r) => ({ ...f(r), side: "buy" as const })), ...sells.map((r) => ({ ...f(r), side: "sell" as const }))];
+  // Dedup by id (a row could match both, keep buy if user locked their own — rare)
+  const seen = new Set<number>();
+  const unique = merged.filter((r) => {
+    if (seen.has(r.id)) return false;
+    seen.add(r.id);
+    return true;
+  });
+  unique.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  res.json(unique.slice(0, limit));
 });
 
 router.post("/cancel/:id", requireAuth, async (req, res) => {

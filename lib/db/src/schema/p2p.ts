@@ -32,6 +32,9 @@ export const disputesTable = pgTable("disputes", {
   buyerBankStatementUrl: text("buyer_bank_statement_url"),
   // Buyer's last 3 transactions screenshot (for seller_offline disputes)
   buyerTxHistoryUrl: text("buyer_tx_history_url"),
+  // Buyer's screen recording of their payment app showing the transaction
+  // (for seller_offline disputes — strong evidence the payment was made)
+  buyerRecordingUrl: text("buyer_recording_url"),
   sellerBankStatementUrl: text("seller_bank_statement_url"),
   sellerRecordingUrl: text("seller_recording_url"),
   sellerLastTxnScreenshotUrl: text("seller_last_txn_screenshot_url"),
