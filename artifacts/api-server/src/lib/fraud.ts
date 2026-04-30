@@ -394,19 +394,9 @@ export async function recordDeviceFingerprint(userId: number, fingerprint: strin
     await db.insert(deviceFingerprintsTable).values({ userId, fingerprint, ip, userAgent });
   }
 
-  // Multi-account same device check
-  const others = await db.select().from(deviceFingerprintsTable).where(and(
-    eq(deviceFingerprintsTable.fingerprint, fingerprint),
-    ne(deviceFingerprintsTable.userId, userId),
-  ));
-  if (others.length > 0) {
-    const distinctUsers = new Set(others.map((o) => o.userId));
-    if (distinctUsers.size >= 2) {
-      await logAlert(userId, null, "multi_account_same_device", "critical", `Device shared with ${distinctUsers.size} other accounts`);
-    } else {
-      await logAlert(userId, null, "multi_account_same_device", "warn", `Device shared with ${distinctUsers.size} other account`);
-    }
-  }
+  // Multi-account same device check is intentionally disabled.
+  // Users are allowed to log into multiple accounts on the same device
+  // without any warning, freeze, or fraud alert.
 }
 
 export async function checkAccountFraud(userId: number, ip: string, userAgent: string): Promise<void> {
