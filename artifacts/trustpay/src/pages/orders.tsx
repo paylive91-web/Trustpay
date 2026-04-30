@@ -277,7 +277,7 @@ export default function Orders() {
               <>
                 <UploadTile label="Bank Statement" required file={bankFile} onChange={setBankFile} accept="image/*,application/pdf" hint="PDF / image up to 5 MB" />
                 <UploadTile label="Payment Screenshot" required file={recordingFile} onChange={setRecordingFile} accept="image/*" hint="Upload the payment screenshot" />
-                <UploadTile label="Payment Recording" required file={lastTxnFile} onChange={setLastTxnFile} accept="image/*,video/*" hint="Upload the payment recording" />
+                <UploadTile label="Payment Recording" required file={lastTxnFile} onChange={setLastTxnFile} accept="image/*,video/*" hint="Upload the payment recording (image or video)" />
               </>
             ) : (
               <>
@@ -286,7 +286,7 @@ export default function Orders() {
                 <UploadTile label="Last Transaction Screenshot" required file={lastTxnFile} onChange={setLastTxnFile} accept="image/*" hint="Most recent UPI txn from your bank app" />
               </>
             )}
-            <div className="text-xs text-muted-foreground">All files must be under 5 MB each.</div>
+            <div className="text-xs text-muted-foreground">Bank statement: PDF. Screenshot: image. Recording: image or video.</div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setActiveProof(null)}>Cancel</Button>

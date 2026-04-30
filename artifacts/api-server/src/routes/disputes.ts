@@ -28,23 +28,31 @@ router.get("/my", requireAuth, async (req, res) => {
   })));
 });
 
-// Bank statements must be PDF (image screenshots no longer accepted).
-// Other proof kinds (recordings, transaction screenshots) remain image-only.
+// Bank statements must be PDF.
+// Recordings accept image or video — no size cap (body parser limit applies).
+// Transaction screenshots remain image-only with a 20 MB cap.
 const PDF_PROOF_MIME = /^data:application\/pdf;base64,/i;
 const IMAGE_PROOF_MIME = /^data:image\/(png|jpe?g|gif|webp|heic);base64,/i;
-const MAX_PROOF_BYTES = 5 * 1024 * 1024; // 5 MB raw
-function validateProof(dataUrl: unknown, kind: "image" | "pdf"): string | null {
+const VIDEO_PROOF_MIME = /^data:video\/(mp4|webm|quicktime|x-matroska|3gpp);base64,/i;
+const MAX_IMAGE_BYTES = 20 * 1024 * 1024; // 20 MB for screenshots
+function validateProof(dataUrl: unknown, kind: "image" | "pdf" | "recording"): string | null {
   if (typeof dataUrl !== "string" || dataUrl.length < 32) return "Invalid file";
-  const ok = kind === "pdf" ? PDF_PROOF_MIME : IMAGE_PROOF_MIME;
-  if (!ok.test(dataUrl)) {
-    return kind === "pdf"
-      ? "Only PDF files allowed for bank statements"
-      : "Only PNG/JPG/WEBP/HEIC images allowed";
+  if (kind === "pdf") {
+    if (!PDF_PROOF_MIME.test(dataUrl)) return "Only PDF files allowed for bank statements";
+    return null;
   }
-  // base64 expands by ~4/3; check decoded byte size <= MAX_PROOF_BYTES
+  if (kind === "recording") {
+    // Accept both image and video for recordings — no size limit
+    if (!IMAGE_PROOF_MIME.test(dataUrl) && !VIDEO_PROOF_MIME.test(dataUrl)) {
+      return "Only image or video files allowed for recordings";
+    }
+    return null;
+  }
+  // image: PNG/JPG/WEBP/HEIC with 20 MB cap
+  if (!IMAGE_PROOF_MIME.test(dataUrl)) return "Only PNG/JPG/WEBP/HEIC images allowed";
   const b64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
   const bytes = Math.floor(b64.length * 3 / 4);
-  if (bytes > MAX_PROOF_BYTES) return "File exceeds 5 MB";
+  if (bytes > MAX_IMAGE_BYTES) return "File exceeds 20 MB";
   return null;
 }
 
@@ -83,7 +91,7 @@ router.post("/seller-proof/:id", requireAuth, async (req, res) => {
   const { bankStatementUrl, recordingUrl, lastTxnScreenshotUrl } = req.body;
   for (const [name, url, kind] of [
     ["bank statement", bankStatementUrl, "pdf" as const],
-    ["screen recording", recordingUrl, "image" as const],
+    ["screen recording", recordingUrl, "recording" as const],
     ["last-transaction screenshot", lastTxnScreenshotUrl, "image" as const],
   ]) {
     const e = validateProof(url, kind as any);
