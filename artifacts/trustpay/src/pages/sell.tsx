@@ -70,6 +70,11 @@ export default function Sell() {
     queryKey: ["pending-confirms"], queryFn: () => api("/p2p/my-pending-confirmations"), enabled: !!user, refetchInterval: 4000,
   });
 
+  // Compute isMatching early so Wake Lock hooks can reference it
+  const expiresAtEarly = matching?.matchingExpiresAt ? new Date(matching.matchingExpiresAt).getTime() : 0;
+  const remainingEarly = expiresAtEarly - now;
+  const isMatchingEarly = !!matching?.isActive && remainingEarly > 0;
+
   useEffect(() => { if (isError) setLocation("/login"); }, [isError, setLocation]);
 
   useEffect(() => {
@@ -77,16 +82,48 @@ export default function Sell() {
     window.addEventListener("matching-stopped", handler);
     return () => window.removeEventListener("matching-stopped", handler);
   }, []);
+  // Wake Lock — prevent screen sleep when matching is active
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  useEffect(() => {
+    if (!isMatchingEarly) {
+      wakeLockRef.current?.release().catch(() => {});
+      wakeLockRef.current = null;
+      return;
+    }
+    if ("wakeLock" in navigator) {
+      (navigator as any).wakeLock.request("screen").then((wl: WakeLockSentinel) => {
+        wakeLockRef.current = wl;
+      }).catch(() => {});
+    }
+    return () => {
+      wakeLockRef.current?.release().catch(() => {});
+      wakeLockRef.current = null;
+    };
+  }, [isMatchingEarly]);
+
+  // Re-acquire Wake Lock when page becomes visible again (OS releases it on hide)
+  useEffect(() => {
+    const onVisible = () => {
+      if (isMatchingEarly && "wakeLock" in navigator && (!wakeLockRef.current || wakeLockRef.current.released)) {
+        (navigator as any).wakeLock.request("screen").then((wl: WakeLockSentinel) => {
+          wakeLockRef.current = wl;
+        }).catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [isMatchingEarly]);
+
   // Sound when a new lock or pending-confirmation arrives.
   const prevLocked = useRef(0);
   const prevPending = useRef(0);
   useEffect(() => {
     const locked = matching?.locked || 0;
-    if (locked > prevLocked.current) playAlarm();
+    if (locked > prevLocked.current) playLoudAlarm();
     prevLocked.current = locked;
   }, [matching?.locked]);
   useEffect(() => {
-    if (pendingConfirms.length > prevPending.current) playAlarm();
+    if (pendingConfirms.length > prevPending.current) playLoudAlarm();
     prevPending.current = pendingConfirms.length;
   }, [pendingConfirms.length]);
 
@@ -199,8 +236,8 @@ export default function Sell() {
               </div>
               <p className="mt-2 text-sm text-white/85 leading-relaxed max-w-md">
                 {isMatching
-                  ? "Keep this app open and stay online. You will receive an alert sound and notification the moment a buyer is matched to your order. If you close the app or go offline, your matching session will stop automatically — only online sellers are matched with buyers."
-                  : "Tap Start Selling and your chunks will go live in the buy queue for the next 15 minutes."}
+                  ? "Aap dusri apps use kar sakte ho — jaise hi buyer payment karega, loud alarm bajega aur vibration hogi. Wapas aao aur confirm karo."
+                  : "Start Selling dabao — aapke orders 15 minute ke liye buy queue mein live ho jayenge."}
               </p>
 
               {isMatching ? (
