@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useGetMe, useGetAppSettings } from "@workspace/api-client-react";
 import { useLocation, Link } from "wouter";
 import Layout from "@/components/layout";
-import DisputePauseBanner from "@/components/dispute-pause-banner";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -225,7 +225,6 @@ export default function Buy() {
         <Link href="/"><ArrowLeft className="cursor-pointer" /></Link>
         <span className="font-bold text-lg flex-1">Buy</span>
       </div>
-      <div className="px-4 pt-3"><DisputePauseBanner /></div>
       <div className="p-4 space-y-4">
         {myBuy ? (
           <ActiveBuyCard buy={myBuy} refetch={refetchBuy} user={user} />

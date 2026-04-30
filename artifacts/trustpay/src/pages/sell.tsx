@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useGetMe, useGetAppSettings } from "@workspace/api-client-react";
 import { useLocation, Link } from "wouter";
 import Layout from "@/components/layout";
-import DisputePauseBanner from "@/components/dispute-pause-banner";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -166,35 +166,10 @@ export default function Sell() {
 
   return (
     <Layout>
-      {((useQuery<any[]>({
-        queryKey: ["my-disputes-banner"],
-        queryFn: async () => {
-          const r = await fetch(`${API_BASE}/disputes/my`, { headers: { Authorization: `Bearer ${getAuthToken()}` } });
-          if (!r.ok) return [];
-          return await r.json();
-        },
-        refetchInterval: 30000,
-      }).data || []).filter((d) => d.status === "open").length > 0) && (
-        <div className="px-4 pt-3">
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            {((useQuery<any[]>({
-              queryKey: ["my-disputes-banner-2"],
-              queryFn: async () => {
-                const r = await fetch(`${API_BASE}/disputes/my`, { headers: { Authorization: `Bearer ${getAuthToken()}` } });
-                if (!r.ok) return [];
-                return await r.json();
-              },
-              refetchInterval: 30000,
-            }).data || []).filter((d) => d.status === "open").length)} dispute open — you can continue selling while it's being reviewed.
-          </div>
-        </div>
-      )}
       <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-secondary via-secondary to-primary text-white">
         <Link href="/"><ArrowLeft className="cursor-pointer" /></Link>
         <span className="font-bold text-lg flex-1">Sell — Matching</span>
       </div>
-      <div className="px-4 pt-3"><DisputePauseBanner /></div>
-
       {isFrozen && (
         <div className="px-4 pt-3">
           <Card className="border-red-400 bg-red-50">
