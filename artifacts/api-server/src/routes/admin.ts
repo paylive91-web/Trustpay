@@ -551,6 +551,7 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
     telegramLink: b.telegramLink, inviteShareImageUrl: b.inviteShareImageUrl,
     appName: b.appName, appLogoUrl: b.appLogoUrl, popupSoundUrl: b.popupSoundUrl,
     buyRules: b.buyRules, sellRules: b.sellRules,
+    buyRulesImageUrl: b.buyRulesImageUrl, sellRulesImageUrl: b.sellRulesImageUrl,
     chunkMin: b.chunkMin, chunkMax: b.chunkMax,
     adminChunkMin: b.adminChunkMin, adminChunkMax: b.adminChunkMax,
     newUserChunkCap: b.newUserChunkCap, newUserTradeThreshold: b.newUserTradeThreshold,
