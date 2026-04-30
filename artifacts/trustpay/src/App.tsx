@@ -15,6 +15,7 @@ import Orders from "@/pages/orders";
 import Transactions from "@/pages/transactions";
 import Support from "@/pages/support";
 import Profile from "@/pages/profile";
+import Stats from "@/pages/stats";
 import Invite from "@/pages/invite";
 import Info from "@/pages/info";
 import UpiManage from "@/pages/upi-manage";
@@ -49,6 +50,7 @@ function Router() {
       <Route path="/transactions" component={Transactions} />
       <Route path="/support" component={Support} />
       <Route path="/profile" component={Profile} />
+      <Route path="/stats" component={Stats} />
       <Route path="/invite" component={Invite} />
       <Route path="/info" component={Info} />
       <Route path="/upi" component={UpiManage} />
