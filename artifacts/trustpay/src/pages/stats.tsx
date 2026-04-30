@@ -61,7 +61,7 @@ export default function Stats() {
         {/* Top nav */}
         <div className="flex items-center gap-3 px-4 pt-10 pb-4">
           <button
-            onClick={() => setLocation("/me")}
+            onClick={() => setLocation("/profile")}
             className="w-9 h-9 rounded-xl flex items-center justify-center"
             style={{ background: "rgba(255,255,255,0.08)" }}
           >
