@@ -27,11 +27,11 @@ export function isBankStandardUtr(utr: string): boolean {
 export function utrError(utr: string): string | null {
   const t = utr.trim();
   if (!t) return null;
-  if (t.length < 12) return `UTR 12 characters ka hona chahiye (abhi ${t.length} hain)`;
-  if (t.length > 12) return `UTR 12 se zyada characters nahi hone chahiye (abhi ${t.length} hain)`;
-  if (!/^[A-Z0-9]+$/i.test(t)) return "UTR mein sirf letters (A-Z) aur numbers (0-9) hote hain";
-  if (REPEATED_CHAR_RE.test(t.toUpperCase())) return "UTR valid nahi lagta — ek hi character baar baar repeat ho raha hai";
-  if (!isBankStandardUtr(t)) return "UTR bank-standard format mein nahi hai (e.g. T12345678901, HDFC12345678)";
+  if (t.length < 12) return `UTR must be 12 characters (you entered ${t.length})`;
+  if (t.length > 12) return `UTR cannot exceed 12 characters (you entered ${t.length})`;
+  if (!/^[A-Z0-9]+$/i.test(t)) return "UTR can only contain letters (A-Z) and numbers (0-9)";
+  if (REPEATED_CHAR_RE.test(t.toUpperCase())) return "UTR appears invalid — same character repeated multiple times";
+  if (!isBankStandardUtr(t)) return "UTR is not in bank-standard format (e.g. T12345678901, HDFC12345678)";
   return null;
 }
 

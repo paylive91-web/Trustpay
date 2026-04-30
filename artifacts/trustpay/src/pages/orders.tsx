@@ -54,7 +54,7 @@ export default function Orders() {
       if (role === "buyer") {
         const offline = isOfflineDispute(activeProof);
         if (offline) {
-          if (!txHistoryFile && !bankFile) { toast({ title: "Ek proof zaroor chahiye", description: "Transaction history screenshot ya bank statement upload karo", variant: "destructive" }); return; }
+          if (!txHistoryFile && !bankFile) { toast({ title: "At least one proof required", description: "Upload a transaction history screenshot or bank statement", variant: "destructive" }); return; }
           const data: Record<string, string> = {};
           if (txHistoryFile) data.txHistoryUrl = await fileToDataUrl(txHistoryFile);
           if (bankFile) data.bankStatementUrl = await fileToDataUrl(bankFile);
@@ -268,10 +268,10 @@ export default function Orders() {
             {activeProof?.role === "buyer" && isOfflineDispute(activeProof) ? (
               <>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-                  Seller offline tha jab order expire hua. Apna payment proof upload karo — admin verify karke refund ya confirmation karenge.
+                  Seller was offline when the order expired. Upload your payment proof — admin will verify and process a refund or confirmation.
                 </div>
-                <UploadTile label="Transaction History Screenshot" required file={txHistoryFile} onChange={setTxHistoryFile} accept="image/*" hint="Bank app ka transaction history screenshot (required)" />
-                <UploadTile label="Bank Statement PDF" file={bankFile} onChange={setBankFile} accept="image/*,application/pdf" hint="Bank statement optional (extra proof ke liye)" />
+                <UploadTile label="Transaction History Screenshot" required file={txHistoryFile} onChange={setTxHistoryFile} accept="image/*" hint="Transaction history screenshot from your bank app (required)" />
+                <UploadTile label="Bank Statement PDF" file={bankFile} onChange={setBankFile} accept="image/*,application/pdf" hint="Bank statement optional (for additional proof)" />
               </>
             ) : activeProof?.role === "buyer" ? (
               <>

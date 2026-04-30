@@ -873,8 +873,8 @@ export default function AdminSettings() {
                     <p className="text-xs text-muted-foreground">
                       Status: <strong>{smsAutoDeleteEnabled ? "ON" : "OFF"}</strong>
                       {smsAutoDeleteEnabled
-                        ? " — learning complete hone ke baad auto cleanup chalega"
-                        : " — abhi kuch delete nahi hoga"}
+                        ? " — auto cleanup will run after learning is complete"
+                        : " — nothing will be deleted right now"}
                     </p>
                   </div>
                   <Button
@@ -913,8 +913,8 @@ export default function AdminSettings() {
                     </div>
                     <div className={`rounded-lg p-2 text-center font-medium ${cleanupStatus.isLearningComplete ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"}`}>
                       {cleanupStatus.isLearningComplete
-                        ? "✓ Learning Complete — cleanup run kar sakte ho"
-                        : `⏳ Learning Incomplete — ${cleanupStatus.activePatternsCount < 1 ? "abhi koi active pattern nahi" : `${cleanupStatus.proposedCandidatesCount} proposals review karna baaki hai`}`}
+                        ? "✓ Learning Complete — ready to run cleanup"
+                        : `⏳ Learning Incomplete — ${cleanupStatus.activePatternsCount < 1 ? "no active patterns yet" : `${cleanupStatus.proposedCandidatesCount} proposals pending review`}`}
                     </div>
                     <div className="flex gap-2">
                       <Button
@@ -934,7 +934,7 @@ export default function AdminSettings() {
                         onClick={() => handleRunCleanup(false)}
                         disabled={cleanupRunning || !cleanupStatus.isLearningComplete || !smsAutoDeleteEnabled}
                         className="flex-1"
-                        title={!smsAutoDeleteEnabled ? "Pehle Auto Delete ON karo" : !cleanupStatus.isLearningComplete ? "Learning complete nahi hai abhi" : ""}
+                        title={!smsAutoDeleteEnabled ? "Enable Auto Delete first" : !cleanupStatus.isLearningComplete ? "Learning is not complete yet" : ""}
                       >
                         {cleanupRunning ? "Running..." : "Run Cleanup"}
                       </Button>
@@ -942,8 +942,8 @@ export default function AdminSettings() {
                     {(!smsAutoDeleteEnabled || !cleanupStatus.isLearningComplete) && (
                       <p className="text-[11px] text-muted-foreground text-center">
                         {!smsAutoDeleteEnabled
-                          ? "Cleanup chalane ke liye pehle Auto Delete ON karo aur Save karo"
-                          : "Cleanup tabhi chalega jab learning complete ho (proposals = 0 aur active patterns ≥ 1)"}
+                          ? "Enable Auto Delete and save settings to run cleanup"
+                          : "Cleanup will only run when learning is complete (proposals = 0 and active patterns ≥ 1)"}
                       </p>
                     )}
                   </div>

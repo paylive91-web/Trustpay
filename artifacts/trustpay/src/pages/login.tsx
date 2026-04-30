@@ -66,7 +66,7 @@ export default function Login() {
 
   const handleVerifyWithGoogle = async () => {
     if (!googleClientId) {
-      toast({ title: "Google verification configured nahi hai. Support se sampark karein.", variant: "destructive" });
+      toast({ title: "Google verification is not configured. Please contact support.", variant: "destructive" });
       return;
     }
     setLoading(true);
@@ -90,7 +90,7 @@ export default function Login() {
   const handleResetPasswordWithGoogle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!googleIdToken) {
-      toast({ title: "Pehle Google verification karein", variant: "destructive" });
+      toast({ title: "Please complete Google verification first", variant: "destructive" });
       return;
     }
     if (newPassword.length < 6) {
@@ -110,7 +110,7 @@ export default function Login() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || `Failed to reset password (${res.status})`);
-      toast({ title: "Password badal diya!", description: "Ab naye password se login karein." });
+      toast({ title: "Password changed!", description: "Please log in with your new password." });
       setStep("login");
       setPassword("");
       setNewPassword("");

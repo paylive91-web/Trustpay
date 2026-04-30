@@ -99,8 +99,8 @@ router.post("/register", async (req, res) => {
       await db.insert(userNotificationsTable).values({
         userId: user.id,
         kind: "google_verification",
-        title: "Google verification kar lo",
-        body: "Apna Gmail bind karo — bhulne par password apne aap reset kar sakoge. Profile → Google Verification.",
+        title: "Link your Google account",
+        body: "Link your Gmail — if you forget your password, you can reset it automatically. Go to Profile → Google Verification.",
         severity: "info",
       });
     } catch {}
@@ -331,7 +331,7 @@ router.post("/google/link", requireAuth, async (req, res) => {
   // partial index on google_sub also guards this at the DB level.
   const [other] = await db.select().from(usersTable).where(eq(usersTable.googleSub, identity.sub)).limit(1);
   if (other && other.id !== u.id) {
-    res.status(409).json({ error: "Yeh Google account pehle se kisi aur user se bind hai" });
+    res.status(409).json({ error: "This Google account is already linked to another user" });
     return;
   }
 
@@ -363,7 +363,7 @@ router.post("/google/unlink", requireAuth, async (req, res) => {
 router.post("/google/reset-password", async (req, res) => {
   const { idToken, newPassword } = req.body || {};
   if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6) {
-    res.status(400).json({ error: "Naya password kam se kam 6 characters ka hona chahiye" });
+    res.status(400).json({ error: "New password must be at least 6 characters" });
     return;
   }
   let identity;
@@ -380,7 +380,7 @@ router.post("/google/reset-password", async (req, res) => {
   // and sub is what proves possession of the verified Google account.
   const [user] = await db.select().from(usersTable).where(eq(usersTable.googleSub, identity.sub)).limit(1);
   if (!user) {
-    res.status(404).json({ error: "Is Gmail se koi account bind nahi hai. Pehle login karke Google verification karein." });
+    res.status(404).json({ error: "No account is linked to this Gmail. Please log in and complete Google verification first." });
     return;
   }
   if (user.isBlocked) {

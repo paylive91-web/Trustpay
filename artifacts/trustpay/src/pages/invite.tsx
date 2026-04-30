@@ -71,7 +71,7 @@ export default function Invite() {
       a.download = "trustpay-invite.jpg";
       a.click();
       if (blob) setTimeout(() => URL.revokeObjectURL(url), 1000);
-      toast({ title: "Image save ho rahi hai", description: "Gallery mein save hone ke baad share karo" });
+      toast({ title: "Saving image", description: "Once saved to gallery, you can share it" });
     } catch {
       toast({ title: "Save failed", variant: "destructive" });
     }

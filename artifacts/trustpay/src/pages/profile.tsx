@@ -54,7 +54,7 @@ export default function Profile() {
 
   const handleGoogleLink = async () => {
     if (!googleClientId) {
-      toast({ title: "Google verification configured nahi hai", variant: "destructive" });
+      toast({ title: "Google verification is not configured", variant: "destructive" });
       return;
     }
     setGoogleBusy(true);
