@@ -469,6 +469,7 @@ function fSettings(s: any) {
     appLogoUrl: s.appLogoUrl || "",
     popupSoundUrl: s.popupSoundUrl || "",
     buyRules: s.buyRules || "", sellRules: s.sellRules || "",
+    buyRulesImageUrl: s.buyRulesImageUrl || "", sellRulesImageUrl: s.sellRulesImageUrl || "",
     chunkMin: parseInt(s.chunkMin || "100"),
     chunkMax: parseInt(s.chunkMax || "50000"),
     adminChunkMin: parseInt(s.adminChunkMin || "5000"),
