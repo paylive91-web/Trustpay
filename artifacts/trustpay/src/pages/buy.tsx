@@ -526,12 +526,6 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
             </Button>
           </div>
 
-          {!expired && !isOnline(buy.seller?.lastSeenAt) && (
-            <div className="flex items-start gap-2 rounded-2xl border border-orange-200 bg-orange-50 px-3 py-2.5 text-xs text-orange-800">
-              <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0 text-orange-500" />
-              <span>Seller appears offline right now. You can still submit your payment proof — it will be accepted and reviewed.</span>
-            </div>
-          )}
 
           {expired ? (
             <Button variant="destructive" className="w-full" onClick={() => cancelMut.mutate()}>
