@@ -36,6 +36,12 @@ uri = "file://attached_assets/generated_images/trustpay_logo_premium.png"
 type = "image"
 title = "trustpay premium logo"
 
+[[generated]]
+id = "Y7ghDJ18avecW57YOtsSO"
+uri = "file://attached_assets/generated_images/trustpay_logo_rupay.png"
+type = "image"
+title = "trustpay rupay logo"
+
 [[outputs]]
 id = "9i2SMWhGKDU824ilpyHpE"
 uri = "file://screenshots/home-redesign.jpg"
@@ -197,3 +203,9 @@ id = "u_eZtJLYeImCOF465WJzo"
 uri = "file://attached_assets/generated_images/trustpay_logo_premium.png"
 type = "image"
 title = "TrustPay Premium Logo"
+
+[[outputs]]
+id = "vppVPzVxa63K0x0FNQ3Cd"
+uri = "file://attached_assets/generated_images/trustpay_logo_rupay.png"
+type = "image"
+title = "TrustPay Logo with RuPay"
