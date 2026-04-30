@@ -70,7 +70,7 @@ export async function regenerateChunksForUser(userId: number) {
   const existingChunks = await db.select().from(ordersTable).where(and(
     eq(ordersTable.userId, userId),
     eq(ordersTable.type, "withdrawal"),
-    sql`${ordersTable.status} IN ('available', 'locked', 'pending_confirmation', 'disputed')`,
+    eq(ordersTable.status, "available"),
   ));
   const settings = await getSettings([
     "chunkMin", "chunkMax", "newUserChunkCap", "newUserTradeThreshold",
@@ -100,6 +100,10 @@ export async function regenerateChunksForUser(userId: number) {
   // over-generating new chunks) we add back the maximum tier fee currently
   // configured — this can only over-count consumed balance, never under-count.
   const maxTierFee = feeTiers.reduce((m, t) => Math.max(m, t.fee), flatCommission);
+  // Only 'available' chunks count here — locked/pending_confirmation/disputed
+  // chunks already moved their amount from balance → heldBalance at lock time,
+  // so they are already excluded by `balance - held`. The DB query above
+  // fetches only 'available' rows, so no extra filter is needed.
   const inQueueAmt = existingChunks.reduce((s, o) => s + parseFloat(o.amount) + maxTierFee, 0);
   let avail = balance - held - inQueueAmt;
   const newUserCap = parseInt(settings.newUserChunkCap) || 10000;
