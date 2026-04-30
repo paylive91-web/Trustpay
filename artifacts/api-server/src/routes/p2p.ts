@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { ordersTable, usersTable, disputesTable, tradePairBlocksTable, userNotificationsTable, utrIndexTable, imageHashesTable } from "@workspace/db";
-import { eq, and, sql, inArray, ne, or } from "drizzle-orm";
+import { ordersTable, usersTable, disputesTable, tradePairBlocksTable, userNotificationsTable, utrIndexTable, imageHashesTable, transactionsTable } from "@workspace/db";
+import { eq, and, sql, inArray, ne, or, gte, like } from "drizzle-orm";
 import { requireAuth } from "../lib/auth.js";
 import { getSettings } from "../lib/settings.js";
 import { releaseExpiredLocks, autoConfirmExpired, regenerateChunksForUser } from "../lib/matching.js";
@@ -581,6 +581,64 @@ router.get("/matching-status", requireAuth, async (req, res) => {
     available: byStatus.available || 0,
     locked: byStatus.locked || 0,
     pendingConfirmation: byStatus.pending_confirmation || 0,
+  });
+});
+
+router.get("/my-stats", requireAuth, async (req, res) => {
+  const userId = (req as any).user.id;
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const [buyRewardRows, sellRewardRows, agentRewardRows, buyOrders, sellOrders] = await Promise.all([
+    db.select({ total: sql<string>`coalesce(sum(amount::numeric),0)`, todayTotal: sql<string>`coalesce(sum(case when created_at >= ${todayStart} then amount::numeric else 0 end),0)` })
+      .from(transactionsTable)
+      .where(and(eq(transactionsTable.userId, userId), eq(transactionsTable.type, "credit"), like(transactionsTable.description, "Buy confirmed%reward%"))),
+    db.select({ total: sql<string>`coalesce(sum(amount::numeric),0)`, todayTotal: sql<string>`coalesce(sum(case when created_at >= ${todayStart} then amount::numeric else 0 end),0)` })
+      .from(transactionsTable)
+      .where(and(eq(transactionsTable.userId, userId), eq(transactionsTable.type, "credit"), like(transactionsTable.description, "Sell reward%"))),
+    db.select({ total: sql<string>`coalesce(sum(amount::numeric),0)` })
+      .from(transactionsTable)
+      .where(and(eq(transactionsTable.userId, userId), eq(transactionsTable.type, "credit"), like(transactionsTable.description, "Agent Reward:%"))),
+    db.select({
+      id: ordersTable.id,
+      amount: ordersTable.amount,
+      rewardAmount: ordersTable.rewardAmount,
+      status: ordersTable.status,
+      createdAt: ordersTable.createdAt,
+      updatedAt: ordersTable.updatedAt,
+    }).from(ordersTable).where(and(
+      eq(ordersTable.lockedByUserId, userId),
+      inArray(ordersTable.status, ["confirmed", "disputed", "refunded"]),
+    )).orderBy(sql`created_at desc`).limit(30),
+    db.select({
+      id: ordersTable.id,
+      amount: ordersTable.amount,
+      sellRewardAmount: ordersTable.sellRewardAmount,
+      feeAmount: ordersTable.feeAmount,
+      status: ordersTable.status,
+      createdAt: ordersTable.createdAt,
+      updatedAt: ordersTable.updatedAt,
+    }).from(ordersTable).where(and(
+      eq(ordersTable.userId, userId),
+      eq(ordersTable.type, "withdrawal"),
+      inArray(ordersTable.status, ["confirmed", "disputed", "refunded"]),
+    )).orderBy(sql`created_at desc`).limit(30),
+  ]);
+
+  res.json({
+    buyReward: {
+      today: parseFloat(buyRewardRows[0]?.todayTotal || "0"),
+      total: parseFloat(buyRewardRows[0]?.total || "0"),
+    },
+    sellReward: {
+      today: parseFloat(sellRewardRows[0]?.todayTotal || "0"),
+      total: parseFloat(sellRewardRows[0]?.total || "0"),
+    },
+    agentEarning: {
+      total: parseFloat(agentRewardRows[0]?.total || "0"),
+    },
+    buyOrders,
+    sellOrders,
   });
 });
 
