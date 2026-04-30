@@ -31,14 +31,19 @@ function ImagePicker({ value, onChange, label }: { value: string; onChange: (v: 
   const inputRef = React.useRef<HTMLInputElement | null>(null);
   const onPick = async (file: File | null) => {
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast({ title: "Image must be under 5 MB", variant: "destructive" }); return; }
+    const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+    if (file.size > 20 * 1024 * 1024) {
+      toast({ title: `Image too large (${sizeMb} MB)`, description: "Maximum 20 MB. Please pick a smaller image.", variant: "destructive" });
+      return;
+    }
     try {
       const dataUrl = await fileToDataUrl(file);
       const d = await uploadMut.mutateAsync({ data: { dataUrl } });
       onChange(d.url);
       toast({ title: "Image uploaded" });
     } catch (e: any) {
-      toast({ title: "Upload failed", description: e.message, variant: "destructive" });
+      console.error("[ImagePicker] upload failed", e);
+      toast({ title: "Upload failed", description: e?.message || "Unknown error — check connection and try again", variant: "destructive" });
     } finally {
       if (inputRef.current) inputRef.current.value = "";
     }

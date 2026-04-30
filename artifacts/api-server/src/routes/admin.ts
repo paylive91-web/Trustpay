@@ -1075,8 +1075,8 @@ router.post("/upload-image", requireAdmin, async (req, res) => {
     return;
   }
   const sizeBytes = Math.ceil((dataUrl.length - dataUrl.indexOf(",") - 1) * 3 / 4);
-  if (sizeBytes > 5 * 1024 * 1024) {
-    res.status(400).json({ error: "Image must be under 5 MB" });
+  if (sizeBytes > 20 * 1024 * 1024) {
+    res.status(400).json({ error: `Image must be under 20 MB (got ${(sizeBytes / 1024 / 1024).toFixed(1)} MB)` });
     return;
   }
 
