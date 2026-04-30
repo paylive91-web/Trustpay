@@ -287,29 +287,24 @@ export default function Sell() {
                       </div>
                     </>
 
-                    {/* Balance + Earnings */}
+                    {/* Balance */}
                     <div className="rounded-2xl bg-white/10 border border-white/20 p-4 mb-4 text-center backdrop-blur">
                       <div className="text-sm text-white/70 mb-1">Your amount being matched</div>
                       <div className="text-4xl font-black tracking-tight">₹{balance.toFixed(0)}</div>
-                      <div className="flex items-center justify-center gap-2 mt-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        <span className="text-sm text-emerald-300 font-semibold animate-pulse">
-                          Buyers are watching right now
-                        </span>
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      </div>
                     </div>
 
-                    {/* Earnings potential */}
-                    <div className="rounded-2xl bg-emerald-500/20 border border-emerald-400/30 px-4 py-3 mb-4 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-emerald-400/30 flex items-center justify-center flex-shrink-0">
-                        <Sparkles className="w-5 h-5 text-emerald-300" />
+                    {/* Sell Reward — only when admin has set a reward % */}
+                    {sellRewardPct > 0 && (
+                      <div className="rounded-2xl bg-emerald-500/20 border border-emerald-400/30 px-4 py-3 mb-4 flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-emerald-400/30 flex items-center justify-center flex-shrink-0">
+                          <Sparkles className="w-4 h-4 text-emerald-300" />
+                        </div>
+                        <div>
+                          <div className="text-[11px] text-emerald-200 uppercase tracking-wider">Sell Reward</div>
+                          <div className="text-xl font-black text-emerald-300">+₹{(balance * sellRewardPct / 100).toFixed(0)} <span className="text-sm font-normal text-emerald-400">at {sellRewardPct}%</span></div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-[11px] text-emerald-200 uppercase tracking-wider">Potential earnings today</div>
-                        <div className="text-xl font-black text-emerald-300">+₹{(balance * sellRewardPct / 100).toFixed(0)} <span className="text-sm font-normal text-emerald-400">at {sellRewardPct}% reward</span></div>
-                      </div>
-                    </div>
+                    )}
 
                     {/* Stats row */}
                     <div className="grid grid-cols-2 gap-2 mb-4">
@@ -324,8 +319,8 @@ export default function Sell() {
                     </div>
 
                     {/* Stay online urge */}
-                    <div className="rounded-2xl bg-amber-400/20 border border-amber-400/30 px-4 py-3 mb-4 text-center">
-                      <div className="text-sm text-amber-200 font-semibold">🔥 Don't leave — a buyer could lock any second!</div>
+                    <div className="rounded-xl bg-amber-400/15 border border-amber-400/25 px-3 py-2 mb-4 text-center">
+                      <span className="text-xs text-amber-200 font-medium">🔥 Stay online — a buyer could lock any second!</span>
                     </div>
                   </div>
                 ) : (
