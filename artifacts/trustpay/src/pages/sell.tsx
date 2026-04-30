@@ -287,36 +287,33 @@ export default function Sell() {
                       </div>
                     </>
 
-                    {/* Balance */}
-                    <div className="rounded-2xl bg-white/10 border border-white/20 p-4 mb-4 text-center backdrop-blur">
-                      <div className="text-sm text-white/70 mb-1">Your amount being matched</div>
-                      <div className="text-4xl font-black tracking-tight">₹{balance.toFixed(0)}</div>
+                    {/* Compact 3-col stats: Amount | In Queue | Locked */}
+                    <div className="grid grid-cols-3 gap-2 mb-3">
+                      <div className="rounded-xl bg-white/10 border border-white/10 p-2.5 text-center">
+                        <div className="text-[9px] uppercase tracking-wider text-white/55">Amount</div>
+                        <div className="text-base font-black leading-tight mt-0.5">₹{balance.toFixed(0)}</div>
+                      </div>
+                      <div className="rounded-xl bg-white/10 border border-white/10 p-2.5 text-center">
+                        <div className="text-[9px] uppercase tracking-wider text-white/55">In Queue</div>
+                        <div className="text-base font-black leading-tight mt-0.5">{matching?.available || 0}</div>
+                      </div>
+                      <div className={`rounded-xl p-2.5 text-center border ${(matching?.locked || 0) > 0 ? "bg-emerald-500/25 border-emerald-400/40" : "bg-white/10 border-white/10"}`}>
+                        <div className={`text-[9px] uppercase tracking-wider ${(matching?.locked || 0) > 0 ? "text-emerald-300" : "text-white/55"}`}>Locked 🔒</div>
+                        <div className={`text-base font-black leading-tight mt-0.5 ${(matching?.locked || 0) > 0 ? "text-emerald-300" : ""}`}>{matching?.locked || 0}</div>
+                      </div>
                     </div>
 
-                    {/* Sell Reward — only when admin has set a reward % */}
+                    {/* Sell Reward row */}
                     {sellRewardPct > 0 && (
-                      <div className="rounded-2xl bg-emerald-500/20 border border-emerald-400/30 px-4 py-3 mb-4 flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-emerald-400/30 flex items-center justify-center flex-shrink-0">
-                          <Sparkles className="w-4 h-4 text-emerald-300" />
-                        </div>
-                        <div>
-                          <div className="text-[11px] text-emerald-200 uppercase tracking-wider">Sell Reward</div>
-                          <div className="text-xl font-black text-emerald-300">+₹{(balance * sellRewardPct / 100).toFixed(0)} <span className="text-sm font-normal text-emerald-400">at {sellRewardPct}%</span></div>
-                        </div>
+                      <div className="rounded-xl bg-emerald-500/15 border border-emerald-400/25 px-3 py-2 mb-3 flex items-center justify-between">
+                        <span className="text-xs text-emerald-200 flex items-center gap-1.5">
+                          <Sparkles className="w-3 h-3" /> Sell Reward
+                        </span>
+                        <span className="text-sm font-black text-emerald-300">
+                          +₹{(balance * sellRewardPct / 100).toFixed(0)} <span className="text-xs font-normal text-emerald-400">at {sellRewardPct}%</span>
+                        </span>
                       </div>
                     )}
-
-                    {/* Stats row */}
-                    <div className="grid grid-cols-2 gap-2 mb-4">
-                      <div className="rounded-2xl bg-white/10 backdrop-blur p-3 text-center border border-white/10">
-                        <div className="text-[11px] uppercase tracking-wider text-white/60">In Queue</div>
-                        <div className="text-3xl font-black mt-0.5">{matching?.available || 0}</div>
-                      </div>
-                      <div className={`rounded-2xl p-3 text-center border ${(matching?.locked || 0) > 0 ? "bg-emerald-500/25 border-emerald-400/40" : "bg-white/10 border-white/10"}`}>
-                        <div className={`text-[11px] uppercase tracking-wider ${(matching?.locked || 0) > 0 ? "text-emerald-300" : "text-white/60"}`}>Locked 🔒</div>
-                        <div className={`text-3xl font-black mt-0.5 ${(matching?.locked || 0) > 0 ? "text-emerald-300" : ""}`}>{matching?.locked || 0}</div>
-                      </div>
-                    </div>
 
                     {/* Stay online urge */}
                     <div className="rounded-xl bg-amber-400/15 border border-amber-400/25 px-3 py-2 mb-4 text-center">
