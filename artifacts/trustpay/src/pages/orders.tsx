@@ -160,7 +160,7 @@ export default function Orders() {
                       <div className="border-t pt-3 space-y-2">
                         <div className="text-xs text-muted-foreground">
                           {d.role === "buyer"
-                            ? "Upload your bank statement (PDF or image) showing the payment to settle this dispute."
+                            ? "Upload your bank statement (PDF only) showing the payment to settle this dispute."
                             : "Upload bank statement, screen recording, and last-transaction screenshot to defend yourself."}
                         </div>
                         {(() => {
@@ -271,7 +271,7 @@ export default function Orders() {
                   Seller was offline when the order expired. Upload your payment proof — admin will verify and process a refund or confirmation.
                 </div>
                 <UploadTile label="Transaction History Screenshot" required file={txHistoryFile} onChange={setTxHistoryFile} accept="image/*" hint="Transaction history screenshot from your bank app (required)" />
-                <UploadTile label="Bank Statement PDF" file={bankFile} onChange={setBankFile} accept="image/*,application/pdf" hint="Bank statement optional (for additional proof)" />
+                <UploadTile label="Bank Statement PDF" file={bankFile} onChange={setBankFile} accept="application/pdf" hint="PDF only · optional (for additional proof)" />
               </>
             ) : activeProof?.role === "buyer" ? (
               <>

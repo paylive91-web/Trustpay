@@ -28,7 +28,7 @@ router.get("/my", requireAuth, async (req, res) => {
   })));
 });
 
-// Bank statements accept PDF or image.
+// Bank statements: PDF only (enforced both client- and server-side).
 // Recordings accept image or video — no size cap (body parser limit applies).
 // Transaction screenshots remain image-only with a 20 MB cap.
 const PDF_PROOF_MIME = /^data:application\/pdf;base64,/i;
