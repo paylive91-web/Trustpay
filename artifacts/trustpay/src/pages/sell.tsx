@@ -16,7 +16,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { playAlarm } from "@/lib/alarm";
+import { playLoudAlarm } from "@/lib/alarm";
 
 import { API_BASE } from "@/lib/api-config";
 

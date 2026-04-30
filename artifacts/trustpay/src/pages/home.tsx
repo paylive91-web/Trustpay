@@ -8,7 +8,7 @@ import NotificationsBell from "@/components/notifications-bell";
 const logoPath = `${import.meta.env.BASE_URL}trustpay-logo.png`;
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowDownCircle, ArrowUpCircle, ChevronRight, Download, Link as LinkIcon, ShieldAlert, ShieldCheck, Wallet } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, ChevronRight, Download, Link as LinkIcon, ShieldAlert, ShieldCheck, Wallet, TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { Skeleton } from "@/components/ui/skeleton";
 import useEmblaCarousel from "embla-carousel-react";
@@ -32,6 +32,90 @@ async function api(path: string, opts: RequestInit = {}) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Request failed");
   return data;
+}
+
+const STATUS_LABEL: Record<string, { label: string; color: string }> = {
+  locked: { label: "Locked", color: "bg-amber-100 text-amber-700" },
+  pending_confirmation: { label: "Pending", color: "bg-orange-100 text-orange-700" },
+  disputed: { label: "Disputed", color: "bg-red-100 text-red-700" },
+};
+
+function LiveOrdersSection() {
+  const { data: liveOrders = [], isLoading } = useQuery<any[]>({
+    queryKey: ["recent-orders"],
+    queryFn: () => api("/p2p/recent-orders"),
+    refetchInterval: 8_000,
+    staleTime: 0,
+  });
+
+  if (isLoading) return (
+    <Card className="border-none shadow-sm bg-primary/5">
+      <CardContent className="p-4">
+        <Skeleton className="h-16 w-full" />
+      </CardContent>
+    </Card>
+  );
+
+  if (liveOrders.length === 0) {
+    return (
+      <Card className="border-none shadow-sm bg-primary/5">
+        <CardContent className="p-4 flex items-center justify-between">
+          <div>
+            <h3 className="font-semibold text-primary">My Orders</h3>
+            <p className="text-sm text-muted-foreground">No active orders right now</p>
+          </div>
+          <Link href="/orders">
+            <Button variant="outline" size="sm" className="rounded-full gap-1">View <ChevronRight className="h-4 w-4" /></Button>
+          </Link>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="border-none shadow-sm overflow-hidden">
+      <CardContent className="p-0">
+        <div className="flex items-center justify-between px-4 pt-3 pb-2">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500" />
+            </span>
+            <h3 className="font-semibold text-sm">Live Orders</h3>
+          </div>
+          <Link href="/orders">
+            <Button variant="ghost" size="sm" className="rounded-full gap-1 text-xs h-7">All <ChevronRight className="h-3 w-3" /></Button>
+          </Link>
+        </div>
+        <div className="divide-y">
+          {liveOrders.map((o: any) => {
+            const st = STATUS_LABEL[o.status] || { label: o.status, color: "bg-muted text-muted-foreground" };
+            const isBuy = o.side === "buy";
+            return (
+              <Link key={o.id} href={isBuy ? "/buy" : "/sell"}>
+                <div className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors cursor-pointer">
+                  <div className={`p-1.5 rounded-full ${isBuy ? "bg-primary/10" : "bg-violet-100"}`}>
+                    {isBuy
+                      ? <TrendingDown className="h-4 w-4 text-primary" />
+                      : <TrendingUp className="h-4 w-4 text-violet-600" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-sm">₹{Number(o.amount).toFixed(2)}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${st.color}`}>{st.label}</span>
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">{isBuy ? "Buy" : "Sell"} · Order #{o.id}</div>
+                  </div>
+                  {o.status === "disputed" && <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />}
+                  <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function Home() {
@@ -210,17 +294,7 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm bg-primary/5">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-primary">My Orders</h3>
-              <p className="text-sm text-muted-foreground">Buy & sell rules</p>
-            </div>
-            <Link href="/orders">
-              <Button variant="outline" size="sm" className="rounded-full gap-1">View <ChevronRight className="h-4 w-4" /></Button>
-            </Link>
-          </CardContent>
-        </Card>
+        <LiveOrdersSection />
 
         <Card className="border-none shadow-sm bg-secondary/5">
           <CardContent className="p-4 flex items-center justify-between">

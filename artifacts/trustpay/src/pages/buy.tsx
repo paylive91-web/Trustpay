@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle, Clock, Copy, Headset, Loader2, ShieldCheck, Upload } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle, Clock, Copy, Headset, Loader2, ShieldCheck, Upload, ShieldAlert } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
 import { utrError } from "@/lib/utr-validator";
@@ -299,16 +300,45 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
   }
 
   if (buy.status === "pending_confirmation") {
+    const submittedAt = buy.submittedAt ? new Date(buy.submittedAt).getTime() : 0;
+    const msSince = submittedAt ? now - submittedAt : 0;
+    const DISPUTE_WAIT = 15 * 60 * 1000;
+    const disputeUnlocked = msSince >= DISPUTE_WAIT;
+    const msToDispute = Math.max(0, DISPUTE_WAIT - msSince);
+    const disputeProgress = Math.min(100, (msSince / DISPUTE_WAIT) * 100);
     return (
       <Card>
-        <CardContent className="p-5 text-center space-y-2">
-          <CheckCircle className="w-10 h-10 text-green-600 mx-auto" />
-          <div className="text-green-700 font-semibold">Payment submitted — waiting for seller</div>
-          <div className="text-xs text-muted-foreground">Auto-confirms in {fmtCountdown(remaining)} if seller doesn't respond</div>
-          <div className="border-t pt-3 mt-2 text-left text-xs space-y-1">
+        <CardContent className="p-5 space-y-3">
+          <div className="text-center">
+            <CheckCircle className="w-10 h-10 text-green-600 mx-auto" />
+            <div className="text-green-700 font-semibold mt-2">Payment submitted — seller ko wait kar</div>
+            <div className="text-xs text-muted-foreground">Auto-confirm in {fmtCountdown(remaining)}</div>
+          </div>
+          <div className="border-t pt-3 text-xs space-y-1">
             <div>Amount: <strong>₹{buy.amount}</strong></div>
             <div>UTR: <strong>{buy.utrNumber}</strong></div>
             <div>Reward: <strong>₹{Number(buy.rewardAmount || 0).toFixed(2)}</strong></div>
+          </div>
+          <div className="border-t pt-3">
+            {!disputeUnlocked ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Seller ne confirm nahi kiya?</span>
+                  <span className="font-semibold text-orange-600">{fmtCountdown(msToDispute)} baad dispute milega</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-gradient-to-r from-orange-400 to-red-500 h-2 rounded-full transition-all duration-1000"
+                    style={{ width: `${disputeProgress}%` }}
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground text-center">
+                  15 min baad "Dispute" button aayega agar seller response na kare
+                </p>
+              </div>
+            ) : (
+              <BuyerDisputeSection buy={buy} onResolved={refetch} />
+            )}
           </div>
         </CardContent>
       </Card>
@@ -674,6 +704,123 @@ function ChunkCard({ chunk, onLock, disabled }: { chunk: any; onLock: () => void
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function BuyerDisputeSection({ buy, onResolved }: { buy: any; onResolved: () => void }) {
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [bankUrl, setBankUrl] = useState("");
+  const [txUrl, setTxUrl] = useState("");
+  const [recUrl, setRecUrl] = useState("");
+  const [uploading, setUploading] = useState<string | null>(null);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>, kind: "bank" | "tx" | "rec") {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const isVideo = f.type.startsWith("video/");
+    const maxMb = isVideo ? 50 : 5;
+    if (f.size > maxMb * 1024 * 1024) {
+      toast({ title: "File too large", description: `Max ${maxMb} MB`, variant: "destructive" });
+      return;
+    }
+    setUploading(kind);
+    try {
+      const url = await fileToDataUrl(f);
+      if (kind === "bank") setBankUrl(url);
+      else if (kind === "tx") setTxUrl(url);
+      else setRecUrl(url);
+    } finally { setUploading(null); }
+  }
+
+  const submitMut = useMutation({
+    mutationFn: () => api(`/p2p/buyer-dispute/${buy.id}`, {
+      method: "POST",
+      body: JSON.stringify({ bankStatementUrl: bankUrl, txHistoryUrl: txUrl || undefined, recordingUrl: recUrl || undefined }),
+    }),
+    onSuccess: () => {
+      toast({ title: "Dispute submitted!", description: "Admin review karega. Apna proof safe rakhna." });
+      setOpen(false);
+      onResolved();
+    },
+    onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+
+  return (
+    <>
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-4 space-y-3">
+        <div className="flex items-start gap-2">
+          <ShieldAlert className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+          <div>
+            <div className="font-semibold text-red-700 text-sm">Seller ne 15 min mein confirm nahi kiya</div>
+            <div className="text-xs text-red-600 mt-0.5">Tum dispute kholke admin se help le sakte ho</div>
+          </div>
+        </div>
+        <Button
+          onClick={() => setOpen(true)}
+          className="w-full bg-red-600 hover:bg-red-700 text-white rounded-xl"
+        >
+          Dispute Kholo
+        </Button>
+      </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-[92%] w-[420px] rounded-2xl p-0 overflow-hidden">
+          <DialogHeader className="p-4 border-b">
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <ShieldAlert className="h-5 w-5" /> Dispute Submit Karo
+            </DialogTitle>
+          </DialogHeader>
+          <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+            <p className="text-xs text-muted-foreground">
+              Teeno proof dene zaroori hain. Admin yahi dekh ke faisla karega.
+            </p>
+
+            <div className="space-y-1">
+              <Label className="text-sm font-semibold">1. Bank Statement Screenshot <span className="text-red-500">*</span></Label>
+              <p className="text-xs text-muted-foreground">Apni bank app ka screenshot jisme ₹{buy.amount} ka debit dikh raha ho</p>
+              <label className={`flex items-center gap-2 border-2 border-dashed rounded-xl p-3 cursor-pointer transition-colors ${bankUrl ? "border-green-400 bg-green-50" : "border-gray-300 hover:border-primary/50"}`}>
+                <Upload className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="text-xs">{bankUrl ? "✅ Screenshot uploaded" : uploading === "bank" ? "Uploading..." : "Bank screenshot choose karo"}</span>
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e, "bank")} />
+              </label>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-sm font-semibold">2. Transaction History Screenshot</Label>
+              <p className="text-xs text-muted-foreground">PhonePe / Paytm / GPay transaction history page ka screenshot</p>
+              <label className={`flex items-center gap-2 border-2 border-dashed rounded-xl p-3 cursor-pointer transition-colors ${txUrl ? "border-green-400 bg-green-50" : "border-gray-300 hover:border-primary/50"}`}>
+                <Upload className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="text-xs">{txUrl ? "✅ Screenshot uploaded" : uploading === "tx" ? "Uploading..." : "Transaction screenshot choose karo"}</span>
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e, "tx")} />
+              </label>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-sm font-semibold">3. Screen Recording Video</Label>
+              <p className="text-xs text-muted-foreground">Payment karte waqt ki screen recording (PhonePe/Paytm recording), minimum 2 min</p>
+              <label className={`flex items-center gap-2 border-2 border-dashed rounded-xl p-3 cursor-pointer transition-colors ${recUrl ? "border-green-400 bg-green-50" : "border-gray-300 hover:border-primary/50"}`}>
+                <Upload className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="text-xs">{recUrl ? "✅ Recording uploaded" : uploading === "rec" ? "Uploading..." : "Screen recording choose karo (.mp4)"}</span>
+                <input type="file" accept="video/*,image/*" className="hidden" onChange={(e) => handleFile(e, "rec")} />
+              </label>
+            </div>
+
+            <Button
+              onClick={() => submitMut.mutate()}
+              disabled={!bankUrl || submitMut.isPending || !!uploading}
+              className="w-full bg-red-600 hover:bg-red-700 text-white rounded-xl"
+            >
+              {submitMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Dispute Submit Karo
+            </Button>
+            <p className="text-[10px] text-muted-foreground text-center">
+              Galat dispute submit karne se trust score -10 hoga. Sirf tabhi submit karo jab actually payment hui ho aur seller ne confirm nahi kiya.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bell, AlertTriangle, AlertCircle, Info } from "lucide-react";
 import { format } from "date-fns";
@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { playLoudAlarm } from "@/lib/alarm";
 
 import { API_BASE } from "@/lib/api-config";
 
@@ -40,13 +41,31 @@ async function api(path: string, opts: RequestInit = {}) {
 export default function NotificationsBell() {
   const [open, setOpen] = useState(false);
   const qc = useQueryClient();
+  const seenIds = useRef<Set<number>>(new Set());
+  const initialized = useRef(false);
 
   const { data } = useQuery<{ notifications: Notification[]; unreadCount: number }>({
     queryKey: ["notifications"],
     queryFn: () => api("/notifications"),
-    refetchInterval: 60_000,
-    staleTime: 30_000,
+    refetchInterval: 5_000,
+    staleTime: 0,
   });
+
+  useEffect(() => {
+    const items = data?.notifications ?? [];
+    if (!initialized.current) {
+      items.forEach((n) => seenIds.current.add(n.id));
+      initialized.current = true;
+      return;
+    }
+    const newCritical = items.filter(
+      (n) => !seenIds.current.has(n.id) && (n.severity === "critical" || n.severity === "warn") && !n.readAt
+    );
+    if (newCritical.length > 0) {
+      playLoudAlarm();
+    }
+    items.forEach((n) => seenIds.current.add(n.id));
+  }, [data]);
 
   const readAllMut = useMutation({
     mutationFn: () => api("/notifications/read-all", { method: "POST" }),
@@ -83,7 +102,7 @@ export default function NotificationsBell() {
         className="relative p-2 rounded-full hover:bg-white/10 transition-colors"
         data-testid="button-notifications"
       >
-        <Bell className="h-5 w-5" />
+        <Bell className={`h-5 w-5 ${unread > 0 ? "animate-bounce" : ""}`} />
         {unread > 0 && (
           <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
             {unread > 9 ? "9+" : unread}
