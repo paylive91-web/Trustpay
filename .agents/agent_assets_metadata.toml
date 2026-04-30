@@ -72,6 +72,30 @@ uri = "file://attached_assets/generated_images/banner4_invite_earn.png"
 type = "image"
 title = "trustpay invite earn banner"
 
+[[generated]]
+id = "DJQr6g1ceuU-AHegky63J"
+uri = "file://attached_assets/generated_images/v2_banner1_buy.png"
+type = "image"
+title = "trustpay buy reward light banner"
+
+[[generated]]
+id = "WkSUpOS5i8h5ZXDPZjRCM"
+uri = "file://attached_assets/generated_images/v2_banner2_sell.png"
+type = "image"
+title = "trustpay sell reward light banner"
+
+[[generated]]
+id = "-hjjUd6EWrd4WmGjBsmI4"
+uri = "file://attached_assets/generated_images/v2_banner3_agent.png"
+type = "image"
+title = "trustpay agent light banner"
+
+[[generated]]
+id = "bTjV6wjwxZ7vQb6pWo-Ku"
+uri = "file://attached_assets/generated_images/v2_banner4_invite.png"
+type = "image"
+title = "trustpay invite light banner"
+
 [[outputs]]
 id = "9i2SMWhGKDU824ilpyHpE"
 uri = "file://screenshots/home-redesign.jpg"
@@ -267,5 +291,29 @@ title = "Banner 3 — Agent Earning"
 [[outputs]]
 id = "f6rsQaVQWO-JbsdNQcxo-"
 uri = "file://attached_assets/generated_images/banner4_invite_earn.png"
+type = "image"
+title = "Banner 4 — Invite & Earn"
+
+[[outputs]]
+id = "C3W42MBgQGgR-d85MsyaN"
+uri = "file://attached_assets/generated_images/v2_banner1_buy.png"
+type = "image"
+title = "Banner 1 — Buy & Earn (₹10K=₹300 | ₹50K=₹1500)"
+
+[[outputs]]
+id = "tiBy_SgtOmjAxWb7YjyEJ"
+uri = "file://attached_assets/generated_images/v2_banner2_sell.png"
+type = "image"
+title = "Banner 2 — Sell Reward (1% har sell)"
+
+[[outputs]]
+id = "uI45UO7xIWfrteMS2hUVf"
+uri = "file://attached_assets/generated_images/v2_banner3_agent.png"
+type = "image"
+title = "Banner 3 — Agent Earning"
+
+[[outputs]]
+id = "fBBNS5djRS4dDRiAki8xy"
+uri = "file://attached_assets/generated_images/v2_banner4_invite.png"
 type = "image"
 title = "Banner 4 — Invite & Earn"
