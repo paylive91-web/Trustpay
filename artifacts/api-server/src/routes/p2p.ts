@@ -545,8 +545,9 @@ router.post("/buyer-dispute/:id", requireAuth, async (req, res) => {
   const u = (req as any).user;
   const id = parseInt(asString(req.params.id));
   const { bankStatementUrl, txHistoryUrl, recordingUrl, reason } = req.body || {};
-  if (!bankStatementUrl || !String(bankStatementUrl).startsWith("data:image/")) {
-    res.status(400).json({ error: "Bank statement screenshot is required (image)" });
+  const bankUrl = String(bankStatementUrl || "");
+  if (!bankUrl || (!bankUrl.startsWith("data:image/") && !bankUrl.startsWith("data:application/pdf"))) {
+    res.status(400).json({ error: "Bank statement is required (image or PDF)" });
     return;
   }
   if (recordingUrl && !String(recordingUrl).startsWith("data:video/") && !String(recordingUrl).startsWith("data:image/")) {

@@ -28,7 +28,7 @@ router.get("/my", requireAuth, async (req, res) => {
   })));
 });
 
-// Bank statements must be PDF.
+// Bank statements accept PDF or image.
 // Recordings accept image or video — no size cap (body parser limit applies).
 // Transaction screenshots remain image-only with a 20 MB cap.
 const PDF_PROOF_MIME = /^data:application\/pdf;base64,/i;
@@ -38,7 +38,10 @@ const MAX_IMAGE_BYTES = 20 * 1024 * 1024; // 20 MB for screenshots
 function validateProof(dataUrl: unknown, kind: "image" | "pdf" | "recording"): string | null {
   if (typeof dataUrl !== "string" || dataUrl.length < 32) return "Invalid file";
   if (kind === "pdf") {
-    if (!PDF_PROOF_MIME.test(dataUrl)) return "Only PDF files allowed for bank statements";
+    // Accept both PDF and image for bank statements
+    if (!PDF_PROOF_MIME.test(dataUrl) && !IMAGE_PROOF_MIME.test(dataUrl)) {
+      return "Only PDF or image files allowed for bank statements";
+    }
     return null;
   }
   if (kind === "recording") {
