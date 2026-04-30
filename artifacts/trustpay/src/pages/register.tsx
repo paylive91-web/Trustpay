@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_1776335785514.png";
+const logoPath = `${import.meta.env.BASE_URL}trustpay-logo.png`;
 import { useGetAppSettings } from "@workspace/api-client-react";
 import Layout from "@/components/layout";
 import { Download, ShieldCheck, Zap, Star, ShieldAlert, LogIn } from "lucide-react";

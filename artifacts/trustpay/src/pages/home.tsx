@@ -5,7 +5,7 @@ import Layout from "@/components/layout";
 import AppStartupPopup from "@/components/app-startup-popup";
 import DisputePauseBanner from "@/components/dispute-pause-banner";
 import NotificationsBell from "@/components/notifications-bell";
-import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_1776335785514.png";
+const logoPath = `${import.meta.env.BASE_URL}trustpay-logo.png`;
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowDownCircle, ArrowUpCircle, ChevronRight, Download, Link as LinkIcon, ShieldAlert, ShieldCheck, Wallet } from "lucide-react";

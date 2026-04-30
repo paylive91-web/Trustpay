@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { clearAuthToken } from "@/lib/auth";
-import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_1776335785514.png";
+const logoPath = `${import.meta.env.BASE_URL}trustpay-logo.png`;
 import { Headset, LogOut, ChevronRight, Settings, FileText, Bell } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 

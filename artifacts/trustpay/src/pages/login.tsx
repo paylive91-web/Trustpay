@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { ShieldCheck, Loader2 } from "lucide-react";
-import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_1776335785514.png";
+const logoPath = `${import.meta.env.BASE_URL}trustpay-logo.png`;
 import Layout from "@/components/layout";
 import { getGoogleIdToken } from "@/lib/google-id";
 

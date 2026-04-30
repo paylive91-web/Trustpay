@@ -6,7 +6,7 @@ import { useGetMe, useLogout, useGetAppSettings } from "@workspace/api-client-re
 import { clearAuthToken, getAuthToken } from "@/lib/auth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
-import logoPath from "@assets/file_00000000da60720ba5a8a74acd96c937_1776335785514.png";
+const logoPath = `${import.meta.env.BASE_URL}trustpay-logo.png`;
 import { cn } from "@/lib/utils";
 import { BASE_ORIGIN as BASE } from "@/lib/api-config";
 const adminPath = (path: string) => `${BASE}${path}`;
