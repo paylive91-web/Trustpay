@@ -10,6 +10,7 @@ import { applyTrustDelta } from "../lib/trust.js";
 import {
   checkUtrFraud, checkImageHash, checkVelocity, checkCancelRate,
   checkRapidLockRelease, checkBalanceDrain, checkOcrFraud, logAlert,
+  checkAndApplyBuyerCooldown, getBuyerCooldownStatus,
 } from "../lib/fraud.js";
 import { runOcr } from "../lib/ocr.js";
 
@@ -168,10 +169,28 @@ router.get("/my-buy", requireAuth, async (req, res) => {
   res.json(f(r, seller));
 });
 
+router.get("/buyer-cooldown", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  const status = await getBuyerCooldownStatus(u.id);
+  res.json(status);
+});
+
 router.post("/lock/:id", requireAuth, async (req, res) => {
   const u = (req as any).user;
   if (u.isFrozen) { res.status(403).json({ error: "Account frozen due to low trust score" }); return; }
   if (u.isBlocked) { res.status(403).json({ error: "Account blocked" }); return; }
+
+  // Progressive cooldown: buyer locked orders without paying too many times
+  const cooldown = await getBuyerCooldownStatus(u.id);
+  if (cooldown.inCooldown && cooldown.cooldownUntil) {
+    res.status(429).json({
+      error: "buyer_cooldown",
+      cooldownUntil: cooldown.cooldownUntil.toISOString(),
+      level: cooldown.level,
+    });
+    return;
+  }
+
   if (await hasOpenDispute(u.id)) {
     res.status(403).json({ error: "Account paused — you have an open dispute. Resolve it before starting a new buy." });
     return;
@@ -647,8 +666,7 @@ router.post("/cancel/:id", requireAuth, async (req, res) => {
     }).where(eq(ordersTable.id, id));
   });
 
-  await checkRapidLockRelease(u.id);
-  await checkBalanceDrain(u.id);
+  await checkAndApplyBuyerCooldown(u.id);
   res.json({ success: true });
 });
 

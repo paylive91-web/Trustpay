@@ -162,6 +162,28 @@ export default function Buy() {
     refetchInterval: 1000,
   });
 
+  const { data: cooldownData, refetch: refetchCooldown } = useQuery<{
+    inCooldown: boolean;
+    cooldownUntil: string | null;
+    level: number;
+    failedLockCount: number;
+    chancesLeft: number;
+  }>({
+    queryKey: ["buyer-cooldown"],
+    queryFn: () => api("/p2p/buyer-cooldown"),
+    enabled: !!user && !myBuy,
+    refetchInterval: 5000,
+  });
+
+  const [cooldownMs, setCooldownMs] = useState(0);
+  useEffect(() => {
+    if (!cooldownData?.inCooldown || !cooldownData.cooldownUntil) { setCooldownMs(0); return; }
+    const tick = () => setCooldownMs(Math.max(0, new Date(cooldownData.cooldownUntil!).getTime() - Date.now()));
+    tick();
+    const t = setInterval(tick, 1000);
+    return () => clearInterval(t);
+  }, [cooldownData?.cooldownUntil, cooldownData?.inCooldown]);
+
   useEffect(() => { if (isError) setLocation("/login"); }, [isError, setLocation]);
   useEffect(() => {
     const raw = (settings as any)?.multipleUpiIds;
@@ -175,7 +197,10 @@ export default function Buy() {
   const lockMut = useMutation({
     mutationFn: (id: number) => api(`/p2p/lock/${id}`, { method: "POST" }),
     onSuccess: () => { refetchBuy(); qc.invalidateQueries({ queryKey: ["p2p-queue"] }); toast({ title: "Order locked! Pay now." }); },
-    onError: (e: any) => toast({ title: "This order may be bought by someone else", description: e.message, variant: "destructive" }),
+    onError: (e: any) => {
+      if (e.message === "buyer_cooldown") { refetchCooldown(); return; }
+      toast({ title: "This order may be bought by someone else", description: e.message, variant: "destructive" });
+    },
   });
 
   if (userLoading) return (
@@ -201,6 +226,48 @@ export default function Buy() {
           <ActiveBuyCard buy={myBuy} refetch={refetchBuy} user={user} />
         ) : (
           <>
+            {/* Buyer Cooldown Banner */}
+            {cooldownData?.inCooldown && cooldownMs > 0 && (
+              <div className="rounded-[20px] border border-orange-300 bg-gradient-to-br from-orange-50 via-amber-50 to-red-50 p-4 shadow-md space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center shadow-lg">
+                    <Clock className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-orange-800 text-sm">Buy Access Temporarily Locked</div>
+                    <div className="text-xs text-orange-600">You locked orders without completing payment too many times.</div>
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-white/70 border border-orange-200 p-3 flex items-center justify-between">
+                  <span className="text-sm text-orange-700 font-medium">Time remaining</span>
+                  <span className="font-mono text-2xl font-black text-orange-600 tracking-tight">
+                    {(() => {
+                      const totalSec = Math.floor(cooldownMs / 1000);
+                      const h = Math.floor(totalSec / 3600);
+                      const m = Math.floor((totalSec % 3600) / 60);
+                      const s = totalSec % 60;
+                      return h > 0
+                        ? `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`
+                        : `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+                    })()}
+                  </span>
+                </div>
+                <p className="text-xs text-orange-600 text-center">
+                  Complete payments on time to avoid longer bans. Repeated behavior leads to account freeze.
+                </p>
+              </div>
+            )}
+
+            {/* Chances remaining warning (when not in cooldown but has failed locks) */}
+            {!cooldownData?.inCooldown && (cooldownData?.failedLockCount ?? 0) > 0 && (
+              <div className="rounded-2xl border border-yellow-300 bg-yellow-50 px-4 py-2.5 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-yellow-600 shrink-0" />
+                <span className="text-xs text-yellow-800 font-medium">
+                  Warning: {cooldownData!.chancesLeft} chance{cooldownData!.chancesLeft === 1 ? "" : "s"} left — lock orders only if you're ready to pay.
+                </span>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-sm">Available Orders</h2>
               <div className="text-xs text-muted-foreground">Swipe to browse more</div>
@@ -215,7 +282,7 @@ export default function Buy() {
               <ChunkCarousel
                 queue={queue}
                 onLock={(id) => lockMut.mutate(id)}
-                disabled={lockMut.isPending}
+                disabled={lockMut.isPending || (cooldownData?.inCooldown === true && cooldownMs > 0)}
               />
             )}
           </>

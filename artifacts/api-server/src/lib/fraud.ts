@@ -464,17 +464,92 @@ export async function checkNewAccountHighValue(userId: number, amount: number): 
 }
 
 export async function checkBalanceDrain(userId: number): Promise<void> {
-  // Multiple chunk locks released without payment in last hour
-  const since = new Date(Date.now() - 60 * 60 * 1000);
-  const released = await db.select({ c: sql<string>`COUNT(*)` }).from(ordersTable).where(and(
-    eq(ordersTable.lockedByUserId, userId),
-    sql`${ordersTable.createdAt} > ${since}`,
-    inArray(ordersTable.status, ["available", "expired", "cancelled"]),
-  ));
-  const c = parseInt(String(released[0]?.c || "0"));
-  if (c >= 8) {
-    await logAlert(userId, null, "balance_drain_attempt", "critical", `${c} chunks locked & released in 1h - drain attempt`);
+  // Kept for backward compatibility — real logic now in checkAndApplyBuyerCooldown
+}
+
+// Progressive cooldown schedule for buyers who lock orders without paying.
+// Each entry: { chances: how many fails before next cooldown, hours: cooldown duration }
+const BUYER_COOLDOWN_SCHEDULE = [
+  { chances: 3, hours: 1 },
+  { chances: 3, hours: 2 },
+  { chances: 2, hours: 4 },
+  { chances: 2, hours: 8 },
+  { chances: 1, hours: 16 },
+  { chances: 1, hours: 32 },
+];
+
+function cooldownLevelEntry(level: number): { chances: number; hours: number } {
+  if (level < BUYER_COOLDOWN_SCHEDULE.length) return BUYER_COOLDOWN_SCHEDULE[level];
+  // Beyond schedule: 1 chance, double the last hours each extra level
+  const extra = level - BUYER_COOLDOWN_SCHEDULE.length;
+  return { chances: 1, hours: BUYER_COOLDOWN_SCHEDULE[BUYER_COOLDOWN_SCHEDULE.length - 1].hours * Math.pow(2, extra + 1) };
+}
+
+export async function checkAndApplyBuyerCooldown(buyerId: number): Promise<void> {
+  const [u] = await db.select().from(usersTable).where(eq(usersTable.id, buyerId)).limit(1);
+  if (!u || u.isFrozen || u.isBlocked) return;
+
+  const level = u.buyerCooldownLevel ?? 0;
+  const failCount = (u.buyerFailedLockCount ?? 0) + 1;
+  const startedAt = u.buyerCooldownStartedAt;
+
+  // If 2 days have passed since first cooldown and they're still failing → freeze
+  const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
+  if (startedAt && Date.now() - new Date(startedAt).getTime() >= TWO_DAYS_MS) {
+    await db.update(usersTable).set({
+      isFrozen: true,
+      freezeReason: "Repeated order lock/release without payment over 2 days",
+      buyerFailedLockCount: failCount,
+    }).where(eq(usersTable.id, buyerId));
+    await logAlert(buyerId, null, "balance_drain_attempt", "critical",
+      `Account frozen: buyer locked & released orders without payment over 2+ days (level ${level})`);
+    return;
   }
+
+  const { chances, hours } = cooldownLevelEntry(level);
+
+  if (failCount >= chances) {
+    // Threshold hit — apply cooldown, move to next level
+    const cooldownUntil = new Date(Date.now() + hours * 60 * 60 * 1000);
+    const nextLevel = level + 1;
+    await db.update(usersTable).set({
+      buyerCooldownLevel: nextLevel,
+      buyerCooldownUntil: cooldownUntil,
+      buyerFailedLockCount: 0,
+      buyerCooldownStartedAt: startedAt ?? new Date(),
+    }).where(eq(usersTable.id, buyerId));
+    await logAlert(buyerId, null, "balance_drain_attempt", "critical",
+      `Buyer cooldown L${nextLevel}: ${hours}h ban after ${failCount} failed locks`);
+  } else {
+    // Still within allowed chances — just increment counter
+    await db.update(usersTable).set({
+      buyerFailedLockCount: failCount,
+      buyerCooldownStartedAt: startedAt ?? new Date(),
+    }).where(eq(usersTable.id, buyerId));
+  }
+}
+
+export async function getBuyerCooldownStatus(buyerId: number): Promise<{
+  inCooldown: boolean;
+  cooldownUntil: Date | null;
+  level: number;
+  failedLockCount: number;
+  chancesLeft: number;
+}> {
+  const [u] = await db.select().from(usersTable).where(eq(usersTable.id, buyerId)).limit(1);
+  if (!u) return { inCooldown: false, cooldownUntil: null, level: 0, failedLockCount: 0, chancesLeft: 3 };
+
+  const level = u.buyerCooldownLevel ?? 0;
+  const failedLockCount = u.buyerFailedLockCount ?? 0;
+  const cooldownUntil = u.buyerCooldownUntil ?? null;
+  const inCooldown = !!cooldownUntil && new Date(cooldownUntil).getTime() > Date.now();
+
+  // When cooldown expires, the next level's chances apply
+  const currentLevel = inCooldown ? level : Math.max(0, level);
+  const { chances } = cooldownLevelEntry(inCooldown ? level : level);
+  const chancesLeft = Math.max(0, chances - failedLockCount);
+
+  return { inCooldown, cooldownUntil: cooldownUntil ? new Date(cooldownUntil) : null, level: currentLevel, failedLockCount, chancesLeft };
 }
 
 export interface OcrFraudInput {

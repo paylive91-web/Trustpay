@@ -47,6 +47,12 @@ export const usersTable = pgTable("users", {
   agentTierAwardedLevel: integer("agent_tier_awarded_level").notNull().default(0),
   isTrusted: boolean("is_trusted").notNull().default(false),
   freezeReason: text("freeze_reason"),
+  // Progressive buyer cooldown — increments each time a buyer locks & releases
+  // without paying. Level determines how long the next cooldown is.
+  buyerCooldownLevel: integer("buyer_cooldown_level").notNull().default(0),
+  buyerCooldownUntil: timestamp("buyer_cooldown_until"),
+  buyerFailedLockCount: integer("buyer_failed_lock_count").notNull().default(0),
+  buyerCooldownStartedAt: timestamp("buyer_cooldown_started_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

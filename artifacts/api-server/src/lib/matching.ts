@@ -194,8 +194,10 @@ export async function releaseExpiredLocks() {
       sql`${ordersTable.confirmDeadline} < ${now}`,
     ));
   const { releaseHold } = await import("./hold.js");
+  const { checkAndApplyBuyerCooldown } = await import("./fraud.js");
   for (const o of expired) {
     const heldAmt = parseFloat(o.heldAmount || "0");
+    const buyerId = o.lockedByUserId;
     // Atomic: release seller hold using per-order reserved amount
     // (legacy locks have heldAmount=0 so nothing is released).
     await db.transaction(async (tx) => {
@@ -208,6 +210,8 @@ export async function releaseExpiredLocks() {
         updatedAt: now,
       }).where(eq(ordersTable.id, o.id));
     });
+    // Apply progressive cooldown to the buyer who locked but didn't pay
+    if (buyerId) await checkAndApplyBuyerCooldown(buyerId);
   }
 }
 
