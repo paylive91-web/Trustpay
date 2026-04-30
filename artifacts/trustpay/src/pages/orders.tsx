@@ -277,16 +277,16 @@ export default function Orders() {
               <>
                 <UploadTile label="Bank Statement" required file={bankFile} onChange={setBankFile} accept="application/pdf" hint="PDF only" />
                 <UploadTile label="Payment Screenshot" required file={recordingFile} onChange={setRecordingFile} accept="image/*" hint="Upload the payment screenshot" />
-                <UploadTile label="Payment Recording" required file={lastTxnFile} onChange={setLastTxnFile} accept="image/*,video/*" hint="Upload the payment recording" />
+                <UploadTile label="Payment Recording" required file={lastTxnFile} onChange={setLastTxnFile} accept="video/*" hint="Video recording only (mp4, mov, webm)" />
               </>
             ) : (
               <>
                 <UploadTile label="Bank Statement" required file={bankFile} onChange={setBankFile} accept="application/pdf" hint="PDF only" />
-                <UploadTile label="Screen Recording" required file={recordingFile} onChange={setRecordingFile} accept="image/*,video/*" hint="Image or short video" />
+                <UploadTile label="Screen Recording" required file={recordingFile} onChange={setRecordingFile} accept="video/*" hint="Video recording only (mp4, mov, webm)" />
                 <UploadTile label="Last Transaction Screenshot" required file={lastTxnFile} onChange={setLastTxnFile} accept="image/*" hint="Most recent UPI txn from your bank app" />
               </>
             )}
-            <div className="text-xs text-muted-foreground">Bank statement must be PDF. Recording: image or video.</div>
+            <div className="text-xs text-muted-foreground">Bank statement: PDF only · Screenshot: image · Recording: video only</div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setActiveProof(null)}>Cancel</Button>

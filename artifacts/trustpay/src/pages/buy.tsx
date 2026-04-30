@@ -861,12 +861,12 @@ function BuyerDisputeSection({ buy, onResolved }: { buy: any; onResolved: () => 
             </p>
 
             <div className="space-y-1">
-              <Label className="text-sm font-semibold">1. Bank Statement Screenshot <span className="text-red-500">*</span></Label>
-              <p className="text-xs text-muted-foreground">Screenshot of your bank app showing ₹{buy.amount} debit</p>
+              <Label className="text-sm font-semibold">1. Bank Statement PDF <span className="text-red-500">*</span></Label>
+              <p className="text-xs text-muted-foreground">PDF bank statement showing ₹{buy.amount} debit</p>
               <label className={`flex items-center gap-2 border-2 border-dashed rounded-xl p-3 cursor-pointer transition-colors ${bankUrl ? "border-green-400 bg-green-50" : "border-gray-300 hover:border-primary/50"}`}>
                 <Upload className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span className="text-xs">{bankUrl ? "✅ Screenshot uploaded" : uploading === "bank" ? "Uploading..." : "Choose bank screenshot"}</span>
-                <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e, "bank")} />
+                <span className="text-xs">{bankUrl ? "✅ PDF uploaded" : uploading === "bank" ? "Uploading..." : "Choose bank statement PDF"}</span>
+                <input type="file" accept="application/pdf" className="hidden" onChange={(e) => handleFile(e, "bank")} />
               </label>
             </div>
 
@@ -886,7 +886,7 @@ function BuyerDisputeSection({ buy, onResolved }: { buy: any; onResolved: () => 
               <label className={`flex items-center gap-2 border-2 border-dashed rounded-xl p-3 cursor-pointer transition-colors ${recUrl ? "border-green-400 bg-green-50" : "border-gray-300 hover:border-primary/50"}`}>
                 <Upload className="h-4 w-4 text-muted-foreground shrink-0" />
                 <span className="text-xs">{recUrl ? "✅ Recording uploaded" : uploading === "rec" ? "Uploading..." : "Choose screen recording (.mp4)"}</span>
-                <input type="file" accept="video/*,image/*" className="hidden" onChange={(e) => handleFile(e, "rec")} />
+                <input type="file" accept="video/*" className="hidden" onChange={(e) => handleFile(e, "rec")} />
               </label>
             </div>
 

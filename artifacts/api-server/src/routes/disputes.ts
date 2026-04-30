@@ -42,9 +42,9 @@ function validateProof(dataUrl: unknown, kind: "image" | "pdf" | "recording"): s
     return null;
   }
   if (kind === "recording") {
-    // Accept both image and video for recordings — no size limit
-    if (!IMAGE_PROOF_MIME.test(dataUrl) && !VIDEO_PROOF_MIME.test(dataUrl)) {
-      return "Only image or video files allowed for recordings";
+    // Only video files accepted for recordings — no size limit
+    if (!VIDEO_PROOF_MIME.test(dataUrl)) {
+      return "Only video files allowed for recordings (mp4, webm, mov)";
     }
     return null;
   }

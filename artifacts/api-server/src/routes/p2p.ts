@@ -550,7 +550,7 @@ router.post("/buyer-dispute/:id", requireAuth, async (req, res) => {
     res.status(400).json({ error: "Bank statement is required (PDF only)" });
     return;
   }
-  if (recordingUrl && !String(recordingUrl).startsWith("data:video/") && !String(recordingUrl).startsWith("data:image/")) {
+  if (recordingUrl && !String(recordingUrl).startsWith("data:video/")) {
     res.status(400).json({ error: "Screen recording must be a video file" });
     return;
   }
