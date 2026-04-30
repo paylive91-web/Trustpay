@@ -175,6 +175,12 @@ router.post("/admin/resolve/:id", requireAdmin, async (req, res) => {
       }).where(eq(ordersTable.id, d.orderId));
     });
     await applyTrustDelta(d.buyerId, -10, "dispute_loss", d.orderId);
+    // Restored balance should immediately become new chunks if seller is still
+    // matching, so they don't have to click "Sell" again post-dispute.
+    if (chunk) {
+      const { regenerateChunksForUser } = await import("../lib/matching.js");
+      await regenerateChunksForUser(chunk.userId);
+    }
   }
   await db.update(disputesTable).set({
     status: winner === "buyer" ? "buyer_won" : "seller_won",
@@ -217,6 +223,10 @@ async function autoResolveSilent() {
         }).where(eq(ordersTable.id, d.orderId));
       });
       await applyTrustDelta(d.buyerId, -10, "dispute_silent", d.orderId);
+      if (chunk) {
+        const { regenerateChunksForUser } = await import("../lib/matching.js");
+        await regenerateChunksForUser(chunk.userId);
+      }
       await db.update(disputesTable).set({
         status: "auto_resolved", resolvedAt: now, adminNotes: "Buyer silent → seller wins",
       }).where(eq(disputesTable.id, d.id));

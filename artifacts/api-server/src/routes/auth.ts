@@ -251,38 +251,14 @@ router.get("/invitees", requireAuth, async (req, res) => {
 });
 
 // Lightweight heartbeat — keeps lastSeenAt fresh (called every ~30s from frontend).
-// If seller was offline (lastSeenAt gap > 2 min) AND had active matching,
-// auto-stop their matching + cancel available chunks.
+// We deliberately do NOT auto-cancel chunks or stop matching when a seller
+// returns from a brief offline gap: the matching session itself has its own
+// `matchingExpiresAt` (default 15 min), and the buyer queue already filters
+// out offline sellers' chunks in real-time. This way a dispute popup, a phone
+// lock, or a quick app-background does not wipe the seller's queue — chunks
+// re-appear in the queue the moment heartbeat refreshes lastSeenAt.
 router.post("/heartbeat", requireAuth, async (req, res) => {
   const u = (req as any).user;
-  const [current] = await db.select({
-    lastSeenAt: usersTable.lastSeenAt,
-    matchingExpiresAt: usersTable.matchingExpiresAt,
-  }).from(usersTable).where(eq(usersTable.id, u.id)).limit(1);
-
-  const wasOffline = !current?.lastSeenAt ||
-    Date.now() - new Date(current.lastSeenAt).getTime() > 2 * 60 * 1000;
-  const hadActiveMatching = !!current?.matchingExpiresAt &&
-    new Date(current.matchingExpiresAt).getTime() > Date.now();
-
-  if (wasOffline && hadActiveMatching) {
-    await db.update(usersTable).set({
-      matchingExpiresAt: null,
-      autoSellEnabled: false,
-      lastSeenAt: new Date(),
-    }).where(eq(usersTable.id, u.id));
-    await db.update(ordersTable).set({
-      status: "cancelled",
-      updatedAt: new Date(),
-    }).where(and(
-      eq(ordersTable.userId, u.id),
-      eq(ordersTable.type, "withdrawal"),
-      eq(ordersTable.status, "available"),
-    ));
-    res.json({ ok: true, matchingStopped: true });
-    return;
-  }
-
   await db.update(usersTable).set({ lastSeenAt: new Date() }).where(eq(usersTable.id, u.id));
   res.json({ ok: true });
 });

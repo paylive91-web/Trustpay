@@ -141,30 +141,22 @@ router.get("/queue", requireAuth, async (req, res) => {
     ? await db.select().from(usersTable).where(inArray(usersTable.id, sellerIds))
     : [];
   const sellerMap = new Map(sellers.map((s) => [s.id, s]));
-  // Separate online vs offline chunks — cancel offline sellers' chunks immediately
-  const offlineChunkIds: number[] = [];
+  // HIDE (don't cancel) offline-seller chunks. Keeping them as 'available' in
+  // DB means: when seller resumes (heartbeat fires, app comes back to
+  // foreground, or they navigate back to /sell), their chunks immediately
+  // re-appear in the buyer queue without losing the matching session. This
+  // also means a brief network hiccup or a long dispute popup doesn't wipe a
+  // seller's queue and force them to click "Sell" again.
   const enriched = chunks.map((c) => {
     const seller = sellerMap.get(c.userId);
     const isOffline = !seller?.lastSeenAt || Date.now() - new Date(seller.lastSeenAt).getTime() > 2 * 60 * 1000;
     const matchingExpired = !seller?.matchingExpiresAt || new Date(seller.matchingExpiresAt).getTime() < Date.now();
-    if (isOffline || matchingExpired) {
-      offlineChunkIds.push(c.id);
-      return null;
-    }
+    if (isOffline || matchingExpired) return null;
     const a = parseFloat(c.amount);
     const rp = a >= 2001 ? 3 : a >= 1001 ? 4 : 5;
     const ra = parseFloat((a * rp / 100).toFixed(2));
     return { ...f(c, seller), rewardPercent: rp, rewardAmount: ra, totalAmount: parseFloat((a + ra).toFixed(2)) };
   }).filter(Boolean);
-
-  // Cancel offline seller chunks so they're gone from DB, not just hidden
-  if (offlineChunkIds.length > 0) {
-    await db.update(ordersTable).set({ status: "cancelled", updatedAt: new Date() })
-      .where(and(
-        inArray(ordersTable.id, offlineChunkIds),
-        eq(ordersTable.status, "available"),
-      ));
-  }
 
   res.json(enriched);
 });
