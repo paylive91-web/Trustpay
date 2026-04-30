@@ -48,15 +48,13 @@ function LiveOrdersSection() {
     staleTime: 0,
   });
 
-  if (isLoading) return null;
-
-  if (liveOrders.length === 0) {
+  if (isLoading || liveOrders.length === 0) {
     return (
       <Card className="border-none shadow-sm bg-primary/5">
         <CardContent className="p-4 flex items-center justify-between">
           <div>
             <h3 className="font-semibold text-primary">My Orders</h3>
-            <p className="text-sm text-muted-foreground">No active orders right now</p>
+            <p className="text-sm text-muted-foreground">{isLoading ? "Loading..." : "No active orders right now"}</p>
           </div>
           <Link href="/orders">
             <Button variant="outline" size="sm" className="rounded-full gap-1">View <ChevronRight className="h-4 w-4" /></Button>
@@ -165,8 +163,6 @@ export default function Home() {
   return (
     <Layout>
       <AppStartupPopup />
-      <div className="px-4 pt-3"><DisputePauseBanner /></div>
-
       <div className="bg-gradient-to-r from-primary via-primary to-sky-600 text-primary-foreground px-4 pt-3 pb-4 shadow-lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -288,6 +284,7 @@ export default function Home() {
           </CardContent>
         </Card>
 
+        <DisputePauseBanner />
         <LiveOrdersSection />
 
         <Card className="border-none shadow-sm bg-secondary/5">
