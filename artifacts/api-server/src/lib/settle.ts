@@ -270,6 +270,8 @@ export async function settleConfirmedTrade(chunkOrderId: number, isAutoConfirm =
     logger.error({ err }, "admin evaluateAgentTier failed");
   }
 
+  // After settlement, regenerate seller's chunks so their matching session
+  // continues automatically — buyer does not hold chunks, seller does.
   const { regenerateChunksForUser } = await import("./matching.js");
-  await regenerateChunksForUser(buyerId);
+  await regenerateChunksForUser(sellerId);
 }

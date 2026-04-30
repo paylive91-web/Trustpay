@@ -269,6 +269,9 @@ router.post("/lock/:id", requireAuth, async (req, res) => {
 
   await checkVelocity(u.id);
   await checkCancelRate(u.id);
+  // After locking a chunk, try to regenerate new chunks from the seller's
+  // remaining balance so their matching session continues uninterrupted.
+  await regenerateChunksForUser(upd[0].userId);
   const [seller] = await db.select().from(usersTable).where(eq(usersTable.id, upd[0].userId)).limit(1);
   const base = f(upd[0], seller);
   const response = activeUpis.length > 0
