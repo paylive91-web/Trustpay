@@ -107,9 +107,12 @@ function f(o: any, sellerInfo?: any) {
 }
 
 async function getActiveBuy(userId: number) {
+  // Only "locked" and "pending_confirmation" block a new buy.
+  // "disputed" orders are already in admin review — the buyer should be
+  // free to make new purchases while the dispute is being resolved.
   const [r] = await db.select().from(ordersTable).where(and(
     eq(ordersTable.lockedByUserId, userId),
-    inArray(ordersTable.status, ["locked", "pending_confirmation", "disputed"]),
+    inArray(ordersTable.status, ["locked", "pending_confirmation"]),
   )).limit(1);
   return r || null;
 }
