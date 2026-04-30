@@ -58,11 +58,9 @@ export default function NotificationsBell() {
       initialized.current = true;
       return;
     }
-    // Only alarm for payment-critical events — not for system alerts, fraud
-    // warnings, trust score changes, or broadcast messages.
+    // Only alarm when seller goes offline or payment confirmation arrives.
     const ALARM_KINDS = new Set([
       "payment_pending_confirmation",
-      "payment_locked",
       "seller_offline_dispute_buyer",
     ]);
     const newAlarm = items.filter(
