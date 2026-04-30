@@ -41,6 +41,51 @@ function parseFeeTiers(raw: string): FeeTier[] {
 }
 
 /**
+ * Diagnostic snapshot used by /matching-status to explain to a seller WHY
+ * their buy queue is empty while live. Mirrors the exact same math the
+ * generator below uses, so both stay in lock-step.
+ *
+ * Returns: { availableForChunks, chunkMin, hasActiveUpi, matchingPaused, isFrozen }
+ */
+export async function getMatchingDiagnostics(userId: number) {
+  const settings = await getSettings([
+    "matchingPaused", "chunkMin", "adminChunkMin", "platformCommissionPerChunk", "feeTiers",
+  ]);
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (!user) {
+    return { availableForChunks: 0, chunkMin: 0, hasActiveUpi: false, matchingPaused: false, isFrozen: false };
+  }
+  const isAdminSeller = user.role === "admin";
+  const chunkMin = isAdminSeller
+    ? (parseInt(settings.adminChunkMin) || 5000)
+    : (parseInt(settings.chunkMin) || 100);
+  const flatCommission = parseInt(settings.platformCommissionPerChunk) || 1;
+  const feeTiers = parseFeeTiers(settings.feeTiers);
+  const maxTierFee = feeTiers.reduce((m, t) => Math.max(m, t.fee), flatCommission);
+  const balance = parseFloat(user.balance);
+  const held = parseFloat(user.heldBalance);
+  const existingChunks = await db.select().from(ordersTable).where(and(
+    eq(ordersTable.userId, userId),
+    eq(ordersTable.type, "withdrawal"),
+    eq(ordersTable.status, "available"),
+  ));
+  // Same conservative formula as regenerateChunksForUser: each in-queue
+  // chunk consumes its `amount` plus the worst-case tier fee.
+  const inQueueAmt = existingChunks.reduce((s, o) => s + parseFloat(o.amount) + maxTierFee, 0);
+  const availableForChunks = Math.max(0, balance - held - inQueueAmt);
+  const upis = await db.select({ id: userUpiIdsTable.id }).from(userUpiIdsTable)
+    .where(and(eq(userUpiIdsTable.userId, userId), eq(userUpiIdsTable.isActive, true)))
+    .limit(1);
+  return {
+    availableForChunks,
+    chunkMin,
+    hasActiveUpi: upis.length > 0,
+    matchingPaused: settings.matchingPaused === "true",
+    isFrozen: !!user.isFrozen,
+  };
+}
+
+/**
  * Convert seller's available balance into random chunks (₹99-₹499) added to the buy queue.
  * Each chunk is an order row with type=withdrawal status=available.
  * Reservations the chunk amounts via heldBalance.

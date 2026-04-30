@@ -4,7 +4,7 @@ import { ordersTable, usersTable, disputesTable, tradePairBlocksTable, userNotif
 import { eq, and, sql, inArray, ne, or, gte, like } from "drizzle-orm";
 import { requireAuth } from "../lib/auth.js";
 import { getSettings } from "../lib/settings.js";
-import { releaseExpiredLocks, autoConfirmExpired, regenerateChunksForUser } from "../lib/matching.js";
+import { releaseExpiredLocks, autoConfirmExpired, regenerateChunksForUser, getMatchingDiagnostics } from "../lib/matching.js";
 import { settleConfirmedTrade } from "../lib/settle.js";
 import { applyTrustDelta } from "../lib/trust.js";
 import {
@@ -753,23 +753,47 @@ router.get("/matching-status", requireAuth, async (req, res) => {
   const expiresAt = user?.matchingExpiresAt || null;
   const isOnline = !!user?.lastSeenAt && Date.now() - new Date(user.lastSeenAt).getTime() < 2 * 60 * 1000;
   const isActive = !!expiresAt && new Date(expiresAt).getTime() > Date.now() && isOnline;
-  // Counts for the live status panel.
+  // Counts for the live status panel — also include 'disputed' so we can
+  // show the seller why their balance is stuck (held in pending disputes).
   const counts = await db.select({
     status: ordersTable.status,
     c: sql<string>`COUNT(*)`,
+    sumHeld: sql<string>`COALESCE(SUM(CAST(held_amount AS NUMERIC)), 0)`,
   }).from(ordersTable).where(and(
     eq(ordersTable.userId, u.id),
     eq(ordersTable.type, "withdrawal"),
-    inArray(ordersTable.status, ["available", "locked", "pending_confirmation"]),
+    inArray(ordersTable.status, ["available", "locked", "pending_confirmation", "disputed"]),
   )).groupBy(ordersTable.status);
   const byStatus: Record<string, number> = {};
-  for (const r of counts) byStatus[r.status] = parseInt(String(r.c));
+  let disputedHeldAmount = 0;
+  for (const r of counts) {
+    byStatus[r.status] = parseInt(String(r.c));
+    if (r.status === "disputed") disputedHeldAmount = parseFloat(String(r.sumHeld)) || 0;
+  }
+  // Compute "why is queue empty?" diagnostic using the shared helper that
+  // mirrors regenerateChunksForUser exactly (same math, same UPI check).
+  const diag = await getMatchingDiagnostics(u.id);
+  let emptyReason: string | null = null;
+  if (isActive && (byStatus.available || 0) === 0 && (byStatus.locked || 0) === 0) {
+    if (diag.matchingPaused) emptyReason = "Matching is paused by admin.";
+    else if (diag.isFrozen) emptyReason = "Your account is frozen — sells paused.";
+    else if (!diag.hasActiveUpi) emptyReason = "No active UPI ID found. Add a UPI ID to receive payments.";
+    else if (diag.availableForChunks < diag.chunkMin) {
+      const stuck = disputedHeldAmount > 0 ? ` (₹${disputedHeldAmount.toFixed(0)} stuck in open disputes)` : "";
+      emptyReason = `Not enough free balance to create chunks. Available ₹${diag.availableForChunks.toFixed(0)} / minimum ₹${diag.chunkMin}${stuck}.`;
+    }
+  }
   res.json({
     isActive,
     matchingExpiresAt: expiresAt,
     available: byStatus.available || 0,
     locked: byStatus.locked || 0,
     pendingConfirmation: byStatus.pending_confirmation || 0,
+    disputed: byStatus.disputed || 0,
+    disputedHeldAmount,
+    availableForChunks: diag.availableForChunks,
+    chunkMin: diag.chunkMin,
+    emptyReason,
   });
 });
 

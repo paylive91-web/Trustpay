@@ -287,21 +287,38 @@ export default function Sell() {
                       </div>
                     </>
 
-                    {/* Compact 3-col stats: Amount | In Queue | Locked */}
-                    <div className="grid grid-cols-3 gap-2 mb-3">
-                      <div className="rounded-xl bg-white/10 border border-white/10 p-2.5 text-center">
+                    {/* Compact 4-col stats: Amount | Held | In Queue | Locked */}
+                    <div className="grid grid-cols-4 gap-1.5 mb-3">
+                      <div className="rounded-xl bg-white/10 border border-white/10 p-2 text-center">
                         <div className="text-[9px] uppercase tracking-wider text-white/55">Amount</div>
-                        <div className="text-base font-black leading-tight mt-0.5">₹{balance.toFixed(0)}</div>
+                        <div className="text-sm font-black leading-tight mt-0.5">₹{balance.toFixed(0)}</div>
                       </div>
-                      <div className="rounded-xl bg-white/10 border border-white/10 p-2.5 text-center">
+                      <div className={`rounded-xl p-2 text-center border ${Number(heldBalance) > 0 ? "bg-amber-500/20 border-amber-400/40" : "bg-white/10 border-white/10"}`}>
+                        <div className={`text-[9px] uppercase tracking-wider ${Number(heldBalance) > 0 ? "text-amber-300" : "text-white/55"}`}>Held</div>
+                        <div className={`text-sm font-black leading-tight mt-0.5 ${Number(heldBalance) > 0 ? "text-amber-300" : ""}`}>₹{Number(heldBalance).toFixed(0)}</div>
+                      </div>
+                      <div className="rounded-xl bg-white/10 border border-white/10 p-2 text-center">
                         <div className="text-[9px] uppercase tracking-wider text-white/55">In Queue</div>
-                        <div className="text-base font-black leading-tight mt-0.5">{matching?.available || 0}</div>
+                        <div className="text-sm font-black leading-tight mt-0.5">{matching?.available || 0}</div>
                       </div>
-                      <div className={`rounded-xl p-2.5 text-center border ${(matching?.locked || 0) > 0 ? "bg-emerald-500/25 border-emerald-400/40" : "bg-white/10 border-white/10"}`}>
+                      <div className={`rounded-xl p-2 text-center border ${(matching?.locked || 0) > 0 ? "bg-emerald-500/25 border-emerald-400/40" : "bg-white/10 border-white/10"}`}>
                         <div className={`text-[9px] uppercase tracking-wider ${(matching?.locked || 0) > 0 ? "text-emerald-300" : "text-white/55"}`}>Locked 🔒</div>
-                        <div className={`text-base font-black leading-tight mt-0.5 ${(matching?.locked || 0) > 0 ? "text-emerald-300" : ""}`}>{matching?.locked || 0}</div>
+                        <div className={`text-sm font-black leading-tight mt-0.5 ${(matching?.locked || 0) > 0 ? "text-emerald-300" : ""}`}>{matching?.locked || 0}</div>
                       </div>
                     </div>
+
+                    {/* Diagnostic hint when matching is live but queue stays empty */}
+                    {(matching as any)?.emptyReason && (
+                      <div className="rounded-xl bg-red-500/15 border border-red-400/30 px-3 py-2 mb-3">
+                        <div className="text-[10px] uppercase tracking-wider text-red-300 mb-0.5 font-bold">Why is my queue empty?</div>
+                        <div className="text-xs text-red-100 leading-snug">{(matching as any).emptyReason}</div>
+                        {((matching as any)?.disputed || 0) > 0 && (
+                          <Link href="/orders">
+                            <span className="inline-block mt-1.5 text-[11px] text-red-200 underline font-semibold cursor-pointer">View {(matching as any).disputed} open dispute{(matching as any).disputed > 1 ? "s" : ""} →</span>
+                          </Link>
+                        )}
+                      </div>
+                    )}
 
                     {/* Sell Reward row */}
                     {sellRewardPct > 0 && (
