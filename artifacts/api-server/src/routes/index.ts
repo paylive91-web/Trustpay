@@ -11,6 +11,7 @@ import disputesRouter from "./disputes.js";
 import upiRouter from "./upi.js";
 import notificationsRouter from "./notifications.js";
 import smsRouter from "./sms.js";
+import storageRouter from "./storage.js";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use("/disputes", disputesRouter);
 router.use("/upi", upiRouter);
 router.use("/notifications", notificationsRouter);
 router.use("/sms", smsRouter);
+router.use(storageRouter);
 
 export default router;

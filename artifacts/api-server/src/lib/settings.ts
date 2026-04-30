@@ -125,17 +125,17 @@ export async function setSettings(entries: Record<string, string>): Promise<void
   const pairs = Object.entries(entries).filter(([, v]) => v != null);
   if (pairs.length === 0) return;
   try {
-    await Promise.all(
-      pairs.map(([key, value]) =>
-        db.insert(settingsTable)
-          .values({ key, value })
-          .onConflictDoUpdate({
-            target: settingsTable.key,
-            set: { value, updatedAt: sql`now()` },
-          })
-      )
-    );
-  } catch {
+    await db.insert(settingsTable)
+      .values(pairs.map(([key, value]) => ({ key, value })))
+      .onConflictDoUpdate({
+        target: settingsTable.key,
+        set: {
+          value: sql`excluded.value`,
+          updatedAt: sql`now()`,
+        },
+      });
+  } catch (err) {
+    console.error("[setSettings] failed to save settings:", err);
     return;
   }
 }

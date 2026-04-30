@@ -341,6 +341,10 @@ export const GetAppSettingsResponse = zod.object({
   apkVersion: zod.string().optional(),
   forceAppDownload: zod.boolean().optional(),
   googleClientId: zod.string().optional(),
+  buyRules: zod.string().optional(),
+  sellRules: zod.string().optional(),
+  buyRulesImageUrl: zod.string().optional(),
+  sellRulesImageUrl: zod.string().optional(),
 });
 
 /**
@@ -617,6 +621,10 @@ export const AdminGetSettingsResponse = zod
     apkVersion: zod.string().optional(),
     forceAppDownload: zod.boolean().optional(),
     googleClientId: zod.string().optional(),
+    buyRules: zod.string().optional(),
+    sellRules: zod.string().optional(),
+    buyRulesImageUrl: zod.string().optional(),
+    sellRulesImageUrl: zod.string().optional(),
   })
   .and(
     zod.object({
@@ -707,6 +715,10 @@ export const AdminUpdateSettingsResponse = zod
     apkVersion: zod.string().optional(),
     forceAppDownload: zod.boolean().optional(),
     googleClientId: zod.string().optional(),
+    buyRules: zod.string().optional(),
+    sellRules: zod.string().optional(),
+    buyRulesImageUrl: zod.string().optional(),
+    sellRulesImageUrl: zod.string().optional(),
   })
   .and(
     zod.object({

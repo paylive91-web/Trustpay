@@ -1,5 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
+import { randomUUID } from "crypto";
 import { db } from "@workspace/db";
 import { usersTable, ordersTable, transactionsTable, depositTasksTable, fraudAlertsTable, trustEventsTable, highValueEventsTable, userNotificationsTable, deviceFingerprintsTable, userUpiIdsTable, disputesTable, utrIndexTable, imageHashesTable, referralsTable, adminLogsTable, tradePairBlocksTable, smsLearningQueueTable, smsSafeSendersTable, smsCandidatePatternsTable, smsActivePatternsTable } from "@workspace/db";
 import { eq, and, sql, inArray, or, desc, gte, lte } from "drizzle-orm";
@@ -1061,14 +1062,15 @@ router.post("/disputes/:id/extend-deadline", requireAdmin, async (req, res) => {
   res.json({ success: true, buyerProofDeadline: newBuyerDeadline, sellerProofDeadline: newSellerDeadline });
 });
 
-// Image upload (base64 data URL passthrough with size check, ~5MB)
+// Image upload — uploads to object storage when available, falls back to base64 data URL
 router.post("/upload-image", requireAdmin, async (req, res) => {
   const { dataUrl, kind } = req.body || {};
   if (!dataUrl || typeof dataUrl !== "string") {
     res.status(400).json({ error: "dataUrl required" });
     return;
   }
-  if (!/^data:image\/(png|jpeg|jpg|gif|webp);base64,/i.test(dataUrl)) {
+  const mimeMatch = dataUrl.match(/^data:image\/(png|jpeg|jpg|gif|webp);base64,/i);
+  if (!mimeMatch) {
     res.status(400).json({ error: "Only PNG/JPEG/GIF/WEBP images supported" });
     return;
   }
@@ -1077,6 +1079,37 @@ router.post("/upload-image", requireAdmin, async (req, res) => {
     res.status(400).json({ error: "Image must be under 5 MB" });
     return;
   }
+
+  // Try uploading to object storage (available in Replit environment)
+  const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
+  if (privateObjectDir) {
+    try {
+      const { objectStorageClient } = await import("../lib/objectStorage.js");
+      const rawExt = mimeMatch[1].toLowerCase();
+      const ext = rawExt === "jpeg" ? "jpg" : rawExt;
+      const mime = `image/${rawExt === "jpg" ? "jpeg" : rawExt}`;
+      const base64Data = dataUrl.substring(dataUrl.indexOf(",") + 1);
+      const buffer = Buffer.from(base64Data, "base64");
+      const uuid = randomUUID();
+      const dirParts = privateObjectDir.split("/").filter(Boolean);
+      const bucketName = dirParts[0];
+      const dirPath = dirParts.slice(1).join("/");
+      const objectName = `${dirPath}/uploads/admin-img-${uuid}.${ext}`;
+      await objectStorageClient.bucket(bucketName).file(objectName).save(buffer, {
+        resumable: false,
+        metadata: { contentType: mime },
+      });
+      const protocol = req.headers["x-forwarded-proto"] || req.protocol || "https";
+      const host = req.headers["x-forwarded-host"] || req.get("host") || "localhost";
+      const url = `${protocol}://${host}/api/storage/objects/uploads/admin-img-${uuid}.${ext}`;
+      res.json({ url, kind: kind || "image", sizeBytes });
+      return;
+    } catch (uploadErr) {
+      req.log.warn({ err: uploadErr }, "Object storage upload failed, falling back to base64");
+    }
+  }
+
+  // Fallback: return the base64 data URL directly
   res.json({ url: dataUrl, kind: kind || "image", sizeBytes });
 });
 

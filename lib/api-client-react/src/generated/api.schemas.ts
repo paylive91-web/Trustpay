@@ -176,6 +176,10 @@ export interface AppSettings {
   apkVersion?: string;
   forceAppDownload?: boolean;
   googleClientId?: string;
+  buyRules?: string;
+  sellRules?: string;
+  buyRulesImageUrl?: string;
+  sellRulesImageUrl?: string;
 }
 
 export interface GoogleIdTokenBody {

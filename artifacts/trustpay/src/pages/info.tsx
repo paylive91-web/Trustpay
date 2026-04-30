@@ -6,8 +6,10 @@ import { BookOpen, ShieldAlert, AlertTriangle } from "lucide-react";
 
 export default function Info() {
   const { data: settings } = useGetAppSettings();
-  const buy = (settings as any)?.buyRules;
-  const sell = (settings as any)?.sellRules;
+  const buy = settings?.buyRules;
+  const sell = settings?.sellRules;
+  const buyImg = settings?.buyRulesImageUrl;
+  const sellImg = settings?.sellRulesImageUrl;
 
   return (
     <Layout>
@@ -18,12 +20,19 @@ export default function Info() {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base"><BookOpen className="w-4 h-4 text-primary" />Buy Rules</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
+            {buyImg && (
+              <img
+                src={buyImg}
+                alt="Buy Rules"
+                className="w-full rounded-xl object-contain max-h-80"
+              />
+            )}
             {buy ? (
               <div className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{buy}</div>
-            ) : (
+            ) : !buyImg ? (
               <p className="text-sm text-muted-foreground">No buy rules configured.</p>
-            )}
+            ) : null}
           </CardContent>
         </Card>
 
@@ -31,12 +40,19 @@ export default function Info() {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base"><ShieldAlert className="w-4 h-4 text-secondary" />Sell Rules</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
+            {sellImg && (
+              <img
+                src={sellImg}
+                alt="Sell Rules"
+                className="w-full rounded-xl object-contain max-h-80"
+              />
+            )}
             {sell ? (
               <div className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{sell}</div>
-            ) : (
+            ) : !sellImg ? (
               <p className="text-sm text-muted-foreground">No sell rules configured.</p>
-            )}
+            ) : null}
           </CardContent>
         </Card>
 

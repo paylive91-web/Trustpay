@@ -39,6 +39,8 @@ router.get("/app", async (req, res) => {
     popupSoundUrl: s.popupSoundUrl || "",
     buyRules: s.buyRules || "",
     sellRules: s.sellRules || "",
+    buyRulesImageUrl: s.buyRulesImageUrl || "",
+    sellRulesImageUrl: s.sellRulesImageUrl || "",
     // APK URL precedence: env var (so a CI deploy can override without DB
     // edits) > admin-configured value > empty string. Admin UI still wins
     // when env is unset.

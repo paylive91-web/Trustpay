@@ -1292,6 +1292,14 @@ components:
           type: boolean
         googleClientId:
           type: string
+        buyRules:
+          type: string
+        sellRules:
+          type: string
+        buyRulesImageUrl:
+          type: string
+        sellRulesImageUrl:
+          type: string
       required: [upiId, upiName, appName]
 
     GoogleIdTokenBody:
