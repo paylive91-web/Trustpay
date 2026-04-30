@@ -18,6 +18,18 @@ uri = "file://artifacts/trustpay/public/me-google-verification-mock.png"
 type = "image"
 title = "Me section Google verification"
 
+[[generated]]
+id = "NAZ4YeDQwuhSvkLqVlJO8"
+uri = "file://attached_assets/generated_images/banner_buy_earn.png"
+type = "image"
+title = "trustpay buy earn banner"
+
+[[generated]]
+id = "b6l2By4jy7np_r1LqD0N7"
+uri = "file://attached_assets/generated_images/banner_invite_earn.png"
+type = "image"
+title = "trustpay invite earn banner"
+
 [[outputs]]
 id = "9i2SMWhGKDU824ilpyHpE"
 uri = "file://screenshots/home-redesign.jpg"
@@ -161,3 +173,15 @@ id = "vOljrII5ImYqXWEONZp5U"
 uri = "file://attached_assets/file_00000000da60720ba5a8a74acd96c937_1776335785514.png"
 type = "image"
 title = "TrustPay Logo - Download karo"
+
+[[outputs]]
+id = "zS8ag7t-_hl7iM9Xp7q4p"
+uri = "file://attached_assets/generated_images/banner_buy_earn.png"
+type = "image"
+title = "Banner 1 — Buy & Earn (5% Reward)"
+
+[[outputs]]
+id = "Oyf1ZBsWDb_rGQhoWP0Hu"
+uri = "file://attached_assets/generated_images/banner_invite_earn.png"
+type = "image"
+title = "Banner 2 — Invite & Earn (1% per trade)"
