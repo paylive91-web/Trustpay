@@ -162,6 +162,7 @@ export default function Sell() {
   const isFrozen = (user as any).isFrozen;
   const heldBalance = (user as any).heldBalance ?? 0;
   const balance = Number((user as any).balance ?? 0);
+  const sellRewardPct = Math.max(0, parseFloat((settings as any)?.sellRewardPercent) || 0);
 
   return (
     <Layout>
@@ -276,7 +277,7 @@ export default function Sell() {
                       </div>
                       <div>
                         <div className="text-[11px] text-emerald-200 uppercase tracking-wider">Potential earnings today</div>
-                        <div className="text-xl font-black text-emerald-300">+₹{(balance * 0.05).toFixed(0)} <span className="text-sm font-normal text-emerald-400">at 5% reward</span></div>
+                        <div className="text-xl font-black text-emerald-300">+₹{(balance * sellRewardPct / 100).toFixed(0)} <span className="text-sm font-normal text-emerald-400">at {sellRewardPct}% reward</span></div>
                       </div>
                     </div>
 
@@ -315,8 +316,8 @@ export default function Sell() {
                       Go live for 15 minutes and let buyers pay you directly.
                     </p>
 
-                    {/* Earnings preview */}
-                    {balance > 0 && (
+                    {/* Earnings preview — only if admin has configured a sell reward */}
+                    {balance > 0 && sellRewardPct > 0 && (
                       <div className="mt-4 rounded-2xl bg-white/10 border border-white/15 p-4">
                         <div className="text-xs text-white/60 uppercase tracking-wider mb-2">If you sell now</div>
                         <div className="flex items-end gap-3">
@@ -326,8 +327,8 @@ export default function Sell() {
                           </div>
                           <div className="text-white/40 text-xl mb-0.5">→</div>
                           <div>
-                            <div className="text-[11px] text-emerald-300">You earn</div>
-                            <div className="text-xl font-black text-emerald-300">+₹{(balance * 0.05).toFixed(0)}</div>
+                            <div className="text-[11px] text-emerald-300">You earn (+{sellRewardPct}%)</div>
+                            <div className="text-xl font-black text-emerald-300">+₹{(balance * sellRewardPct / 100).toFixed(0)}</div>
                           </div>
                         </div>
                       </div>
