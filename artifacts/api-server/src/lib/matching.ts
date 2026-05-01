@@ -62,8 +62,14 @@ export async function getMatchingDiagnostics(userId: number) {
   const flatCommission = parseInt(settings.platformCommissionPerChunk) || 1;
   const feeTiers = parseFeeTiers(settings.feeTiers);
   const maxTierFee = feeTiers.reduce((m, t) => Math.max(m, t.fee), flatCommission);
+  // `balance` is already the seller's spendable amount — at lock time we move
+  // funds OUT of balance INTO heldBalance (see p2p.ts /lock). So we must NOT
+  // subtract `held` again here, otherwise locked/disputed chunks shrink the
+  // available pool twice and the queue stops forming the moment any chunk
+  // ties up funds (especially disputes, which keep `held` elevated until
+  // resolved). Only `inQueueAmt` (already-available chunks) needs to be
+  // subtracted because those will move balance→held when they get claimed.
   const balance = parseFloat(user.balance);
-  const held = parseFloat(user.heldBalance);
   const existingChunks = await db.select().from(ordersTable).where(and(
     eq(ordersTable.userId, userId),
     eq(ordersTable.type, "withdrawal"),
@@ -72,7 +78,7 @@ export async function getMatchingDiagnostics(userId: number) {
   // Same conservative formula as regenerateChunksForUser: each in-queue
   // chunk consumes its `amount` plus the worst-case tier fee.
   const inQueueAmt = existingChunks.reduce((s, o) => s + parseFloat(o.amount) + maxTierFee, 0);
-  const availableForChunks = Math.max(0, balance - held - inQueueAmt);
+  const availableForChunks = Math.max(0, balance - inQueueAmt);
   const upis = await db.select({ id: userUpiIdsTable.id }).from(userUpiIdsTable)
     .where(and(eq(userUpiIdsTable.userId, userId), eq(userUpiIdsTable.isActive, true)))
     .limit(1);
@@ -107,11 +113,13 @@ export async function regenerateChunksForUser(userId: number) {
     .where(and(eq(userUpiIdsTable.userId, userId), eq(userUpiIdsTable.isActive, true)));
   if (upis.length === 0) return;
 
-  // Available balance = balance - heldBalance - sum of in-queue chunks (held by
-  // gross amount, including the ₹1 platform fee that will be deducted at
-  // chunk-creation time below).
+  // Available balance = balance - sum of in-queue chunks. NOTE: we deliberately
+  // do NOT subtract heldBalance here. At lock time funds are moved
+  // balance→heldBalance (see p2p.ts /lock), so `balance` is ALREADY the
+  // spendable amount excluding everything currently locked/pending/disputed.
+  // Subtracting `held` again would double-count, which previously caused the
+  // sell queue to stop forming whenever a dispute kept `held` elevated.
   const balance = parseFloat(user.balance);
-  const held = parseFloat(user.heldBalance);
   const existingChunks = await db.select().from(ordersTable).where(and(
     eq(ordersTable.userId, userId),
     eq(ordersTable.type, "withdrawal"),
@@ -147,10 +155,10 @@ export async function regenerateChunksForUser(userId: number) {
   const maxTierFee = feeTiers.reduce((m, t) => Math.max(m, t.fee), flatCommission);
   // Only 'available' chunks count here — locked/pending_confirmation/disputed
   // chunks already moved their amount from balance → heldBalance at lock time,
-  // so they are already excluded by `balance - held`. The DB query above
+  // so they are already excluded from `balance` itself. The DB query above
   // fetches only 'available' rows, so no extra filter is needed.
   const inQueueAmt = existingChunks.reduce((s, o) => s + parseFloat(o.amount) + maxTierFee, 0);
-  let avail = balance - held - inQueueAmt;
+  let avail = balance - inQueueAmt;
   const newUserCap = parseInt(settings.newUserChunkCap) || 10000;
   const tradeThreshold = parseInt(settings.newUserTradeThreshold) || 5;
   if (!isAdminSeller && (user.successfulTrades || 0) < tradeThreshold) {

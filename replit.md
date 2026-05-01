@@ -68,6 +68,7 @@ Frontend pages: `/`, `/login`, `/register`, `/buy`, `/sell`, `/orders`, `/transa
 - **PDF-only bank statements**: disputes validateProof updated.
 - **Auto-unfreeze**: Resolving last open fraud alert auto-unfreezes user.
 - **UPI disconnect**: Cancels all `available` chunks. Individual UPI delete/activate via `/api/upi/:id/activate` and `DELETE /api/upi/:id`.
+- **Available-balance formula fix**: `regenerateChunksForUser` and `getMatchingDiagnostics` now compute `avail = balance - inQueueAmt` (NOT `balance - heldBalance - inQueueAmt`). At lock time funds move balance→heldBalance, so `balance` already excludes locked/disputed amounts — subtracting `held` again was double-counting and would freeze a seller's queue whenever a dispute kept their `heldBalance` elevated. Don't reintroduce the `held` subtraction.
 
 ## Outstanding TODO
 
