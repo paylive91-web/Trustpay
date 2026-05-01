@@ -22,11 +22,20 @@ export default function Info() {
           </CardHeader>
           <CardContent className="space-y-3">
             {buyImg && (
-              <img
-                src={buyImg}
-                alt="Buy Rules"
-                className="w-full rounded-xl object-contain max-h-80"
-              />
+              <a
+                href={buyImg}
+                target="_blank"
+                rel="noreferrer"
+                className="block rounded-xl overflow-hidden bg-muted/30 border border-border/40 flex items-center justify-center"
+                title="Tap to view full-size"
+              >
+                <img
+                  src={buyImg}
+                  alt="Buy Rules"
+                  className="max-w-full max-h-[80vh] w-auto h-auto block"
+                  loading="lazy"
+                />
+              </a>
             )}
             {buy ? (
               <div className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{buy}</div>
@@ -42,11 +51,20 @@ export default function Info() {
           </CardHeader>
           <CardContent className="space-y-3">
             {sellImg && (
-              <img
-                src={sellImg}
-                alt="Sell Rules"
-                className="w-full rounded-xl object-contain max-h-80"
-              />
+              <a
+                href={sellImg}
+                target="_blank"
+                rel="noreferrer"
+                className="block rounded-xl overflow-hidden bg-muted/30 border border-border/40 flex items-center justify-center"
+                title="Tap to view full-size"
+              >
+                <img
+                  src={sellImg}
+                  alt="Sell Rules"
+                  className="max-w-full max-h-[80vh] w-auto h-auto block"
+                  loading="lazy"
+                />
+              </a>
             )}
             {sell ? (
               <div className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{sell}</div>
