@@ -299,11 +299,17 @@ export async function ensureSchema(): Promise<void> {
     }
     // 'timeout' = admin chose neither party; the held amount is forfeited
     // to the platform admin account. ALTER TYPE ADD VALUE must be its own
-    // statement, hence the separate try/catch.
+    // statement, hence the separate try/catch. We log unexpected failures
+    // so an ops issue (privilege/old PG version) is visible — the admin
+    // resolve route would otherwise fail at runtime when writing 'timeout'.
     try {
       await db.execute(sql`ALTER TYPE dispute_status ADD VALUE IF NOT EXISTS 'timeout'`);
-    } catch (err) {
-      // already-exists is fine; ignore.
+    } catch (err: any) {
+      const msg = String(err?.message || err);
+      if (!/already exists|duplicate/i.test(msg)) {
+        // eslint-disable-next-line no-console
+        console.error("[migrate] dispute_status add 'timeout' failed:", msg);
+      }
     }
 
     // Heal "zombie" disputed orders: orders.status = 'disputed' with no

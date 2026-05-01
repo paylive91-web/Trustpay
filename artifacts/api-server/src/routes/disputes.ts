@@ -139,18 +139,16 @@ router.post("/admin/resolve/:id", requireAdmin, async (req, res) => {
   if (!d || d.status !== "open") { res.status(400).json({ error: "Dispute already resolved" }); return; }
 
   // ── Timeout path: neither party gets the money. The held amount is
-  // forfeited to the platform admin account. We rely on db.transaction
-  // so that admin-credit, seller-debit, order close and dispute close
-  // either all happen or none do — no orphan balances.
+  // forfeited to the platform admin account. Concurrency-safe via
+  // compare-and-swap: we update the dispute row with WHERE status='open'
+  // and check affected-rows. If two admins click "timeout" at the same
+  // time, only one CAS wins; the other transaction sees 0 rows updated
+  // and rolls back, so the seller is debited at most once.
   if (winner === "timeout") {
-    const [chunk] = await db.select().from(ordersTable).where(eq(ordersTable.id, d.orderId)).limit(1);
-    if (!chunk) { res.status(400).json({ error: "Order not found" }); return; }
-    const heldAmt = parseFloat(chunk.heldAmount || "0");
-    if (heldAmt <= 0) { res.status(400).json({ error: "Order has no held amount to forfeit" }); return; }
-
     // Pick the platform admin account — the same canonical admin (id=1)
     // that ensureSchema preserves. Fall back to whichever admin exists
-    // first if id=1 is missing for any reason.
+    // first if id=1 is missing for any reason. Read outside the tx since
+    // it's pure reference data.
     const [adminUser] = await db
       .select()
       .from(usersTable)
@@ -161,92 +159,162 @@ router.post("/admin/resolve/:id", requireAdmin, async (req, res) => {
       res.status(500).json({ error: "No admin account found to credit" }); return;
     }
 
-    await db.transaction(async (tx) => {
-      // 1) Pull the held amount off the seller's heldBalance — we don't
-      // release it back to spendable balance because it's leaving the
-      // seller's wallet entirely.
-      await tx.update(usersTable)
-        .set({ heldBalance: sql`${usersTable.heldBalance} - ${heldAmt}` })
-        .where(eq(usersTable.id, chunk.userId));
-      // 2) Credit the admin wallet.
-      await tx.update(usersTable)
-        .set({ balance: sql`${usersTable.balance} + ${heldAmt}` })
-        .where(eq(usersTable.id, adminUser.id));
-      // 3) Audit trail — dual-entry: debit seller, credit admin. Both
-      // rows reference the order so the timeout-history report can
-      // group them.
-      await tx.insert(transactionsTable).values({
-        userId: chunk.userId,
-        orderId: chunk.id,
-        type: "debit",
-        amount: heldAmt.toFixed(2),
-        description: `Dispute #${id} timeout — amount forfeited to platform`,
+    let result: { heldAmt: number; sellerId: number; orderIdNum: number; buyerId: number } | null = null;
+    let alreadyResolved = false;
+    let noHeldAmount = false;
+
+    try {
+      await db.transaction(async (tx) => {
+        // 1) Compare-and-swap on the dispute itself. Atomically transition
+        // status open → timeout. The .returning() lets us know whether we
+        // were the winner of the race.
+        const claimed = await tx.update(disputesTable).set({
+          status: "timeout",
+          resolvedAt: new Date(),
+          resolvedBy: (req as any).user.id,
+          adminNotes: notes || null,
+        }).where(and(
+          eq(disputesTable.id, id),
+          eq(disputesTable.status, "open"),
+        )).returning({
+          orderId: disputesTable.orderId,
+          buyerId: disputesTable.buyerId,
+          sellerId: disputesTable.sellerId,
+        });
+
+        if (claimed.length === 0) {
+          // Lost the race — another admin already resolved this dispute.
+          alreadyResolved = true;
+          throw new Error("__abort_timeout__");
+        }
+        const claim = claimed[0];
+
+        // 2) Lock the order row + read held amount. SELECT ... FOR UPDATE
+        // serialises us against any other writer (e.g. settlement/cleanup)
+        // touching the same order during this window.
+        const [chunk] = await tx.select().from(ordersTable)
+          .where(eq(ordersTable.id, claim.orderId))
+          .for("update")
+          .limit(1);
+
+        if (!chunk || parseFloat(chunk.heldAmount || "0") <= 0) {
+          noHeldAmount = true;
+          throw new Error("__abort_timeout__");
+        }
+        const heldAmt = parseFloat(chunk.heldAmount);
+
+        // 3) Pull the held amount off the seller's heldBalance — we don't
+        // release it back to spendable balance because it's leaving the
+        // seller's wallet entirely. Predicate guards against negative
+        // balance.
+        const sellerDebit = await tx.update(usersTable)
+          .set({ heldBalance: sql`${usersTable.heldBalance} - ${heldAmt}` })
+          .where(and(
+            eq(usersTable.id, chunk.userId),
+            sql`${usersTable.heldBalance} >= ${heldAmt}`,
+          ))
+          .returning({ id: usersTable.id });
+        if (sellerDebit.length === 0) {
+          // Seller's heldBalance is somehow lower than this order's
+          // heldAmount — would go negative. Abort to keep books clean.
+          noHeldAmount = true;
+          throw new Error("__abort_timeout__");
+        }
+
+        // 4) Credit the admin wallet.
+        await tx.update(usersTable)
+          .set({ balance: sql`${usersTable.balance} + ${heldAmt}` })
+          .where(eq(usersTable.id, adminUser.id));
+
+        // 5) Audit trail — dual-entry: debit seller, credit admin. Both
+        // rows reference the order so the timeout-history report can
+        // group them.
+        await tx.insert(transactionsTable).values({
+          userId: chunk.userId,
+          orderId: chunk.id,
+          type: "debit",
+          amount: heldAmt.toFixed(2),
+          description: `Dispute #${id} timeout — amount forfeited to platform`,
+        });
+        await tx.insert(transactionsTable).values({
+          userId: adminUser.id,
+          orderId: chunk.id,
+          type: "credit",
+          amount: heldAmt.toFixed(2),
+          description: `Dispute #${id} timeout — forfeited from seller (order #${chunk.id})`,
+        });
+
+        // 6) Close the order so it doesn't get re-listed.
+        await tx.update(ordersTable).set({
+          status: "cancelled",
+          heldAmount: "0",
+          lockedAt: null,
+          lockedByUserId: null,
+          confirmDeadline: null,
+          utrNumber: null,
+          screenshotUrl: null,
+          recordingUrl: null,
+          submittedAt: null,
+          notes: `Dispute #${id} timeout — forfeited to admin`,
+          updatedAt: new Date(),
+        }).where(eq(ordersTable.id, chunk.id));
+
+        // 7) Audit log — kept inside the tx so we never have a money move
+        // without its admin_log row.
+        await tx.insert(adminLogsTable).values({
+          adminId: (req as any).user.id,
+          actionType: "dispute_timeout",
+          targetType: "dispute",
+          targetId: id,
+          details: `Dispute #${id} forfeited ₹${heldAmt.toFixed(2)} from seller #${chunk.userId} to admin #${adminUser.id}${notes ? ` — ${notes}` : ""}`,
+        });
+
+        result = {
+          heldAmt,
+          sellerId: chunk.userId,
+          orderIdNum: chunk.id,
+          buyerId: claim.buyerId,
+        };
       });
-      await tx.insert(transactionsTable).values({
-        userId: adminUser.id,
-        orderId: chunk.id,
-        type: "credit",
-        amount: heldAmt.toFixed(2),
-        description: `Dispute #${id} timeout — forfeited from seller (order #${chunk.id})`,
-      });
-      // 4) Close the order so it doesn't get re-listed.
-      await tx.update(ordersTable).set({
-        status: "cancelled",
-        heldAmount: "0",
-        lockedAt: null,
-        lockedByUserId: null,
-        confirmDeadline: null,
-        utrNumber: null,
-        screenshotUrl: null,
-        recordingUrl: null,
-        submittedAt: null,
-        notes: `Dispute #${id} timeout — forfeited to admin`,
-        updatedAt: new Date(),
-      }).where(eq(ordersTable.id, chunk.id));
-      // 5) Mark the dispute resolved.
-      await tx.update(disputesTable).set({
-        status: "timeout",
-        resolvedAt: new Date(),
-        resolvedBy: (req as any).user.id,
-        adminNotes: notes || null,
-      }).where(eq(disputesTable.id, id));
-    });
+    } catch (err: any) {
+      if (err?.message !== "__abort_timeout__") throw err;
+    }
+
+    if (alreadyResolved) { res.status(400).json({ error: "Dispute already resolved" }); return; }
+    if (noHeldAmount)    { res.status(400).json({ error: "Order has no held amount to forfeit" }); return; }
+    if (!result)         { res.status(500).json({ error: "Timeout resolution failed" }); return; }
+
+    // Re-bind through a typed alias so TS narrows away the `null` branch —
+    // it cannot follow the assignment that happens inside the tx callback.
+    const r: { heldAmt: number; sellerId: number; orderIdNum: number; buyerId: number } = result;
 
     // Trust hit on both parties — both failed to defend properly within
     // the window. Smaller penalty than a true loss because there's no
     // verdict against either side. Outside the txn since trust events
-    // have their own write path.
-    await applyTrustDelta(d.buyerId, -5, "dispute_timeout", d.orderId);
-    await applyTrustDelta(d.sellerId, -5, "dispute_timeout", d.orderId);
+    // have their own write path and are best-effort/audit-only.
+    await applyTrustDelta(r.buyerId, -5, "dispute_timeout", r.orderIdNum);
+    await applyTrustDelta(r.sellerId, -5, "dispute_timeout", r.orderIdNum);
 
     // Notify both parties so they don't think the system "ate" their
     // money silently.
     await db.insert(userNotificationsTable).values([
       {
-        userId: d.buyerId,
+        userId: r.buyerId,
         kind: "dispute_timeout",
         title: "Dispute closed — timeout",
-        body: `Your dispute #${id} (order #${chunk.id}) was closed as a timeout by TrustPay. The amount was not awarded to either side.`,
+        body: `Your dispute #${id} (order #${r.orderIdNum}) was closed as a timeout by TrustPay. The amount was not awarded to either side.`,
         severity: "warn",
       },
       {
-        userId: d.sellerId,
+        userId: r.sellerId,
         kind: "dispute_timeout",
         title: "Dispute closed — timeout",
-        body: `Your dispute #${id} (order #${chunk.id}) was closed as a timeout by TrustPay. The held amount has been removed from your wallet.`,
+        body: `Your dispute #${id} (order #${r.orderIdNum}) was closed as a timeout by TrustPay. The held amount has been removed from your wallet.`,
         severity: "warn",
       },
     ]);
 
-    await db.insert(adminLogsTable).values({
-      adminId: (req as any).user.id,
-      actionType: "dispute_timeout",
-      targetType: "dispute",
-      targetId: id,
-      details: `Dispute #${id} forfeited ₹${heldAmt.toFixed(2)} from seller #${chunk.userId} to admin #${adminUser.id}${notes ? ` — ${notes}` : ""}`,
-    });
-
-    res.json({ success: true, forfeited: heldAmt.toFixed(2), creditedTo: adminUser.id });
+    res.json({ success: true, forfeited: r.heldAmt.toFixed(2), creditedTo: adminUser.id });
     return;
   }
 

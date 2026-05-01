@@ -1653,7 +1653,7 @@ components:
           type: integer
         status:
           type: string
-          enum: [open, buyer_won, seller_won, auto_resolved]
+          enum: [open, buyer_won, seller_won, auto_resolved, timeout]
         reason:
           type: string
           nullable: true

@@ -382,6 +382,7 @@ export const DisputeBaseStatus = {
   buyer_won: "buyer_won",
   seller_won: "seller_won",
   auto_resolved: "auto_resolved",
+  timeout: "timeout",
 } as const;
 
 export interface DisputeBase {
