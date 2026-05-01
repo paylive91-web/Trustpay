@@ -213,85 +213,145 @@ export default function Sell() {
                       </div>
                     </div>
 
-                    {/* Central radar animation */}
+                    {/* Central radar animation — rainbow neon edition */}
                     <>
                       <style>{`
                         @keyframes radarSweep{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-                        @keyframes orbit-a{from{transform:rotate(0deg) translateX(52px) rotate(0deg)}to{transform:rotate(360deg) translateX(52px) rotate(-360deg)}}
-                        @keyframes orbit-b{from{transform:rotate(120deg) translateX(70px) rotate(-120deg)}to{transform:rotate(480deg) translateX(70px) rotate(-480deg)}}
-                        @keyframes orbit-c{from{transform:rotate(240deg) translateX(44px) rotate(-240deg)}to{transform:rotate(600deg) translateX(44px) rotate(-600deg)}}
-                        @keyframes orbit-d{from{transform:rotate(60deg) translateX(63px) rotate(-60deg)}to{transform:rotate(420deg) translateX(63px) rotate(-420deg)}}
-                        @keyframes corePulse{0%,100%{box-shadow:0 0 18px 7px rgba(139,92,246,0.55),0 0 36px 14px rgba(139,92,246,0.22)}50%{box-shadow:0 0 28px 12px rgba(139,92,246,0.8),0 0 56px 24px rgba(139,92,246,0.38)}}
-                        @keyframes dpGreen{0%,100%{box-shadow:0 0 7px 2px rgba(52,211,153,0.7),0 0 14px 5px rgba(52,211,153,0.3)}50%{box-shadow:0 0 12px 5px rgba(52,211,153,1),0 0 24px 10px rgba(52,211,153,0.5)}}
-                        @keyframes dpSky{0%,100%{box-shadow:0 0 7px 2px rgba(56,189,248,0.7),0 0 14px 5px rgba(56,189,248,0.3)}50%{box-shadow:0 0 12px 5px rgba(56,189,248,1),0 0 24px 10px rgba(56,189,248,0.5)}}
-                        @keyframes dpFuchsia{0%,100%{box-shadow:0 0 7px 2px rgba(232,121,249,0.7),0 0 14px 5px rgba(232,121,249,0.3)}50%{box-shadow:0 0 12px 5px rgba(232,121,249,1),0 0 24px 10px rgba(232,121,249,0.5)}}
-                        @keyframes dpYellow{0%,100%{box-shadow:0 0 7px 2px rgba(250,204,21,0.7),0 0 14px 5px rgba(250,204,21,0.3)}50%{box-shadow:0 0 12px 5px rgba(250,204,21,1),0 0 24px 10px rgba(250,204,21,0.5)}}
+                        @keyframes radarSweepRev{from{transform:rotate(360deg)}to{transform:rotate(0deg)}}
+                        @keyframes orbit-a{from{transform:rotate(0deg) translateX(54px) rotate(0deg)}to{transform:rotate(360deg) translateX(54px) rotate(-360deg)}}
+                        @keyframes orbit-b{from{transform:rotate(120deg) translateX(72px) rotate(-120deg)}to{transform:rotate(480deg) translateX(72px) rotate(-480deg)}}
+                        @keyframes orbit-c{from{transform:rotate(240deg) translateX(46px) rotate(-240deg)}to{transform:rotate(600deg) translateX(46px) rotate(-600deg)}}
+                        @keyframes orbit-d{from{transform:rotate(60deg) translateX(64px) rotate(-60deg)}to{transform:rotate(420deg) translateX(64px) rotate(-420deg)}}
+                        @keyframes pulseRing{0%{transform:scale(0.4);opacity:0.85}80%{opacity:0.05}100%{transform:scale(1.6);opacity:0}}
+                        @keyframes pulseRingSlow{0%{transform:scale(0.5);opacity:0.6}100%{transform:scale(1.5);opacity:0}}
+                        @keyframes ringSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+                        @keyframes ringSpinRev{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+                        @keyframes hueShift{0%{filter:hue-rotate(0deg) brightness(1.05)}50%{filter:hue-rotate(60deg) brightness(1.2)}100%{filter:hue-rotate(0deg) brightness(1.05)}}
+                        @keyframes coreGlow{0%,100%{box-shadow:0 0 22px 8px rgba(168,85,247,0.55),0 0 44px 18px rgba(236,72,153,0.32),0 0 70px 28px rgba(56,189,248,0.18)}50%{box-shadow:0 0 32px 14px rgba(236,72,153,0.75),0 0 60px 26px rgba(168,85,247,0.45),0 0 96px 38px rgba(56,189,248,0.28)}}
+                        @keyframes coreShimmer{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+                        @keyframes dpGreen{0%,100%{box-shadow:0 0 8px 2px rgba(52,211,153,0.85),0 0 18px 7px rgba(52,211,153,0.45),0 0 34px 14px rgba(52,211,153,0.18)}50%{box-shadow:0 0 14px 5px rgba(52,211,153,1),0 0 28px 12px rgba(52,211,153,0.6),0 0 50px 22px rgba(52,211,153,0.28)}}
+                        @keyframes dpSky{0%,100%{box-shadow:0 0 8px 2px rgba(56,189,248,0.85),0 0 18px 7px rgba(56,189,248,0.45),0 0 34px 14px rgba(56,189,248,0.18)}50%{box-shadow:0 0 14px 5px rgba(56,189,248,1),0 0 28px 12px rgba(56,189,248,0.6),0 0 50px 22px rgba(56,189,248,0.28)}}
+                        @keyframes dpFuchsia{0%,100%{box-shadow:0 0 8px 2px rgba(232,121,249,0.85),0 0 18px 7px rgba(232,121,249,0.45),0 0 34px 14px rgba(232,121,249,0.18)}50%{box-shadow:0 0 14px 5px rgba(232,121,249,1),0 0 28px 12px rgba(232,121,249,0.6),0 0 50px 22px rgba(232,121,249,0.28)}}
+                        @keyframes dpAmber{0%,100%{box-shadow:0 0 8px 2px rgba(251,146,60,0.85),0 0 18px 7px rgba(251,146,60,0.45),0 0 34px 14px rgba(251,146,60,0.18)}50%{box-shadow:0 0 14px 5px rgba(251,146,60,1),0 0 28px 12px rgba(251,146,60,0.6),0 0 50px 22px rgba(251,146,60,0.28)}}
+                        @keyframes liveBlink{0%,100%{opacity:1}50%{opacity:0.55}}
+                        @keyframes sparkleDrift{0%{transform:translate(0,0) scale(0.8);opacity:0}20%{opacity:0.9}100%{transform:translate(var(--dx),var(--dy)) scale(1.1);opacity:0}}
                       `}</style>
                       <div className="flex justify-center mb-5">
-                        <div className="relative flex items-center justify-center" style={{ width: 204, height: 204 }}>
-                          {/* SVG radar grid */}
-                          <svg className="absolute inset-0" width="204" height="204" style={{ overflow: "visible" }}>
+                        <div className="relative flex items-center justify-center" style={{ width: 220, height: 220 }}>
+                          {/* Outer expanding pulse rings — give a "broadcasting" feel */}
+                          <div className="absolute rounded-full" style={{ width:200, height:200, border:"2px solid rgba(167,139,250,0.55)", animation:"pulseRing 2.6s ease-out infinite" }} />
+                          <div className="absolute rounded-full" style={{ width:200, height:200, border:"2px solid rgba(236,72,153,0.5)", animation:"pulseRing 2.6s ease-out infinite 0.85s" }} />
+                          <div className="absolute rounded-full" style={{ width:200, height:200, border:"2px solid rgba(56,189,248,0.45)", animation:"pulseRing 2.6s ease-out infinite 1.7s" }} />
+
+                          {/* Counter-rotating gradient ring (outer) */}
+                          <div className="absolute rounded-full" style={{
+                            width:208, height:208, padding:2, animation:"ringSpinRev 14s linear infinite, hueShift 8s ease-in-out infinite",
+                            background:"conic-gradient(from 0deg, #34d399, #38bdf8, #a78bfa, #ec4899, #fbbf24, #34d399)",
+                            WebkitMask:"linear-gradient(#000,#000) content-box, linear-gradient(#000,#000)",
+                            WebkitMaskComposite:"xor", maskComposite:"exclude",
+                            opacity:0.55,
+                          }} />
+
+                          {/* SVG radar grid (subtle base) */}
+                          <svg className="absolute" width="200" height="200" style={{ overflow: "visible" }}>
                             <defs>
                               <radialGradient id="rgFade" cx="50%" cy="50%" r="50%">
-                                <stop offset="60%" stopColor="rgba(255,255,255,0)" />
-                                <stop offset="100%" stopColor="rgba(255,255,255,0.06)" />
+                                <stop offset="55%" stopColor="rgba(255,255,255,0)" />
+                                <stop offset="100%" stopColor="rgba(255,255,255,0.08)" />
                               </radialGradient>
                             </defs>
-                            <circle cx="102" cy="102" r="92" fill="url(#rgFade)" stroke="rgba(255,255,255,0.18)" strokeWidth="1" />
-                            <circle cx="102" cy="102" r="66" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="0.75" />
-                            <circle cx="102" cy="102" r="40" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="0.75" />
-                            <line x1="102" y1="6" x2="102" y2="198" stroke="rgba(255,255,255,0.07)" strokeWidth="0.75" />
-                            <line x1="6" y1="102" x2="198" y2="102" stroke="rgba(255,255,255,0.07)" strokeWidth="0.75" />
-                            <line x1="28" y1="28" x2="176" y2="176" stroke="rgba(255,255,255,0.04)" strokeWidth="0.6" />
-                            <line x1="176" y1="28" x2="28" y2="176" stroke="rgba(255,255,255,0.04)" strokeWidth="0.6" />
+                            <circle cx="100" cy="100" r="94" fill="url(#rgFade)" stroke="rgba(255,255,255,0.22)" strokeWidth="1" />
+                            <circle cx="100" cy="100" r="68" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="0.6" strokeDasharray="2 4" />
+                            <circle cx="100" cy="100" r="42" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="0.6" strokeDasharray="2 4" />
                             {[0,30,60,90,120,150,180,210,240,270,300,330].map(a => {
                               const r = (a - 90) * Math.PI / 180;
-                              return <line key={a} x1={102 + 87*Math.cos(r)} y1={102 + 87*Math.sin(r)} x2={102 + 92*Math.cos(r)} y2={102 + 92*Math.sin(r)} stroke="rgba(255,255,255,0.28)" strokeWidth="1.5" strokeLinecap="round" />;
+                              return <line key={a} x1={100 + 88*Math.cos(r)} y1={100 + 88*Math.sin(r)} x2={100 + 94*Math.cos(r)} y2={100 + 94*Math.sin(r)} stroke="rgba(255,255,255,0.32)" strokeWidth="1.5" strokeLinecap="round" />;
                             })}
                           </svg>
 
-                          {/* Sweep gradient layer */}
-                          <div className="absolute rounded-full overflow-hidden" style={{ width: 184, height: 184, animation: "radarSweep 3s linear infinite" }}>
-                            <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "conic-gradient(from 0deg, transparent 0deg, rgba(52,211,153,0.7) 4deg, rgba(52,211,153,0.35) 35deg, rgba(52,211,153,0.08) 75deg, transparent 75deg)" }} />
+                          {/* Rainbow conic sweep — wide, vivid, multi-color */}
+                          <div className="absolute rounded-full overflow-hidden" style={{ width: 192, height: 192, animation: "radarSweep 3.2s linear infinite" }}>
+                            <div style={{
+                              position: "absolute", inset: 0, borderRadius: "50%",
+                              background: "conic-gradient(from 0deg, transparent 0deg, rgba(52,211,153,0.55) 6deg, rgba(56,189,248,0.45) 28deg, rgba(167,139,250,0.35) 55deg, rgba(236,72,153,0.18) 80deg, transparent 95deg)",
+                              filter: "blur(0.5px)",
+                            }} />
                           </div>
-                          {/* Sweep arm */}
-                          <div className="absolute" style={{ width: 184, height: 184, animation: "radarSweep 3s linear infinite" }}>
-                            <div style={{ position: "absolute", top: "50%", left: "50%", width: "50%", height: "1.5px", transformOrigin: "left center", background: "linear-gradient(to right, rgba(52,211,153,0.95), rgba(52,211,153,0.2), transparent)", borderRadius: 2 }} />
+                          {/* Sweep arm — bright leading edge */}
+                          <div className="absolute" style={{ width: 192, height: 192, animation: "radarSweep 3.2s linear infinite" }}>
+                            <div style={{
+                              position: "absolute", top: "50%", left: "50%", width: "50%", height: "2px", transformOrigin: "left center",
+                              background: "linear-gradient(to right, rgba(255,255,255,1), rgba(167,139,250,0.85), rgba(236,72,153,0.4), transparent)",
+                              borderRadius: 2,
+                              boxShadow: "0 0 8px 1px rgba(167,139,250,0.85), 0 0 18px 3px rgba(236,72,153,0.4)",
+                            }} />
                           </div>
+                          {/* Counter sweep — a faint reverse arm for the "energy field" feel */}
+                          <div className="absolute" style={{ width: 192, height: 192, animation: "radarSweepRev 5.5s linear infinite", opacity:0.5 }}>
+                            <div style={{
+                              position: "absolute", top: "50%", left: "50%", width: "48%", height: "1.5px", transformOrigin: "left center",
+                              background: "linear-gradient(to right, rgba(56,189,248,0.9), rgba(56,189,248,0.2), transparent)",
+                              borderRadius: 2,
+                              boxShadow: "0 0 6px 1px rgba(56,189,248,0.6)",
+                            }} />
+                          </div>
+
+                          {/* Floating sparkle particles — subtle ambient glow */}
+                          {[
+                            { dx:"22px", dy:"-30px", delay:"0s", color:"#fbbf24" },
+                            { dx:"-26px", dy:"-18px", delay:"1.1s", color:"#a78bfa" },
+                            { dx:"30px", dy:"24px", delay:"2.0s", color:"#34d399" },
+                            { dx:"-28px", dy:"28px", delay:"0.6s", color:"#ec4899" },
+                          ].map((p, i) => (
+                            <div key={`spk-${i}`} className="absolute" style={{
+                              top:"50%", left:"50%", width:5, height:5, borderRadius:"50%",
+                              background: p.color, boxShadow:`0 0 8px 2px ${p.color}`,
+                              ["--dx" as any]: p.dx, ["--dy" as any]: p.dy,
+                              animation:`sparkleDrift 3.4s ease-out infinite ${p.delay}`,
+                            }} />
+                          ))}
 
                           {/* Orbiting chunk dots — count reflects actual chunks live in queue.
                               0 chunks = empty radar (no fake activity). Max 4 dots even
                               if more chunks exist, to keep the visual readable. */}
                           {(matching?.available || 0) >= 1 && (
-                            <div className="absolute" style={{ top:"50%", left:"50%", marginTop:-10, marginLeft:-10, animation:"orbit-a 3.5s linear infinite" }}>
-                              <div style={{ width:20, height:20, borderRadius:"50%", background:"linear-gradient(135deg,#6ee7b7,#10b981)", border:"2px solid rgba(255,255,255,0.85)", animation:"dpGreen 2s ease-in-out infinite" }} />
+                            <div className="absolute" style={{ top:"50%", left:"50%", marginTop:-11, marginLeft:-11, animation:"orbit-a 3.6s linear infinite" }}>
+                              <div style={{ width:22, height:22, borderRadius:"50%", background:"radial-gradient(circle at 35% 30%, #d1fae5 0%, #34d399 45%, #059669 100%)", border:"2px solid rgba(255,255,255,0.95)", animation:"dpGreen 2s ease-in-out infinite" }} />
                             </div>
                           )}
                           {(matching?.available || 0) >= 2 && (
-                            <div className="absolute" style={{ top:"50%", left:"50%", marginTop:-8, marginLeft:-8, animation:"orbit-b 5.5s linear infinite" }}>
-                              <div style={{ width:16, height:16, borderRadius:"50%", background:"linear-gradient(135deg,#7dd3fc,#0ea5e9)", border:"2px solid rgba(255,255,255,0.85)", animation:"dpSky 1.8s ease-in-out infinite 0.4s" }} />
+                            <div className="absolute" style={{ top:"50%", left:"50%", marginTop:-9, marginLeft:-9, animation:"orbit-b 5.5s linear infinite" }}>
+                              <div style={{ width:18, height:18, borderRadius:"50%", background:"radial-gradient(circle at 35% 30%, #e0f2fe 0%, #38bdf8 45%, #0284c7 100%)", border:"2px solid rgba(255,255,255,0.95)", animation:"dpSky 1.8s ease-in-out infinite 0.4s" }} />
                             </div>
                           )}
                           {(matching?.available || 0) >= 3 && (
-                            <div className="absolute" style={{ top:"50%", left:"50%", marginTop:-7, marginLeft:-7, animation:"orbit-c 4s linear infinite" }}>
-                              <div style={{ width:14, height:14, borderRadius:"50%", background:"linear-gradient(135deg,#f0abfc,#d946ef)", border:"2px solid rgba(255,255,255,0.85)", animation:"dpFuchsia 2.2s ease-in-out infinite 0.9s" }} />
+                            <div className="absolute" style={{ top:"50%", left:"50%", marginTop:-8, marginLeft:-8, animation:"orbit-c 4.2s linear infinite" }}>
+                              <div style={{ width:16, height:16, borderRadius:"50%", background:"radial-gradient(circle at 35% 30%, #fae8ff 0%, #e879f9 45%, #c026d3 100%)", border:"2px solid rgba(255,255,255,0.95)", animation:"dpFuchsia 2.2s ease-in-out infinite 0.9s" }} />
                             </div>
                           )}
                           {(matching?.available || 0) >= 4 && (
-                            <div className="absolute" style={{ top:"50%", left:"50%", marginTop:-6, marginLeft:-6, animation:"orbit-d 6.5s linear infinite" }}>
-                              <div style={{ width:12, height:12, borderRadius:"50%", background:"linear-gradient(135deg,#fde68a,#f59e0b)", border:"2px solid rgba(255,255,255,0.85)", animation:"dpYellow 1.6s ease-in-out infinite 1.4s" }} />
+                            <div className="absolute" style={{ top:"50%", left:"50%", marginTop:-7, marginLeft:-7, animation:"orbit-d 6.5s linear infinite" }}>
+                              <div style={{ width:14, height:14, borderRadius:"50%", background:"radial-gradient(circle at 35% 30%, #fef3c7 0%, #fb923c 45%, #ea580c 100%)", border:"2px solid rgba(255,255,255,0.95)", animation:"dpAmber 1.6s ease-in-out infinite 1.4s" }} />
                             </div>
                           )}
 
-                          {/* Center core */}
+                          {/* Center core — shimmering rainbow gradient */}
                           <div className="relative z-20 flex flex-col items-center justify-center rounded-full" style={{
-                            width:78, height:78,
-                            background:"radial-gradient(circle at 38% 32%, rgba(216,180,254,0.9) 0%, rgba(124,58,237,0.95) 45%, rgba(76,29,149,1) 100%)",
-                            border:"1.5px solid rgba(255,255,255,0.45)",
-                            animation:"corePulse 2.5s ease-in-out infinite",
+                            width:84, height:84,
+                            background:"linear-gradient(135deg, #a78bfa 0%, #ec4899 30%, #fb923c 55%, #38bdf8 85%, #a78bfa 100%)",
+                            backgroundSize:"300% 300%",
+                            border:"2px solid rgba(255,255,255,0.6)",
+                            animation:"coreGlow 2.6s ease-in-out infinite, coreShimmer 5s ease-in-out infinite",
                           }}>
-                            <Radio className="w-6 h-6 text-white mb-0.5" style={{ filter:"drop-shadow(0 0 5px rgba(255,255,255,0.9))" }} />
-                            <span className="text-[9px] font-black tracking-widest text-emerald-300 uppercase">LIVE</span>
+                            {/* Inner glassy overlay */}
+                            <div className="absolute inset-1 rounded-full pointer-events-none" style={{
+                              background:"radial-gradient(circle at 35% 28%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.05) 40%, rgba(0,0,0,0.18) 100%)",
+                            }} />
+                            <Radio className="relative w-7 h-7 text-white mb-0.5" style={{ filter:"drop-shadow(0 0 6px rgba(255,255,255,0.95)) drop-shadow(0 0 12px rgba(255,255,255,0.5))" }} />
+                            <span className="relative text-[10px] font-black tracking-[0.2em] text-white uppercase" style={{
+                              animation:"liveBlink 1.4s ease-in-out infinite",
+                              textShadow:"0 0 8px rgba(255,255,255,0.9), 0 0 16px rgba(236,72,153,0.6)",
+                            }}>LIVE</span>
                           </div>
                         </div>
                       </div>
