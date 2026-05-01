@@ -54,26 +54,51 @@ export default function Sell() {
   const qc = useQueryClient();
   const [now, setNow] = useState(Date.now());
 
-  // 1-second tick drives the matching countdown.
-  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
-
   const { data: matching, refetch: refetchMatching } = useQuery<any>({
     queryKey: ["matching-status"],
     queryFn: () => api("/p2p/matching-status"),
     enabled: !!user,
-    refetchInterval: 3000,
-  });
-  const { data: chunks = [], refetch: refetchChunks } = useQuery<any[]>({
-    queryKey: ["my-chunks"], queryFn: () => api("/p2p/my-chunks"), enabled: !!user, refetchInterval: 5000,
-  });
-  const { data: pendingConfirms = [], refetch: refetchPending } = useQuery<any[]>({
-    queryKey: ["pending-confirms"], queryFn: () => api("/p2p/my-pending-confirmations"), enabled: !!user, refetchInterval: 4000,
+    // Fast poll while matching is live; slow background poll otherwise.
+    // We can't reference `isMatching` here yet, so derive from cached data inline.
+    refetchInterval: (q) => {
+      const d: any = q.state.data;
+      const exp = d?.matchingExpiresAt ? new Date(d.matchingExpiresAt).getTime() : 0;
+      return d?.isActive && exp - Date.now() > 0 ? 3000 : 30000;
+    },
   });
 
-  // Compute isMatching early so Wake Lock hooks can reference it
+  // Compute isMatching early so the rest of this component (timers, polls,
+  // wake lock) can gate themselves on it instead of running 24/7.
   const expiresAtEarly = matching?.matchingExpiresAt ? new Date(matching.matchingExpiresAt).getTime() : 0;
   const remainingEarly = expiresAtEarly - now;
   const isMatchingEarly = !!matching?.isActive && remainingEarly > 0;
+
+  const { data: chunks = [], refetch: refetchChunks } = useQuery<any[]>({
+    queryKey: ["my-chunks"],
+    queryFn: () => api("/p2p/my-chunks"),
+    enabled: !!user,
+    // Only fast-poll chunks when actively matching — chunks can't change
+    // without an active matching session.
+    refetchInterval: isMatchingEarly ? 5000 : 30000,
+  });
+  const { data: pendingConfirms = [], refetch: refetchPending } = useQuery<any[]>({
+    queryKey: ["pending-confirms"],
+    queryFn: () => api("/p2p/my-pending-confirmations"),
+    enabled: !!user,
+    // Pending confirms have a hard deadline, so poll fast when any exist;
+    // back off to a sanity-check cadence otherwise.
+    refetchInterval: (q) => ((q.state.data as any[] | undefined)?.length ? 4000 : 20000),
+  });
+
+  // 1-second tick drives the matching countdown and the per-pending-confirm
+  // deadline countdown. Only run it when something actually needs to tick —
+  // otherwise it forces a full Sell tree re-render every second for nothing.
+  const needsTick = isMatchingEarly || pendingConfirms.length > 0;
+  useEffect(() => {
+    if (!needsTick) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [needsTick]);
 
   useEffect(() => { if (isError) setLocation("/login"); }, [isError, setLocation]);
 
@@ -555,7 +580,7 @@ function LockedOrderTabs({
           <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">No pending confirmations.</CardContent></Card>
         ) : (
           pendingConfirms.map((c) => (
-            <PendingConfirmCard key={c.id} chunk={c} onResolved={onRefetch} />
+            <PendingConfirmCard key={c.id} chunk={c} now={now} onResolved={onRefetch} />
           ))
         )}
       </TabsContent>
@@ -802,14 +827,13 @@ function MePanel({ user, onUpdated }: { user: any; onUpdated: () => void }) {
   );
 }
 
-function PendingConfirmCard({ chunk, onResolved }: { chunk: any; onResolved: () => void; }) {
+function PendingConfirmCard({ chunk, now, onResolved }: { chunk: any; now: number; onResolved: () => void; }) {
   const { toast } = useToast();
-  const [now, setNow] = useState(Date.now());
   const [showProof, setShowProof] = useState(false);
   const [showDisputeWarning, setShowDisputeWarning] = useState(false);
   const [confirmPopupOpen, setConfirmPopupOpen] = useState(false);
   const [reason, setReason] = useState("");
-  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
+  // Countdown ticks via the parent's shared `now` prop — no per-card timer.
   const deadline = new Date(chunk.confirmDeadline).getTime();
   const remaining = deadline - now;
 
