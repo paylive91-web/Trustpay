@@ -277,7 +277,7 @@ export default function Orders() {
               <>
                 <UploadTile label="Bank Statement" required file={bankFile} onChange={setBankFile} accept="application/pdf" hint="PDF only" />
                 <UploadTile label="Payment Screenshot" required file={recordingFile} onChange={setRecordingFile} accept="image/*" hint="Upload the payment screenshot" />
-                <UploadTile label="Payment Recording" required file={lastTxnFile} onChange={setLastTxnFile} accept="video/*" hint="Video recording only (mp4, mov, webm)" />
+                <UploadTile label="Video Recording" required file={lastTxnFile} onChange={setLastTxnFile} accept="video/*" hint="Show your payment and last transactions (mp4, mov, webm)" />
               </>
             ) : (
               <>
