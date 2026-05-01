@@ -537,20 +537,38 @@ router.post("/dispute/:id", requireAuth, async (req, res) => {
     res.status(400).json({ error: "Cannot dispute this chunk" });
     return;
   }
+  if (!chunk.lockedByUserId) {
+    res.status(400).json({ error: "Order has no buyer locked — cannot open dispute" });
+    return;
+  }
   const settings = await getSettings(["disputeWindowHours"]);
   const winHrs = parseInt(settings.disputeWindowHours) || 24;
   const now = new Date();
   const proofDeadline = new Date(now.getTime() + winHrs * 60 * 60 * 1000);
-  await db.update(ordersTable).set({ status: "disputed", updatedAt: now }).where(eq(ordersTable.id, id));
-  await db.insert(disputesTable).values({
-    orderId: id,
-    buyerId: chunk.lockedByUserId!,
-    sellerId: u.id,
-    reason: reason || "Seller did not receive payment",
-    status: "open",
-    buyerProofDeadline: proofDeadline,
-    sellerProofDeadline: proofDeadline,
-  });
+  // Atomic: status flip + dispute row must commit together. Without this,
+  // a failed INSERT (e.g. missing column on a stale prod schema) used to
+  // leave the order in 'disputed' state with no dispute row — meaning
+  // /disputes/my returned nothing and admin saw "No disputes" while the
+  // user saw a DISPUTED badge. The seller also got a "Failed" toast even
+  // though the partial UPDATE had succeeded.
+  try {
+    await db.transaction(async (tx) => {
+      await tx.update(ordersTable).set({ status: "disputed", updatedAt: now }).where(eq(ordersTable.id, id));
+      await tx.insert(disputesTable).values({
+        orderId: id,
+        buyerId: chunk.lockedByUserId!,
+        sellerId: u.id,
+        reason: reason || "Seller did not receive payment",
+        status: "open",
+        buyerProofDeadline: proofDeadline,
+        sellerProofDeadline: proofDeadline,
+      });
+    });
+  } catch (err: any) {
+    req.log?.error({ err, orderId: id }, "seller dispute creation failed");
+    res.status(500).json({ error: "Could not open dispute. Please try again or contact TrustPay." });
+    return;
+  }
   res.json({ success: true });
 });
 
@@ -598,21 +616,31 @@ router.post("/buyer-dispute/:id", requireAuth, async (req, res) => {
   const winHrs = parseInt(settings.disputeWindowHours) || 24;
   const now = new Date();
   const proofDeadline = new Date(now.getTime() + winHrs * 60 * 60 * 1000);
-  await db.update(ordersTable).set({ status: "disputed", updatedAt: now }).where(eq(ordersTable.id, id));
-  await db.insert(disputesTable).values({
-    orderId: id,
-    buyerId: u.id,
-    sellerId: chunk.userId,
-    reason: reason || "Seller did not confirm payment within 15 minutes (was offline)",
-    triggerReason: "seller_offline",
-    status: "open",
-    buyerBankStatementUrl: bankStatementUrl,
-    buyerTxHistoryUrl: txHistoryUrl || null,
-    buyerRecordingUrl: recordingUrl || null,
-    buyerProofAt: now,
-    buyerProofDeadline: proofDeadline,
-    sellerProofDeadline: proofDeadline,
-  });
+  // Atomic — see /dispute/:id for the same rationale (avoid zombie
+  // disputed orders with no matching dispute row).
+  try {
+    await db.transaction(async (tx) => {
+      await tx.update(ordersTable).set({ status: "disputed", updatedAt: now }).where(eq(ordersTable.id, id));
+      await tx.insert(disputesTable).values({
+        orderId: id,
+        buyerId: u.id,
+        sellerId: chunk.userId,
+        reason: reason || "Seller did not confirm payment within 15 minutes (was offline)",
+        triggerReason: "seller_offline",
+        status: "open",
+        buyerBankStatementUrl: bankStatementUrl,
+        buyerTxHistoryUrl: txHistoryUrl || null,
+        buyerRecordingUrl: recordingUrl || null,
+        buyerProofAt: now,
+        buyerProofDeadline: proofDeadline,
+        sellerProofDeadline: proofDeadline,
+      });
+    });
+  } catch (err: any) {
+    req.log?.error({ err, orderId: id }, "buyer dispute creation failed");
+    res.status(500).json({ error: "Could not open dispute. Please try again or contact TrustPay." });
+    return;
+  }
   // Notify both parties
   await db.insert(userNotificationsTable).values({
     userId: chunk.userId,

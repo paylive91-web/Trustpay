@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearch } from "wouter";
 import {
   useGetOrders,
   useGetMyDisputes,
@@ -23,7 +24,26 @@ import { fileToDataUrl } from "@/lib/dispute-actions";
 export default function Orders() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [filterType, setFilterType] = useState<"all" | "deposit" | "withdrawal" | "disputes">("all");
+  // Read initial tab from ?tab= query param so deep-links from the
+  // home Live Orders card and the Buy "Open Disputes" button can land
+  // directly on the Disputes tab instead of defaulting to "All".
+  const search = useSearch();
+  const initialTab: "all" | "deposit" | "withdrawal" | "disputes" = (() => {
+    const p = new URLSearchParams(search);
+    const t = p.get("tab");
+    if (t === "disputes" || t === "deposit" || t === "withdrawal" || t === "all") return t;
+    return "all";
+  })();
+  const [filterType, setFilterType] = useState<"all" | "deposit" | "withdrawal" | "disputes">(initialTab);
+  // If the URL changes to a different ?tab= while we're on this page
+  // (e.g. user clicks another deep-link), keep state in sync.
+  useEffect(() => {
+    const p = new URLSearchParams(search);
+    const t = p.get("tab");
+    if (t === "disputes" || t === "deposit" || t === "withdrawal" || t === "all") {
+      setFilterType(t);
+    }
+  }, [search]);
 
   const ordersTypeParam = filterType === "deposit" || filterType === "withdrawal" ? filterType : undefined;
   const { data: orders, isLoading } = useGetOrders(ordersTypeParam ? { type: ordersTypeParam } : undefined);

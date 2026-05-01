@@ -83,8 +83,15 @@ function LiveOrdersSection() {
           {liveOrders.map((o: any) => {
             const st = STATUS_LABEL[o.status] || { label: o.status, color: "bg-muted text-muted-foreground" };
             const isBuy = o.side === "buy";
+            // Disputed orders should jump straight into the dispute view
+            // so the user can upload proof — taking them to /buy or /sell
+            // showed the regular order page (or for buyers, a fresh BUY
+            // form) which made it look like the dispute was lost.
+            const target = o.status === "disputed"
+              ? "/orders?tab=disputes"
+              : (isBuy ? "/buy" : "/sell");
             return (
-              <Link key={o.id} href={isBuy ? "/buy" : "/sell"}>
+              <Link key={o.id} href={target}>
                 <div className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors cursor-pointer">
                   <div className={`p-1.5 rounded-full ${isBuy ? "bg-primary/10" : "bg-violet-100"}`}>
                     {isBuy

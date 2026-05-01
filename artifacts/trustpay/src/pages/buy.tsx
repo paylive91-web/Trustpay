@@ -428,7 +428,7 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
         <CardContent className="p-5 text-center space-y-2">
           <div className="text-red-600 font-semibold">Dispute Open</div>
           <p className="text-xs text-muted-foreground">Seller marked your payment as not received. Please go to Orders &gt; Disputes and upload your bank statement within 24 hours, or you will lose this dispute automatically.</p>
-          <Link href="/orders"><Button variant="outline" className="mt-2">Open Disputes</Button></Link>
+          <Link href="/orders?tab=disputes"><Button variant="outline" className="mt-2">Open Disputes</Button></Link>
         </CardContent>
       </Card>
     );

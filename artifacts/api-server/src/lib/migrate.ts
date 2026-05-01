@@ -261,6 +261,71 @@ export async function ensureSchema(): Promise<void> {
 
     await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS sms_active_patterns_dedup ON sms_active_patterns(sender_key, utr_regex)`);
 
+    // disputes — bring older deployments in sync with the current schema.
+    // Each ALTER is `ADD COLUMN IF NOT EXISTS` so repeated runs are no-ops.
+    // Without these, drizzle's INSERT into disputes was failing on prod with
+    // "column does not exist", silently leaving orders in 'disputed' state
+    // with no matching dispute row (admin saw "No disputes", users saw
+    // "Failed" toasts).
+    try {
+      await db.execute(sql`ALTER TABLE disputes ADD COLUMN IF NOT EXISTS trigger_reason TEXT`);
+      await db.execute(sql`ALTER TABLE disputes ADD COLUMN IF NOT EXISTS buyer_bank_statement_url TEXT`);
+      await db.execute(sql`ALTER TABLE disputes ADD COLUMN IF NOT EXISTS buyer_tx_history_url TEXT`);
+      await db.execute(sql`ALTER TABLE disputes ADD COLUMN IF NOT EXISTS buyer_recording_url TEXT`);
+      await db.execute(sql`ALTER TABLE disputes ADD COLUMN IF NOT EXISTS seller_bank_statement_url TEXT`);
+      await db.execute(sql`ALTER TABLE disputes ADD COLUMN IF NOT EXISTS seller_recording_url TEXT`);
+      await db.execute(sql`ALTER TABLE disputes ADD COLUMN IF NOT EXISTS seller_last_txn_screenshot_url TEXT`);
+      await db.execute(sql`ALTER TABLE disputes ADD COLUMN IF NOT EXISTS buyer_proof_at TIMESTAMP`);
+      await db.execute(sql`ALTER TABLE disputes ADD COLUMN IF NOT EXISTS seller_proof_at TIMESTAMP`);
+      await db.execute(sql`ALTER TABLE disputes ADD COLUMN IF NOT EXISTS buyer_proof_deadline TIMESTAMP`);
+      await db.execute(sql`ALTER TABLE disputes ADD COLUMN IF NOT EXISTS seller_proof_deadline TIMESTAMP`);
+      await db.execute(sql`ALTER TABLE disputes ADD COLUMN IF NOT EXISTS resolved_at TIMESTAMP`);
+      await db.execute(sql`ALTER TABLE disputes ADD COLUMN IF NOT EXISTS resolved_by INTEGER`);
+      await db.execute(sql`ALTER TABLE disputes ADD COLUMN IF NOT EXISTS admin_notes TEXT`);
+    } catch (err) {
+      logger.error({ err }, "disputes bootstrap failed");
+    }
+    // dispute_status enum may already include open/buyer_won/seller_won
+    // but older deployments could be missing 'auto_resolved' which the
+    // silent-resolution code path writes. ALTER TYPE ADD VALUE cannot
+    // run inside a transaction block, so it MUST be its own statement
+    // outside any DO block. Wrapped in its own try/catch since "value
+    // already exists" raises an error on older Postgres versions.
+    try {
+      await db.execute(sql`ALTER TYPE dispute_status ADD VALUE IF NOT EXISTS 'auto_resolved'`);
+    } catch (err) {
+      // Safe to ignore — likely the value already exists or the enum
+      // hasn't been created yet (handled by drizzle-kit migrations).
+    }
+
+    // Heal "zombie" disputed orders: orders.status = 'disputed' with no
+    // matching row in disputes (caused by the earlier non-atomic INSERT
+    // path). Without this, those orders show DISPUTED on the user's
+    // screen but never appear in /disputes/my or the admin Disputes
+    // panel — so neither party can upload proof and admin can't resolve
+    // them. Backfill creates a synthetic dispute row using the order's
+    // existing buyer/seller IDs and a 24-hour proof window from now.
+    try {
+      await db.execute(sql`
+        INSERT INTO disputes (order_id, buyer_id, seller_id, reason, status, buyer_proof_deadline, seller_proof_deadline, created_at)
+        SELECT o.id,
+               o.locked_by_user_id,
+               o.user_id,
+               'Auto-recovered: dispute opened by seller (system backfill)',
+               'open',
+               NOW() + INTERVAL '24 hours',
+               NOW() + INTERVAL '24 hours',
+               COALESCE(o.updated_at, NOW())
+        FROM orders o
+        LEFT JOIN disputes d ON d.order_id = o.id
+        WHERE o.status = 'disputed'
+          AND o.locked_by_user_id IS NOT NULL
+          AND d.id IS NULL
+      `);
+    } catch (err) {
+      logger.error({ err }, "zombie dispute backfill failed");
+    }
+
     // ── One-time cleanup: remove duplicate admin account (ID 22, username "admin") ──
     // The real admin is ID 1 ("Storehsswis"). ID 22 is a leftover duplicate with
     // no rows in any FK-constrained table, so a direct delete is safe.
