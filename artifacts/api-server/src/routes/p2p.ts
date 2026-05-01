@@ -693,10 +693,34 @@ router.post("/cancel/:id", requireAuth, async (req, res) => {
 
 router.get("/my-chunks", requireAuth, async (req, res) => {
   const u = (req as any).user;
+  // Determine whether seller's matching session is currently live. If not,
+  // available chunks are stale (expired session, offline, or never started)
+  // and should be cleaned up + omitted before returning. This guarantees
+  // the seller never sees "active orders" on the My Orders / Pending /
+  // Locked tabs unless they have actively clicked Sell and stayed online.
+  const [user] = await db.select({
+    matchingExpiresAt: usersTable.matchingExpiresAt,
+    lastSeenAt: usersTable.lastSeenAt,
+  }).from(usersTable).where(eq(usersTable.id, u.id)).limit(1);
+  const isOnline = !!user?.lastSeenAt && Date.now() - new Date(user.lastSeenAt).getTime() < 2 * 60 * 1000;
+  const isActive = !!user?.matchingExpiresAt && new Date(user.matchingExpiresAt).getTime() > Date.now() && isOnline;
+  if (!isActive) {
+    await db.update(ordersTable).set({
+      status: "cancelled",
+      updatedAt: new Date(),
+    }).where(and(
+      eq(ordersTable.userId, u.id),
+      eq(ordersTable.type, "withdrawal"),
+      eq(ordersTable.status, "available"),
+    )).catch(() => {});
+  }
+  const statuses: ("available" | "locked" | "pending_confirmation" | "disputed" | "confirmed")[] = isActive
+    ? ["available", "locked", "pending_confirmation", "disputed", "confirmed"]
+    : ["locked", "pending_confirmation", "disputed", "confirmed"];
   const rows = await db.select().from(ordersTable).where(and(
     eq(ordersTable.userId, u.id),
     eq(ordersTable.type, "withdrawal"),
-    inArray(ordersTable.status, ["available", "locked", "pending_confirmation", "disputed", "confirmed"]),
+    inArray(ordersTable.status, statuses),
   )).orderBy(sql`${ordersTable.createdAt} desc`).limit(50);
   res.json(rows.map((r) => f(r)));
 });
@@ -770,6 +794,20 @@ router.get("/matching-status", requireAuth, async (req, res) => {
   // Start matching just to pick up new server logic.
   if (isActive) {
     await regenerateChunksForUser(u.id).catch(() => {});
+  } else {
+    // Inverse self-heal: when matching is NOT active (never started, stopped,
+    // expired, or seller went offline), cancel any leftover 'available'
+    // chunks so they vanish from the seller's screen and the buyer queue.
+    // Locked / pending_confirmation / disputed chunks are mid-trade and
+    // intentionally NOT touched — those need explicit resolution.
+    await db.update(ordersTable).set({
+      status: "cancelled",
+      updatedAt: new Date(),
+    }).where(and(
+      eq(ordersTable.userId, u.id),
+      eq(ordersTable.type, "withdrawal"),
+      eq(ordersTable.status, "available"),
+    )).catch(() => {});
   }
   // Counts for the live status panel — also include 'disputed' so we can
   // show the seller why their balance is stuck (held in pending disputes).
