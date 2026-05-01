@@ -153,54 +153,9 @@ export default function AdminSettings() {
   ]);
   const [sellRewardPercent, setSellRewardPercent] = useState<number>(0);
   const [deviceRegistrationLimit, setDeviceRegistrationLimit] = useState<number>(3);
-  const [smsAutoDeleteEnabled, setSmsAutoDeleteEnabled] = useState(false);
-
-  interface CleanupStatus {
-    activePatternsCount: number;
-    pendingQueueCount: number;
-    proposedCandidatesCount: number;
-    isLearningComplete: boolean;
-    cleanableQueueCount: number;
-    cleanableCandidatesCount: number;
-    autoDeleteEnabled: boolean;
-  }
-  const [cleanupStatus, setCleanupStatus] = useState<CleanupStatus | null>(null);
-  const [cleanupLoading, setCleanupLoading] = useState(false);
-  const [cleanupRunning, setCleanupRunning] = useState(false);
-
-  const fetchCleanupStatus = async () => {
-    setCleanupLoading(true);
-    try {
-      const token = getAuthToken();
-      const res = await fetch(`${BASE}/api/admin/sms-learning/cleanup-status`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) setCleanupStatus(await res.json());
-    } catch {}
-    setCleanupLoading(false);
-  };
-
-  const handleRunCleanup = async (force = false) => {
-    setCleanupRunning(true);
-    try {
-      const token = getAuthToken();
-      const res = await fetch(`${BASE}/api/admin/sms-learning/run-cleanup`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ force }),
-      });
-      const data = await res.json();
-      if (data.skipped) {
-        toast({ title: "Cleanup skipped", description: `Reason: ${data.skipReason}`, variant: "destructive" });
-      } else {
-        toast({ title: "Cleanup done!", description: `Queue rows: ${data.deletedQueueRows} | Candidates: ${data.deletedCandidateRows}` });
-        fetchCleanupStatus();
-      }
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
-    }
-    setCleanupRunning(false);
-  };
+  // SMS Auto Delete UI removed — cleanup now runs system-wide, automatically,
+  // every 6 hours via the learning auto-cleanup job (server-side). No manual
+  // toggle or "Run Cleanup" button is needed.
 
   useEffect(() => {
     if (settings) {
@@ -241,12 +196,9 @@ export default function AdminSettings() {
       }
       setSellRewardPercent(Number((settings as any).sellRewardPercent) || 0);
       setDeviceRegistrationLimit(Number((settings as any).deviceRegistrationLimit) || 3);
-      setSmsAutoDeleteEnabled((settings as any).smsAutoDeleteEnabled === true || (settings as any).smsAutoDeleteEnabled === "true");
       setAdminPassword("");
     }
   }, [settings]);
-
-  useEffect(() => { fetchCleanupStatus(); }, []);
 
   const addUpiEntry = () => setMultipleUpiIds((prev) => [...prev, { upiId: "", upiName: "", qrImageUrl: "" }]);
   const removeUpiEntry = (i: number) => setMultipleUpiIds((prev) => prev.filter((_, idx) => idx !== i));
@@ -365,7 +317,6 @@ export default function AdminSettings() {
       buyRewardTiers,
       sellRewardPercent,
       deviceRegistrationLimit,
-      smsAutoDeleteEnabled,
     };
     if (adminPassword) payload.adminPassword = adminPassword;
     updateSettingsMut.mutate({ data: payload });
@@ -833,98 +784,6 @@ export default function AdminSettings() {
                     Currently: ek phone se <strong>{deviceRegistrationLimit}</strong> account{deviceRegistrationLimit !== 1 ? "s" : ""} ban sakte hain
                   </p>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>SMS Auto Delete</CardTitle>
-                <CardDescription>
-                  SMS learning data cleanup — sirf tab chalega jab system ne patterns seekh liye hon (learning complete). Default OFF hai.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between gap-3 border rounded-xl p-4">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Auto Delete SMS Data</p>
-                    <p className="text-xs text-muted-foreground">
-                      Status: <strong>{smsAutoDeleteEnabled ? "ON" : "OFF"}</strong>
-                      {smsAutoDeleteEnabled
-                        ? " — auto cleanup will run after learning is complete"
-                        : " — nothing will be deleted right now"}
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant={smsAutoDeleteEnabled ? "destructive" : "default"}
-                    onClick={() => setSmsAutoDeleteEnabled((v) => !v)}
-                  >
-                    {smsAutoDeleteEnabled ? "Turn OFF" : "Turn ON"}
-                  </Button>
-                </div>
-
-                {cleanupLoading ? (
-                  <p className="text-xs text-muted-foreground">Loading learning status...</p>
-                ) : cleanupStatus ? (
-                  <div className="rounded-xl border bg-muted/30 p-4 space-y-3 text-xs">
-                    <p className="font-semibold text-sm">SMS Learning Status</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-background rounded-lg p-2 border">
-                        <p className="text-muted-foreground">Active Patterns</p>
-                        <p className="text-lg font-bold">{cleanupStatus.activePatternsCount}</p>
-                      </div>
-                      <div className="bg-background rounded-lg p-2 border">
-                        <p className="text-muted-foreground">Pending Proposals</p>
-                        <p className={`text-lg font-bold ${cleanupStatus.proposedCandidatesCount > 0 ? "text-orange-500" : "text-green-600"}`}>
-                          {cleanupStatus.proposedCandidatesCount}
-                        </p>
-                      </div>
-                      <div className="bg-background rounded-lg p-2 border">
-                        <p className="text-muted-foreground">Cleanable Queue Rows</p>
-                        <p className="text-lg font-bold">{cleanupStatus.cleanableQueueCount}</p>
-                      </div>
-                      <div className="bg-background rounded-lg p-2 border">
-                        <p className="text-muted-foreground">Rejected Candidates</p>
-                        <p className="text-lg font-bold">{cleanupStatus.cleanableCandidatesCount}</p>
-                      </div>
-                    </div>
-                    <div className={`rounded-lg p-2 text-center font-medium ${cleanupStatus.isLearningComplete ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"}`}>
-                      {cleanupStatus.isLearningComplete
-                        ? "✓ Learning Complete — ready to run cleanup"
-                        : `⏳ Learning Incomplete — ${cleanupStatus.activePatternsCount < 1 ? "no active patterns yet" : `${cleanupStatus.proposedCandidatesCount} proposals pending review`}`}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => fetchCleanupStatus()}
-                        disabled={cleanupLoading}
-                        className="flex-1"
-                      >
-                        Refresh Status
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={cleanupStatus.isLearningComplete && smsAutoDeleteEnabled ? "default" : "outline"}
-                        onClick={() => handleRunCleanup(false)}
-                        disabled={cleanupRunning || !cleanupStatus.isLearningComplete || !smsAutoDeleteEnabled}
-                        className="flex-1"
-                        title={!smsAutoDeleteEnabled ? "Enable Auto Delete first" : !cleanupStatus.isLearningComplete ? "Learning is not complete yet" : ""}
-                      >
-                        {cleanupRunning ? "Running..." : "Run Cleanup"}
-                      </Button>
-                    </div>
-                    {(!smsAutoDeleteEnabled || !cleanupStatus.isLearningComplete) && (
-                      <p className="text-[11px] text-muted-foreground text-center">
-                        {!smsAutoDeleteEnabled
-                          ? "Enable Auto Delete and save settings to run cleanup"
-                          : "Cleanup will only run when learning is complete (proposals = 0 and active patterns ≥ 1)"}
-                      </p>
-                    )}
-                  </div>
-                ) : null}
               </CardContent>
             </Card>
 
