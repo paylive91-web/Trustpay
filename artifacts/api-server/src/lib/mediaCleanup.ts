@@ -120,6 +120,20 @@ async function cleanDisputedOrderMedia() {
   return rowCount(r);
 }
 
+/**
+ * Drop user notifications older than 7 days. Notifications are
+ * fire-and-forget UX surfaces — the user has either seen them within a
+ * week or they're irrelevant by then. Anything that needs durable proof
+ * (financial trail, fraud alert) lives in its own dedicated table.
+ */
+async function cleanOldNotifications() {
+  const r = await db.execute(sql`
+    DELETE FROM user_notifications
+     WHERE created_at < NOW() - INTERVAL '7 days'
+  `);
+  return rowCount(r);
+}
+
 export async function runMediaCleanup() {
   const start = Date.now();
   try {
@@ -129,10 +143,12 @@ export async function runMediaCleanup() {
       .catch((err) => { logger.warn({ err }, "cleanDisputeMedia failed"); return 0; });
     const disputedOrderCleared = await cleanDisputedOrderMedia()
       .catch((err) => { logger.warn({ err }, "cleanDisputedOrderMedia failed"); return 0; });
+    const notificationsCleared = await cleanOldNotifications()
+      .catch((err) => { logger.warn({ err }, "cleanOldNotifications failed"); return 0; });
 
-    if (confirmedCleared || disputeCleared || disputedOrderCleared) {
+    if (confirmedCleared || disputeCleared || disputedOrderCleared || notificationsCleared) {
       logger.info(
-        { confirmedCleared, disputeCleared, disputedOrderCleared, ms: Date.now() - start },
+        { confirmedCleared, disputeCleared, disputedOrderCleared, notificationsCleared, ms: Date.now() - start },
         "Media cleanup complete",
       );
     }
