@@ -281,12 +281,12 @@ export default function Orders() {
               </>
             ) : (
               <>
+                <UploadTile label="Payment Proof Screenshot" required file={lastTxnFile} onChange={setLastTxnFile} accept="image/*" hint="Screenshot of the buyer's payment from your bank app" />
+                <UploadTile label="Video Recording" required file={recordingFile} onChange={setRecordingFile} accept="video/*" hint="Video recording showing the payment and your last transactions (mp4, mov, webm)" />
                 <UploadTile label="Bank Statement" required file={bankFile} onChange={setBankFile} accept="application/pdf" hint="PDF only" />
-                <UploadTile label="Screen Recording" required file={recordingFile} onChange={setRecordingFile} accept="video/*" hint="Video recording only (mp4, mov, webm)" />
-                <UploadTile label="Last Transaction Screenshot" required file={lastTxnFile} onChange={setLastTxnFile} accept="image/*" hint="Most recent UPI txn from your bank app" />
               </>
             )}
-            <div className="text-xs text-muted-foreground">Bank statement: PDF only · Screenshot: image · Recording: video only</div>
+            <div className="text-xs text-muted-foreground">Screenshot: image · Recording: video only · Bank statement: PDF only</div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setActiveProof(null)}>Cancel</Button>
