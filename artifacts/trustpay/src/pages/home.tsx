@@ -8,7 +8,7 @@ import NotificationsBell from "@/components/notifications-bell";
 const logoPath = `${import.meta.env.BASE_URL}trustpay-logo.png`;
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowDownCircle, ArrowUpCircle, ChevronRight, Download, Link as LinkIcon, ShieldAlert, ShieldCheck, Wallet, TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, ChevronRight, Download, Link as LinkIcon, ShieldAlert, ShieldCheck, Wallet, TrendingUp, TrendingDown, AlertCircle, Award, Medal, Crown, Gem } from "lucide-react";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { Skeleton } from "@/components/ui/skeleton";
 import useEmblaCarousel from "embla-carousel-react";
@@ -170,16 +170,8 @@ export default function Home() {
               <img src={(settings as any)?.appLogoUrl || logoPath} alt={(settings as any)?.appName || "TrustPay"} className="w-8 h-8 rounded object-contain" />
             </div>
             <div>
-              <div className="font-bold text-[19px] leading-none flex items-center gap-2">
+              <div className="font-bold text-[19px] leading-none">
                 {(settings as any)?.appName || "TrustPay"}
-                {(user as any)?.isVerifiedAgent && (
-                  <span
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-red-600 text-white shadow-sm border border-red-400"
-                    title="Verified Agent"
-                  >
-                    <ShieldCheck className="w-3 h-3" /> Verified Agent
-                  </span>
-                )}
               </div>
               <div className="text-[11px] text-white/80 mt-1">Secure P2P UPI trading</div>
             </div>
@@ -231,6 +223,11 @@ export default function Home() {
             </CardContent>
           </Card>
         )}
+
+        <AgentTierBadge
+          level={(user as any)?.agentTierLevel || 0}
+          tiers={(settings as any)?.agentTiers || []}
+        />
 
         <Card className="shadow-xl border-none bg-gradient-to-br from-card via-white to-sky-50 overflow-hidden">
           <CardContent className="p-0">
@@ -324,5 +321,80 @@ export default function Home() {
         </Card>
       </div>
     </Layout>
+  );
+}
+
+interface AgentTierBadgeProps {
+  level: number;
+  tiers: Array<{ minActiveDeposits?: number; reward?: number; label?: string }>;
+}
+
+function AgentTierBadge({ level, tiers }: AgentTierBadgeProps) {
+  if (!level || level < 1) return null;
+
+  // Tier styling is positional (1st = Bronze, 2nd = Silver, 3rd = Gold,
+  // 4th+ = Diamond). Admin can rename labels in settings, but the visual
+  // tier always follows the level index so users see consistent badges.
+  const styles = [
+    {
+      // Bronze
+      gradient: "from-amber-700 via-amber-600 to-amber-800",
+      border: "border-amber-400",
+      icon: Medal,
+      defaultName: "Bronze Agent",
+    },
+    {
+      // Silver
+      gradient: "from-slate-400 via-slate-300 to-slate-500",
+      border: "border-slate-200",
+      icon: Award,
+      defaultName: "Silver Agent",
+    },
+    {
+      // Gold
+      gradient: "from-yellow-500 via-yellow-400 to-amber-500",
+      border: "border-yellow-300",
+      icon: Crown,
+      defaultName: "Gold Agent",
+    },
+    {
+      // Diamond
+      gradient: "from-cyan-300 via-sky-400 to-blue-500",
+      border: "border-cyan-200",
+      icon: Gem,
+      defaultName: "Diamond Agent",
+    },
+  ];
+
+  const idx = Math.min(level - 1, styles.length - 1);
+  const s = styles[idx];
+  const Icon = s.icon;
+  // Use admin-configured label if present; otherwise fall back to the
+  // standard tier name (Bronze/Silver/Gold/Diamond).
+  const adminLabel = tiers[idx]?.label?.trim();
+  const name = adminLabel && adminLabel.length > 0 ? adminLabel : s.defaultName;
+
+  return (
+    <div
+      className={`flex items-center justify-between gap-3 rounded-2xl px-4 py-3 shadow-lg border ${s.border} bg-gradient-to-r ${s.gradient} text-white`}
+      title={`${name} — earned today`}
+    >
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className="bg-white/20 rounded-full p-1.5 backdrop-blur-sm">
+          <Icon className="w-5 h-5" />
+        </div>
+        <div className="min-w-0">
+          <div className="text-[10px] uppercase tracking-wider font-semibold opacity-90 leading-tight">
+            Today's Achievement
+          </div>
+          <div className="text-base font-bold leading-tight truncate">
+            {name}
+          </div>
+        </div>
+      </div>
+      <div className="text-[10px] font-semibold uppercase tracking-wide bg-white/15 rounded-full px-2.5 py-1 backdrop-blur-sm border border-white/20 whitespace-nowrap">
+        Level {level}
+      </div>
+    </div>
   );
 }

@@ -85,7 +85,14 @@ export function formatUser(user: any) {
     matchingExpiresAt: user.matchingExpiresAt || null,
     displayName: user.displayName || null,
     fraudWarningCount: user.fraudWarningCount ?? 0,
-    isVerifiedAgent: user.agentTierAwardedDate === new Date().toISOString().slice(0, 10),
+    // Agent badge is per-day. It only "lights up" on dates when the user
+    // hit at least the lowest agent tier today; on other days both fields
+    // are false/0 and the UI renders no badge at all.
+    isVerifiedAgent: user.agentTierAwardedDate === new Date().toISOString().slice(0, 10)
+      && (user.agentTierAwardedLevel ?? 0) > 0,
+    agentTierLevel: user.agentTierAwardedDate === new Date().toISOString().slice(0, 10)
+      ? (user.agentTierAwardedLevel ?? 0)
+      : 0,
     isTrusted: !!user.isTrusted,
     freezeReason: user.freezeReason || null,
     createdAt: user.createdAt,

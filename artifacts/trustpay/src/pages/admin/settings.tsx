@@ -659,8 +659,10 @@ export default function AdminSettings() {
                 <CardTitle>Agent Reward Tiers</CardTitle>
                 <CardDescription>
                   Daily reward slabs based on the number of distinct invitees of an agent who confirm at
-                  least one deposit on a given day. The agent gets the highest tier they reach, plus the
-                  red "Verified Agent" badge on their home screen forever after the first time they qualify.
+                  least one deposit on a given day. The agent gets the highest tier they reach today.
+                  A tier-coloured badge (Bronze / Silver / Gold / Diamond by tier order) appears on the
+                  agent's home screen above "My Total Assets" — only on days the criteria are met. On
+                  any day they fail to qualify, the badge disappears automatically.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
