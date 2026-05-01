@@ -24,6 +24,7 @@ import AdminLogin from "@/pages/admin/login";
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminOrders from "@/pages/admin/orders";
 import AdminDisputes from "@/pages/admin/disputes";
+import AdminTimeoutHistory from "@/pages/admin/timeout-history";
 import AdminUsers from "@/pages/admin/users";
 import AdminSettings from "@/pages/admin/settings";
 import AdminLinksMedia from "@/pages/admin/links-media";
@@ -60,6 +61,7 @@ function Router() {
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/orders" component={AdminOrders} />
       <Route path="/admin/disputes" component={AdminDisputes} />
+      <Route path="/admin/timeout-history" component={AdminTimeoutHistory} />
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/admin/settings" component={AdminSettings} />
       <Route path="/admin/links-media" component={AdminLinksMedia} />

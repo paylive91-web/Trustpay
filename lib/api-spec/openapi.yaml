@@ -1753,7 +1753,7 @@ components:
       properties:
         winner:
           type: string
-          enum: [buyer, seller]
+          enum: [buyer, seller, timeout]
         notes:
           type: string
       required: [winner]

@@ -297,6 +297,14 @@ export async function ensureSchema(): Promise<void> {
       // Safe to ignore — likely the value already exists or the enum
       // hasn't been created yet (handled by drizzle-kit migrations).
     }
+    // 'timeout' = admin chose neither party; the held amount is forfeited
+    // to the platform admin account. ALTER TYPE ADD VALUE must be its own
+    // statement, hence the separate try/catch.
+    try {
+      await db.execute(sql`ALTER TYPE dispute_status ADD VALUE IF NOT EXISTS 'timeout'`);
+    } catch (err) {
+      // already-exists is fine; ignore.
+    }
 
     // Heal "zombie" disputed orders: orders.status = 'disputed' with no
     // matching row in disputes (caused by the earlier non-atomic INSERT

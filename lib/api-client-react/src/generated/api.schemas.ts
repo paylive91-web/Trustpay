@@ -441,6 +441,7 @@ export type AdminResolveDisputeBodyWinner =
 export const AdminResolveDisputeBodyWinner = {
   buyer: "buyer",
   seller: "seller",
+  timeout: "timeout",
 } as const;
 
 export interface AdminResolveDisputeBody {

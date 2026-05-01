@@ -735,6 +735,106 @@ router.get("/agent-transactions", requireAdmin, async (req, res) => {
   });
 });
 
+/**
+ * Returns every "Dispute timeout" credit that has landed on the platform
+ * admin wallet, plus running totals (all-time and today). Powers the
+ * "Timeout History" admin screen so the operator can audit every rupee
+ * the platform has absorbed via dispute timeouts.
+ *
+ * The matching pattern uses ILIKE 'Dispute %timeout%' so the entry stays
+ * findable even if we ever tweak the description wording slightly.
+ */
+router.get("/timeout-history", requireAdmin, async (req, res) => {
+  const parsed = parseInt(String(req.query.limit || "200"));
+  const limit = Math.min(1000, Math.max(1, Number.isFinite(parsed) ? parsed : 200));
+  const adminId = (req as any).user?.id as number;
+
+  const PATTERN = sql`${transactionsTable.description} ILIKE 'Dispute %timeout%'`;
+
+  const rows = await db.select({
+    id: transactionsTable.id,
+    orderId: transactionsTable.orderId,
+    amount: transactionsTable.amount,
+    description: transactionsTable.description,
+    createdAt: transactionsTable.createdAt,
+  }).from(transactionsTable).where(and(
+    eq(transactionsTable.userId, adminId),
+    eq(transactionsTable.type, "credit"),
+    PATTERN,
+  )).orderBy(sql`${transactionsTable.createdAt} desc`).limit(limit);
+
+  // Enrich each row with the originating dispute + the seller it was
+  // pulled from so the UI can render a single readable line.
+  const orderIds = Array.from(new Set(rows.map((r) => r.orderId).filter((x): x is number => x != null)));
+  const orders = orderIds.length
+    ? await db.select().from(ordersTable).where(inArray(ordersTable.id, orderIds))
+    : [];
+  const ordersById = new Map(orders.map((o) => [o.id, o]));
+
+  const sellerIds = Array.from(new Set(orders.map((o) => o.userId).filter((x): x is number => x != null)));
+  const sellers = sellerIds.length
+    ? await db.select({ id: usersTable.id, username: usersTable.username }).from(usersTable).where(inArray(usersTable.id, sellerIds))
+    : [];
+  const sellersById = new Map(sellers.map((s) => [s.id, s.username]));
+
+  const disputeRows = orderIds.length
+    ? await db.select({ id: disputesTable.id, orderId: disputesTable.orderId, buyerId: disputesTable.buyerId, resolvedAt: disputesTable.resolvedAt })
+        .from(disputesTable)
+        .where(and(inArray(disputesTable.orderId, orderIds), eq(disputesTable.status, "timeout")))
+    : [];
+  const disputeByOrderId = new Map(disputeRows.map((d) => [d.orderId, d]));
+
+  const buyerIds = Array.from(new Set(disputeRows.map((d) => d.buyerId).filter((x): x is number => x != null)));
+  const buyers = buyerIds.length
+    ? await db.select({ id: usersTable.id, username: usersTable.username }).from(usersTable).where(inArray(usersTable.id, buyerIds))
+    : [];
+  const buyersById = new Map(buyers.map((b) => [b.id, b.username]));
+
+  // Totals (all rows that match the credit pattern, not just the page).
+  const totals = await db.select({
+    sum: sql<string>`COALESCE(SUM(${transactionsTable.amount}), 0)`,
+    count: sql<string>`COUNT(*)`,
+  }).from(transactionsTable).where(and(
+    eq(transactionsTable.userId, adminId),
+    eq(transactionsTable.type, "credit"),
+    PATTERN,
+  ));
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const todayTotals = await db.select({
+    sum: sql<string>`COALESCE(SUM(${transactionsTable.amount}), 0)`,
+    count: sql<string>`COUNT(*)`,
+  }).from(transactionsTable).where(and(
+    eq(transactionsTable.userId, adminId),
+    eq(transactionsTable.type, "credit"),
+    PATTERN,
+    sql`${transactionsTable.createdAt} >= ${today}`,
+  ));
+
+  res.json({
+    totalAmount: parseFloat(totals[0]?.sum || "0"),
+    totalCount: parseInt(totals[0]?.count || "0"),
+    todayAmount: parseFloat(todayTotals[0]?.sum || "0"),
+    todayCount: parseInt(todayTotals[0]?.count || "0"),
+    items: rows.map((r) => {
+      const order = r.orderId ? ordersById.get(r.orderId) : null;
+      const dispute = r.orderId ? disputeByOrderId.get(r.orderId) : null;
+      return {
+        id: r.id,
+        orderId: r.orderId,
+        disputeId: dispute?.id ?? null,
+        amount: parseFloat(r.amount),
+        sellerId: order?.userId ?? null,
+        sellerUsername: order?.userId ? sellersById.get(order.userId) ?? null : null,
+        buyerId: dispute?.buyerId ?? null,
+        buyerUsername: dispute?.buyerId ? buyersById.get(dispute.buyerId) ?? null : null,
+        description: r.description,
+        createdAt: r.createdAt,
+      };
+    }),
+  });
+});
+
 router.get("/stats/daily", requireAdmin, async (_req, res) => {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const todayConfirmed = await db.select({ sum: sql<string>`COALESCE(SUM(${ordersTable.amount}), 0)`, count: sql<string>`COUNT(*)` })

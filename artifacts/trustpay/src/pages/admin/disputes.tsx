@@ -35,7 +35,7 @@ export default function AdminDisputes() {
   const qc = useQueryClient();
   const [filter, setFilter] = useState<"open" | "all">("open");
   const [viewDispute, setView] = useState<AdminDispute | null>(null);
-  const [resolveOpen, setResolveOpen] = useState<{ d: AdminDispute; winner: "buyer" | "seller" } | null>(null);
+  const [resolveOpen, setResolveOpen] = useState<{ d: AdminDispute; winner: "buyer" | "seller" | "timeout" } | null>(null);
   const [notes, setNotes] = useState("");
   const [extendOpen, setExtendOpen] = useState<AdminDispute | null>(null);
   const [extendHours, setExtendHours] = useState("24");
@@ -232,6 +232,7 @@ export default function AdminDisputes() {
                       <>
                         <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => setResolveOpen({ d, winner: "buyer" })}>Buyer Wins</Button>
                         <Button size="sm" className="bg-orange-600 hover:bg-orange-700" onClick={() => setResolveOpen({ d, winner: "seller" })}>Seller Wins</Button>
+                        <Button size="sm" className="bg-gray-600 hover:bg-gray-700 text-white" onClick={() => setResolveOpen({ d, winner: "timeout" })}>Dispute Timeout</Button>
                       </>
                     )}
                   </div>
@@ -278,19 +279,31 @@ export default function AdminDisputes() {
 
       <Dialog open={!!resolveOpen} onOpenChange={(o) => !o && setResolveOpen(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Award to {resolveOpen?.winner.toUpperCase()}?</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>
+              {resolveOpen?.winner === "timeout"
+                ? "Close as Dispute Timeout?"
+                : `Award to ${resolveOpen?.winner.toUpperCase()}?`}
+            </DialogTitle>
+          </DialogHeader>
           <div className="space-y-3 py-2">
             <p className="text-sm text-muted-foreground">
               {resolveOpen?.winner === "buyer"
                 ? "Buyer will be credited the chunk amount + reward. Seller may receive trust penalty after review."
-                : "Chunk will be returned to seller's queue. Buyer may receive trust penalty after review."}
+                : resolveOpen?.winner === "seller"
+                  ? "Chunk will be returned to seller's queue. Buyer may receive trust penalty after review."
+                  : "The held amount will be removed from the seller's wallet and credited to the TrustPay platform account. Both parties will receive a small trust penalty. This action cannot be undone."}
             </p>
             <textarea className="w-full border rounded p-2 text-sm" rows={3} placeholder="Admin notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setResolveOpen(null)}>Cancel</Button>
-            <Button onClick={() => resolveMut.mutate({ id: resolveOpen!.d.id, data: { winner: resolveOpen!.winner, notes } })} disabled={resolveMut.isPending}>
-              {resolveMut.isPending ? "Resolving..." : "Confirm Resolution"}
+            <Button
+              className={resolveOpen?.winner === "timeout" ? "bg-gray-700 hover:bg-gray-800 text-white" : undefined}
+              onClick={() => resolveMut.mutate({ id: resolveOpen!.d.id, data: { winner: resolveOpen!.winner, notes } })}
+              disabled={resolveMut.isPending}
+            >
+              {resolveMut.isPending ? "Resolving..." : resolveOpen?.winner === "timeout" ? "Confirm Timeout" : "Confirm Resolution"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1102,7 +1102,7 @@ export const AdminResolveDisputeParams = zod.object({
 });
 
 export const AdminResolveDisputeBody = zod.object({
-  winner: zod.enum(["buyer", "seller"]),
+  winner: zod.enum(["buyer", "seller", "timeout"]),
   notes: zod.string().optional(),
 });
 

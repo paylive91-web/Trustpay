@@ -18,6 +18,9 @@ export const disputeStatusEnum = pgEnum("dispute_status", [
   "buyer_won",
   "seller_won",
   "auto_resolved",
+  // Admin-forced timeout — the held amount is forfeited to the platform
+  // admin account instead of being awarded to either trader.
+  "timeout",
 ]);
 
 export const disputesTable = pgTable("disputes", {
