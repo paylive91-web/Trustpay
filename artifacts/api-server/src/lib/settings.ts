@@ -10,6 +10,11 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   appLogoUrl: "",
   popupSoundUrl: "",
   telegramLink: "https://t.me/trustpay",
+  // Dispute-specific support handle. Falls back to telegramLink if blank.
+  // Used by the Contact Support button on dispute cards (orders.tsx) so a
+  // dedicated dispute team can be reached without changing the global
+  // telegramLink shown elsewhere (footer, profile, etc).
+  telegramSupportUrl: "",
   bannerImages: JSON.stringify([]),
   appName: "TrustPay",
   adminUsername: "admin",

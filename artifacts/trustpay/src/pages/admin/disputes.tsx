@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AdminLayout from "@/components/admin-layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import {
   type AdminDispute,
 } from "@workspace/api-client-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { ShieldAlert, Eye, Clock, Info } from "lucide-react";
+import { ShieldAlert, Eye, Clock, Info, Send, Save } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 
 import { API_BASE } from "@/lib/api-config";
@@ -40,6 +40,39 @@ export default function AdminDisputes() {
   const [extendOpen, setExtendOpen] = useState<AdminDispute | null>(null);
   const [extendHours, setExtendHours] = useState("24");
   const [extendLoading, setExtendLoading] = useState(false);
+
+  // Telegram Support URL — shown to disputing users via the "Contact
+  // Support" button on their dispute card. Stored as a global app
+  // setting so changing it here propagates to every user instantly.
+  const [supportUrl, setSupportUrl] = useState("");
+  const [supportUrlLoaded, setSupportUrlLoaded] = useState("");
+  const [savingSupport, setSavingSupport] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    api("/admin/settings").then((s) => {
+      if (cancelled) return;
+      const v = s?.telegramSupportUrl || "";
+      setSupportUrl(v);
+      setSupportUrlLoaded(v);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+  const handleSaveSupport = async () => {
+    setSavingSupport(true);
+    try {
+      await api("/admin/settings", {
+        method: "PUT",
+        body: JSON.stringify({ telegramSupportUrl: supportUrl.trim() }),
+      });
+      setSupportUrlLoaded(supportUrl.trim());
+      toast({ title: "Support URL saved", description: "Users will see this link on their dispute cards." });
+    } catch (e: any) {
+      toast({ title: "Save failed", description: e.message, variant: "destructive" });
+    } finally {
+      setSavingSupport(false);
+    }
+  };
+  const supportUrlDirty = supportUrl.trim() !== supportUrlLoaded.trim();
 
   const { data, isLoading } = useAdminListDisputes({
     query: { queryKey: getAdminListDisputesQueryKey(), refetchInterval: 10000 },
@@ -94,6 +127,44 @@ export default function AdminDisputes() {
               <strong className="ml-1">Extend Deadline:</strong> If a party needs more time to submit proof, use the clock button to add hours to their deadline (default +24h).
               Resolving awards the trade amount to the winner and applies trust score adjustments.
             </p>
+          </CardContent>
+        </Card>
+
+        {/* Telegram Support URL — users land here from their dispute card. */}
+        <Card className="border-cyan-100 bg-gradient-to-br from-cyan-50/70 via-white to-sky-50/70 shadow-sm">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-500 to-cyan-500 flex items-center justify-center shadow-sm">
+                <Send className="h-4 w-4 text-white" />
+              </div>
+              <div className="flex-1">
+                <div className="font-semibold text-sm text-slate-800">Telegram Support URL</div>
+                <div className="text-[11px] text-muted-foreground">
+                  Shown on every user's dispute card as the <em>Contact Support</em> button. Use the format <code className="bg-white/60 px-1 rounded">https://t.me/yourhandle</code>.
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Input
+                placeholder="https://t.me/trustpaysupport"
+                value={supportUrl}
+                onChange={(e) => setSupportUrl(e.target.value)}
+                className="flex-1 bg-white"
+              />
+              <Button
+                onClick={handleSaveSupport}
+                disabled={!supportUrlDirty || savingSupport}
+                className="bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-700 hover:to-cyan-700"
+              >
+                <Save className="h-4 w-4 mr-1" />
+                {savingSupport ? "Saving…" : supportUrlDirty ? "Save" : "Saved"}
+              </Button>
+            </div>
+            {!supportUrlLoaded && (
+              <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                Not set yet — users will fall back to the global Telegram link from <strong>Links & Media</strong>.
+              </div>
+            )}
           </CardContent>
         </Card>
 

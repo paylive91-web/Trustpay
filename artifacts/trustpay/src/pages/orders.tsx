@@ -3,27 +3,37 @@ import { useSearch } from "wouter";
 import {
   useGetOrders,
   useGetMyDisputes,
-  useSubmitBuyerProof,
-  useSubmitSellerProof,
-  getGetMyDisputesQueryKey,
+  useGetAppSettings,
   type MyDispute,
 } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
 import Layout from "@/components/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
-import { IndianRupee, ArrowDownCircle, ArrowUpCircle, Clock, CheckCircle2, XCircle, ShieldAlert, Upload } from "lucide-react";
-import { fileToDataUrl } from "@/lib/dispute-actions";
+import {
+  IndianRupee,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  ShieldAlert,
+  Send,
+  ImageIcon,
+  FileText,
+  Video,
+  AlertTriangle,
+  PlayCircle,
+  Hash,
+  CalendarClock,
+  CircleDollarSign,
+} from "lucide-react";
 
 export default function Orders() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
   // Read initial tab from ?tab= query param so deep-links from the
   // home Live Orders card and the Buy "Open Disputes" button can land
   // directly on the Disputes tab instead of defaulting to "All".
@@ -50,58 +60,23 @@ export default function Orders() {
 
   const filteredOrders = orders?.filter(o => filterType === "all" || filterType === "disputes" || o.type === filterType) || [];
 
-  // Disputes
+  // Disputes — read-only here. All proof submission has moved to the
+  // Telegram support flow (see ContactSupportDialog below). The user
+  // collects 3 things (screenshot / bank statement / video) and forwards
+  // them to TrustPay support directly via Telegram with a pre-filled
+  // message containing the dispute identifier so admin can match the
+  // conversation to the right row in the admin panel.
   const { data: disputesData, isLoading: loadingDisputes } = useGetMyDisputes();
   const disputes = disputesData ?? [];
-  const [activeProof, setActiveProof] = useState<MyDispute | null>(null);
-  const [bankFile, setBankFile] = useState<File | null>(null);
-  const [recordingFile, setRecordingFile] = useState<File | null>(null);
-  const [lastTxnFile, setLastTxnFile] = useState<File | null>(null);
-  const [txHistoryFile, setTxHistoryFile] = useState<File | null>(null);
-
-  const invalidateDisputes = () => queryClient.invalidateQueries({ queryKey: getGetMyDisputesQueryKey() });
-
-  const buyerProofMut = useSubmitBuyerProof();
-  const sellerProofMut = useSubmitSellerProof();
-  const uploading = buyerProofMut.isPending || sellerProofMut.isPending;
-
-  const isOfflineDispute = (d: MyDispute | null) => d?.triggerReason === "seller_offline";
-
-  const submitProof = async () => {
-    if (!activeProof) return;
-    try {
-      const role = activeProof.role;
-      if (role === "buyer") {
-        const offline = isOfflineDispute(activeProof);
-        if (offline) {
-          if (!txHistoryFile && !bankFile) { toast({ title: "At least one proof required", description: "Upload a transaction history screenshot or bank statement", variant: "destructive" }); return; }
-          const data: Record<string, string> = {};
-          if (txHistoryFile) data.txHistoryUrl = await fileToDataUrl(txHistoryFile);
-          if (bankFile) data.bankStatementUrl = await fileToDataUrl(bankFile);
-          await buyerProofMut.mutateAsync({ id: activeProof.id, data });
-        } else {
-          if (!bankFile) { toast({ title: "Bank statement required", variant: "destructive" }); return; }
-          const bankStatementUrl = await fileToDataUrl(bankFile);
-          await buyerProofMut.mutateAsync({ id: activeProof.id, data: { bankStatementUrl } });
-        }
-      } else {
-        if (!bankFile || !recordingFile || !lastTxnFile) {
-          toast({ title: "All three proofs required", variant: "destructive" }); return;
-        }
-        const [bankStatementUrl, recordingUrl, lastTxnScreenshotUrl] = await Promise.all([
-          fileToDataUrl(bankFile),
-          fileToDataUrl(recordingFile),
-          fileToDataUrl(lastTxnFile),
-        ]);
-        await sellerProofMut.mutateAsync({ id: activeProof.id, data: { bankStatementUrl, recordingUrl, lastTxnScreenshotUrl } });
-      }
-      toast({ title: "Proof upload ho gaya!" });
-      setActiveProof(null); setBankFile(null); setRecordingFile(null); setLastTxnFile(null); setTxHistoryFile(null);
-      invalidateDisputes();
-    } catch (e: any) {
-      toast({ title: "Failed", description: e.message, variant: "destructive" });
-    }
-  };
+  const { data: appSettings } = useGetAppSettings();
+  // telegramSupportUrl falls back to telegramLink server-side, but we
+  // also fall back here defensively so an empty string from a stale
+  // cached settings response still produces a working button.
+  const supportUrl =
+    (appSettings as any)?.telegramSupportUrl ||
+    (appSettings as any)?.telegramLink ||
+    "https://t.me/trustpay";
+  const [activeContact, setActiveContact] = useState<MyDispute | null>(null);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -180,25 +155,24 @@ export default function Orders() {
                       <div className="border-t pt-3 space-y-2">
                         <div className="text-xs text-muted-foreground">
                           {d.role === "buyer"
-                            ? "Upload your bank statement (PDF only) showing the payment to settle this dispute."
-                            : "Upload bank statement, screen recording, and last-transaction screenshot to defend yourself."}
+                            ? "Send your payment screenshot, bank statement and screen recording to TrustPay support to defend your dispute."
+                            : "Send your last-transaction screenshot, bank statement and screen recording to TrustPay support to defend your dispute."}
                         </div>
                         {(() => {
                           const deadline = new Date(new Date(d.createdAt).getTime() + 24 * 3600 * 1000).getTime();
                           const ms = deadline - Date.now();
                           if (ms <= 0) return <div className="text-xs text-red-600 font-medium">Proof window expired — admin will auto-resolve.</div>;
                           const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
-                          return <div className="text-xs text-amber-700 font-medium">Time left to submit proof: {h}h {m}m</div>;
+                          return <div className="text-xs text-amber-700 font-medium">Time left to contact support: {h}h {m}m</div>;
                         })()}
-                        <div className="flex flex-wrap gap-2">
-                          {(d.role === "buyer" ? !d.buyerProofAt : !d.sellerProofAt) ? (
-                            <Button size="sm" onClick={() => { setActiveProof(d); setBankFile(null); setRecordingFile(null); setLastTxnFile(null); }}>
-                              <Upload className="w-3 h-3 mr-1" /> Upload Proof
-                            </Button>
-                          ) : (
-                            <Badge variant="outline" className="bg-green-50 text-green-700">Proof submitted</Badge>
-                          )}
-                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => setActiveContact(d)}
+                          className="bg-gradient-to-r from-sky-500 via-cyan-500 to-blue-600 hover:from-sky-600 hover:via-cyan-600 hover:to-blue-700 text-white shadow-md shadow-sky-200 rounded-full px-4 h-9 font-semibold gap-2"
+                        >
+                          <Send className="w-3.5 h-3.5" />
+                          Contact Support
+                        </Button>
                       </div>
                     )}
                   </CardContent>
@@ -284,72 +258,215 @@ export default function Orders() {
         </div>
       </div>
 
-      <Dialog open={!!activeProof} onOpenChange={(o) => !o && setActiveProof(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {activeProof?.role === "buyer"
-                ? isOfflineDispute(activeProof) ? "Payment Proof Upload" : "Buyer Proof Upload"
-                : "Seller Proof Upload"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            {activeProof?.role === "buyer" && isOfflineDispute(activeProof) ? (
-              <>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-                  Seller was offline when the order expired. Upload your payment proof — admin will verify and process a refund or confirmation.
-                </div>
-                <UploadTile label="Transaction History Screenshot" required file={txHistoryFile} onChange={setTxHistoryFile} accept="image/*" hint="Transaction history screenshot from your bank app (required)" />
-                <UploadTile label="Bank Statement PDF" file={bankFile} onChange={setBankFile} accept="application/pdf" hint="PDF only · optional (for additional proof)" />
-              </>
-            ) : activeProof?.role === "buyer" ? (
-              <>
-                <UploadTile label="Bank Statement" required file={bankFile} onChange={setBankFile} accept="application/pdf" hint="PDF only" />
-                <UploadTile label="Payment Screenshot" required file={recordingFile} onChange={setRecordingFile} accept="image/*" hint="Upload the payment screenshot" />
-                <UploadTile label="Video Recording" required file={lastTxnFile} onChange={setLastTxnFile} accept="video/*" hint="Show your payment and last transactions (mp4, mov, webm)" />
-              </>
-            ) : (
-              <>
-                <UploadTile label="Payment Proof Screenshot" required file={lastTxnFile} onChange={setLastTxnFile} accept="image/*" hint="Screenshot of the buyer's payment from your bank app" />
-                <UploadTile label="Video Recording" required file={recordingFile} onChange={setRecordingFile} accept="video/*" hint="Video recording showing the payment and your last transactions (mp4, mov, webm)" />
-                <UploadTile label="Bank Statement" required file={bankFile} onChange={setBankFile} accept="application/pdf" hint="PDF only" />
-              </>
-            )}
-            <div className="text-xs text-muted-foreground">Screenshot: image · Recording: video only · Bank statement: PDF only</div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setActiveProof(null)}>Cancel</Button>
-            <Button onClick={submitProof} disabled={uploading}>{uploading ? "Uploading..." : "Submit Proof"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ContactSupportDialog
+        dispute={activeContact}
+        supportUrl={supportUrl}
+        onClose={() => setActiveContact(null)}
+      />
     </Layout>
   );
 }
 
-function UploadTile({
-  label, file, onChange, accept, hint, required,
+/**
+ * Premium dispute support modal. Replaces the old in-app proof upload.
+ * The user collects 3 things (per-role checklist) and is redirected to
+ * Telegram with a pre-filled message so admin can identify the dispute
+ * with a single glance. Files travel through Telegram, never our DB.
+ */
+function ContactSupportDialog({
+  dispute,
+  supportUrl,
+  onClose,
 }: {
-  label: string;
-  file: File | null;
-  onChange: (f: File | null) => void;
-  accept: string;
-  hint: string;
-  required?: boolean;
+  dispute: MyDispute | null;
+  supportUrl: string;
+  onClose: () => void;
 }) {
+  if (!dispute) return null;
+  const isBuyer = dispute.role === "buyer";
+  const orderId = dispute.order?.id;
+  const amount = dispute.order?.amount ? parseFloat(dispute.order.amount as any).toFixed(2) : "—";
+  const openedAt = dispute.createdAt ? format(new Date(dispute.createdAt), "MMM dd, yyyy · HH:mm") : "—";
+
+  // Pre-filled message — kept short on purpose. Admin uses Dispute # to
+  // pull the rest from the admin panel rather than reading a wall of
+  // text in Telegram.
+  const message =
+    `Hi TrustPay Support,\n\n` +
+    `I need help with my dispute.\n\n` +
+    `• Dispute #${dispute.id}\n` +
+    `• Order #${orderId ?? "—"}\n` +
+    `• Amount: ₹${amount}\n` +
+    `• Opened: ${openedAt}\n\n` +
+    `Proof attached below.`;
+
+  const buildSupportLink = () => {
+    const base = supportUrl.trim() || "https://t.me/trustpay";
+    // Telegram supports ?text= only on /share/url. For a direct chat
+    // link like t.me/<handle> the message text is sent via the
+    // start parameter, but in practice users still need to paste it.
+    // We append it as a fragment so the user can copy-paste from URL
+    // if needed; the primary copy button is the reliable path.
+    try {
+      const u = new URL(base);
+      // Keep raw URL clean — we rely on the Copy Message button.
+      return u.toString();
+    } catch {
+      return base;
+    }
+  };
+
+  const checklist = isBuyer
+    ? [
+        { icon: ImageIcon, label: "Payment Screenshot", hint: "Screenshot of the payment you sent" },
+        { icon: FileText, label: "Bank Statement", hint: "PDF showing the debit from your account" },
+        {
+          icon: Video,
+          label: "Video Recording",
+          hint: "Open Play Store → search the app you paid from → open it → show this transaction in your history",
+        },
+      ]
+    : [
+        { icon: ImageIcon, label: "Last Transaction Screenshot", hint: "Screenshot of your most recent received payment" },
+        { icon: FileText, label: "Bank Statement", hint: "PDF showing recent credits to your account" },
+        {
+          icon: Video,
+          label: "Video Recording",
+          hint: "Open Play Store → search the app the buyer paid from → open it → show your transaction history",
+        },
+      ];
+
+  const handleCopyMessage = async () => {
+    try {
+      await navigator.clipboard.writeText(message);
+    } catch {
+      // ignore — the textarea below remains visible for manual copy
+    }
+  };
+
+  const handleOpenSupport = async () => {
+    await handleCopyMessage();
+    window.open(buildSupportLink(), "_blank", "noopener,noreferrer");
+  };
+
   return (
-    <div className="space-y-1">
-      <label className="text-sm font-semibold">
-        {label} {required && <span className="text-red-600">*</span>}
-      </label>
-      <label className={`flex flex-col items-center justify-center gap-1 border-2 border-dashed ${file ? "border-green-400 bg-green-50" : "border-primary/40 bg-primary/5"} rounded-xl p-4 cursor-pointer hover:bg-primary/10 transition-colors`}>
-        <Upload className={`w-6 h-6 ${file ? "text-green-600" : "text-primary"}`} />
-        <div className="text-sm font-medium text-center">
-          {file ? `${file.name.slice(0, 30)} ✓` : `Tap to upload ${label.toLowerCase()}`}
+    <Dialog open={!!dispute} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md p-0 overflow-hidden border-0 shadow-2xl">
+        {/* Premium gradient header */}
+        <div className="relative bg-gradient-to-br from-sky-500 via-cyan-500 to-blue-700 text-white px-5 pt-5 pb-12">
+          <div className="absolute -top-6 -right-6 w-28 h-28 bg-white/10 rounded-full blur-2xl" />
+          <div className="absolute -bottom-8 -left-4 w-32 h-32 bg-cyan-300/20 rounded-full blur-3xl" />
+          <DialogHeader className="relative">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur flex items-center justify-center ring-2 ring-white/30">
+                <ShieldAlert className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-white text-lg leading-tight">
+                  {isBuyer ? "Buyer Support" : "Seller Support"}
+                </DialogTitle>
+                <div className="text-[11px] text-white/80">Dispute #{dispute.id} · {isBuyer ? "Buyer" : "Seller"} side</div>
+              </div>
+            </div>
+          </DialogHeader>
+          {/* Floating order summary chip */}
+          <div className="absolute left-5 right-5 -bottom-6 bg-white rounded-2xl shadow-lg border border-slate-100 px-4 py-3 grid grid-cols-3 gap-2 text-center">
+            <div>
+              <div className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><Hash className="h-2.5 w-2.5" />ORDER</div>
+              <div className="text-sm font-bold text-slate-800">#{orderId ?? "—"}</div>
+            </div>
+            <div className="border-x border-slate-100">
+              <div className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><CircleDollarSign className="h-2.5 w-2.5" />AMOUNT</div>
+              <div className="text-sm font-bold text-slate-800 flex items-center justify-center"><IndianRupee className="h-3 w-3" />{amount}</div>
+            </div>
+            <div>
+              <div className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><CalendarClock className="h-2.5 w-2.5" />OPENED</div>
+              <div className="text-[11px] font-semibold text-slate-700 leading-tight">{dispute.createdAt ? format(new Date(dispute.createdAt), "MMM dd, HH:mm") : "—"}</div>
+            </div>
+          </div>
         </div>
-        <div className="text-[10px] text-muted-foreground">{hint}</div>
-        <input type="file" accept={accept} onChange={(e) => onChange(e.target.files?.[0] || null)} className="hidden" />
-      </label>
-    </div>
+
+        <div className="px-5 pt-10 pb-5 space-y-4 bg-white">
+          {/* Section title */}
+          <div>
+            <div className="text-[11px] font-bold tracking-wider text-cyan-700 uppercase">Step 1 · Collect Proof</div>
+            <div className="text-xs text-muted-foreground">Keep these 3 ready before opening Telegram</div>
+          </div>
+
+          {/* Premium checklist */}
+          <div className="space-y-2">
+            {checklist.map((item, i) => {
+              const Icon = item.icon;
+              return (
+                <div
+                  key={i}
+                  className="group flex items-start gap-3 p-3 rounded-xl bg-gradient-to-r from-slate-50 to-white border border-slate-100 hover:border-cyan-200 hover:shadow-sm transition-all"
+                >
+                  <div className="shrink-0 w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-100 to-sky-100 text-sky-700 flex items-center justify-center ring-1 ring-cyan-200/50">
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-semibold text-slate-800">{item.label}</span>
+                      <span className="text-[10px] font-bold text-cyan-600 bg-cyan-50 px-1.5 py-0.5 rounded-full">{i + 1}</span>
+                    </div>
+                    <div className="text-[11px] text-slate-500 leading-snug mt-0.5">{item.hint}</div>
+                  </div>
+                  {item.icon === Video && (
+                    <PlayCircle className="h-4 w-4 text-cyan-500 mt-1 shrink-0" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Safety strip */}
+          <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200">
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-700 mt-0.5 shrink-0" />
+            <div className="text-[11px] text-amber-900 leading-snug">
+              <strong>TrustPay कभी भी आपको call नहीं करता।</strong> Never share your OTP, password or PIN. Support is <strong>only</strong> via the official Telegram link below.
+            </div>
+          </div>
+
+          {/* Section title 2 */}
+          <div>
+            <div className="text-[11px] font-bold tracking-wider text-cyan-700 uppercase">Step 2 · Send to Support</div>
+            <div className="text-xs text-muted-foreground">A pre-filled message will be copied — paste it in Telegram and attach your proof</div>
+          </div>
+
+          {/* Pre-filled message preview */}
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] font-bold text-slate-500 tracking-wider">PRE-FILLED MESSAGE</span>
+              <button
+                onClick={handleCopyMessage}
+                className="text-[10px] font-semibold text-sky-600 hover:text-sky-800 underline"
+              >
+                Copy
+              </button>
+            </div>
+            <pre className="text-[11px] text-slate-700 whitespace-pre-wrap font-sans leading-snug max-h-28 overflow-y-auto">
+              {message}
+            </pre>
+          </div>
+
+          {/* Primary CTA */}
+          <Button
+            onClick={handleOpenSupport}
+            className="w-full h-12 rounded-2xl bg-gradient-to-r from-sky-500 via-cyan-500 to-blue-600 hover:from-sky-600 hover:via-cyan-600 hover:to-blue-700 text-white font-bold shadow-lg shadow-sky-200 gap-2 text-base"
+          >
+            <Send className="h-4 w-4" />
+            Contact Support on Telegram
+          </Button>
+
+          <button
+            onClick={onClose}
+            className="w-full text-xs text-muted-foreground hover:text-slate-700 py-1"
+          >
+            Cancel
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

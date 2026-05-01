@@ -168,6 +168,7 @@ export interface AppSettings {
   popupMessage?: string;
   popupImageUrl?: string;
   telegramLink?: string;
+  telegramSupportUrl?: string;
   bannerImages?: string[];
   appName: string;
   appLogoUrl?: string;
@@ -223,6 +224,7 @@ export interface AdminUpdateSettingsBody {
   popupMessage?: string;
   popupImageUrl?: string;
   telegramLink?: string;
+  telegramSupportUrl?: string;
   bannerImages?: string[];
   appName?: string;
   appLogoUrl?: string;

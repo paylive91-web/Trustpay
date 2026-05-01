@@ -1274,6 +1274,8 @@ components:
           type: string
         telegramLink:
           type: string
+        telegramSupportUrl:
+          type: string
         bannerImages:
           type: array
           items:
@@ -1384,6 +1386,8 @@ components:
         popupImageUrl:
           type: string
         telegramLink:
+          type: string
+        telegramSupportUrl:
           type: string
         bannerImages:
           type: array

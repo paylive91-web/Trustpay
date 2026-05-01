@@ -465,6 +465,7 @@ function fSettings(s: any) {
     upiName: s.upiName || "TrustPay",
     multipleUpiIds, popupMessage: s.popupMessage || "", popupImageUrl: s.popupImageUrl || "",
     announcements, telegramLink: s.telegramLink || "",
+    telegramSupportUrl: s.telegramSupportUrl || "",
     bannerImages: JSON.parse(s.bannerImages || "[]"),
     appName: s.appName || "TrustPay",
     appLogoUrl: s.appLogoUrl || "",
@@ -552,6 +553,7 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
   addScalar("upiId", b.upiId); addScalar("upiName", b.upiName);
   addScalar("popupMessage", b.popupMessage); addScalar("popupImageUrl", b.popupImageUrl);
   addScalar("telegramLink", b.telegramLink); addScalar("inviteShareImageUrl", b.inviteShareImageUrl);
+  addScalar("telegramSupportUrl", b.telegramSupportUrl);
   addScalar("appName", b.appName); addScalar("appLogoUrl", b.appLogoUrl); addScalar("popupSoundUrl", b.popupSoundUrl);
   addScalar("buyRules", b.buyRules); addScalar("sellRules", b.sellRules);
   addScalar("buyRulesImageUrl", b.buyRulesImageUrl); addScalar("sellRulesImageUrl", b.sellRulesImageUrl);

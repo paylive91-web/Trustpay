@@ -37,6 +37,11 @@ router.get("/app", async (req, res) => {
     popupImageUrl: s.popupImageUrl || "",
     announcements,
     telegramLink: s.telegramLink || "",
+    // Dispute support URL — separate setting so a dedicated dispute team
+    // can be reached. If admin hasn't configured it, fall back to the
+    // generic telegramLink so the Contact Support button never points
+    // nowhere.
+    telegramSupportUrl: s.telegramSupportUrl || s.telegramLink || "",
     bannerImages: JSON.parse(s.bannerImages || "[]"),
     appName: s.appName || "TrustPay",
     appLogoUrl: s.appLogoUrl || "",
