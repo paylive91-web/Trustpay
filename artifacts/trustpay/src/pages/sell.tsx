@@ -390,17 +390,19 @@ export default function Sell() {
                       </div>
                     )}
 
-                    {/* Sell Reward row */}
-                    {sellRewardPct > 0 && (
-                      <div className="rounded-xl bg-emerald-500/15 border border-emerald-400/25 px-3 py-2 mb-3 flex items-center justify-between">
-                        <span className="text-xs text-emerald-200 flex items-center gap-1.5">
-                          <Sparkles className="w-3 h-3" /> Sell Reward
-                        </span>
+                    {/* Sell Reward row — always visible */}
+                    <div className="rounded-xl bg-emerald-500/15 border border-emerald-400/25 px-3 py-2 mb-3 flex items-center justify-between">
+                      <span className="text-xs text-emerald-200 flex items-center gap-1.5">
+                        <Sparkles className="w-3 h-3" /> Sell Reward
+                      </span>
+                      {sellRewardPct > 0 ? (
                         <span className="text-sm font-black text-emerald-300">
                           +₹{(balance * sellRewardPct / 100).toFixed(0)} <span className="text-xs font-normal text-emerald-400">at {sellRewardPct}%</span>
                         </span>
-                      </div>
-                    )}
+                      ) : (
+                        <span className="text-xs font-semibold text-emerald-300/90">Active on every confirmed sale</span>
+                      )}
+                    </div>
 
                     {/* Stay online urge — message reflects real queue state so it
                         doesn't read like generic motivation copy. */}
@@ -457,13 +459,15 @@ export default function Sell() {
                       Go live for 15 minutes and let buyers pay you directly.
                     </p>
 
-                    {/* Earnings preview — only if admin has configured a sell reward */}
-                    {balance > 0 && sellRewardPct > 0 && (
-                      <div className="mt-4 rounded-2xl bg-white/10 border border-white/15 p-4">
-                        <div className="text-xs text-white/60 uppercase tracking-wider mb-2">If you sell now</div>
+                    {/* Sell Reward preview — always visible */}
+                    <div className="mt-4 rounded-2xl bg-gradient-to-br from-emerald-400/20 via-white/10 to-emerald-300/15 border border-emerald-300/30 p-4">
+                      <div className="flex items-center gap-1.5 text-xs text-emerald-200 uppercase tracking-wider mb-2">
+                        <Sparkles className="w-3.5 h-3.5" /> Sell Reward
+                      </div>
+                      {sellRewardPct > 0 ? (
                         <div className="flex items-end gap-3">
                           <div>
-                            <div className="text-[11px] text-white/50">Your balance</div>
+                            <div className="text-[11px] text-white/55">Your balance</div>
                             <div className="text-xl font-black">₹{balance.toFixed(0)}</div>
                           </div>
                           <div className="text-white/40 text-xl mb-0.5">→</div>
@@ -472,8 +476,12 @@ export default function Sell() {
                             <div className="text-xl font-black text-emerald-300">+₹{(balance * sellRewardPct / 100).toFixed(0)}</div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="text-sm text-white/85 leading-snug">
+                          Earn an instant bonus on every confirmed sale — credited straight to your balance.
+                        </div>
+                      )}
+                    </div>
 
                     <div className="mt-4 grid grid-cols-3 gap-2">
                       <div className="rounded-2xl bg-white/10 p-3 text-center">
@@ -520,6 +528,7 @@ export default function Sell() {
           onRefetch={() => { refetchPending(); refetchChunks(); qc.invalidateQueries({ queryKey: ["me"] }); }}
           onUpdated={() => refetchMe()}
           now={now}
+          sellRewardPct={sellRewardPct}
         />
       </div>
     </Layout>
@@ -527,9 +536,9 @@ export default function Sell() {
 }
 
 function LockedOrderTabs({
-  chunks, pendingConfirms, user, onRefetch, onUpdated, now,
+  chunks, pendingConfirms, user, onRefetch, onUpdated, now, sellRewardPct,
 }: {
-  chunks: any[]; pendingConfirms: any[]; user: any; onRefetch: () => void; onUpdated: () => void; now: number;
+  chunks: any[]; pendingConfirms: any[]; user: any; onRefetch: () => void; onUpdated: () => void; now: number; sellRewardPct: number;
 }) {
   const lockedChunks = chunks.filter((c) => c.status === "locked" || c.status === "pending_confirmation");
   const hasLocked = lockedChunks.length > 0;
@@ -605,12 +614,26 @@ function LockedOrderTabs({
                       <div className="text-muted-foreground">Expires in</div>
                       <div className="font-mono font-bold text-orange-600">{expiresAt ? countdown : "—"}</div>
                     </div>
-                    {c.upiId && (
-                      <div className="rounded-xl bg-muted/50 p-2 col-span-2">
-                        <div className="text-muted-foreground">UPI ID</div>
-                        <div className="font-semibold truncate">{c.upiId}</div>
+                  </div>
+                  {/* Sell Reward preview — what you'll earn on confirm */}
+                  <div className="rounded-xl bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-emerald-600" />
+                      <div>
+                        <div className="text-[10px] uppercase tracking-wider text-emerald-700 font-bold">Sell Reward</div>
+                        <div className="text-[11px] text-emerald-700/80">On confirm, credited instantly</div>
                       </div>
-                    )}
+                    </div>
+                    <div className="text-right">
+                      {sellRewardPct > 0 ? (
+                        <>
+                          <div className="text-base font-black text-emerald-700 leading-tight">+₹{(Number(c.amount) * sellRewardPct / 100).toFixed(2)}</div>
+                          <div className="text-[10px] text-emerald-700/80 font-semibold">at {sellRewardPct}%</div>
+                        </>
+                      ) : (
+                        <div className="text-[11px] font-semibold text-emerald-700">Active</div>
+                      )}
+                    </div>
                   </div>
                   <div className="rounded-xl border border-dashed border-amber-300 bg-amber-50 p-3 text-xs text-amber-800 leading-relaxed">
                     A buyer has locked your order. Once they submit payment proof, you will need to confirm it.
@@ -630,7 +653,7 @@ function LockedOrderTabs({
             </CardContent>
           </Card>
         ) : (
-          chunks.map((c) => <MyOrderCard key={c.id} chunk={c} now={now} />)
+          chunks.map((c) => <MyOrderCard key={c.id} chunk={c} now={now} sellRewardPct={sellRewardPct} />)
         )}
       </TabsContent>
     </Tabs>
@@ -652,12 +675,14 @@ function relTime(ts: string | null | undefined, now: number): string {
   return `${d}d ago`;
 }
 
-function MyOrderCard({ chunk: c, now }: { chunk: any; now: number }) {
+function MyOrderCard({ chunk: c, now, sellRewardPct }: { chunk: any; now: number; sellRewardPct: number }) {
   const { toast } = useToast();
   const bonus = Number(c.sellRewardAmount || 0);
   const bonusPct = Number(c.sellRewardPercent || 0);
   const status: string = c.status;
   const amount = Number(c.amount || 0);
+  // For non-confirmed orders, show projected reward using current settings rate
+  const projectedBonus = sellRewardPct > 0 ? amount * sellRewardPct / 100 : 0;
 
   const accent =
     status === "confirmed" ? { bar: "from-emerald-400 via-green-400 to-teal-400", border: "border-emerald-200", amountText: "text-emerald-700" }
@@ -715,29 +740,49 @@ function MyOrderCard({ chunk: c, now }: { chunk: any; now: number }) {
                 </button>
               </div>
             )}
-            {c.upiId && (
-              <div className="flex items-center justify-between text-xs gap-2">
-                <span className="text-muted-foreground shrink-0">Paid to UPI</span>
-                <span className="font-mono text-foreground truncate max-w-[180px]" title={c.upiId}>{c.upiId}</span>
-              </div>
-            )}
           </div>
         )}
 
-        {/* Reward strip — only for confirmed with bonus */}
-        {status === "confirmed" && bonus > 0 && (
+        {/* Sell Reward strip — confirmed shows actual earned, others show projected */}
+        {status === "confirmed" ? (
+          (bonus > 0 || sellRewardPct > 0) && (
+            <div className="rounded-xl bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-emerald-600" />
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-emerald-700 font-bold">Sell Reward Earned</div>
+                    <div className="text-[11px] text-emerald-700/80">Credited to your balance</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-lg font-black text-emerald-700 leading-tight">+₹{(bonus > 0 ? bonus : projectedBonus).toFixed(2)}</div>
+                  {(bonusPct > 0 || sellRewardPct > 0) && (
+                    <div className="text-[10px] text-emerald-700/80 font-semibold">at {bonusPct > 0 ? bonusPct : sellRewardPct}%</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )
+        ) : (
           <div className="rounded-xl bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 p-3">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-emerald-600" />
                 <div>
-                  <div className="text-[10px] uppercase tracking-wider text-emerald-700 font-bold">Sell Reward Earned</div>
-                  <div className="text-[11px] text-emerald-700/80">Credited to your balance</div>
+                  <div className="text-[10px] uppercase tracking-wider text-emerald-700 font-bold">Sell Reward</div>
+                  <div className="text-[11px] text-emerald-700/80">On confirm, credited instantly</div>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-lg font-black text-emerald-700 leading-tight">+₹{bonus.toFixed(2)}</div>
-                {bonusPct > 0 && <div className="text-[10px] text-emerald-700/80 font-semibold">at {bonusPct}%</div>}
+                {sellRewardPct > 0 ? (
+                  <>
+                    <div className="text-base font-black text-emerald-700 leading-tight">+₹{projectedBonus.toFixed(2)}</div>
+                    <div className="text-[10px] text-emerald-700/80 font-semibold">at {sellRewardPct}%</div>
+                  </>
+                ) : (
+                  <div className="text-[11px] font-semibold text-emerald-700">Active</div>
+                )}
               </div>
             </div>
           </div>
