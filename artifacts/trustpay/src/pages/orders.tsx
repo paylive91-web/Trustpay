@@ -241,6 +241,15 @@ export default function Orders() {
                       <div className="border-t pt-2 text-xs text-muted-foreground">UTR: <span className="font-medium text-foreground">{order.utrNumber}</span></div>
                     )}
                   </div>
+                  {order.type === "withdrawal" && order.status === "confirmed" && (order as any).sellRewardAmount > 0 && (
+                    <div className="mt-3 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-xs text-emerald-800 leading-snug">
+                      <span className="font-semibold">✓ Sold ₹{Number(order.amount).toFixed(2)}</span>
+                      <span className="mx-1">·</span>
+                      <span>Bonus </span>
+                      <span className="font-bold text-emerald-700">+₹{Number((order as any).sellRewardAmount).toFixed(2)} ({(order as any).sellRewardPercent}%)</span>
+                      <span> credited to your main balance.</span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))

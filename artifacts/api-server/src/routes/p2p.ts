@@ -77,12 +77,19 @@ function f(o: any, sellerInfo?: any) {
   // 0 because matching.ts doesn't know which buyer will lock. Computing
   // here guarantees the buyer's payment page never shows ₹0 reward.
   const { rewardPercent, rewardAmount } = rewardForAmount(amount);
+  // Sell-side bonus snapshot — populated by settle.ts on confirmation. Sent
+  // on every chunk so the frontend can render an "earned ₹X bonus" line on
+  // confirmed orders without an extra round-trip.
+  const sellRewardAmount = parseFloat(o.sellRewardAmount || "0");
+  const sellRewardPercent = parseFloat(o.sellRewardPercent || "0");
   return {
     id: o.id,
     sellerId: o.userId,
     amount,
     rewardPercent,
     rewardAmount,
+    sellRewardAmount,
+    sellRewardPercent,
     totalAmount: parseFloat((amount + rewardAmount).toFixed(2)),
     status: o.status,
     upiId: o.userUpiId,
@@ -96,6 +103,7 @@ function f(o: any, sellerInfo?: any) {
     screenshotUrl: o.screenshotUrl,
     recordingUrl: o.recordingUrl,
     createdAt: o.createdAt,
+    updatedAt: o.updatedAt,
     qrImageUrl: undefined as string | undefined,
     seller: sellerInfo ? {
       id: sellerInfo.id,

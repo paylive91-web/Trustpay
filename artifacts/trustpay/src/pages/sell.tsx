@@ -259,19 +259,29 @@ export default function Sell() {
                             <div style={{ position: "absolute", top: "50%", left: "50%", width: "50%", height: "1.5px", transformOrigin: "left center", background: "linear-gradient(to right, rgba(52,211,153,0.95), rgba(52,211,153,0.2), transparent)", borderRadius: 2 }} />
                           </div>
 
-                          {/* Orbiting buyer dots */}
-                          <div className="absolute" style={{ top:"50%", left:"50%", marginTop:-10, marginLeft:-10, animation:"orbit-a 3.5s linear infinite" }}>
-                            <div style={{ width:20, height:20, borderRadius:"50%", background:"linear-gradient(135deg,#6ee7b7,#10b981)", border:"2px solid rgba(255,255,255,0.85)", animation:"dpGreen 2s ease-in-out infinite" }} />
-                          </div>
-                          <div className="absolute" style={{ top:"50%", left:"50%", marginTop:-8, marginLeft:-8, animation:"orbit-b 5.5s linear infinite" }}>
-                            <div style={{ width:16, height:16, borderRadius:"50%", background:"linear-gradient(135deg,#7dd3fc,#0ea5e9)", border:"2px solid rgba(255,255,255,0.85)", animation:"dpSky 1.8s ease-in-out infinite 0.4s" }} />
-                          </div>
-                          <div className="absolute" style={{ top:"50%", left:"50%", marginTop:-7, marginLeft:-7, animation:"orbit-c 4s linear infinite" }}>
-                            <div style={{ width:14, height:14, borderRadius:"50%", background:"linear-gradient(135deg,#f0abfc,#d946ef)", border:"2px solid rgba(255,255,255,0.85)", animation:"dpFuchsia 2.2s ease-in-out infinite 0.9s" }} />
-                          </div>
-                          <div className="absolute" style={{ top:"50%", left:"50%", marginTop:-6, marginLeft:-6, animation:"orbit-d 6.5s linear infinite" }}>
-                            <div style={{ width:12, height:12, borderRadius:"50%", background:"linear-gradient(135deg,#fde68a,#f59e0b)", border:"2px solid rgba(255,255,255,0.85)", animation:"dpYellow 1.6s ease-in-out infinite 1.4s" }} />
-                          </div>
+                          {/* Orbiting chunk dots — count reflects actual chunks live in queue.
+                              0 chunks = empty radar (no fake activity). Max 4 dots even
+                              if more chunks exist, to keep the visual readable. */}
+                          {(matching?.available || 0) >= 1 && (
+                            <div className="absolute" style={{ top:"50%", left:"50%", marginTop:-10, marginLeft:-10, animation:"orbit-a 3.5s linear infinite" }}>
+                              <div style={{ width:20, height:20, borderRadius:"50%", background:"linear-gradient(135deg,#6ee7b7,#10b981)", border:"2px solid rgba(255,255,255,0.85)", animation:"dpGreen 2s ease-in-out infinite" }} />
+                            </div>
+                          )}
+                          {(matching?.available || 0) >= 2 && (
+                            <div className="absolute" style={{ top:"50%", left:"50%", marginTop:-8, marginLeft:-8, animation:"orbit-b 5.5s linear infinite" }}>
+                              <div style={{ width:16, height:16, borderRadius:"50%", background:"linear-gradient(135deg,#7dd3fc,#0ea5e9)", border:"2px solid rgba(255,255,255,0.85)", animation:"dpSky 1.8s ease-in-out infinite 0.4s" }} />
+                            </div>
+                          )}
+                          {(matching?.available || 0) >= 3 && (
+                            <div className="absolute" style={{ top:"50%", left:"50%", marginTop:-7, marginLeft:-7, animation:"orbit-c 4s linear infinite" }}>
+                              <div style={{ width:14, height:14, borderRadius:"50%", background:"linear-gradient(135deg,#f0abfc,#d946ef)", border:"2px solid rgba(255,255,255,0.85)", animation:"dpFuchsia 2.2s ease-in-out infinite 0.9s" }} />
+                            </div>
+                          )}
+                          {(matching?.available || 0) >= 4 && (
+                            <div className="absolute" style={{ top:"50%", left:"50%", marginTop:-6, marginLeft:-6, animation:"orbit-d 6.5s linear infinite" }}>
+                              <div style={{ width:12, height:12, borderRadius:"50%", background:"linear-gradient(135deg,#fde68a,#f59e0b)", border:"2px solid rgba(255,255,255,0.85)", animation:"dpYellow 1.6s ease-in-out infinite 1.4s" }} />
+                            </div>
+                          )}
 
                           {/* Center core */}
                           <div className="relative z-20 flex flex-col items-center justify-center rounded-full" style={{
@@ -332,10 +342,42 @@ export default function Sell() {
                       </div>
                     )}
 
-                    {/* Stay online urge */}
-                    <div className="rounded-xl bg-amber-400/15 border border-amber-400/25 px-3 py-2 mb-4 text-center">
-                      <span className="text-xs text-amber-200 font-medium">🔥 Stay online — a buyer could lock any second!</span>
-                    </div>
+                    {/* Stay online urge — message reflects real queue state so it
+                        doesn't read like generic motivation copy. */}
+                    {(() => {
+                      const pending = (matching as any)?.pendingConfirmation || 0;
+                      const locked = matching?.locked || 0;
+                      const avail = matching?.available || 0;
+                      let msg = "Stay online — buyers can lock any of your live chunks.";
+                      let tone = "amber";
+                      if (pending > 0) {
+                        msg = `⚡ ${pending} buyer${pending > 1 ? "s" : ""} submitted payment — confirm now in Pending tab.`;
+                        tone = "rose";
+                      } else if (locked > 0) {
+                        msg = `🔒 ${locked} order${locked > 1 ? "s" : ""} locked — buyer is paying. Don't go offline.`;
+                        tone = "emerald";
+                      } else if (avail > 0) {
+                        msg = `🟢 ${avail} chunk${avail > 1 ? "s" : ""} live in queue · waiting for a buyer to lock.`;
+                        tone = "emerald";
+                      } else if ((matching as any)?.emptyReason) {
+                        msg = "Queue empty — see reason above.";
+                        tone = "white";
+                      } else {
+                        msg = "🔥 Stay online — a buyer could lock any second.";
+                      }
+                      const cls = tone === "rose"
+                        ? "bg-rose-500/20 border-rose-400/35 text-rose-100"
+                        : tone === "emerald"
+                        ? "bg-emerald-500/15 border-emerald-400/30 text-emerald-100"
+                        : tone === "white"
+                        ? "bg-white/10 border-white/20 text-white/70"
+                        : "bg-amber-400/15 border-amber-400/25 text-amber-200";
+                      return (
+                        <div className={`rounded-xl border px-3 py-2 mb-4 text-center ${cls}`}>
+                          <span className="text-xs font-medium">{msg}</span>
+                        </div>
+                      );
+                    })()}
                   </div>
                 ) : (
                   /* ── Idle state ── */
@@ -528,17 +570,33 @@ function LockedOrderTabs({
             </CardContent>
           </Card>
         ) : (
-          chunks.map((c) => (
-            <Card key={c.id}>
-              <CardContent className="p-3 flex items-center justify-between">
-                <div>
-                  <div className="font-bold">₹{c.amount}</div>
-                  <div className="text-xs text-muted-foreground">Order #{c.id}</div>
-                </div>
-                <span className={`text-xs px-2 py-1 rounded ${STATUS_COLOR[c.status] || "bg-muted"}`}>{c.status.replace(/_/g, " ")}</span>
-              </CardContent>
-            </Card>
-          ))
+          chunks.map((c) => {
+            const bonus = Number(c.sellRewardAmount || 0);
+            const bonusPct = Number(c.sellRewardPercent || 0);
+            const isConfirmed = c.status === "confirmed";
+            return (
+              <Card key={c.id} className={isConfirmed && bonus > 0 ? "border-emerald-200" : ""}>
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-bold">₹{c.amount}</div>
+                      <div className="text-xs text-muted-foreground">Order #{c.id}</div>
+                    </div>
+                    <span className={`text-xs px-2 py-1 rounded ${STATUS_COLOR[c.status] || "bg-muted"}`}>{c.status.replace(/_/g, " ")}</span>
+                  </div>
+                  {isConfirmed && bonus > 0 && (
+                    <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-xs text-emerald-800 leading-snug">
+                      <span className="font-semibold">✓ Sold ₹{Number(c.amount).toFixed(2)}</span>
+                      <span className="mx-1">·</span>
+                      <span>Bonus </span>
+                      <span className="font-bold text-emerald-700">+₹{bonus.toFixed(2)}{bonusPct > 0 ? ` (${bonusPct}%)` : ""}</span>
+                      <span> credited to your main balance</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })
         )}
       </TabsContent>
     </Tabs>

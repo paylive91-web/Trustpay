@@ -54,6 +54,12 @@ router.get("/app", async (req, res) => {
     googleClientId: googleClientId(),
     broadcastNotification,
     agentTiers,
+    // Reward percentages — needed by Sell page to show "earn X% bonus" hints
+    // and by Buy page to preview rewards. Tiers are buyer-side only and
+    // already returned per-amount on order endpoints, so we expose only
+    // the simple percentage scalars here.
+    sellRewardPercent: parseFloat(s.sellRewardPercent || "0"),
+    buyRewardPercent: parseFloat(s.buyRewardPercent || "0"),
   });
 });
 
