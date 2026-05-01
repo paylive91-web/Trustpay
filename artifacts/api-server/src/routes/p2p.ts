@@ -761,6 +761,16 @@ router.get("/matching-status", requireAuth, async (req, res) => {
   const expiresAt = user?.matchingExpiresAt || null;
   const isOnline = !!user?.lastSeenAt && Date.now() - new Date(user.lastSeenAt).getTime() < 2 * 60 * 1000;
   const isActive = !!expiresAt && new Date(expiresAt).getTime() > Date.now() && isOnline;
+  // Self-heal: while matching is active, opportunistically regenerate chunks
+  // on every status poll. The function is internally idempotent — it only
+  // inserts new chunks when the seller has free balance ≥ chunkMin and no
+  // existing 'available' chunks consume that capacity. This rescues sellers
+  // whose initial regen at /start-matching ran under buggy code (e.g. the
+  // historical balance/held double-deduction) without forcing them to Stop +
+  // Start matching just to pick up new server logic.
+  if (isActive) {
+    await regenerateChunksForUser(u.id).catch(() => {});
+  }
   // Counts for the live status panel — also include 'disputed' so we can
   // show the seller why their balance is stuck (held in pending disputes).
   const counts = await db.select({
