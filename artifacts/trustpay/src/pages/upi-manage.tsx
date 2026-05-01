@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, CheckCircle, PlusCircle, Trash2, Wifi } from "lucide-react";
+import { ArrowLeft, CheckCircle, PlusCircle, Trash2, Wifi, AlertTriangle } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
 
@@ -185,6 +185,38 @@ export default function UpiManage() {
 
         <div className="text-xs text-muted-foreground text-center pt-2">
           Multiple UPIs can be active at once. During matching, incoming chunks are split across all active UPIs round-robin.
+        </div>
+
+        <div className="mt-4 rounded-2xl border-2 border-red-300 bg-gradient-to-br from-red-50 to-amber-50 p-4 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 mt-0.5">
+              <div className="h-9 w-9 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-bold text-red-700 mb-1.5">
+                ⚠️ ज़रूरी सुरक्षा सलाह — ध्यान से पढ़ें
+              </div>
+              <div className="text-[13px] leading-relaxed text-gray-800 space-y-2">
+                <p>
+                  अगर आपकी UPI ID में आपका <span className="font-semibold text-red-700">मोबाइल नंबर</span> दिख रहा है
+                  (जैसे <span className="font-mono bg-white px-1 rounded">9876543210@ybl</span>), तो Sell के समय
+                  scammers आपका नंबर देख लेते हैं और आपको सीधे call करके
+                  <span className="font-semibold"> "मैंने payment कर दिया है" </span>
+                  झूठ बोलकर बार-बार परेशान कर सकते हैं।
+                </p>
+                <p className="font-semibold text-green-800">
+                  ✅ हमेशा वही UPI ID add करें जिसमें आपका phone number दिखाई न दे —
+                  जैसे <span className="font-mono bg-white px-1 rounded text-green-900">yourname@okaxis</span>,
+                  <span className="font-mono bg-white px-1 rounded text-green-900 ml-1">yourname@ybl</span> आदि।
+                </p>
+                <p className="text-[12px] text-gray-600 italic">
+                  आप अपनी UPI app (PhonePe / GPay / Paytm) में जाकर एक नई username-based UPI ID बना सकते हैं और वही यहाँ add करें।
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </Layout>
