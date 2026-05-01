@@ -214,6 +214,9 @@ export default function UpiManage() {
                 <p className="text-[12px] text-gray-600 italic">
                   आप अपनी UPI app (PhonePe / GPay / Paytm) में जाकर एक नई username-based UPI ID बना सकते हैं और वही यहाँ add करें।
                 </p>
+                <p className="mt-2 text-[13px] font-extrabold text-black bg-yellow-200 border-l-4 border-black px-2 py-1.5 rounded">
+                  📞 याद रखें: TrustPay कभी भी आपको call नहीं करता। अगर कोई "TrustPay" बनकर call करे, तो वो 100% scammer है।
+                </p>
               </div>
             </div>
           </div>
