@@ -95,8 +95,9 @@ function extractBank(text: string): string | null {
   return null;
 }
 
-let workerInstance: Awaited<ReturnType<typeof createWorker>> | null = null;
-let workerReady = false;
+type Worker = Awaited<ReturnType<typeof createWorker>>;
+let workerInstance: Worker | null = null;
+let workerInFlight: Promise<Worker> | null = null;
 let workerLastUsedAt = 0;
 let idleTimer: NodeJS.Timeout | null = null;
 
@@ -107,41 +108,45 @@ const WORKER_IDLE_MS = 5 * 60 * 1000;
 
 function scheduleIdleShutdown() {
   if (idleTimer) clearTimeout(idleTimer);
-  idleTimer = setTimeout(async () => {
+  idleTimer = setTimeout(() => {
     if (!workerInstance) return;
     if (Date.now() - workerLastUsedAt < WORKER_IDLE_MS) {
       scheduleIdleShutdown();
       return;
     }
-    try {
-      const w = workerInstance;
-      workerInstance = null;
-      workerReady = false;
-      await w.terminate();
-      logger.info("Tesseract worker terminated after idle timeout");
-    } catch (err) {
-      logger.warn({ err }, "Tesseract worker terminate failed");
-    }
+    const w = workerInstance;
+    workerInstance = null;
+    w.terminate()
+      .then(() => logger.info("Tesseract worker terminated after idle timeout"))
+      .catch((err: unknown) => logger.warn({ err }, "Tesseract worker terminate failed"));
   }, WORKER_IDLE_MS + 1000);
 }
 
-async function getWorker() {
+async function getWorker(): Promise<Worker> {
   workerLastUsedAt = Date.now();
-  if (workerInstance && workerReady) {
+  if (workerInstance) {
     scheduleIdleShutdown();
     return workerInstance;
   }
-  try {
-    workerInstance = await createWorker("eng", 1, {
-      logger: () => {},
-    });
-    workerReady = true;
-    scheduleIdleShutdown();
-    return workerInstance;
-  } catch (err) {
-    logger.error({ err }, "Tesseract worker init failed");
-    throw err;
-  }
+  // Concurrency guard: if init is already in flight, await the same promise.
+  // Without this, two concurrent requests on a cold worker spawn two workers
+  // (~200MB instead of ~100MB) and the first becomes an orphan with no idle
+  // timer reference — a permanent leak on a 512MB instance.
+  if (workerInFlight) return workerInFlight;
+  workerInFlight = (async () => {
+    try {
+      const w = await createWorker("eng", 1, { logger: () => {} });
+      workerInstance = w;
+      scheduleIdleShutdown();
+      return w;
+    } catch (err) {
+      logger.error({ err }, "Tesseract worker init failed");
+      throw err;
+    } finally {
+      workerInFlight = null;
+    }
+  })();
+  return workerInFlight;
 }
 
 const OCR_TIMEOUT_MS = 30_000;
