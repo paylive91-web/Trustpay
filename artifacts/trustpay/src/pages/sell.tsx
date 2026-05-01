@@ -562,7 +562,7 @@ function LockedOrderTabs({
         )}
       </TabsContent>
 
-      <TabsContent value="chunks" className="space-y-2 mt-3">
+      <TabsContent value="chunks" className="space-y-3 mt-3">
         {chunks.length === 0 ? (
           <Card>
             <CardContent className="p-6 text-center text-sm text-muted-foreground">
@@ -570,36 +570,135 @@ function LockedOrderTabs({
             </CardContent>
           </Card>
         ) : (
-          chunks.map((c) => {
-            const bonus = Number(c.sellRewardAmount || 0);
-            const bonusPct = Number(c.sellRewardPercent || 0);
-            const isConfirmed = c.status === "confirmed";
-            return (
-              <Card key={c.id} className={isConfirmed && bonus > 0 ? "border-emerald-200" : ""}>
-                <CardContent className="p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-bold">₹{c.amount}</div>
-                      <div className="text-xs text-muted-foreground">Order #{c.id}</div>
-                    </div>
-                    <span className={`text-xs px-2 py-1 rounded ${STATUS_COLOR[c.status] || "bg-muted"}`}>{c.status.replace(/_/g, " ")}</span>
-                  </div>
-                  {isConfirmed && bonus > 0 && (
-                    <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-xs text-emerald-800 leading-snug">
-                      <span className="font-semibold">✓ Sold ₹{Number(c.amount).toFixed(2)}</span>
-                      <span className="mx-1">·</span>
-                      <span>Bonus </span>
-                      <span className="font-bold text-emerald-700">+₹{bonus.toFixed(2)}{bonusPct > 0 ? ` (${bonusPct}%)` : ""}</span>
-                      <span> credited to your main balance</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })
+          chunks.map((c) => <MyOrderCard key={c.id} chunk={c} now={now} />)
         )}
       </TabsContent>
     </Tabs>
+  );
+}
+
+function relTime(ts: string | null | undefined, now: number): string {
+  if (!ts) return "";
+  const t = new Date(ts).getTime();
+  if (!t) return "";
+  const diff = Math.max(0, now - t);
+  const s = Math.floor(diff / 1000);
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m} min ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return `${d}d ago`;
+}
+
+function MyOrderCard({ chunk: c, now }: { chunk: any; now: number }) {
+  const { toast } = useToast();
+  const bonus = Number(c.sellRewardAmount || 0);
+  const bonusPct = Number(c.sellRewardPercent || 0);
+  const status: string = c.status;
+  const amount = Number(c.amount || 0);
+
+  const accent =
+    status === "confirmed" ? { bar: "from-emerald-400 via-green-400 to-teal-400", border: "border-emerald-200", amountText: "text-emerald-700" }
+    : status === "disputed" ? { bar: "from-rose-500 via-red-400 to-orange-400", border: "border-rose-200", amountText: "text-rose-700" }
+    : status === "pending_confirmation" ? { bar: "from-orange-400 via-amber-400 to-yellow-400", border: "border-orange-200", amountText: "text-orange-700" }
+    : status === "locked" ? { bar: "from-amber-400 via-orange-400 to-fuchsia-400", border: "border-amber-200", amountText: "text-amber-700" }
+    : { bar: "from-sky-400 via-blue-400 to-indigo-400", border: "border-sky-200", amountText: "text-sky-700" };
+
+  const copy = (text: string, label: string) => {
+    navigator.clipboard?.writeText(text).then(() => toast({ title: `${label} copied` })).catch(() => {});
+  };
+
+  return (
+    <Card className={`overflow-hidden ${accent.border}`}>
+      <div className={`h-1 bg-gradient-to-r ${accent.bar}`} />
+      <CardContent className="p-4 space-y-3">
+        {/* Header row: amount + status pill */}
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Order Amount</div>
+            <div className={`text-2xl font-black leading-tight ${accent.amountText}`}>₹{amount.toFixed(2)}</div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">
+              Order #{c.id}
+              {c.createdAt && <> · {relTime(c.createdAt, now)}</>}
+            </div>
+          </div>
+          <span className={`shrink-0 text-[11px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide ${STATUS_COLOR[status] || "bg-muted"}`}>
+            {status === "confirmed" ? "✓ Confirmed" : status.replace(/_/g, " ")}
+          </span>
+        </div>
+
+        {/* Confirmation details — shown for confirmed orders */}
+        {status === "confirmed" && (
+          <div className="rounded-xl bg-muted/40 border border-border/50 p-3 space-y-2">
+            {c.updatedAt && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Confirmed on
+                </span>
+                <span className="font-semibold text-right">
+                  {new Date(c.updatedAt).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true })}
+                </span>
+              </div>
+            )}
+            {c.utrNumber && (
+              <div className="flex items-center justify-between text-xs gap-2">
+                <span className="text-muted-foreground shrink-0">UTR</span>
+                <button
+                  onClick={() => copy(c.utrNumber, "UTR")}
+                  className="font-mono font-bold text-foreground bg-white px-2 py-0.5 rounded border border-border/60 hover:bg-emerald-50 hover:border-emerald-300 transition truncate max-w-[180px]"
+                  title="Tap to copy"
+                >
+                  {c.utrNumber}
+                </button>
+              </div>
+            )}
+            {c.upiId && (
+              <div className="flex items-center justify-between text-xs gap-2">
+                <span className="text-muted-foreground shrink-0">Paid to UPI</span>
+                <span className="font-mono text-foreground truncate max-w-[180px]" title={c.upiId}>{c.upiId}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Reward strip — only for confirmed with bonus */}
+        {status === "confirmed" && bonus > 0 && (
+          <div className="rounded-xl bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-emerald-600" />
+                <div>
+                  <div className="text-[10px] uppercase tracking-wider text-emerald-700 font-bold">Sell Reward Earned</div>
+                  <div className="text-[11px] text-emerald-700/80">Credited to your balance</div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-black text-emerald-700 leading-tight">+₹{bonus.toFixed(2)}</div>
+                {bonusPct > 0 && <div className="text-[10px] text-emerald-700/80 font-semibold">at {bonusPct}%</div>}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Disputed banner */}
+        {status === "disputed" && (
+          <div className="rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs text-rose-800 leading-snug">
+            <div className="font-bold mb-0.5">⚠ Dispute open</div>
+            This order is under review. The amount stays held until TrustPay resolves it.
+          </div>
+        )}
+
+        {/* Available — live in queue */}
+        {status === "available" && (
+          <div className="text-xs text-muted-foreground italic">
+            Live in queue — waiting for a buyer to lock.
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
