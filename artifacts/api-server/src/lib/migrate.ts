@@ -129,6 +129,16 @@ export async function ensureSchema(): Promise<void> {
     await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS agent_tier_awarded_date DATE`);
     await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS agent_tier_awarded_level INTEGER NOT NULL DEFAULT 0`);
 
+    // Admin trust + freeze reason — must match users.ts (commit 72da9ea).
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_trusted BOOLEAN NOT NULL DEFAULT false`);
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS freeze_reason TEXT`);
+
+    // Progressive buyer cooldown — must match users.ts (commit 8ce8f15).
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS buyer_cooldown_level INTEGER NOT NULL DEFAULT 0`);
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS buyer_cooldown_until TIMESTAMP`);
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS buyer_failed_lock_count INTEGER NOT NULL DEFAULT 0`);
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS buyer_cooldown_started_at TIMESTAMP`);
+
     // ── SMS Safe Learning tables ──────────────────────────────────────────────
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS sms_learning_queue (
