@@ -29,8 +29,11 @@ app.use(
   }),
 );
 app.use(cors());
-app.use(express.json({ limit: "200mb" }));
-app.use(express.urlencoded({ extended: true, limit: "200mb" }));
+// Render free instance has only 512MB RAM. A 200MB body limit lets a single
+// request balloon the process to OOM. 10MB is plenty for a payment screenshot
+// (most phone screenshots are 1–3MB; we resize before processing anyway).
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 app.get("/healthz", (_req, res) => {
   res.status(200).json({ ok: true });

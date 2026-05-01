@@ -181,6 +181,13 @@ export async function ensureSchema(): Promise<void> {
     await db.execute(sql`ALTER TABLE image_hashes ADD COLUMN IF NOT EXISTS verified_at TIMESTAMP`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS image_hashes_hash_idx ON image_hashes(hash)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS image_hashes_user_idx ON image_hashes(user_id)`);
+    // Composite index for the duplicate-check & cleanup queries — these always
+    // filter by kind + sort/filter by created_at. Without this index, the
+    // bounded LIMIT 2000 query still does a sort over the whole table.
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS image_hashes_kind_created_idx ON image_hashes(kind, created_at DESC)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS image_hashes_kind_hash_idx ON image_hashes(kind, hash)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS image_hashes_created_idx ON image_hashes(created_at)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS utr_index_created_idx ON utr_index(created_at)`);
 
     // ── SMS Safe Learning tables ──────────────────────────────────────────────
     await db.execute(sql`

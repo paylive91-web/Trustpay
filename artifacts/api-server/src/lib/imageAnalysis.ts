@@ -1,7 +1,7 @@
 import { Jimp, intToRGBA } from "jimp";
 import { db } from "@workspace/db";
 import { imageHashesTable } from "@workspace/db";
-import { eq, and, ne } from "drizzle-orm";
+import { eq, and, ne, desc, sql } from "drizzle-orm";
 
 // --- Upgraded pHash: 16x16 = 256 bits (was 8x8 = 64 bits) ---
 const PHASH_SIZE = 16;
@@ -200,16 +200,26 @@ export async function analyzeImage(
     width = img.width;
     height = img.height;
 
-    // Run pHash, ELA, and EXIF in parallel for speed
-    const [pHashResult, elaResult, exifResult] = await Promise.all([
-      computePHash(buffer),
-      computeELA(buffer),
-      Promise.resolve(validateExif(buffer)),
-    ]);
+    // Memory: a 3MB phone screenshot decoded is ~30MB+ in RAM. Resize to a
+    // bounded working buffer (max 1000px on longest side) so pHash/ELA only
+    // ever see ~5MB max. Quality detection uses the original `width/height`
+    // captured above, not the resized buffer.
+    let workBuffer: Buffer = buffer;
+    const MAX_DIM = 1000;
+    if (width > MAX_DIM || height > MAX_DIM) {
+      const scaledW = width > height ? MAX_DIM : Math.round((width * MAX_DIM) / height);
+      img.resize({ w: scaledW });
+      workBuffer = Buffer.from(await img.getBuffer("image/jpeg", { quality: 80 }));
+    }
 
-    pHash = pHashResult;
+    // Sequential, not parallel: parallel processing 3 image pipelines on a
+    // 512MB instance triples peak memory. Slightly slower per request, but
+    // prevents OOM under concurrent uploads.
+    pHash = await computePHash(workBuffer);
+    const elaResult = await computeELA(workBuffer);
     elaScore = elaResult.elaScore;
     elaTampered = elaResult.isTampered;
+    const exifResult = validateExif(buffer);
     exifSoftware = exifResult.software;
     exifSuspicious = exifResult.suspicious;
 
@@ -241,71 +251,87 @@ export async function checkDuplicate(
   orderId: number,
   kind: string,
 ): Promise<DuplicateCheckResult> {
-  const existing = await db
+  // Step 1: Exact-hash lookup is indexed and O(1). Cheap regardless of table size.
+  const exact = await db
     .select()
     .from(imageHashesTable)
-    .where(and(eq(imageHashesTable.kind, kind), ne(imageHashesTable.orderId, orderId)));
+    .where(
+      and(
+        eq(imageHashesTable.kind, kind),
+        eq(imageHashesTable.hash, hash),
+        ne(imageHashesTable.orderId, orderId),
+      ),
+    )
+    .limit(1);
+  if (exact.length > 0) {
+    const row = exact[0];
+    return {
+      isExactDuplicate: true,
+      isSimilarDuplicate: false,
+      duplicateUserId: row.userId,
+      duplicateOrderId: row.orderId,
+      isSameUser: row.userId === userId,
+    };
+  }
 
-  for (const row of existing) {
-    if (row.hash === hash) {
+  // Step 2: pHash similarity scan — bounded to last 2000 rows for memory
+  // safety. Older fraud history beyond that is statistically irrelevant for
+  // active duplicate detection (real reuse happens within days).
+  if (!pHash) {
+    return { isExactDuplicate: false, isSimilarDuplicate: false, isSameUser: false };
+  }
+  const recent = await db
+    .select({
+      userId: imageHashesTable.userId,
+      orderId: imageHashesTable.orderId,
+      pHash: imageHashesTable.pHash,
+    })
+    .from(imageHashesTable)
+    .where(and(eq(imageHashesTable.kind, kind), ne(imageHashesTable.orderId, orderId)))
+    .orderBy(desc(imageHashesTable.createdAt))
+    .limit(2000);
+
+  for (const row of recent) {
+    if (!row.pHash) continue;
+    const dist = hammingDistance(pHash, row.pHash);
+    if (dist <= MAX_PHASH_DISTANCE) {
       return {
-        isExactDuplicate: true,
-        isSimilarDuplicate: false,
+        isExactDuplicate: false,
+        isSimilarDuplicate: true,
         duplicateUserId: row.userId,
         duplicateOrderId: row.orderId,
         isSameUser: row.userId === userId,
+        pHashDistance: dist,
       };
-    }
-    if (pHash && row.pHash) {
-      const dist = hammingDistance(pHash, row.pHash);
-      if (dist <= MAX_PHASH_DISTANCE) {
-        return {
-          isExactDuplicate: false,
-          isSimilarDuplicate: true,
-          duplicateUserId: row.userId,
-          duplicateOrderId: row.orderId,
-          isSameUser: row.userId === userId,
-          pHashDistance: dist,
-        };
-      }
     }
   }
   return { isExactDuplicate: false, isSimilarDuplicate: false, isSameUser: false };
 }
 
 export async function getLearningStats() {
-  const all = await db.select().from(imageHashesTable);
-
-  const totalScreenshots = all.filter((r) => r.kind === "screenshot").length;
-  const verifiedScreenshots = all.filter((r) => r.kind === "screenshot" && r.verifiedAt).length;
-  const withPaymentIndicators = all.filter((r) => r.hasPaymentIndicators === true).length;
-  const withoutPaymentIndicators = all.filter(
-    (r) => r.kind === "screenshot" && r.hasPaymentIndicators === false,
-  ).length;
-
-  const duplicateAttempts = all.filter(
-    (r) => r.kind === "screenshot",
-  ).length - new Set(all.filter((r) => r.kind === "screenshot").map((r) => r.hash)).size;
-
-  const last7Days = all.filter((r) => {
-    const age = (Date.now() - new Date(r.createdAt).getTime()) / (1000 * 60 * 60 * 24);
-    return age <= 7;
-  }).length;
-
-  const last7DaysVerified = all.filter((r) => {
-    if (!r.verifiedAt) return false;
-    const age = (Date.now() - new Date(r.createdAt).getTime()) / (1000 * 60 * 60 * 24);
-    return age <= 7;
-  }).length;
-
+  // SQL-side aggregations only — never load all rows into Node memory.
+  const rows = await db.execute(sql`
+    SELECT
+      COUNT(*) FILTER (WHERE kind = 'screenshot')::int AS total_screenshots,
+      COUNT(*) FILTER (WHERE kind = 'screenshot' AND verified_at IS NOT NULL)::int AS verified_screenshots,
+      COUNT(*) FILTER (WHERE has_payment_indicators = true)::int AS with_payment_indicators,
+      COUNT(*) FILTER (WHERE kind = 'screenshot' AND has_payment_indicators = false)::int AS without_payment_indicators,
+      COUNT(*) FILTER (WHERE kind = 'screenshot' AND created_at > NOW() - INTERVAL '7 days')::int AS last_7_days,
+      COUNT(*) FILTER (WHERE kind = 'screenshot' AND verified_at IS NOT NULL AND created_at > NOW() - INTERVAL '7 days')::int AS last_7_days_verified,
+      (COUNT(*) FILTER (WHERE kind = 'screenshot') - COUNT(DISTINCT hash) FILTER (WHERE kind = 'screenshot'))::int AS duplicate_attempts
+    FROM image_hashes
+  `);
+  const r: any = (rows as any).rows?.[0] ?? (Array.isArray(rows) ? rows[0] : rows);
+  const totalScreenshots = Number(r?.total_screenshots ?? 0);
+  const verifiedScreenshots = Number(r?.verified_screenshots ?? 0);
   return {
     totalScreenshots,
     verifiedScreenshots,
-    withPaymentIndicators,
-    withoutPaymentIndicators,
-    duplicateAttempts: Math.max(0, duplicateAttempts),
-    last7Days,
-    last7DaysVerified,
+    withPaymentIndicators: Number(r?.with_payment_indicators ?? 0),
+    withoutPaymentIndicators: Number(r?.without_payment_indicators ?? 0),
+    duplicateAttempts: Math.max(0, Number(r?.duplicate_attempts ?? 0)),
+    last7Days: Number(r?.last_7_days ?? 0),
+    last7DaysVerified: Number(r?.last_7_days_verified ?? 0),
     learningProgress: totalScreenshots > 0
       ? Math.round((verifiedScreenshots / totalScreenshots) * 100)
       : 0,

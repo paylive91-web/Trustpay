@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { playLoudAlarm } from "@/lib/alarm";
 
 import { API_BASE } from "@/lib/api-config";
 
@@ -44,11 +43,15 @@ export default function NotificationsBell() {
   const seenIds = useRef<Set<number>>(new Set());
   const initialized = useRef(false);
 
+  // Bell is silent — no sound on notification arrival. The dedicated
+  // payment-confirm flow on sell.tsx still chimes via playLoudAlarm() for
+  // the actual pending-confirmation card. Polling slowed 5s → 30s to cut
+  // request load (the bell is a passive indicator, not a real-time channel).
   const { data } = useQuery<{ notifications: Notification[]; unreadCount: number }>({
     queryKey: ["notifications"],
     queryFn: () => api("/notifications"),
-    refetchInterval: 5_000,
-    staleTime: 0,
+    refetchInterval: 30_000,
+    staleTime: 15_000,
   });
 
   useEffect(() => {
@@ -57,17 +60,6 @@ export default function NotificationsBell() {
       items.forEach((n) => seenIds.current.add(n.id));
       initialized.current = true;
       return;
-    }
-    // Only alarm when seller goes offline or payment confirmation arrives.
-    const ALARM_KINDS = new Set([
-      "payment_pending_confirmation",
-      "seller_offline_dispute_buyer",
-    ]);
-    const newAlarm = items.filter(
-      (n) => !seenIds.current.has(n.id) && ALARM_KINDS.has(n.kind) && !n.readAt
-    );
-    if (newAlarm.length > 0) {
-      playLoudAlarm();
     }
     items.forEach((n) => seenIds.current.add(n.id));
   }, [data]);

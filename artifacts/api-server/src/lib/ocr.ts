@@ -97,14 +97,46 @@ function extractBank(text: string): string | null {
 
 let workerInstance: Awaited<ReturnType<typeof createWorker>> | null = null;
 let workerReady = false;
+let workerLastUsedAt = 0;
+let idleTimer: NodeJS.Timeout | null = null;
+
+// A Tesseract worker holds ~80–120MB of language data permanently. On a
+// 512MB instance, keeping it alive forever during idle periods is the
+// difference between staying up and OOM. Destroy the worker after 5 min idle.
+const WORKER_IDLE_MS = 5 * 60 * 1000;
+
+function scheduleIdleShutdown() {
+  if (idleTimer) clearTimeout(idleTimer);
+  idleTimer = setTimeout(async () => {
+    if (!workerInstance) return;
+    if (Date.now() - workerLastUsedAt < WORKER_IDLE_MS) {
+      scheduleIdleShutdown();
+      return;
+    }
+    try {
+      const w = workerInstance;
+      workerInstance = null;
+      workerReady = false;
+      await w.terminate();
+      logger.info("Tesseract worker terminated after idle timeout");
+    } catch (err) {
+      logger.warn({ err }, "Tesseract worker terminate failed");
+    }
+  }, WORKER_IDLE_MS + 1000);
+}
 
 async function getWorker() {
-  if (workerInstance && workerReady) return workerInstance;
+  workerLastUsedAt = Date.now();
+  if (workerInstance && workerReady) {
+    scheduleIdleShutdown();
+    return workerInstance;
+  }
   try {
     workerInstance = await createWorker("eng", 1, {
       logger: () => {},
     });
     workerReady = true;
+    scheduleIdleShutdown();
     return workerInstance;
   } catch (err) {
     logger.error({ err }, "Tesseract worker init failed");

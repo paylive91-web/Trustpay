@@ -5,6 +5,7 @@ process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
 import app from "./app";
 import { logger } from "./lib/logger";
 import { ensureSchema } from "./lib/migrate";
+import { startLearningCleanupJob } from "./lib/learningCleanup";
 
 const rawPort = process.env["PORT"];
 
@@ -21,6 +22,7 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 ensureSchema().finally(() => {
+  startLearningCleanupJob();
   const server = app.listen(port, () => {
     logger.info({ port }, "Server listening");
   });
