@@ -572,6 +572,17 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
   if (b.bannerImages != null) scalarMap["bannerImages"] = JSON.stringify(b.bannerImages);
   if (cleanedTiers) scalarMap["feeTiers"] = JSON.stringify(cleanedTiers);
   await setSettings(scalarMap);
+  // Observability: log key reward fields so we can confirm via server logs
+  // that the admin save actually persisted. Helps diagnose "I set X but UI
+  // still shows 0" bug reports without exposing secrets.
+  req.log.info(
+    {
+      sellRewardPercent: scalarMap["sellRewardPercent"],
+      buyRewardPercent: scalarMap["buyRewardPercent"],
+      keysSaved: Object.keys(scalarMap),
+    },
+    "[admin/settings] saved scalar settings",
+  );
   if (Array.isArray(b.buyRewardTiers)) {
     const cleanedBuyTiers: Array<{ min: number; max: number; reward: number }> = [];
     for (const t of b.buyRewardTiers) {

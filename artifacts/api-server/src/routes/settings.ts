@@ -6,6 +6,10 @@ const router = Router();
 
 router.get("/app", async (req, res) => {
   const s = await getAllSettings();
+  // Defensive: never let proxies/CDNs cache settings — admins need
+  // their changes to reflect on every client immediately.
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
   let multipleUpiIds = [];
   try { multipleUpiIds = JSON.parse(s.multipleUpiIds || "[]"); } catch {}
   let announcements = [];
