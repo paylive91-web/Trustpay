@@ -395,13 +395,9 @@ export default function Sell() {
                       <span className="text-xs text-emerald-200 flex items-center gap-1.5">
                         <Sparkles className="w-3 h-3" /> Sell Reward
                       </span>
-                      {sellRewardPct > 0 ? (
-                        <span className="text-sm font-black text-emerald-300">
-                          +₹{(balance * sellRewardPct / 100).toFixed(0)} <span className="text-xs font-normal text-emerald-400">at {sellRewardPct}%</span>
-                        </span>
-                      ) : (
-                        <span className="text-xs font-semibold text-emerald-300/90">Active on every confirmed sale</span>
-                      )}
+                      <span className="text-sm font-black text-emerald-300">
+                        ₹{(balance * sellRewardPct / 100).toFixed(2)}
+                      </span>
                     </div>
 
                     {/* Stay online urge — message reflects real queue state so it
@@ -459,28 +455,14 @@ export default function Sell() {
                       Go live for 15 minutes and let buyers pay you directly.
                     </p>
 
-                    {/* Sell Reward preview — always visible */}
-                    <div className="mt-4 rounded-2xl bg-gradient-to-br from-emerald-400/20 via-white/10 to-emerald-300/15 border border-emerald-300/30 p-4">
-                      <div className="flex items-center gap-1.5 text-xs text-emerald-200 uppercase tracking-wider mb-2">
+                    {/* Sell Reward — only the calculated amount */}
+                    <div className="mt-4 rounded-2xl bg-gradient-to-br from-emerald-400/20 via-white/10 to-emerald-300/15 border border-emerald-300/30 p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs text-emerald-200 uppercase tracking-wider">
                         <Sparkles className="w-3.5 h-3.5" /> Sell Reward
                       </div>
-                      {sellRewardPct > 0 ? (
-                        <div className="flex items-end gap-3">
-                          <div>
-                            <div className="text-[11px] text-white/55">Your balance</div>
-                            <div className="text-xl font-black">₹{balance.toFixed(0)}</div>
-                          </div>
-                          <div className="text-white/40 text-xl mb-0.5">→</div>
-                          <div>
-                            <div className="text-[11px] text-emerald-300">You earn (+{sellRewardPct}%)</div>
-                            <div className="text-xl font-black text-emerald-300">+₹{(balance * sellRewardPct / 100).toFixed(0)}</div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-sm text-white/85 leading-snug">
-                          Earn an instant bonus on every confirmed sale — credited straight to your balance.
-                        </div>
-                      )}
+                      <div className="text-2xl font-black text-emerald-300">
+                        ₹{(balance * sellRewardPct / 100).toFixed(2)}
+                      </div>
                     </div>
 
                     <div className="mt-4 grid grid-cols-3 gap-2">
@@ -615,24 +597,14 @@ function LockedOrderTabs({
                       <div className="font-mono font-bold text-orange-600">{expiresAt ? countdown : "—"}</div>
                     </div>
                   </div>
-                  {/* Sell Reward preview — what you'll earn on confirm */}
+                  {/* Sell Reward — only the calculated amount */}
                   <div className="rounded-xl bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 p-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-emerald-600" />
-                      <div>
-                        <div className="text-[10px] uppercase tracking-wider text-emerald-700 font-bold">Sell Reward</div>
-                        <div className="text-[11px] text-emerald-700/80">On confirm, credited instantly</div>
-                      </div>
+                    <div className="flex items-center gap-2 text-emerald-700">
+                      <Sparkles className="w-4 h-4" />
+                      <span className="text-[11px] uppercase tracking-wider font-bold">Sell Reward</span>
                     </div>
-                    <div className="text-right">
-                      {sellRewardPct > 0 ? (
-                        <>
-                          <div className="text-base font-black text-emerald-700 leading-tight">+₹{(Number(c.amount) * sellRewardPct / 100).toFixed(2)}</div>
-                          <div className="text-[10px] text-emerald-700/80 font-semibold">at {sellRewardPct}%</div>
-                        </>
-                      ) : (
-                        <div className="text-[11px] font-semibold text-emerald-700">Active</div>
-                      )}
+                    <div className="text-base font-black text-emerald-700">
+                      ₹{(Number(c.amount) * sellRewardPct / 100).toFixed(2)}
                     </div>
                   </div>
                   <div className="rounded-xl border border-dashed border-amber-300 bg-amber-50 p-3 text-xs text-amber-800 leading-relaxed">
@@ -743,50 +715,18 @@ function MyOrderCard({ chunk: c, now, sellRewardPct }: { chunk: any; now: number
           </div>
         )}
 
-        {/* Sell Reward strip — confirmed shows actual earned, others show projected */}
-        {status === "confirmed" ? (
-          (bonus > 0 || sellRewardPct > 0) && (
-            <div className="rounded-xl bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 p-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-emerald-600" />
-                  <div>
-                    <div className="text-[10px] uppercase tracking-wider text-emerald-700 font-bold">Sell Reward Earned</div>
-                    <div className="text-[11px] text-emerald-700/80">Credited to your balance</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-lg font-black text-emerald-700 leading-tight">+₹{(bonus > 0 ? bonus : projectedBonus).toFixed(2)}</div>
-                  {(bonusPct > 0 || sellRewardPct > 0) && (
-                    <div className="text-[10px] text-emerald-700/80 font-semibold">at {bonusPct > 0 ? bonusPct : sellRewardPct}%</div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )
-        ) : (
-          <div className="rounded-xl bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 p-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-emerald-600" />
-                <div>
-                  <div className="text-[10px] uppercase tracking-wider text-emerald-700 font-bold">Sell Reward</div>
-                  <div className="text-[11px] text-emerald-700/80">On confirm, credited instantly</div>
-                </div>
-              </div>
-              <div className="text-right">
-                {sellRewardPct > 0 ? (
-                  <>
-                    <div className="text-base font-black text-emerald-700 leading-tight">+₹{projectedBonus.toFixed(2)}</div>
-                    <div className="text-[10px] text-emerald-700/80 font-semibold">at {sellRewardPct}%</div>
-                  </>
-                ) : (
-                  <div className="text-[11px] font-semibold text-emerald-700">Active</div>
-                )}
-              </div>
-            </div>
+        {/* Sell Reward — only the calculated amount.
+            Confirmed orders show stored bonus if present, else current rate;
+            non-confirmed orders show projected bonus at current rate. */}
+        <div className="rounded-xl bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 p-3 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-emerald-700">
+            <Sparkles className="w-4 h-4" />
+            <span className="text-[11px] uppercase tracking-wider font-bold">Sell Reward</span>
           </div>
-        )}
+          <div className="text-base font-black text-emerald-700">
+            ₹{(status === "confirmed" && bonus > 0 ? bonus : projectedBonus).toFixed(2)}
+          </div>
+        </div>
 
         {/* Disputed banner */}
         {status === "disputed" && (
