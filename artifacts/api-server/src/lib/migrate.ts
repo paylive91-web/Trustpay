@@ -139,6 +139,49 @@ export async function ensureSchema(): Promise<void> {
     await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS buyer_failed_lock_count INTEGER NOT NULL DEFAULT 0`);
     await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS buyer_cooldown_started_at TIMESTAMP`);
 
+    // ── Payment Learning tables ───────────────────────────────────────────────
+    // Without these, /admin/payment-learning silently shows all-zero stats
+    // (the inserts in fraud.ts swallow errors), so they must exist before the
+    // first buyer submits a screenshot/UTR.
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS utr_index (
+        id SERIAL PRIMARY KEY,
+        utr TEXT NOT NULL,
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        order_id INTEGER NOT NULL REFERENCES orders(id),
+        verified_at TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`ALTER TABLE utr_index ADD COLUMN IF NOT EXISTS verified_at TIMESTAMP`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS utr_index_utr_idx ON utr_index(utr)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS utr_index_user_idx ON utr_index(user_id)`);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS image_hashes (
+        id SERIAL PRIMARY KEY,
+        hash TEXT NOT NULL,
+        p_hash TEXT,
+        width INTEGER,
+        height INTEGER,
+        file_size INTEGER,
+        has_payment_indicators BOOLEAN,
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        order_id INTEGER NOT NULL REFERENCES orders(id),
+        kind TEXT NOT NULL,
+        verified_at TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`ALTER TABLE image_hashes ADD COLUMN IF NOT EXISTS p_hash TEXT`);
+    await db.execute(sql`ALTER TABLE image_hashes ADD COLUMN IF NOT EXISTS width INTEGER`);
+    await db.execute(sql`ALTER TABLE image_hashes ADD COLUMN IF NOT EXISTS height INTEGER`);
+    await db.execute(sql`ALTER TABLE image_hashes ADD COLUMN IF NOT EXISTS file_size INTEGER`);
+    await db.execute(sql`ALTER TABLE image_hashes ADD COLUMN IF NOT EXISTS has_payment_indicators BOOLEAN`);
+    await db.execute(sql`ALTER TABLE image_hashes ADD COLUMN IF NOT EXISTS verified_at TIMESTAMP`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS image_hashes_hash_idx ON image_hashes(hash)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS image_hashes_user_idx ON image_hashes(user_id)`);
+
     // ── SMS Safe Learning tables ──────────────────────────────────────────────
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS sms_learning_queue (
