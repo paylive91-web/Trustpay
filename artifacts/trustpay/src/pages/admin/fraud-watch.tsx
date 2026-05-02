@@ -166,6 +166,9 @@ export default function FraudWatch() {
               <strong className="ml-1">Bulk Resolve</strong> — resolves all open alerts for that user at once.
               <strong className="ml-1">Mark Trusted</strong> — prevents auto-freeze for that user in future.
               <strong className="ml-1">Reset Warnings</strong> — zeros out their fraud warning counter.
+              <span className="block mt-1 italic">
+                Auto-decay: a user's warning counter is automatically reset to 0 the moment they complete one successful confirmed trade — manual reset is only needed for stuck or already-frozen users.
+              </span>
             </p>
           </CardContent>
         </Card>

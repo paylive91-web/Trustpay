@@ -1,6 +1,6 @@
 import { db } from "@workspace/db";
 import { ordersTable, usersTable, transactionsTable, referralsTable, highValueEventsTable, settingsTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and, inArray, gt } from "drizzle-orm";
 import { applyTrustDelta, bumpSuccessfulTrade } from "./trust.js";
 import { getSettings } from "./settings.js";
 import { checkNewAccountHighValue, checkDisputeRate } from "./fraud.js";
@@ -146,6 +146,43 @@ export async function settleConfirmedTrade(chunkOrderId: number, isAutoConfirm =
     }
   });
 
+  // Behaviour-based fraud warning decay: a successfully confirmed trade is the
+  // canonical "user behaved correctly" signal — wipe BOTH parties' warning
+  // counters back to 0 so old slip-ups don't permanently shadow good actors.
+  // Placed IMMEDIATELY after the settlement transaction (and BEFORE non-critical
+  // post-processing like trust deltas, referrals, etc.) so a failure in any
+  // downstream step cannot prevent the user from earning their well-deserved
+  // counter reset. Conditional update (only if count > 0) avoids no-op writes
+  // and log noise. Evidence tables (utr_index, image_hashes,
+  // device_fingerprints) are NEVER touched here — only the counter resets, so
+  // any genuine fraud signal still re-fires instantly on next attempt. This
+  // does NOT auto-unfreeze frozen users; admin must unfreeze manually (or via
+  // the existing bulk-resolve path).
+  try {
+    const decayed = await db.update(usersTable)
+      .set({ fraudWarningCount: 0 })
+      .where(and(
+        inArray(usersTable.id, [buyerId, sellerId]),
+        gt(usersTable.fraudWarningCount, 0),
+      ))
+      .returning({ id: usersTable.id });
+    if (decayed.length > 0) {
+      logger.info(
+        {
+          event: "fraud_warning_decayed",
+          chunkOrderId,
+          buyerId,
+          sellerId,
+          decayedUserIds: decayed.map((d) => d.id),
+          decayedCount: decayed.length,
+        },
+        "Fraud warning counter reset to 0 after successful confirmed trade",
+      );
+    }
+  } catch (err) {
+    logger.error({ err, chunkOrderId, buyerId, sellerId }, "fraud warning decay failed");
+  }
+
   if (isAutoConfirm) {
     await applyTrustDelta(buyerId, 1, "auto_confirm_win", chunkOrderId);
     await applyTrustDelta(sellerId, -2, "late_confirm", chunkOrderId);
@@ -155,9 +192,6 @@ export async function settleConfirmedTrade(chunkOrderId: number, isAutoConfirm =
   }
   await bumpSuccessfulTrade(buyerId);
   await bumpSuccessfulTrade(sellerId);
-
-  // Good behaviour resets warnings: a successful trade wipes all fraud warnings for the buyer.
-  await db.update(usersTable).set({ fraudWarningCount: 0 }).where(eq(usersTable.id, buyerId));
 
   // High-value tracking — log + alert, but never block settlement on a logging failure.
   try {
