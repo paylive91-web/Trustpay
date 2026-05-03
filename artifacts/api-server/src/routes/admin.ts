@@ -1517,14 +1517,21 @@ router.get("/payment-learning", requireAdmin, async (_req, res) => {
 // recommendations. Designed to run on a 30s admin-side polling interval
 // without measurable load (5–6 cheap queries via Promise.all).
 // ─────────────────────────────────────────────────────────────────────────────
-router.get("/system-pulse", requireAdmin, async (_req, res) => {
+router.get("/system-pulse", requireAdmin, async (req, res) => {
+ try {
   const now = new Date();
   const fiveMinAgo = new Date(now.getTime() - 5 * 60_000);
-  const oneHourAgo = new Date(now.getTime() - 60 * 60_000);
   const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60_000);
   // Start of today in IST (UTC+5:30) — matches the "Aaj ka summary" card.
   const istNow = new Date(now.getTime() + 5.5 * 60 * 60_000);
   const istMidnight = new Date(Date.UTC(istNow.getUTCFullYear(), istNow.getUTCMonth(), istNow.getUTCDate()) - 5.5 * 60 * 60_000);
+
+  // Per-query safety: if a single query throws (missing column on an old
+  // deployment, etc.), we swallow it and substitute a zero-row result so
+  // the rest of the dashboard still renders. Errors are logged for triage.
+  const safe = <T>(p: Promise<T>, fallback: T, label: string): Promise<T> =>
+    p.catch((err) => { req.log.warn({ err, label }, "system-pulse query failed"); return fallback; });
+  const zero = { rows: [{ c: 0, v: 0, s: 0 }] } as any;
 
   const [
     activeUsersRow,
@@ -1542,20 +1549,23 @@ router.get("/system-pulse", requireAdmin, async (_req, res) => {
     recentDisputes,
     recentAdminActions,
   ] = await Promise.all([
-    db.execute(sql`SELECT COUNT(*)::int AS c FROM users WHERE last_seen_at >= ${fiveMinAgo}`),
-    db.execute(sql`SELECT COUNT(*)::int AS c FROM orders WHERE status IN ('locked','pending_confirmation')`),
-    db.execute(sql`SELECT COUNT(*)::int AS c FROM disputes WHERE status = 'open'`),
-    db.execute(sql`SELECT COUNT(*)::int AS c FROM users WHERE created_at >= ${istMidnight}`),
-    db.execute(sql`SELECT COUNT(*)::int AS c, COALESCE(SUM(amount::numeric),0)::float AS v FROM orders WHERE status='confirmed' AND updated_at >= ${istMidnight}`),
-    db.execute(sql`SELECT COUNT(*)::int AS c FROM disputes WHERE created_at >= ${istMidnight}`),
-    db.execute(sql`SELECT COUNT(*)::int AS c FROM disputes WHERE status='resolved' AND updated_at >= ${istMidnight}`),
-    db.execute(sql`SELECT COUNT(*)::int AS c FROM orders WHERE type='withdrawal' AND status='confirmed' AND updated_at >= ${istMidnight}`),
-    db.execute(sql`SELECT COUNT(*)::int AS c FROM fraud_alerts WHERE created_at >= ${istMidnight}`),
-    db.execute(sql`SELECT pg_database_size(current_database())::bigint AS s`),
-    db.execute(sql`SELECT COUNT(*)::int AS c FROM pg_stat_activity WHERE datname = current_database()`),
-    db.select({ id: ordersTable.id, type: ordersTable.type, amount: ordersTable.amount, status: ordersTable.status, updatedAt: ordersTable.updatedAt }).from(ordersTable).where(gte(ordersTable.updatedAt, oneDayAgo)).orderBy(sql`${ordersTable.updatedAt} desc`).limit(20),
-    db.select({ id: disputesTable.id, status: disputesTable.status, createdAt: disputesTable.createdAt }).from(disputesTable).where(gte(disputesTable.createdAt, oneDayAgo)).orderBy(sql`${disputesTable.createdAt} desc`).limit(20),
-    db.select({ id: adminLogsTable.id, actionType: adminLogsTable.actionType, targetType: adminLogsTable.targetType, targetId: adminLogsTable.targetId, details: adminLogsTable.details, createdAt: adminLogsTable.createdAt }).from(adminLogsTable).orderBy(sql`${adminLogsTable.createdAt} desc`).limit(20),
+    safe(db.execute(sql`SELECT COUNT(*)::int AS c FROM users WHERE last_seen_at >= ${fiveMinAgo}`), zero, "activeUsers"),
+    safe(db.execute(sql`SELECT COUNT(*)::int AS c FROM orders WHERE status IN ('locked','pending_confirmation')`), zero, "inProgressOrders"),
+    safe(db.execute(sql`SELECT COUNT(*)::int AS c FROM disputes WHERE status = 'open'`), zero, "pendingDisputes"),
+    safe(db.execute(sql`SELECT COUNT(*)::int AS c FROM users WHERE created_at >= ${istMidnight}`), zero, "todaySignups"),
+    safe(db.execute(sql`SELECT COUNT(*)::int AS c, COALESCE(SUM(amount::numeric),0)::float AS v FROM orders WHERE status='confirmed' AND updated_at >= ${istMidnight}`), zero, "todayConfirmed"),
+    safe(db.execute(sql`SELECT COUNT(*)::int AS c FROM disputes WHERE created_at >= ${istMidnight}`), zero, "todayDisputesOpened"),
+    // disputes table has resolved_at (not updated_at) — use that to count
+    // disputes that were resolved during today's IST window. Falls back to
+    // 0 silently if resolved_at is missing on an older deployment.
+    safe(db.execute(sql`SELECT COUNT(*)::int AS c FROM disputes WHERE status='resolved' AND resolved_at >= ${istMidnight}`), zero, "todayDisputesResolved"),
+    safe(db.execute(sql`SELECT COUNT(*)::int AS c FROM orders WHERE type='withdrawal' AND status='confirmed' AND updated_at >= ${istMidnight}`), zero, "todayWithdrawals"),
+    safe(db.execute(sql`SELECT COUNT(*)::int AS c FROM fraud_alerts WHERE created_at >= ${istMidnight}`), zero, "todayFraud"),
+    safe(db.execute(sql`SELECT pg_database_size(current_database())::bigint AS s`), zero, "dbSize"),
+    safe(db.execute(sql`SELECT COUNT(*)::int AS c FROM pg_stat_activity WHERE datname = current_database()`), zero, "dbConn"),
+    safe(db.select({ id: ordersTable.id, type: ordersTable.type, amount: ordersTable.amount, status: ordersTable.status, updatedAt: ordersTable.updatedAt }).from(ordersTable).where(gte(ordersTable.updatedAt, oneDayAgo)).orderBy(sql`${ordersTable.updatedAt} desc`).limit(20), [] as any[], "recentOrders"),
+    safe(db.select({ id: disputesTable.id, status: disputesTable.status, createdAt: disputesTable.createdAt }).from(disputesTable).where(gte(disputesTable.createdAt, oneDayAgo)).orderBy(sql`${disputesTable.createdAt} desc`).limit(20), [] as any[], "recentDisputes"),
+    safe(db.select({ id: adminLogsTable.id, actionType: adminLogsTable.actionType, targetType: adminLogsTable.targetType, targetId: adminLogsTable.targetId, details: adminLogsTable.details, createdAt: adminLogsTable.createdAt }).from(adminLogsTable).orderBy(sql`${adminLogsTable.createdAt} desc`).limit(20), [] as any[], "recentAdminActions"),
   ]);
 
   const pickC = (row: any): number => Number(row?.rows?.[0]?.c ?? row?.[0]?.c ?? 0);
@@ -1702,6 +1712,10 @@ router.get("/system-pulse", requireAdmin, async (_req, res) => {
     recommendations,
     activity,
   });
+ } catch (err) {
+   req.log.error({ err }, "system-pulse failed");
+   res.status(500).json({ error: "Failed to load system pulse", detail: (err as Error)?.message || String(err) });
+ }
 });
 
 export default router;
