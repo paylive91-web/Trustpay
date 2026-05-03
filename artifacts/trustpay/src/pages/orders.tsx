@@ -22,15 +22,17 @@ import {
   CheckCircle2,
   XCircle,
   ShieldAlert,
+  ShieldCheck,
   Send,
   ImageIcon,
   FileText,
   Video,
   AlertTriangle,
-  PlayCircle,
-  Hash,
-  CalendarClock,
-  CircleDollarSign,
+  ChevronDown,
+  ChevronUp,
+  Lock,
+  Timer,
+  Copy as CopyIcon,
 } from "lucide-react";
 
 export default function Orders() {
@@ -318,27 +320,24 @@ function ContactSupportDialog({
 
   const checklist = isBuyer
     ? [
-        { icon: ImageIcon, label: "Payment Screenshot", hint: "Screenshot of the payment you sent" },
-        { icon: FileText, label: "Bank Statement", hint: "PDF showing the debit from your account" },
-        {
-          icon: Video,
-          label: "Video Recording",
-          hint: "Open Play Store → search the app you paid from → open it → show this transaction in your history",
-        },
+        { icon: ImageIcon, label: "Payment screenshot", hint: "The payment you sent" },
+        { icon: FileText, label: "Bank statement or SMS", hint: "Showing the debit" },
+        { icon: Video, label: "Transaction history video", hint: "Optional — speeds up review" },
       ]
     : [
-        { icon: ImageIcon, label: "Last Transaction Screenshot", hint: "Screenshot of your most recent received payment" },
-        { icon: FileText, label: "Bank Statement", hint: "PDF showing recent credits to your account" },
-        {
-          icon: Video,
-          label: "Video Recording",
-          hint: "Open Play Store → search the app the buyer paid from → open it → show your transaction history",
-        },
+        { icon: ImageIcon, label: "Last received payment screenshot", hint: "Your most recent credit" },
+        { icon: FileText, label: "Bank statement or SMS", hint: "Showing recent credits" },
+        { icon: Video, label: "Transaction history video", hint: "Optional — speeds up review" },
       ];
+
+  const [copied, setCopied] = useState(false);
+  const [showMessage, setShowMessage] = useState(false);
 
   const handleCopyMessage = async () => {
     try {
       await navigator.clipboard.writeText(message);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
     } catch {
       // ignore — the textarea below remains visible for manual copy
     }
@@ -351,113 +350,118 @@ function ContactSupportDialog({
 
   return (
     <Dialog open={!!dispute} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 overflow-hidden border-0 shadow-2xl">
-        {/* Premium gradient header */}
-        <div className="relative bg-gradient-to-br from-sky-500 via-cyan-500 to-blue-700 text-white px-5 pt-5 pb-12">
-          <div className="absolute -top-6 -right-6 w-28 h-28 bg-white/10 rounded-full blur-2xl" />
-          <div className="absolute -bottom-8 -left-4 w-32 h-32 bg-cyan-300/20 rounded-full blur-3xl" />
+      <DialogContent className="max-w-md p-0 overflow-hidden border-0 shadow-2xl rounded-2xl">
+        {/* Calm slate-indigo header — trust over marketing */}
+        <div className="relative bg-gradient-to-br from-slate-800 via-slate-900 to-indigo-950 text-white px-5 pt-5 pb-5">
+          <div className="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl" />
           <DialogHeader className="relative">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur flex items-center justify-center ring-2 ring-white/30">
-                <ShieldAlert className="h-5 w-5 text-white" />
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 ring-1 ring-emerald-400/30 flex items-center justify-center">
+                <ShieldCheck className="h-5 w-5 text-emerald-300" />
               </div>
-              <div>
-                <DialogTitle className="text-white text-lg leading-tight">
-                  {isBuyer ? "Buyer Support" : "Seller Support"}
+              <div className="min-w-0">
+                <DialogTitle className="text-white text-lg leading-tight font-semibold">
+                  We've got you
                 </DialogTitle>
-                <div className="text-[11px] text-white/80">Dispute #{dispute.id} · {isBuyer ? "Buyer" : "Seller"} side</div>
+                <div className="text-[11px] text-slate-300">
+                  Dispute #{dispute.id} · {isBuyer ? "Buyer" : "Seller"} side
+                </div>
               </div>
             </div>
           </DialogHeader>
-          {/* Floating order summary chip */}
-          <div className="absolute left-5 right-5 -bottom-6 bg-white rounded-2xl shadow-lg border border-slate-100 px-4 py-3 grid grid-cols-3 gap-2 text-center">
-            <div>
-              <div className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><Hash className="h-2.5 w-2.5" />ORDER</div>
-              <div className="text-sm font-bold text-slate-800">#{orderId ?? "—"}</div>
+
+          {/* Trust signals row — the two things users want to know NOW */}
+          <div className="relative grid grid-cols-2 gap-2">
+            <div className="rounded-xl bg-white/5 border border-white/10 backdrop-blur p-2.5">
+              <div className="flex items-center gap-1.5 text-[10px] text-emerald-300 font-semibold uppercase tracking-wider">
+                <Lock className="h-3 w-3" /> Held Safely
+              </div>
+              <div className="text-base font-bold text-white flex items-center mt-0.5">
+                <IndianRupee className="h-3.5 w-3.5" />{amount}
+              </div>
             </div>
-            <div className="border-x border-slate-100">
-              <div className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><CircleDollarSign className="h-2.5 w-2.5" />AMOUNT</div>
-              <div className="text-sm font-bold text-slate-800 flex items-center justify-center"><IndianRupee className="h-3 w-3" />{amount}</div>
-            </div>
-            <div>
-              <div className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><CalendarClock className="h-2.5 w-2.5" />OPENED</div>
-              <div className="text-[11px] font-semibold text-slate-700 leading-tight">{dispute.createdAt ? format(new Date(dispute.createdAt), "MMM dd, HH:mm") : "—"}</div>
+            <div className="rounded-xl bg-white/5 border border-white/10 backdrop-blur p-2.5">
+              <div className="flex items-center gap-1.5 text-[10px] text-emerald-300 font-semibold uppercase tracking-wider">
+                <Timer className="h-3 w-3" /> Avg Reply
+              </div>
+              <div className="text-base font-bold text-white mt-0.5">~15 min</div>
             </div>
           </div>
         </div>
 
-        <div className="px-5 pt-10 pb-5 space-y-4 bg-white">
-          {/* Section title */}
-          <div>
-            <div className="text-[11px] font-bold tracking-wider text-cyan-700 uppercase">Step 1 · Collect Proof</div>
-            <div className="text-xs text-muted-foreground">Keep these 3 ready before opening Telegram</div>
-          </div>
+        <div className="px-5 pt-4 pb-5 space-y-4 bg-white">
+          {/* PRIMARY ACTION — top of body, single tap to support */}
+          <Button
+            onClick={handleOpenSupport}
+            className="w-full h-12 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-semibold shadow-md shadow-indigo-200 gap-2 text-base"
+          >
+            <Send className="h-4 w-4" />
+            Open Support on Telegram
+          </Button>
+          <p className="text-[11px] text-center text-slate-500 -mt-2">
+            We'll copy your dispute details — paste them in the chat
+          </p>
 
-          {/* Premium checklist */}
-          <div className="space-y-2">
+          {/* Compact proof checklist — icons only, single line each */}
+          <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3 space-y-2">
+            <div className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">
+              What to share when asked
+            </div>
             {checklist.map((item, i) => {
               const Icon = item.icon;
               return (
-                <div
-                  key={i}
-                  className="group flex items-start gap-3 p-3 rounded-xl bg-gradient-to-r from-slate-50 to-white border border-slate-100 hover:border-cyan-200 hover:shadow-sm transition-all"
-                >
-                  <div className="shrink-0 w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-100 to-sky-100 text-sky-700 flex items-center justify-center ring-1 ring-cyan-200/50">
-                    <Icon className="h-4 w-4" />
+                <div key={i} className="flex items-center gap-2.5">
+                  <div className="shrink-0 w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-600 flex items-center justify-center">
+                    <Icon className="h-3.5 w-3.5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-semibold text-slate-800">{item.label}</span>
-                      <span className="text-[10px] font-bold text-cyan-600 bg-cyan-50 px-1.5 py-0.5 rounded-full">{i + 1}</span>
-                    </div>
-                    <div className="text-[11px] text-slate-500 leading-snug mt-0.5">{item.hint}</div>
+                    <div className="text-[13px] font-medium text-slate-800 leading-tight">{item.label}</div>
+                    <div className="text-[11px] text-slate-500 leading-tight">{item.hint}</div>
                   </div>
-                  {item.icon === Video && (
-                    <PlayCircle className="h-4 w-4 text-cyan-500 mt-1 shrink-0" />
-                  )}
                 </div>
               );
             })}
           </div>
 
-          {/* Safety strip */}
+          {/* Safety strip — Hindi warning kept verbatim per project rules */}
           <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200">
             <AlertTriangle className="h-3.5 w-3.5 text-amber-700 mt-0.5 shrink-0" />
             <div className="text-[11px] text-amber-900 leading-snug">
-              <strong>TrustPay कभी भी आपको call नहीं करता।</strong> Never share your OTP, password or PIN. Support is <strong>only</strong> via the official Telegram link below.
+              <strong>TrustPay कभी भी आपको call नहीं करता।</strong> Never share your OTP, password or PIN. Support is <strong>only</strong> via the official Telegram link above.
             </div>
           </div>
 
-          {/* Section title 2 */}
-          <div>
-            <div className="text-[11px] font-bold tracking-wider text-cyan-700 uppercase">Step 2 · Send to Support</div>
-            <div className="text-xs text-muted-foreground">A pre-filled message will be copied — paste it in Telegram and attach your proof</div>
+          {/* Pre-filled message — collapsed by default */}
+          <div className="rounded-xl border border-slate-200 bg-white">
+            <button
+              type="button"
+              onClick={() => setShowMessage((v) => !v)}
+              className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-slate-50 rounded-xl transition-colors"
+            >
+              <span className="text-[12px] font-medium text-slate-700">
+                {showMessage ? "Hide pre-filled message" : "Show pre-filled message"}
+              </span>
+              {showMessage ? (
+                <ChevronUp className="h-4 w-4 text-slate-500" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-slate-500" />
+              )}
+            </button>
+            {showMessage && (
+              <div className="px-3 pb-3 pt-1 border-t border-slate-100">
+                <pre className="text-[11px] text-slate-700 whitespace-pre-wrap font-sans leading-snug max-h-32 overflow-y-auto bg-slate-50 rounded-lg p-2.5 border border-slate-100">
+                  {message}
+                </pre>
+                <button
+                  onClick={handleCopyMessage}
+                  className="mt-2 w-full flex items-center justify-center gap-1.5 text-[12px] font-semibold text-indigo-700 hover:text-indigo-900 py-1.5"
+                >
+                  <CopyIcon className="h-3.5 w-3.5" />
+                  {copied ? "Copied!" : "Copy message"}
+                </button>
+              </div>
+            )}
           </div>
-
-          {/* Pre-filled message preview */}
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] font-bold text-slate-500 tracking-wider">PRE-FILLED MESSAGE</span>
-              <button
-                onClick={handleCopyMessage}
-                className="text-[10px] font-semibold text-sky-600 hover:text-sky-800 underline"
-              >
-                Copy
-              </button>
-            </div>
-            <pre className="text-[11px] text-slate-700 whitespace-pre-wrap font-sans leading-snug max-h-28 overflow-y-auto">
-              {message}
-            </pre>
-          </div>
-
-          {/* Primary CTA */}
-          <Button
-            onClick={handleOpenSupport}
-            className="w-full h-12 rounded-2xl bg-gradient-to-r from-sky-500 via-cyan-500 to-blue-600 hover:from-sky-600 hover:via-cyan-600 hover:to-blue-700 text-white font-bold shadow-lg shadow-sky-200 gap-2 text-base"
-          >
-            <Send className="h-4 w-4" />
-            Contact Support on Telegram
-          </Button>
 
           <button
             onClick={onClose}
