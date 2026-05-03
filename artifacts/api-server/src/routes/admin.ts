@@ -1558,7 +1558,7 @@ router.get("/system-pulse", requireAdmin, async (req, res) => {
     // disputes table has resolved_at (not updated_at) — use that to count
     // disputes that were resolved during today's IST window. Falls back to
     // 0 silently if resolved_at is missing on an older deployment.
-    safe(db.execute(sql`SELECT COUNT(*)::int AS c FROM disputes WHERE status='resolved' AND resolved_at >= ${istMidnight}`), zero, "todayDisputesResolved"),
+    safe(db.execute(sql`SELECT COUNT(*)::int AS c FROM disputes WHERE status IN ('buyer_won','seller_won','auto_resolved') AND resolved_at >= ${istMidnight}`), zero, "todayDisputesResolved"),
     safe(db.execute(sql`SELECT COUNT(*)::int AS c FROM orders WHERE type='withdrawal' AND status='confirmed' AND updated_at >= ${istMidnight}`), zero, "todayWithdrawals"),
     safe(db.execute(sql`SELECT COUNT(*)::int AS c FROM fraud_alerts WHERE created_at >= ${istMidnight}`), zero, "todayFraud"),
     safe(db.execute(sql`SELECT pg_database_size(current_database())::bigint AS s`), zero, "dbSize"),
