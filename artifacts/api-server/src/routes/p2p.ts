@@ -682,7 +682,9 @@ router.post("/buyer-dispute/:id", requireAuth, async (req, res) => {
 // full Orders history page.
 router.get("/recent-orders", requireAuth, async (req, res) => {
   const u = (req as any).user;
-  const limit = Math.min(20, parseInt(asString(req.query.limit)) || 5);
+  const limitRaw = req.query.limit;
+  const limitStr = Array.isArray(limitRaw) ? String(limitRaw[0] ?? "") : (typeof limitRaw === "string" ? limitRaw : "");
+  const limit = Math.min(20, parseInt(limitStr) || 5);
   const ACTIVE_STATUSES = ["locked", "pending_confirmation", "disputed"] as const;
   // Buys: orders user locked (regardless of who created the sell chunk)
   const buys = await db.select().from(ordersTable).where(and(

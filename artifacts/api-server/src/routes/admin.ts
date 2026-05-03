@@ -1267,7 +1267,7 @@ router.post("/sms-learning/queue/:id/approve-pattern", requireAdmin, async (req,
 
   const [item] = await db.select().from(smsLearningQueueTable)
     .where(eq(smsLearningQueueTable.id, id)).limit(1);
-  if (!item) return res.status(404).json({ error: "Queue item not found" });
+  if (!item) { res.status(404).json({ error: "Queue item not found" }); return; }
 
   const senderKey = item.senderKey.toUpperCase();
 
@@ -1345,8 +1345,8 @@ router.post("/sms-learning/candidates/:id/approve", requireAdmin, async (req, re
   const { notes } = req.body || {};
   const [candidate] = await db.select().from(smsCandidatePatternsTable)
     .where(eq(smsCandidatePatternsTable.id, id)).limit(1);
-  if (!candidate) return res.status(404).json({ error: "Candidate not found" });
-  if (candidate.status !== "proposed") return res.status(400).json({ error: "Already reviewed" });
+  if (!candidate) { res.status(404).json({ error: "Candidate not found" }); return; }
+  if (candidate.status !== "proposed") { res.status(400).json({ error: "Already reviewed" }); return; }
 
   await db.update(smsCandidatePatternsTable).set({
     status: "approved", reviewedBy: adminId,
@@ -1395,8 +1395,8 @@ router.post("/sms-learning/candidates/:id/reject", requireAdmin, async (req, res
   const { notes } = req.body || {};
   const [candidate] = await db.select().from(smsCandidatePatternsTable)
     .where(eq(smsCandidatePatternsTable.id, id)).limit(1);
-  if (!candidate) return res.status(404).json({ error: "Candidate not found" });
-  if (candidate.status !== "proposed") return res.status(400).json({ error: "Already reviewed" });
+  if (!candidate) { res.status(404).json({ error: "Candidate not found" }); return; }
+  if (candidate.status !== "proposed") { res.status(400).json({ error: "Already reviewed" }); return; }
 
   await db.update(smsCandidatePatternsTable).set({
     status: "rejected", reviewedBy: adminId,
@@ -1430,13 +1430,15 @@ router.post("/sms-learning/safe-senders", requireAdmin, async (req, res) => {
   const adminId = (req as any).user.id;
   const { senderKey, label } = req.body || {};
   if (!senderKey || typeof senderKey !== "string") {
-    return res.status(400).json({ error: "senderKey required" });
+    res.status(400).json({ error: "senderKey required" });
+    return;
   }
   const key = normalizeSenderKey(senderKey);
   const existing = await db.select().from(smsSafeSendersTable)
     .where(eq(smsSafeSendersTable.senderKey, key)).limit(1);
   if (existing.length > 0) {
-    return res.status(409).json({ error: "Sender already in safe list" });
+    res.status(409).json({ error: "Sender already in safe list" });
+    return;
   }
   const [row] = await db.insert(smsSafeSendersTable).values({
     senderKey: key, label: label || null, addedBy: adminId,
@@ -1451,7 +1453,7 @@ router.delete("/sms-learning/safe-senders/:id", requireAdmin, async (req, res) =
   const id = parseInt(asString(req.params.id));
   const [row] = await db.select().from(smsSafeSendersTable)
     .where(eq(smsSafeSendersTable.id, id)).limit(1);
-  if (!row) return res.status(404).json({ error: "Not found" });
+  if (!row) { res.status(404).json({ error: "Not found" }); return; }
   await db.delete(smsSafeSendersTable).where(eq(smsSafeSendersTable.id, id));
   await logAdminAction(adminId, "sms_safe_sender_remove", undefined, undefined,
     `Removed safe sender ${row.senderKey}`);
@@ -1464,7 +1466,7 @@ router.post("/sms-learning/queue/:id/safe-sender", requireAdmin, async (req, res
   const { label } = req.body || {};
   const [item] = await db.select().from(smsLearningQueueTable)
     .where(eq(smsLearningQueueTable.id, id)).limit(1);
-  if (!item) return res.status(404).json({ error: "Queue item not found" });
+  if (!item) { res.status(404).json({ error: "Queue item not found" }); return; }
 
   const key = item.senderKey.toUpperCase();
   const existing = await db.select().from(smsSafeSendersTable)

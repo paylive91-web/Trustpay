@@ -80,7 +80,7 @@ async function cleanDisputeMedia() {
       FOREACH c IN ARRAY cols LOOP
         IF EXISTS (
           SELECT 1 FROM information_schema.columns
-           WHERE table_name = 'p2p_disputes' AND column_name = c
+           WHERE table_name = 'disputes' AND column_name = c
         ) THEN
           IF length(sets) > 0 THEN sets := sets || ', '; END IF;
           sets := sets || c || ' = NULL';
@@ -88,11 +88,11 @@ async function cleanDisputeMedia() {
       END LOOP;
       IF length(sets) > 0 THEN
         EXECUTE format(
-          'UPDATE p2p_disputes SET %s WHERE created_at < NOW() - INTERVAL ''24 hours'' AND (%s)',
+          'UPDATE disputes SET %s WHERE created_at < NOW() - INTERVAL ''24 hours'' AND (%s)',
           sets,
           (SELECT string_agg(c2 || ' IS NOT NULL', ' OR ') FROM unnest(cols) c2 WHERE EXISTS (
             SELECT 1 FROM information_schema.columns
-             WHERE table_name = 'p2p_disputes' AND column_name = c2
+             WHERE table_name = 'disputes' AND column_name = c2
           ))
         );
       END IF;
@@ -112,7 +112,7 @@ async function cleanDisputedOrderMedia() {
     UPDATE orders o
        SET screenshot_url = NULL,
            recording_url  = NULL
-      FROM p2p_disputes d
+      FROM disputes d
      WHERE d.order_id = o.id
        AND d.created_at < NOW() - INTERVAL '24 hours'
        AND (o.screenshot_url IS NOT NULL OR o.recording_url IS NOT NULL)
