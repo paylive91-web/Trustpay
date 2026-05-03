@@ -36,6 +36,7 @@ import AdminReports from "@/pages/admin/reports";
 import AdminActivityLog from "@/pages/admin/activity-log";
 import AdminSmsLearning from "@/pages/admin/sms-learning";
 import AdminPaymentLearning from "@/pages/admin/payment-learning";
+import AdminSystemPulse from "@/pages/admin/system-pulse";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +74,7 @@ function Router() {
       <Route path="/admin/activity-log" component={AdminActivityLog} />
       <Route path="/admin/sms-learning" component={AdminSmsLearning} />
       <Route path="/admin/payment-learning" component={AdminPaymentLearning} />
+      <Route path="/admin/system-pulse" component={AdminSystemPulse} />
 
       <Route component={NotFound} />
     </Switch>

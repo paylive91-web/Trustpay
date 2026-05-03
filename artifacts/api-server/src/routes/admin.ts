@@ -71,9 +71,15 @@ router.post("/login", async (req, res) => {
   const valid = await bcrypt.compare(password, storedHash);
   if (!valid) { res.status(401).json({ error: "Invalid credentials" }); return; }
 
-  if (canonical.username !== storedUsername) {
-    await db.update(usersTable).set({ username: storedUsername, passwordHash: storedHash, role: "admin" }).where(eq(usersTable.id, canonical.id));
-    canonical.username = storedUsername;
+  // BUG FIX: previously this block force-overwrote canonical.username back
+  // to the env-side `storedUsername` on every successful env-username
+  // login. That made admin renames silently revert: an admin could rename
+  // themselves via the admin panel, but the next login by the env username
+  // would wipe it back. We now only sync the password hash (so password
+  // changes done via the settings page propagate to the DB record) and
+  // make sure the role stays admin. Username is preserved — renames stick.
+  if (canonical.passwordHash !== storedHash) {
+    await db.update(usersTable).set({ passwordHash: storedHash, role: "admin" }).where(eq(usersTable.id, canonical.id));
     canonical.passwordHash = storedHash;
   }
   await dedupeAdminUsers(canonical.id);
@@ -1499,6 +1505,200 @@ router.get("/payment-learning", requireAdmin, async (_req, res) => {
         ? Math.round((verifiedUtrs.length / allUtrs.length) * 100)
         : 0,
     },
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SYSTEM PULSE — single endpoint that powers the admin "System Pulse" tab.
+// Returns a snapshot of live activity, today's summary, system health,
+// rough plan-usage signals, recent activity feed, and rule-based smart
+// recommendations. Designed to run on a 30s admin-side polling interval
+// without measurable load (5–6 cheap queries via Promise.all).
+// ─────────────────────────────────────────────────────────────────────────────
+router.get("/system-pulse", requireAdmin, async (_req, res) => {
+  const now = new Date();
+  const fiveMinAgo = new Date(now.getTime() - 5 * 60_000);
+  const oneHourAgo = new Date(now.getTime() - 60 * 60_000);
+  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60_000);
+  // Start of today in IST (UTC+5:30) — matches the "Aaj ka summary" card.
+  const istNow = new Date(now.getTime() + 5.5 * 60 * 60_000);
+  const istMidnight = new Date(Date.UTC(istNow.getUTCFullYear(), istNow.getUTCMonth(), istNow.getUTCDate()) - 5.5 * 60 * 60_000);
+
+  const [
+    activeUsersRow,
+    inProgressOrdersRow,
+    pendingDisputesRow,
+    todaySignupsRow,
+    todayConfirmedRow,
+    todayDisputesOpenedRow,
+    todayDisputesResolvedRow,
+    todayWithdrawalsRow,
+    todayFraudRow,
+    dbSizeRow,
+    dbConnRow,
+    recentOrders,
+    recentDisputes,
+    recentAdminActions,
+  ] = await Promise.all([
+    db.execute(sql`SELECT COUNT(*)::int AS c FROM users WHERE last_seen_at >= ${fiveMinAgo}`),
+    db.execute(sql`SELECT COUNT(*)::int AS c FROM orders WHERE status IN ('locked','pending_confirmation')`),
+    db.execute(sql`SELECT COUNT(*)::int AS c FROM disputes WHERE status = 'open'`),
+    db.execute(sql`SELECT COUNT(*)::int AS c FROM users WHERE created_at >= ${istMidnight}`),
+    db.execute(sql`SELECT COUNT(*)::int AS c, COALESCE(SUM(amount::numeric),0)::float AS v FROM orders WHERE status='confirmed' AND updated_at >= ${istMidnight}`),
+    db.execute(sql`SELECT COUNT(*)::int AS c FROM disputes WHERE created_at >= ${istMidnight}`),
+    db.execute(sql`SELECT COUNT(*)::int AS c FROM disputes WHERE status='resolved' AND updated_at >= ${istMidnight}`),
+    db.execute(sql`SELECT COUNT(*)::int AS c FROM orders WHERE type='withdrawal' AND status='confirmed' AND updated_at >= ${istMidnight}`),
+    db.execute(sql`SELECT COUNT(*)::int AS c FROM fraud_alerts WHERE created_at >= ${istMidnight}`),
+    db.execute(sql`SELECT pg_database_size(current_database())::bigint AS s`),
+    db.execute(sql`SELECT COUNT(*)::int AS c FROM pg_stat_activity WHERE datname = current_database()`),
+    db.select({ id: ordersTable.id, type: ordersTable.type, amount: ordersTable.amount, status: ordersTable.status, updatedAt: ordersTable.updatedAt }).from(ordersTable).where(gte(ordersTable.updatedAt, oneDayAgo)).orderBy(sql`${ordersTable.updatedAt} desc`).limit(20),
+    db.select({ id: disputesTable.id, status: disputesTable.status, createdAt: disputesTable.createdAt }).from(disputesTable).where(gte(disputesTable.createdAt, oneDayAgo)).orderBy(sql`${disputesTable.createdAt} desc`).limit(20),
+    db.select({ id: adminLogsTable.id, actionType: adminLogsTable.actionType, targetType: adminLogsTable.targetType, targetId: adminLogsTable.targetId, details: adminLogsTable.details, createdAt: adminLogsTable.createdAt }).from(adminLogsTable).orderBy(sql`${adminLogsTable.createdAt} desc`).limit(20),
+  ]);
+
+  const pickC = (row: any): number => Number(row?.rows?.[0]?.c ?? row?.[0]?.c ?? 0);
+  const pickV = (row: any): number => Number(row?.rows?.[0]?.v ?? row?.[0]?.v ?? 0);
+  const pickS = (row: any): number => Number(row?.rows?.[0]?.s ?? row?.[0]?.s ?? 0);
+
+  const activeUsers = pickC(activeUsersRow);
+  const inProgressOrders = pickC(inProgressOrdersRow);
+  const pendingDisputes = pickC(pendingDisputesRow);
+  const todaySignups = pickC(todaySignupsRow);
+  const todayConfirmedCount = pickC(todayConfirmedRow);
+  const todayConfirmedVolume = pickV(todayConfirmedRow);
+  const todayDisputesOpened = pickC(todayDisputesOpenedRow);
+  const todayDisputesResolved = pickC(todayDisputesResolvedRow);
+  const todayWithdrawals = pickC(todayWithdrawalsRow);
+  const todayFraud = pickC(todayFraudRow);
+  const dbSizeBytes = pickS(dbSizeRow);
+  const dbConnections = pickC(dbConnRow);
+
+  // System / process metrics
+  const mem = process.memoryUsage();
+  const uptimeSec = process.uptime();
+  const memUsedMB = +(mem.rss / 1024 / 1024).toFixed(1);
+  // Render free tier ~512 MB RSS soft cap; we use it as a yardstick.
+  const memLimitMB = 512;
+  const memPercent = Math.min(100, Math.round((memUsedMB / memLimitMB) * 100));
+
+  // DB tier yardstick: 8 GB (Replit Postgres / Neon free pooled). Used to
+  // surface a "consider upgrade" hint, not a hard limit.
+  const dbLimitBytes = 8 * 1024 * 1024 * 1024;
+  const dbPercent = Math.min(100, Math.round((dbSizeBytes / dbLimitBytes) * 100));
+
+  // Render hours estimation: free tier = 750 inst-hr/month. We don't have
+  // month-start tracking, so we report continuous uptime + a 24/7
+  // projection and let the rule engine decide the alert.
+  const renderHoursContinuous = +(uptimeSec / 3600).toFixed(1);
+  const renderProjectedMonthlyHours = 720; // 24*30, the upper bound
+
+  // Activity feed — merge orders + disputes + admin actions, sort desc.
+  type FeedItem = { ts: string; kind: string; label: string };
+  const feed: FeedItem[] = [];
+  for (const o of recentOrders) {
+    feed.push({
+      ts: new Date(o.updatedAt as any).toISOString(),
+      kind: o.type === "withdrawal" ? "sell" : "buy",
+      label: `Order #${o.id} · ${o.type === "withdrawal" ? "Sell" : "Buy"} ₹${parseFloat(o.amount as any).toFixed(0)} · ${o.status}`,
+    });
+  }
+  for (const d of recentDisputes) {
+    feed.push({
+      ts: new Date(d.createdAt as any).toISOString(),
+      kind: "dispute",
+      label: `Dispute #${d.id} · ${d.status}`,
+    });
+  }
+  for (const a of recentAdminActions) {
+    feed.push({
+      ts: new Date(a.createdAt as any).toISOString(),
+      kind: "admin",
+      label: `Admin · ${a.actionType}${a.targetType ? ` ${a.targetType}#${a.targetId ?? "—"}` : ""}${a.details ? ` (${a.details})` : ""}`,
+    });
+  }
+  feed.sort((a, b) => b.ts.localeCompare(a.ts));
+  const activity = feed.slice(0, 30);
+
+  // ────────── Rule-based recommendations engine ──────────
+  const recommendations: Array<{ severity: "info" | "warning" | "critical"; title: string; action: string }> = [];
+  if (memPercent >= 80) {
+    recommendations.push({ severity: "critical", title: `Server memory at ${memPercent}%`, action: "Render free tier ~512 MB ke paas hai. Starter ($7/mo) plan le lo, restart pe spike avoid hoga." });
+  } else if (memPercent >= 60) {
+    recommendations.push({ severity: "warning", title: `Server memory ${memPercent}%`, action: "Watch karo — agar 80% touch kare to Render Starter ($7/mo) consider karo." });
+  }
+  if (dbPercent >= 75) {
+    recommendations.push({ severity: "critical", title: `Database ${dbPercent}% bhar gaya`, action: "Purane logs/transactions clean karo ya DB plan upgrade karo." });
+  } else if (dbPercent >= 50) {
+    recommendations.push({ severity: "warning", title: `Database ${dbPercent}% used`, action: "Trend dekho — agle 30 din mein agar 75% cross hua to upgrade plan kar lo." });
+  }
+  if (pendingDisputes >= 5) {
+    recommendations.push({ severity: "warning", title: `${pendingDisputes} disputes pending hain`, action: "Disputes tab kholo aur resolve karo — users wait kar rahe hain." });
+  }
+  if (todayFraud >= 10) {
+    recommendations.push({ severity: "warning", title: `Aaj ${todayFraud} fraud alerts`, action: "Fraud Watch tab check karo — pattern dekho, suspicious users freeze karo." });
+  }
+  if (activeUsers === 0 && uptimeSec > 600) {
+    recommendations.push({ severity: "info", title: "Abhi 0 active users", action: "Quiet period — sab normal. Marketing push ka acha time hai." });
+  }
+  if (inProgressOrders >= 20) {
+    recommendations.push({ severity: "info", title: `${inProgressOrders} orders in-progress`, action: "Healthy traffic. Monitor karo ki koi stuck na ho >2hr." });
+  }
+  if (renderHoursContinuous > 24 * 14) {
+    recommendations.push({ severity: "info", title: `${Math.floor(renderHoursContinuous / 24)} din se continuous uptime`, action: "Stable hai. Render free tier 750 hr/month mein fit hai (~720 hr 24/7)." });
+  }
+  if (recommendations.length === 0) {
+    recommendations.push({ severity: "info", title: "Sab normal hai", action: "Koi action nahi chahiye. Dashboard regularly check karte raho." });
+  }
+
+  res.json({
+    generatedAt: now.toISOString(),
+    live: {
+      activeUsers,
+      inProgressOrders,
+      pendingDisputes,
+    },
+    today: {
+      newSignups: todaySignups,
+      ordersConfirmed: todayConfirmedCount,
+      volume: todayConfirmedVolume,
+      withdrawals: todayWithdrawals,
+      disputesOpened: todayDisputesOpened,
+      disputesResolved: todayDisputesResolved,
+      fraudAlerts: todayFraud,
+    },
+    system: {
+      uptimeSec,
+      memUsedMB,
+      memLimitMB,
+      memPercent,
+      dbSizeBytes,
+      dbLimitBytes,
+      dbPercent,
+      dbConnections,
+    },
+    plans: {
+      render: {
+        plan: "Free (estimated)",
+        memUsedMB,
+        memLimitMB,
+        memPercent,
+        continuousUptimeHours: renderHoursContinuous,
+        projectedMonthlyHours: renderProjectedMonthlyHours,
+        freeMonthlyHours: 750,
+        upgradeTrigger: "Memory > 80% sustained, ya 750 hr/mo cap touch ho",
+        upgradeCost: "$7/mo (Starter)",
+      },
+      database: {
+        plan: "Replit Postgres / Neon (free)",
+        sizeBytes: dbSizeBytes,
+        limitBytes: dbLimitBytes,
+        percent: dbPercent,
+        connections: dbConnections,
+        upgradeTrigger: "Storage > 75%, ya connections > 80",
+      },
+    },
+    recommendations,
+    activity,
   });
 });
 

@@ -138,11 +138,25 @@ router.get("/queue", requireAuth, async (req, res) => {
   const u = (req as any).user;
   await releaseExpiredLocks();
   await autoConfirmExpired();
-  const chunks = await db.select().from(ordersTable).where(and(
+  // Admin priority: any chunk posted for sale by an admin user is shown
+  // FIRST in the buy queue, so admin sells complete faster. We pull a
+  // wider slice (100) to make sure admin chunks are captured even when
+  // many newer non-admin chunks exist, then re-sort in JS so admin
+  // chunks win regardless of createdAt, and trim back to 50.
+  const adminUsers = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.role, "admin"));
+  const adminIdSet = new Set(adminUsers.map((a) => a.id));
+  const rawChunks = await db.select().from(ordersTable).where(and(
     eq(ordersTable.type, "withdrawal"),
     eq(ordersTable.status, "available"),
     ne(ordersTable.userId, u.id),
-  )).orderBy(ordersTable.createdAt).limit(50);
+  )).orderBy(ordersTable.createdAt).limit(100);
+  rawChunks.sort((a, b) => {
+    const aIsAdmin = adminIdSet.has(a.userId) ? 0 : 1;
+    const bIsAdmin = adminIdSet.has(b.userId) ? 0 : 1;
+    if (aIsAdmin !== bIsAdmin) return aIsAdmin - bIsAdmin;
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+  });
+  const chunks = rawChunks.slice(0, 50);
   // Fetch seller info for online-presence indicator
   const sellerIds = [...new Set(chunks.map((c) => c.userId))];
   const sellers = sellerIds.length > 0

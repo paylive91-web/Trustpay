@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, ListOrdered, Settings, CreditCard, ShieldAlert, LogOut, Eye, AlertTriangle, Download, Link2, ShieldCheck, BarChart3, Activity, MessageSquare, Brain, History } from "lucide-react";
+import { LayoutDashboard, Users, ListOrdered, Settings, CreditCard, ShieldAlert, LogOut, Eye, AlertTriangle, Download, Link2, ShieldCheck, BarChart3, Activity, MessageSquare, Brain, History, Radio } from "lucide-react";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { useGetMe, useLogout, useGetAppSettings } from "@workspace/api-client-react";
 import { clearAuthToken, getAuthToken } from "@/lib/auth";
@@ -75,6 +75,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { href: "/admin/activity-log", label: "Activity Log", icon: Activity, badge: 0 },
     { href: "/admin/sms-learning", label: "SMS Learning", icon: MessageSquare, badge: 0 },
     { href: "/admin/payment-learning", label: "Payment Learning", icon: Brain, badge: 0 },
+    { href: "/admin/system-pulse", label: "System Pulse", icon: Radio, badge: 0 },
   ];
 
   return (
