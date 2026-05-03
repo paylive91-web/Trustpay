@@ -320,14 +320,22 @@ function ContactSupportDialog({
 
   const checklist = isBuyer
     ? [
-        { icon: ImageIcon, label: "Payment screenshot", hint: "The payment you sent" },
-        { icon: FileText, label: "Bank statement or SMS", hint: "Showing the debit" },
-        { icon: Video, label: "Transaction history video", hint: "Optional — speeds up review" },
+        { icon: ImageIcon, label: "Payment Screenshot", hint: "Screenshot of the payment you sent" },
+        { icon: FileText, label: "Bank Statement", hint: "PDF showing the debit from your account" },
+        {
+          icon: Video,
+          label: "Video Recording",
+          hint: "Open Play Store → search the app you paid from → open it → show this transaction in your history",
+        },
       ]
     : [
-        { icon: ImageIcon, label: "Last received payment screenshot", hint: "Your most recent credit" },
-        { icon: FileText, label: "Bank statement or SMS", hint: "Showing recent credits" },
-        { icon: Video, label: "Transaction history video", hint: "Optional — speeds up review" },
+        { icon: ImageIcon, label: "Last Transaction Screenshot", hint: "Screenshot of your most recent received payment" },
+        { icon: FileText, label: "Bank Statement", hint: "PDF showing recent credits to your account" },
+        {
+          icon: Video,
+          label: "Video Recording",
+          hint: "Open Play Store → search the app the buyer paid from → open it → show your transaction history",
+        },
       ];
 
   const [copied, setCopied] = useState(false);
