@@ -7,6 +7,7 @@ import { logger } from "./lib/logger";
 import { ensureSchema } from "./lib/migrate";
 import { startLearningCleanupJob } from "./lib/learningCleanup";
 import { startMediaCleanupJob } from "./lib/mediaCleanup";
+import { startP2pSweeperJob } from "./lib/p2pSweeper";
 
 const rawPort = process.env["PORT"];
 
@@ -25,6 +26,7 @@ if (Number.isNaN(port) || port <= 0) {
 ensureSchema().finally(() => {
   startLearningCleanupJob();
   startMediaCleanupJob();
+  startP2pSweeperJob();
   const server = app.listen(port, () => {
     logger.info({ port }, "Server listening");
   });
