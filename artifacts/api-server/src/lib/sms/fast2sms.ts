@@ -21,6 +21,15 @@ const FAST2SMS_BASE = "https://www.fast2sms.com/dev/bulkV2";
  *  error to the user.
  */
 export async function sendOtpViaFast2Sms(phone: string, otp: string): Promise<boolean> {
+  // Kill-switch: when FAST2SMS_ENABLED is anything other than "true", we
+  // skip the API call entirely. This lets us pause SMS spend (₹5/SMS on
+  // the non-DLT Quick route is too expensive) while we migrate OTP to
+  // Firebase Phone Auth, and lets the admin re-enable the route later
+  // without a code change. Default = disabled.
+  const enabled = (process.env.FAST2SMS_ENABLED || "false").toLowerCase() === "true";
+  if (!enabled) {
+    throw new Error("Fast2SMS is currently disabled. Set FAST2SMS_ENABLED=true to re-enable.");
+  }
   const apiKey = process.env.FAST2SMS_API_KEY || "";
   if (!apiKey) {
     throw new Error("SMS provider not configured");
