@@ -96,7 +96,24 @@ export async function getMatchingDiagnostics(userId: number) {
  * Each chunk is an order row with type=withdrawal status=available.
  * Reservations the chunk amounts via heldBalance.
  */
-export async function regenerateChunksForUser(userId: number) {
+// Per-user mutex: when a regenerate call is already in flight for a user,
+// any concurrent call returns the same promise instead of running again.
+// Without this, fire-and-forget calls from /lock and /matching-status (5s
+// poll) could race — both reading the same balance/in-queue state and both
+// inserting chunks, exceeding the seller's actual available balance.
+const regenInFlight = new Map<number, Promise<void>>();
+
+export function regenerateChunksForUser(userId: number): Promise<void> {
+  const existing = regenInFlight.get(userId);
+  if (existing) return existing;
+  const p = regenerateChunksForUserInner(userId).finally(() => {
+    regenInFlight.delete(userId);
+  });
+  regenInFlight.set(userId, p);
+  return p;
+}
+
+async function regenerateChunksForUserInner(userId: number) {
   const matchingPaused = (await getSettings(["matchingPaused"])).matchingPaused;
   if (matchingPaused === "true") return;
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
