@@ -4,7 +4,16 @@ import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
-const JWT_SECRET = process.env.SESSION_SECRET || "trustpay-secret-key";
+// SESSION_SECRET is mandatory — fail fast at module load. A baked-in
+// fallback would let attackers forge JWTs (auth tokens AND otp
+// verifiedTokens) on any deployment that forgets to set the env var.
+const JWT_SECRET = (() => {
+  const s = process.env.SESSION_SECRET;
+  if (!s) {
+    throw new Error("SESSION_SECRET env var is required. Refusing to start with insecure default.");
+  }
+  return s;
+})();
 
 export function signToken(userId: number, role: string): string {
   return jwt.sign({ userId, role }, JWT_SECRET, { expiresIn: "30d" });
@@ -80,7 +89,6 @@ export function formatUser(user: any) {
     autoSellEnabled: !!user.autoSellEnabled,
     mustInstallApp: !!user.mustInstallApp,
     email: user.email || null,
-    googleVerified: !!user.googleSub,
     blockedReason: user.blockedReason,
     matchingExpiresAt: user.matchingExpiresAt || null,
     displayName: user.displayName || null,

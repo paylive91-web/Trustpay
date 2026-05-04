@@ -5,7 +5,10 @@ import { sql } from "drizzle-orm";
 import { sendOtp } from "./sms/index.js";
 import { logger } from "./logger.js";
 
-const JWT_SECRET = process.env.SESSION_SECRET || "trustpay-secret-key";
+// Same SESSION_SECRET used by lib/auth.ts. Importing rather than re-reading
+// from env keeps a single source of truth and ensures the fail-fast guard
+// in lib/auth.ts runs first.
+const JWT_SECRET = process.env.SESSION_SECRET as string;
 
 export type OtpPurpose = "register" | "forgot";
 

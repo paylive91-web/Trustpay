@@ -1146,8 +1146,6 @@ components:
           enum: [user, admin]
         email:
           type: string
-        googleVerified:
-          type: boolean
         isVerifiedAgent:
           type: boolean
         createdAt:

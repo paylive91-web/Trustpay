@@ -36,7 +36,6 @@ export const RegisterResponse = zod.object({
     totalWithdrawals: zod.number(),
     role: zod.enum(["user", "admin"]),
     email: zod.string().optional(),
-    googleVerified: zod.boolean().optional(),
     isVerifiedAgent: zod.boolean().optional(),
     createdAt: zod.string().optional(),
   }),
@@ -61,7 +60,6 @@ export const LoginResponse = zod.object({
     totalWithdrawals: zod.number(),
     role: zod.enum(["user", "admin"]),
     email: zod.string().optional(),
-    googleVerified: zod.boolean().optional(),
     isVerifiedAgent: zod.boolean().optional(),
     createdAt: zod.string().optional(),
   }),
@@ -87,7 +85,6 @@ export const GetMeResponse = zod.object({
   totalWithdrawals: zod.number(),
   role: zod.enum(["user", "admin"]),
   email: zod.string().optional(),
-  googleVerified: zod.boolean().optional(),
   isVerifiedAgent: zod.boolean().optional(),
   createdAt: zod.string().optional(),
 });
@@ -359,7 +356,6 @@ export const AdminLoginResponse = zod.object({
     totalWithdrawals: zod.number(),
     role: zod.enum(["user", "admin"]),
     email: zod.string().optional(),
-    googleVerified: zod.boolean().optional(),
     isVerifiedAgent: zod.boolean().optional(),
     createdAt: zod.string().optional(),
   }),
@@ -405,7 +401,6 @@ export const AdminGetOrdersResponseItem = zod
           totalWithdrawals: zod.number(),
           role: zod.enum(["user", "admin"]),
           email: zod.string().optional(),
-          googleVerified: zod.boolean().optional(),
           isVerifiedAgent: zod.boolean().optional(),
           createdAt: zod.string().optional(),
         })
@@ -516,7 +511,6 @@ export const AdminGetUsersResponseItem = zod.object({
   totalWithdrawals: zod.number(),
   role: zod.enum(["user", "admin"]),
   email: zod.string().optional(),
-  googleVerified: zod.boolean().optional(),
   isVerifiedAgent: zod.boolean().optional(),
   createdAt: zod.string().optional(),
 });
@@ -543,7 +537,6 @@ export const AdminUpdateUserResponse = zod.object({
   totalWithdrawals: zod.number(),
   role: zod.enum(["user", "admin"]),
   email: zod.string().optional(),
-  googleVerified: zod.boolean().optional(),
   isVerifiedAgent: zod.boolean().optional(),
   createdAt: zod.string().optional(),
 });
@@ -592,7 +585,6 @@ export const AdminUpdateUserBalanceResponse = zod.object({
   totalWithdrawals: zod.number(),
   role: zod.enum(["user", "admin"]),
   email: zod.string().optional(),
-  googleVerified: zod.boolean().optional(),
   isVerifiedAgent: zod.boolean().optional(),
   createdAt: zod.string().optional(),
 });

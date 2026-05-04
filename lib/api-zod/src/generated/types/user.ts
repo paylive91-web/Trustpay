@@ -16,7 +16,6 @@ export interface User {
   totalWithdrawals: number;
   role: UserRole;
   email?: string;
-  googleVerified?: boolean;
   isVerifiedAgent?: boolean;
   createdAt?: string;
 }
