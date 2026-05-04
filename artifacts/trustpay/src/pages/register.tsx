@@ -190,6 +190,10 @@ export default function Register() {
     e.preventDefault();
     if (!/^\d{6}$/.test(otp)) { toast({ title: "Enter the 6-digit OTP", variant: "destructive" }); return; }
     setLoading(true);
+    // Track which step failed so the toast title is accurate (was always
+    // saying "Registration failed" even when the OTP verify step is what
+    // actually broke).
+    let stage: "verify" | "register" = "verify";
     try {
       const vres = await fetch(`${API_BASE}/auth/otp/verify`, {
         method: "POST",
@@ -200,6 +204,7 @@ export default function Register() {
       if (!vres.ok) throw new Error(vdata.error || `OTP verification failed (${vres.status})`);
       const tok = vdata.verifiedToken as string;
 
+      stage = "register";
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -220,7 +225,8 @@ export default function Register() {
       if (msg.includes("1 account is allowed") || msg.includes("already registered")) {
         setShowDuplicateDialog(true);
       } else {
-        toast({ title: "Registration failed", description: msg, variant: "destructive" });
+        const title = stage === "verify" ? "OTP verification failed" : "Registration failed";
+        toast({ title, description: msg, variant: "destructive" });
       }
     } finally {
       setLoading(false);
