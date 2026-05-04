@@ -1085,8 +1085,6 @@ components:
     RegisterBody:
       type: object
       properties:
-        username:
-          type: string
         password:
           type: string
         phone:
@@ -1097,7 +1095,7 @@ components:
           type: string
         verifiedToken:
           type: string
-      required: [username, password, phone, verifiedToken]
+      required: [password, phone, verifiedToken]
 
     LoginBody:
       type: object

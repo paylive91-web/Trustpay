@@ -18,7 +18,6 @@ export const HealthCheckResponse = zod.object({
  * @summary Register user
  */
 export const RegisterBody = zod.object({
-  username: zod.string(),
   password: zod.string(),
   phone: zod.string(),
   referralCode: zod.string().optional(),

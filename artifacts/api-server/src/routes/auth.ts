@@ -9,7 +9,6 @@ import { issueOtp, verifyOtpAndIssueToken, consumeVerifiedToken } from "../lib/o
 
 const router = Router();
 
-const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
 const PHONE_RE = /^[6-9]\d{9}$/;
 const ADMIN_REFERRAL_CODE = "TP000001";
 
@@ -100,13 +99,9 @@ router.post("/otp/verify", async (req, res) => {
 });
 
 router.post("/register", async (req, res) => {
-  const { username, phone, password, referralCode, deviceFingerprint, verifiedToken } = req.body || {};
-  if (!username || !phone || !password) {
-    res.status(400).json({ error: "Username, mobile number, and password are required" });
-    return;
-  }
-  if (!USERNAME_RE.test(username)) {
-    res.status(400).json({ error: "Username must be 3-20 chars, letters/numbers/underscore" });
+  const { phone, password, referralCode, deviceFingerprint, verifiedToken } = req.body || {};
+  if (!phone || !password) {
+    res.status(400).json({ error: "Mobile number and password are required" });
     return;
   }
   if (!PHONE_RE.test(phone)) {
@@ -124,11 +119,6 @@ router.post("/register", async (req, res) => {
     return;
   }
 
-  const existingUser = await db.select().from(usersTable).where(eq(usersTable.username, username)).limit(1);
-  if (existingUser[0]) {
-    res.status(400).json({ error: "Username already taken" });
-    return;
-  }
   const existingPhone = await db.select().from(usersTable).where(eq(usersTable.phone, phone)).limit(1);
   if (existingPhone[0]) {
     res.status(400).json({ error: "Only 1 account is allowed per mobile number. Please login to your existing account." });
@@ -142,6 +132,16 @@ router.post("/register", async (req, res) => {
     return;
   }
   const referredById = referrer.id;
+
+  // Auto-generate a username from the phone (last 4 digits) so the user
+  // never has to pick one. Collisions are extremely unlikely but we still
+  // retry with a random suffix to guarantee uniqueness.
+  let username = `user${phone.slice(-4)}${Math.floor(1000 + Math.random() * 9000)}`;
+  for (let i = 0; i < 5; i++) {
+    const clash = await db.select().from(usersTable).where(eq(usersTable.username, username)).limit(1);
+    if (!clash[0]) break;
+    username = `user${phone.slice(-4)}${Math.floor(1000 + Math.random() * 9000)}`;
+  }
 
   const passwordHash = await bcrypt.hash(password, 10);
   const [user] = await db.insert(usersTable).values({

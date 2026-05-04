@@ -7,7 +7,6 @@
  */
 
 export interface RegisterBody {
-  username: string;
   password: string;
   phone: string;
   referralCode?: string;

@@ -8,12 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/layout";
-import { Download, ShieldCheck, Zap, Star, ShieldAlert, LogIn, Phone, Lock, User as UserIcon, Gift, ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
+import { Download, ShieldCheck, Zap, Star, ShieldAlert, LogIn, Phone, Lock, Gift, ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
 import { API_BASE } from "@/lib/api-config";
 
 const logoPath = `${import.meta.env.BASE_URL}trustpay-logo.png`;
 
-// ─── PWA install popup (shown post-registration) ──────────────────────────
 function PWAInstallPopup({ onDownload, appName, logoUrl }: { onDownload: () => void; appName: string; logoUrl: string }) {
   const [downloaded, setDownloaded] = useState(false);
   return (
@@ -78,7 +77,6 @@ function PWAInstallPopup({ onDownload, appName, logoUrl }: { onDownload: () => v
   );
 }
 
-// ─── Premium duplicate-account dialog ─────────────────────────────────────
 function DuplicateDialog({ onClose, onLogin }: { onClose: () => void; onLogin: () => void }) {
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
@@ -107,8 +105,6 @@ function DuplicateDialog({ onClose, onLogin }: { onClose: () => void; onLogin: (
   );
 }
 
-// Hidden honeypot field — bots auto-fill all visible inputs. Real users
-// never see or touch this, so any non-empty value is silently dropped.
 function Honeypot({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <input
@@ -134,14 +130,11 @@ export default function Register() {
 
   const [step, setStep] = useState<Step>("form");
   const [loading, setLoading] = useState(false);
-  const [username, setUsername] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [referralCode, setReferralCode] = useState("");
   const [honeypot, setHoneypot] = useState("");
   const [otp, setOtp] = useState("");
-  const [verifiedToken, setVerifiedToken] = useState("");
   const [resendIn, setResendIn] = useState(0);
   const [showInstallPopup, setShowInstallPopup] = useState(false);
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
@@ -157,8 +150,6 @@ export default function Register() {
     if (ref) setReferralCode(ref.toUpperCase());
   }, [user, isUserLoading, setLocation, showInstallPopup]);
 
-  // Resend cooldown ticker — driven entirely client-side; the server is
-  // the real authority and will reject early resends with a 429.
   useEffect(() => {
     if (resendIn <= 0) return;
     const t = setTimeout(() => setResendIn((s) => s - 1), 1000);
@@ -166,10 +157,8 @@ export default function Register() {
   }, [resendIn]);
 
   const validateForm = (): string | null => {
-    if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) return "Username must be 3-20 chars (letters, numbers, _)";
     if (!/^[6-9]\d{9}$/.test(phone)) return "Enter a valid 10-digit mobile number";
     if (password.length < 6) return "Password must be at least 6 characters";
-    if (password !== confirmPassword) return "Passwords don't match";
     if (!referralCode.trim()) return "Referral code required";
     return null;
   };
@@ -208,7 +197,6 @@ export default function Register() {
     if (!/^\d{6}$/.test(otp)) { toast({ title: "Enter the 6-digit OTP", variant: "destructive" }); return; }
     setLoading(true);
     try {
-      // Step 1 — verify the OTP and get a short-lived verifiedToken.
       const vres = await fetch(`${API_BASE}/auth/otp/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -217,15 +205,12 @@ export default function Register() {
       const vdata = await vres.json().catch(() => ({}));
       if (!vres.ok) throw new Error(vdata.error || `OTP verification failed (${vres.status})`);
       const tok = vdata.verifiedToken as string;
-      setVerifiedToken(tok);
 
-      // Step 2 — actually create the account, presenting the verifiedToken
-      // so the server knows this phone was just OTP-verified.
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username, phone, password,
+          phone, password,
           deviceFingerprint: getDeviceFingerprint(),
           referralCode: (referralCode.trim() || "TP000001").toUpperCase(),
           verifiedToken: tok,
@@ -268,51 +253,36 @@ export default function Register() {
         />
       )}
 
-      <div className="min-h-screen w-full bg-white relative overflow-hidden">
-        {/* Soft gradient corner — light, premium feel without overpowering the form */}
-        <div className="absolute -top-40 -right-40 w-[28rem] h-[28rem] rounded-full bg-gradient-to-br from-indigo-200/60 via-violet-200/50 to-fuchsia-100/40 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-40 -left-40 w-[26rem] h-[26rem] rounded-full bg-gradient-to-tr from-cyan-100/50 via-sky-100/40 to-transparent blur-3xl pointer-events-none" />
+      <div className="min-h-[100svh] w-full bg-white relative overflow-hidden flex flex-col">
+        <div className="absolute -top-32 -right-32 w-[22rem] h-[22rem] rounded-full bg-gradient-to-br from-indigo-200/60 via-violet-200/50 to-fuchsia-100/40 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-32 -left-32 w-[22rem] h-[22rem] rounded-full bg-gradient-to-tr from-cyan-100/50 via-sky-100/40 to-transparent blur-3xl pointer-events-none" />
 
-        <div className="relative max-w-md mx-auto px-5 pt-8 pb-12">
-          {/* Logo + brand header */}
-          <div className="flex flex-col items-center mb-6">
-            <div className="relative mb-3">
-              <div className="absolute inset-0 rounded-[26px] bg-indigo-500/20 blur-xl scale-110" />
-              <img src={logoUrl} alt={`${appName} Logo`} className="relative w-20 h-20 rounded-[26px] object-contain shadow-xl ring-1 ring-slate-200/60 bg-white" />
+        <div className="relative max-w-md w-full mx-auto px-5 py-4 flex-1 flex flex-col justify-center">
+          {/* Brand header — logo + name in one row, compact */}
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <div className="relative shrink-0">
+              <div className="absolute inset-0 rounded-2xl bg-indigo-500/25 blur-lg scale-110" />
+              <img src={logoUrl} alt={`${appName} Logo`} className="relative w-14 h-14 rounded-2xl object-contain shadow-lg ring-1 ring-slate-200/60 bg-white" />
             </div>
-            <div className="text-[22px] font-extrabold text-slate-900 tracking-tight">{appName}</div>
-            <div className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-[0.14em]">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> Secure P2P UPI Platform
+            <div className="flex flex-col">
+              <div className="text-[22px] font-extrabold text-slate-900 tracking-tight leading-tight">{appName}</div>
+              <div className="flex items-center gap-1 text-[10px] font-semibold text-slate-500 uppercase tracking-[0.12em]">
+                <ShieldCheck className="w-3 h-3 text-emerald-500" /> Secure UPI Platform
+              </div>
             </div>
           </div>
 
-          {/* Card */}
-          <div className="rounded-[28px] bg-white border border-slate-100 shadow-[0_24px_60px_-15px_rgba(15,23,42,0.18)] p-6">
+          <div className="rounded-3xl bg-white border border-slate-100 shadow-[0_20px_50px_-15px_rgba(15,23,42,0.18)] p-5">
             {step === "form" && (
               <>
-                <h1 className="text-[24px] font-extrabold text-slate-900 mb-1">Create Account</h1>
-                <p className="text-sm text-slate-500 mb-6">Sign up with your mobile number — we'll send a verification code.</p>
+                <h1 className="text-[20px] font-extrabold text-slate-900 mb-0.5">Create Account</h1>
+                <p className="text-[13px] text-slate-500 mb-3">Sign up with your mobile number.</p>
 
-                <form onSubmit={handleSubmitForm} className="space-y-4">
+                <form onSubmit={handleSubmitForm} className="space-y-3">
                   <Honeypot value={honeypot} onChange={setHoneypot} />
 
-                  <div className="space-y-1.5">
-                    <Label className="text-[13px] font-semibold text-slate-700">Username</Label>
-                    <div className="relative">
-                      <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                      <Input
-                        type="text"
-                        placeholder="3-20 chars (letters, numbers, _)"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, "").slice(0, 20))}
-                        maxLength={20}
-                        className="pl-10 h-12 rounded-xl bg-slate-50/70 border-slate-200 focus-visible:ring-indigo-500/40 focus-visible:border-indigo-300"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label className="text-[13px] font-semibold text-slate-700">Mobile Number</Label>
+                  <div className="space-y-1">
+                    <Label className="text-[12px] font-semibold text-slate-700">Mobile Number</Label>
                     <div className="flex gap-2">
                       <div className="flex items-center px-3 bg-slate-100 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700">+91</div>
                       <div className="relative flex-1">
@@ -324,33 +294,25 @@ export default function Register() {
                           value={phone}
                           onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                           maxLength={10}
-                          className="pl-10 h-12 rounded-xl bg-slate-50/70 border-slate-200 focus-visible:ring-indigo-500/40 focus-visible:border-indigo-300"
+                          className="pl-10 h-11 rounded-xl bg-slate-50/70 border-slate-200 focus-visible:ring-indigo-500/40 focus-visible:border-indigo-300"
                         />
                       </div>
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <Label className="text-[13px] font-semibold text-slate-700">Password</Label>
+                  <div className="space-y-1">
+                    <Label className="text-[12px] font-semibold text-slate-700">Password</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                      <Input type="password" placeholder="At least 6 characters" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10 h-12 rounded-xl bg-slate-50/70 border-slate-200 focus-visible:ring-indigo-500/40 focus-visible:border-indigo-300" />
+                      <Input type="password" placeholder="At least 6 characters" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10 h-11 rounded-xl bg-slate-50/70 border-slate-200 focus-visible:ring-indigo-500/40 focus-visible:border-indigo-300" />
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <Label className="text-[13px] font-semibold text-slate-700">Confirm Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                      <Input type="password" placeholder="Repeat password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="pl-10 h-12 rounded-xl bg-slate-50/70 border-slate-200 focus-visible:ring-indigo-500/40 focus-visible:border-indigo-300" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label className="text-[13px] font-semibold text-slate-700">Referral Code</Label>
+                  <div className="space-y-1">
+                    <Label className="text-[12px] font-semibold text-slate-700">Referral Code</Label>
                     <div className="relative">
                       <Gift className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                      <Input placeholder="Invite code" value={referralCode} onChange={(e) => setReferralCode(e.target.value.toUpperCase())} required className="pl-10 h-12 rounded-xl bg-slate-50/70 border-slate-200 focus-visible:ring-indigo-500/40 focus-visible:border-indigo-300" />
+                      <Input placeholder="Invite code" value={referralCode} onChange={(e) => setReferralCode(e.target.value.toUpperCase())} required className="pl-10 h-11 rounded-xl bg-slate-50/70 border-slate-200 focus-visible:ring-indigo-500/40 focus-visible:border-indigo-300" />
                     </div>
                   </div>
 
@@ -358,36 +320,22 @@ export default function Register() {
                     {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sending OTP...</> : "Send OTP & Continue"}
                   </Button>
                 </form>
-
-                {/* Trust badges */}
-                <div className="mt-5 grid grid-cols-3 gap-2">
-                  {[
-                    { icon: <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />, label: "Encrypted" },
-                    { icon: <Zap className="w-3.5 h-3.5 text-amber-500" />, label: "Instant" },
-                    { icon: <Star className="w-3.5 h-3.5 text-indigo-500" />, label: "Trusted" },
-                  ].map((b) => (
-                    <div key={b.label} className="flex items-center justify-center gap-1.5 rounded-lg bg-slate-50 border border-slate-100 py-2">
-                      {b.icon}
-                      <span className="text-[11px] font-semibold text-slate-600">{b.label}</span>
-                    </div>
-                  ))}
-                </div>
               </>
             )}
 
             {step === "otp" && (
               <>
-                <button type="button" onClick={() => setStep("form")} className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-3">
+                <button type="button" onClick={() => setStep("form")} className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-2">
                   <ArrowLeft className="w-4 h-4" /> Back
                 </button>
-                <h1 className="text-[24px] font-extrabold text-slate-900 mb-1">Verify Mobile</h1>
-                <p className="text-sm text-slate-500 mb-5">
+                <h1 className="text-[20px] font-extrabold text-slate-900 mb-0.5">Verify Mobile</h1>
+                <p className="text-[13px] text-slate-500 mb-4">
                   6-digit code sent to <span className="font-semibold text-slate-900">+91 {phone}</span>
                 </p>
 
-                <form onSubmit={handleVerifyAndRegister} className="space-y-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-[13px] font-semibold text-slate-700">Enter OTP</Label>
+                <form onSubmit={handleVerifyAndRegister} className="space-y-3">
+                  <div className="space-y-1">
+                    <Label className="text-[12px] font-semibold text-slate-700">Enter OTP</Label>
                     <Input
                       type="tel"
                       inputMode="numeric"
@@ -400,7 +348,7 @@ export default function Register() {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between text-[13px]">
                     <span className="text-slate-500">Didn't receive it?</span>
                     {resendIn > 0 ? (
                       <span className="text-slate-400 font-medium">Resend in {resendIn}s</span>
@@ -419,7 +367,7 @@ export default function Register() {
             )}
           </div>
 
-          <div className="mt-6 text-center text-sm text-slate-500">
+          <div className="mt-4 text-center text-[13px] text-slate-500">
             Already have an account? <Link href="/login" className="text-indigo-600 font-semibold">Login here</Link>
           </div>
         </div>
