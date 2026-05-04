@@ -35,6 +35,7 @@ type SellerAlert = {
 type VerificationState =
   | { kind: "pending" }
   | { kind: "clean" }
+  | { kind: "partial"; notes: string[] }
   | { kind: "flagged"; issues: string[] };
 
 function buildVerificationState(a: SellerAlert): VerificationState {
@@ -53,6 +54,18 @@ function buildVerificationState(a: SellerAlert): VerificationState {
     issues.push(`UTR mismatch: screenshot shows ${shown}, buyer submitted ${a.utrNumber || "—"}.`);
   }
   if (issues.length > 0) return { kind: "flagged", issues };
+
+  // OCR ran successfully but couldn't extract one or both fields. This is
+  // NOT a clean verification — show an amber "could not auto-verify" note
+  // so the seller doesn't see a misleading green "verified" badge.
+  const notes: string[] = [];
+  if (a.ocrAmountMatch === "not_extracted") {
+    notes.push("Could not auto-read the amount from the screenshot.");
+  }
+  if (a.ocrUtrMatch === "not_extracted") {
+    notes.push("Could not auto-read the UTR from the screenshot.");
+  }
+  if (notes.length > 0) return { kind: "partial", notes };
   return { kind: "clean" };
 }
 
@@ -218,7 +231,7 @@ export default function SellerAlertsPopup() {
                   </div>
                 )}
                 {verification.kind === "pending" && (
-                  <div className="rounded-2xl border border-sky-200 bg-sky-50 p-3 flex items-center gap-3">
+                  <div role="status" aria-live="polite" className="rounded-2xl border border-sky-200 bg-sky-50 p-3 flex items-center gap-3">
                     <Loader2 className="h-4 w-4 text-sky-600 animate-spin shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="text-[13px] font-semibold text-sky-800">
@@ -230,8 +243,26 @@ export default function SellerAlertsPopup() {
                     </div>
                   </div>
                 )}
+                {verification.kind === "partial" && (
+                  <div role="status" aria-live="polite" className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-3 flex items-start gap-3">
+                    <Search className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-bold text-amber-800">
+                        Could not auto-verify
+                      </div>
+                      <ul className="mt-1 space-y-0.5">
+                        {verification.notes.map((n, i) => (
+                          <li key={i} className="text-[12px] text-amber-800/90 leading-snug">• {n}</li>
+                        ))}
+                      </ul>
+                      <p className="text-[11px] text-amber-700 mt-1.5 font-medium">
+                        Match the amount and UTR manually before confirming.
+                      </p>
+                    </div>
+                  </div>
+                )}
                 {verification.kind === "clean" && (
-                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 flex items-center gap-3">
+                  <div role="status" aria-live="polite" className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 flex items-center gap-3">
                     <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="text-[13px] font-semibold text-emerald-800">
