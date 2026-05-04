@@ -1,11 +1,11 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db } from "@workspace/db";
-import { usersTable, referralsTable, userNotificationsTable, ordersTable } from "@workspace/db";
+import { usersTable, referralsTable, ordersTable } from "@workspace/db";
 import { eq, or, desc, and, sql, inArray } from "drizzle-orm";
 import { signToken, requireAuth, formatUser } from "../lib/auth.js";
 import { recordDeviceFingerprint, checkAccountFraud, checkReferralSelfLoop } from "../lib/fraud.js";
-import { verifyGoogleIdToken, googleConfigured } from "../lib/google.js";
+import { issueOtp, verifyOtpAndIssueToken, consumeVerifiedToken } from "../lib/otp.js";
 
 const router = Router();
 
@@ -23,8 +23,84 @@ async function ensureAdminReferralCode() {
   return admin;
 }
 
+function clientIp(req: any): string {
+  return (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || "";
+}
+
+// ---------------------------------------------------------------------------
+// OTP — phone verification for register & forgot-password
+// ---------------------------------------------------------------------------
+//
+// Flow:
+//   1. POST /otp/send        body: { phone, purpose: "register"|"forgot", honeypot? }
+//   2. POST /otp/verify      body: { phone, purpose, code }   -> { verifiedToken }
+//   3. POST /register        body: { ..., verifiedToken }     (purpose=register)
+//   3a. POST /forgot-password body: { phone, newPassword, verifiedToken } (purpose=forgot)
+//
+// Anti-spam (in lib/otp.ts):
+//   - 60s resend cooldown per phone+purpose
+//   - 3 OTP/hour per phone, 5/hour per IP
+//   - Active OTP invalidated when a new one is issued
+//   - 5 attempts max per OTP, then it's burned
+//   - 5 minute OTP validity, 10 minute verifiedToken validity
+//   - Honeypot field "website" — if present, silently 200 without sending
+
+router.post("/otp/send", async (req, res) => {
+  const { phone, purpose, website } = req.body || {};
+  // Honeypot — bots fill hidden fields. Pretend success but do nothing.
+  if (website) { res.json({ success: true }); return; }
+  if (!phone || !PHONE_RE.test(String(phone))) {
+    res.status(400).json({ error: "Valid 10-digit mobile number required" });
+    return;
+  }
+  if (purpose !== "register" && purpose !== "forgot") {
+    res.status(400).json({ error: "Invalid OTP purpose" });
+    return;
+  }
+  // For register, fail fast if the phone is already taken (saves an SMS).
+  if (purpose === "register") {
+    const [existing] = await db.select().from(usersTable).where(eq(usersTable.phone, String(phone))).limit(1);
+    if (existing) {
+      res.status(400).json({ error: "This mobile number is already registered. Please login instead." });
+      return;
+    }
+  }
+  // For forgot, fail fast if no account exists for this phone.
+  if (purpose === "forgot") {
+    const [existing] = await db.select().from(usersTable).where(eq(usersTable.phone, String(phone))).limit(1);
+    if (!existing) {
+      res.status(404).json({ error: "No account found for this mobile number." });
+      return;
+    }
+  }
+  const result = await issueOtp({ phone: String(phone), purpose, ip: clientIp(req) });
+  if (!result.ok) {
+    res.status(result.status).json({ error: result.error });
+    return;
+  }
+  res.json({ success: true, message: "OTP sent to your mobile number" });
+});
+
+router.post("/otp/verify", async (req, res) => {
+  const { phone, purpose, code } = req.body || {};
+  if (!phone || !PHONE_RE.test(String(phone))) {
+    res.status(400).json({ error: "Valid 10-digit mobile number required" });
+    return;
+  }
+  if (purpose !== "register" && purpose !== "forgot") {
+    res.status(400).json({ error: "Invalid OTP purpose" });
+    return;
+  }
+  const result = await verifyOtpAndIssueToken({ phone: String(phone), purpose, code: String(code || "") });
+  if (!result.ok) {
+    res.status(result.status).json({ error: result.error });
+    return;
+  }
+  res.json({ success: true, verifiedToken: result.verifiedToken });
+});
+
 router.post("/register", async (req, res) => {
-  const { username, phone, password, referralCode, deviceFingerprint } = req.body || {};
+  const { username, phone, password, referralCode, deviceFingerprint, verifiedToken } = req.body || {};
   if (!username || !phone || !password) {
     res.status(400).json({ error: "Username, mobile number, and password are required" });
     return;
@@ -41,8 +117,13 @@ router.post("/register", async (req, res) => {
     res.status(400).json({ error: "Password must be at least 6 characters" });
     return;
   }
+  // OTP gate — verifiedToken must have been issued for THIS phone with
+  // purpose=register within the last 10 minutes.
+  if (!verifiedToken || !consumeVerifiedToken(String(verifiedToken), "register", String(phone))) {
+    res.status(400).json({ error: "Mobile number not verified. Please verify with OTP first." });
+    return;
+  }
 
-  // Check unique username AND unique phone
   const existingUser = await db.select().from(usersTable).where(eq(usersTable.username, username)).limit(1);
   if (existingUser[0]) {
     res.status(400).json({ error: "Username already taken" });
@@ -54,23 +135,6 @@ router.post("/register", async (req, res) => {
     return;
   }
 
-  // Max N registrations per device fingerprint (admin-configurable, default 3).
-  // Logging into an existing account from the same phone is always allowed —
-  // only new registrations are counted against the per-device limit.
-  if (deviceFingerprint) {
-    const { deviceFingerprintsTable } = await import("@workspace/db");
-    const { getSetting } = await import("../lib/settings.js");
-    const deviceRows = await db
-      .selectDistinct({ userId: deviceFingerprintsTable.userId })
-      .from(deviceFingerprintsTable)
-      .where(eq(deviceFingerprintsTable.fingerprint, deviceFingerprint));
-    const deviceLimit = Math.max(1, parseInt(await getSetting("deviceRegistrationLimit")) || 3);
-    if (deviceRows.length >= deviceLimit) {
-      res.status(400).json({ error: `Only ${deviceLimit} accounts are allowed per mobile device. Please login to your existing account.` });
-      return;
-    }
-  }
-
   const normalizedReferralCode = String(referralCode || "").trim().toUpperCase() || ADMIN_REFERRAL_CODE;
   const [referrer] = await db.select().from(usersTable).where(eq(usersTable.referralCode, normalizedReferralCode)).limit(1);
   if (!referrer) {
@@ -80,7 +144,6 @@ router.post("/register", async (req, res) => {
   const referredById = referrer.id;
 
   const passwordHash = await bcrypt.hash(password, 10);
-  // mustInstallApp default left as false (force-install flow disabled).
   const [user] = await db.insert(usersTable).values({
     username,
     passwordHash,
@@ -92,22 +155,7 @@ router.post("/register", async (req, res) => {
   await db.update(usersTable).set({ referralCode: code }).where(eq(usersTable.id, user.id));
   user.referralCode = code;
 
-  // Nudge the user to bind a Google account so password recovery is possible.
-  // Without a verified Google email there is no self-serve "Forgot password".
-  if (googleConfigured()) {
-    try {
-      await db.insert(userNotificationsTable).values({
-        userId: user.id,
-        kind: "google_verification",
-        title: "Link your Google account",
-        body: "Link your Gmail — if you forget your password, you can reset it automatically. Go to Profile → Google Verification.",
-        severity: "info",
-      });
-    } catch {}
-  }
-
-  // Capture device fingerprint
-  const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || "";
+  const ip = clientIp(req);
   const ua = (req.headers["user-agent"] as string) || "";
   if (deviceFingerprint) {
     await recordDeviceFingerprint(user.id, deviceFingerprint, ip, ua);
@@ -145,7 +193,7 @@ router.post("/login", async (req, res) => {
     return;
   }
 
-  const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || "";
+  const ip = clientIp(req);
   const ua = (req.headers["user-agent"] as string) || "";
   if (deviceFingerprint) {
     await recordDeviceFingerprint(user.id, deviceFingerprint, ip, ua);
@@ -154,6 +202,36 @@ router.post("/login", async (req, res) => {
 
   const token = signToken(user.id, user.role);
   res.json({ user: formatUser(user), token });
+});
+
+// Reset password using OTP-verified phone. The verifiedToken must have been
+// issued for THIS phone with purpose=forgot within the last 10 minutes.
+router.post("/forgot-password", async (req, res) => {
+  const { phone, newPassword, verifiedToken } = req.body || {};
+  if (!phone || !PHONE_RE.test(String(phone))) {
+    res.status(400).json({ error: "Valid 10-digit mobile number required" });
+    return;
+  }
+  if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6) {
+    res.status(400).json({ error: "New password must be at least 6 characters" });
+    return;
+  }
+  if (!verifiedToken || !consumeVerifiedToken(String(verifiedToken), "forgot", String(phone))) {
+    res.status(400).json({ error: "Mobile number not verified. Please verify with OTP first." });
+    return;
+  }
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.phone, String(phone))).limit(1);
+  if (!user) {
+    res.status(404).json({ error: "No account found for this mobile number." });
+    return;
+  }
+  if (user.isBlocked) {
+    res.status(403).json({ error: "Account blocked", reason: user.blockedReason || "Contact support" });
+    return;
+  }
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await db.update(usersTable).set({ passwordHash }).where(eq(usersTable.id, user.id));
+  res.json({ message: "Password updated. Please login with your new password." });
 });
 
 router.post("/admin/seed-referral-code", async (_req, res) => {
@@ -171,9 +249,6 @@ router.post("/logout", (_req, res) => {
 
 router.get("/me", requireAuth, async (req, res) => {
   const u = (req as any).user;
-  // Auto-clear the install lock the first time we see the user from inside
-  // the Capacitor APK shell. The wrapper appends "TrustPayAndroid/<ver>" to
-  // the User-Agent (see artifacts/trustpay/capacitor.config.ts).
   const ua = (req.headers["user-agent"] as string) || "";
   if (u.mustInstallApp && ua.includes("TrustPayAndroid")) {
     await db.update(usersTable).set({ mustInstallApp: false }).where(eq(usersTable.id, u.id));
@@ -184,9 +259,6 @@ router.get("/me", requireAuth, async (req, res) => {
 
 router.get("/invitees", requireAuth, async (req, res) => {
   const u = (req as any).user;
-  // Direct (L1) invitees: users whose referredBy = me. We pull aggregated
-  // deposit + commission stats so the invite page can show a per-user
-  // breakdown (today + lifetime).
   const directInvitees = await db.select({
     id: usersTable.id,
     username: usersTable.username,
@@ -201,8 +273,6 @@ router.get("/invitees", requireAuth, async (req, res) => {
   }
 
   const inviteeIds = directInvitees.map((i) => i.id);
-
-  // Lifetime + today commission per invitee from referralsTable (level 1).
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
@@ -223,8 +293,6 @@ router.get("/invitees", requireAuth, async (req, res) => {
     sql`${referralsTable.createdAt} >= ${startOfDay}`,
   )).groupBy(referralsTable.referredUserId);
 
-  // Today's deposit per invitee (sum of confirmed buy-side chunks where they
-  // were the buyer, i.e. lockedByUserId = invitee.id).
   const todayDepositRows = await db.select({
     buyerId: ordersTable.lockedByUserId,
     today: sql<string>`COALESCE(SUM(${ordersTable.amount}), 0)`,
@@ -250,21 +318,12 @@ router.get("/invitees", requireAuth, async (req, res) => {
   })));
 });
 
-// Lightweight heartbeat — keeps lastSeenAt fresh (called every ~30s from frontend).
-// We deliberately do NOT auto-cancel chunks or stop matching when a seller
-// returns from a brief offline gap: the matching session itself has its own
-// `matchingExpiresAt` (default 15 min), and the buyer queue already filters
-// out offline sellers' chunks in real-time. This way a dispute popup, a phone
-// lock, or a quick app-background does not wipe the seller's queue — chunks
-// re-appear in the queue the moment heartbeat refreshes lastSeenAt.
 router.post("/heartbeat", requireAuth, async (req, res) => {
   const u = (req as any).user;
   await db.update(usersTable).set({ lastSeenAt: new Date() }).where(eq(usersTable.id, u.id));
   res.json({ ok: true });
 });
 
-// Edit display name — shown on the matching page in the "me" panel and to
-// counterparties on trades. Username (login handle) is immutable.
 router.post("/update-name", requireAuth, async (req, res) => {
   const u = (req as any).user;
   const raw = String(req.body?.displayName ?? "").trim();
@@ -274,100 +333,6 @@ router.post("/update-name", requireAuth, async (req, res) => {
   }
   await db.update(usersTable).set({ displayName: raw }).where(eq(usersTable.id, u.id));
   res.json({ success: true, displayName: raw });
-});
-
-// ---------------------------------------------------------------------------
-// Google verification flow
-// ---------------------------------------------------------------------------
-//
-// Two entry points, both consume a Google Identity Services credential
-// (`idToken`) issued for our web client.
-//
-//  1. POST /google/link  (auth required) — bind the verified Gmail to the
-//     currently logged-in user. Refuses to overwrite an existing binding,
-//     refuses if the same Google account is already bound to a different user.
-//
-//  2. POST /google/reset-password  (no auth) — verify the Google credential,
-//     find the matching user by google_sub, set a new password atomically.
-//     Replaces the old phone/SMS-OTP forgot-password flow for users who have
-//     completed Google verification.
-
-router.post("/google/link", requireAuth, async (req, res) => {
-  const u = (req as any).user;
-  const { idToken } = req.body || {};
-  let identity;
-  try {
-    identity = await verifyGoogleIdToken(idToken);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message || "Google verification failed" });
-    return;
-  }
-
-  // Don't let one Gmail bind to multiple TrustPay accounts. The unique
-  // partial index on google_sub also guards this at the DB level.
-  const [other] = await db.select().from(usersTable).where(eq(usersTable.googleSub, identity.sub)).limit(1);
-  if (other && other.id !== u.id) {
-    res.status(409).json({ error: "This Google account is already linked to another user" });
-    return;
-  }
-
-  await db.update(usersTable).set({
-    email: identity.email,
-    googleSub: identity.sub,
-  }).where(eq(usersTable.id, u.id));
-
-  // Mark the verification-nudge notification(s) as read so the bell stops
-  // pestering the user once they've completed it.
-  try {
-    await db.update(userNotificationsTable)
-      .set({ readAt: new Date() })
-      .where(and(
-        eq(userNotificationsTable.userId, u.id),
-        eq(userNotificationsTable.kind, "google_verification"),
-      ));
-  } catch {}
-
-  res.json({ success: true, email: identity.email });
-});
-
-router.post("/google/unlink", requireAuth, async (req, res) => {
-  const u = (req as any).user;
-  await db.update(usersTable).set({ email: null, googleSub: null }).where(eq(usersTable.id, u.id));
-  res.json({ success: true });
-});
-
-router.post("/google/reset-password", async (req, res) => {
-  const { idToken, newPassword } = req.body || {};
-  if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6) {
-    res.status(400).json({ error: "New password must be at least 6 characters" });
-    return;
-  }
-  let identity;
-  try {
-    identity = await verifyGoogleIdToken(idToken);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message || "Google verification failed" });
-    return;
-  }
-
-  // Lookup strictly by google_sub (stable Google user id). We deliberately
-  // don't fall back to email-only matching because email aliasing /
-  // re-assignment by Google for non-Workspace accounts is not guaranteed,
-  // and sub is what proves possession of the verified Google account.
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.googleSub, identity.sub)).limit(1);
-  if (!user) {
-    res.status(404).json({ error: "No account is linked to this Gmail. Please log in and complete Google verification first." });
-    return;
-  }
-  if (user.isBlocked) {
-    res.status(403).json({ error: "Account blocked", reason: user.blockedReason || "Contact support" });
-    return;
-  }
-
-  const passwordHash = await bcrypt.hash(newPassword, 10);
-  await db.update(usersTable).set({ passwordHash }).where(eq(usersTable.id, user.id));
-
-  res.json({ success: true });
 });
 
 export default router;

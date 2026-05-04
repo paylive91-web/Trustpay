@@ -9,6 +9,7 @@ import { WebSplashScreen } from "@/components/web-splash-screen";
 import Home from "@/pages/home";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
+import ForgotPassword from "@/pages/forgot-password";
 import Buy from "@/pages/buy";
 import Sell from "@/pages/sell";
 import Orders from "@/pages/orders";
@@ -46,6 +47,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/buy" component={Buy} />
       <Route path="/sell" component={Sell} />
       <Route path="/orders" component={Orders} />

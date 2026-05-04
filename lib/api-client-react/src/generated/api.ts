@@ -40,11 +40,10 @@ import type {
   DashboardSummary,
   DepositTask,
   ErrorResponse,
+  ForgotPasswordBody,
   FraudAlert,
   FraudRule,
   GetOrdersParams,
-  GoogleIdTokenBody,
-  GoogleResetPasswordBody,
   HealthStatus,
   HighValueEvent,
   LoginBody,
@@ -53,6 +52,9 @@ import type {
   NotifyAllBody,
   Order,
   OrderWithUser,
+  OtpSendBody,
+  OtpVerifyBody,
+  OtpVerifyResponse,
   RegisterBody,
   ReviewHighValueBody,
   SellerProofBody,
@@ -466,207 +468,42 @@ export function useGetMe<
 }
 
 /**
- * @summary Link Google account to current user
+ * @summary Send a one-time-password to a phone number
  */
-export const getGoogleLinkUrl = () => {
-  return `/api/auth/google/link`;
+export const getOtpSendUrl = () => {
+  return `/api/auth/otp/send`;
 };
 
-export const googleLink = async (
-  googleIdTokenBody: GoogleIdTokenBody,
-  options?: RequestInit,
-): Promise<User> => {
-  return customFetch<User>(getGoogleLinkUrl(), {
-    ...options,
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(googleIdTokenBody),
-  });
-};
-
-export const getGoogleLinkMutationOptions = <
-  TError = ErrorType<ErrorResponse>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof googleLink>>,
-    TError,
-    { data: BodyType<GoogleIdTokenBody> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof googleLink>>,
-  TError,
-  { data: BodyType<GoogleIdTokenBody> },
-  TContext
-> => {
-  const mutationKey = ["googleLink"];
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof googleLink>>,
-    { data: BodyType<GoogleIdTokenBody> }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return googleLink(data, requestOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type GoogleLinkMutationResult = NonNullable<
-  Awaited<ReturnType<typeof googleLink>>
->;
-export type GoogleLinkMutationBody = BodyType<GoogleIdTokenBody>;
-export type GoogleLinkMutationError = ErrorType<ErrorResponse>;
-
-/**
- * @summary Link Google account to current user
- */
-export const useGoogleLink = <
-  TError = ErrorType<ErrorResponse>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof googleLink>>,
-    TError,
-    { data: BodyType<GoogleIdTokenBody> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof googleLink>>,
-  TError,
-  { data: BodyType<GoogleIdTokenBody> },
-  TContext
-> => {
-  return useMutation(getGoogleLinkMutationOptions(options));
-};
-
-/**
- * @summary Unlink Google account from current user
- */
-export const getGoogleUnlinkUrl = () => {
-  return `/api/auth/google/unlink`;
-};
-
-export const googleUnlink = async (options?: RequestInit): Promise<User> => {
-  return customFetch<User>(getGoogleUnlinkUrl(), {
-    ...options,
-    method: "POST",
-  });
-};
-
-export const getGoogleUnlinkMutationOptions = <
-  TError = ErrorType<unknown>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof googleUnlink>>,
-    TError,
-    void,
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof googleUnlink>>,
-  TError,
-  void,
-  TContext
-> => {
-  const mutationKey = ["googleUnlink"];
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof googleUnlink>>,
-    void
-  > = () => {
-    return googleUnlink(requestOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type GoogleUnlinkMutationResult = NonNullable<
-  Awaited<ReturnType<typeof googleUnlink>>
->;
-
-export type GoogleUnlinkMutationError = ErrorType<unknown>;
-
-/**
- * @summary Unlink Google account from current user
- */
-export const useGoogleUnlink = <
-  TError = ErrorType<unknown>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof googleUnlink>>,
-    TError,
-    void,
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof googleUnlink>>,
-  TError,
-  void,
-  TContext
-> => {
-  return useMutation(getGoogleUnlinkMutationOptions(options));
-};
-
-/**
- * @summary Reset password using a verified Google ID token
- */
-export const getGoogleResetPasswordUrl = () => {
-  return `/api/auth/google/reset-password`;
-};
-
-export const googleResetPassword = async (
-  googleResetPasswordBody: GoogleResetPasswordBody,
+export const otpSend = async (
+  otpSendBody: OtpSendBody,
   options?: RequestInit,
 ): Promise<MessageResponse> => {
-  return customFetch<MessageResponse>(getGoogleResetPasswordUrl(), {
+  return customFetch<MessageResponse>(getOtpSendUrl(), {
     ...options,
     method: "POST",
     headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(googleResetPasswordBody),
+    body: JSON.stringify(otpSendBody),
   });
 };
 
-export const getGoogleResetPasswordMutationOptions = <
+export const getOtpSendMutationOptions = <
   TError = ErrorType<ErrorResponse>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof googleResetPassword>>,
+    Awaited<ReturnType<typeof otpSend>>,
     TError,
-    { data: BodyType<GoogleResetPasswordBody> },
+    { data: BodyType<OtpSendBody> },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationOptions<
-  Awaited<ReturnType<typeof googleResetPassword>>,
+  Awaited<ReturnType<typeof otpSend>>,
   TError,
-  { data: BodyType<GoogleResetPasswordBody> },
+  { data: BodyType<OtpSendBody> },
   TContext
 > => {
-  const mutationKey = ["googleResetPassword"];
+  const mutationKey = ["otpSend"];
   const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
@@ -676,44 +513,216 @@ export const getGoogleResetPasswordMutationOptions = <
     : { mutation: { mutationKey }, request: undefined };
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof googleResetPassword>>,
-    { data: BodyType<GoogleResetPasswordBody> }
+    Awaited<ReturnType<typeof otpSend>>,
+    { data: BodyType<OtpSendBody> }
   > = (props) => {
     const { data } = props ?? {};
 
-    return googleResetPassword(data, requestOptions);
+    return otpSend(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
 };
 
-export type GoogleResetPasswordMutationResult = NonNullable<
-  Awaited<ReturnType<typeof googleResetPassword>>
+export type OtpSendMutationResult = NonNullable<
+  Awaited<ReturnType<typeof otpSend>>
 >;
-export type GoogleResetPasswordMutationBody = BodyType<GoogleResetPasswordBody>;
-export type GoogleResetPasswordMutationError = ErrorType<ErrorResponse>;
+export type OtpSendMutationBody = BodyType<OtpSendBody>;
+export type OtpSendMutationError = ErrorType<ErrorResponse>;
 
 /**
- * @summary Reset password using a verified Google ID token
+ * @summary Send a one-time-password to a phone number
  */
-export const useGoogleResetPassword = <
+export const useOtpSend = <
   TError = ErrorType<ErrorResponse>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof googleResetPassword>>,
+    Awaited<ReturnType<typeof otpSend>>,
     TError,
-    { data: BodyType<GoogleResetPasswordBody> },
+    { data: BodyType<OtpSendBody> },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationResult<
-  Awaited<ReturnType<typeof googleResetPassword>>,
+  Awaited<ReturnType<typeof otpSend>>,
   TError,
-  { data: BodyType<GoogleResetPasswordBody> },
+  { data: BodyType<OtpSendBody> },
   TContext
 > => {
-  return useMutation(getGoogleResetPasswordMutationOptions(options));
+  return useMutation(getOtpSendMutationOptions(options));
+};
+
+/**
+ * @summary Verify an OTP and receive a short-lived verifiedToken
+ */
+export const getOtpVerifyUrl = () => {
+  return `/api/auth/otp/verify`;
+};
+
+export const otpVerify = async (
+  otpVerifyBody: OtpVerifyBody,
+  options?: RequestInit,
+): Promise<OtpVerifyResponse> => {
+  return customFetch<OtpVerifyResponse>(getOtpVerifyUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(otpVerifyBody),
+  });
+};
+
+export const getOtpVerifyMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof otpVerify>>,
+    TError,
+    { data: BodyType<OtpVerifyBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof otpVerify>>,
+  TError,
+  { data: BodyType<OtpVerifyBody> },
+  TContext
+> => {
+  const mutationKey = ["otpVerify"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof otpVerify>>,
+    { data: BodyType<OtpVerifyBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return otpVerify(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type OtpVerifyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof otpVerify>>
+>;
+export type OtpVerifyMutationBody = BodyType<OtpVerifyBody>;
+export type OtpVerifyMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Verify an OTP and receive a short-lived verifiedToken
+ */
+export const useOtpVerify = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof otpVerify>>,
+    TError,
+    { data: BodyType<OtpVerifyBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof otpVerify>>,
+  TError,
+  { data: BodyType<OtpVerifyBody> },
+  TContext
+> => {
+  return useMutation(getOtpVerifyMutationOptions(options));
+};
+
+/**
+ * @summary Reset password using an OTP-verifiedToken
+ */
+export const getForgotPasswordUrl = () => {
+  return `/api/auth/forgot-password`;
+};
+
+export const forgotPassword = async (
+  forgotPasswordBody: ForgotPasswordBody,
+  options?: RequestInit,
+): Promise<MessageResponse> => {
+  return customFetch<MessageResponse>(getForgotPasswordUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(forgotPasswordBody),
+  });
+};
+
+export const getForgotPasswordMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof forgotPassword>>,
+    TError,
+    { data: BodyType<ForgotPasswordBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof forgotPassword>>,
+  TError,
+  { data: BodyType<ForgotPasswordBody> },
+  TContext
+> => {
+  const mutationKey = ["forgotPassword"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof forgotPassword>>,
+    { data: BodyType<ForgotPasswordBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return forgotPassword(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ForgotPasswordMutationResult = NonNullable<
+  Awaited<ReturnType<typeof forgotPassword>>
+>;
+export type ForgotPasswordMutationBody = BodyType<ForgotPasswordBody>;
+export type ForgotPasswordMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Reset password using an OTP-verifiedToken
+ */
+export const useForgotPassword = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof forgotPassword>>,
+    TError,
+    { data: BodyType<ForgotPasswordBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof forgotPassword>>,
+  TError,
+  { data: BodyType<ForgotPasswordBody> },
+  TContext
+> => {
+  return useMutation(getForgotPasswordMutationOptions(options));
 };
 
 /**

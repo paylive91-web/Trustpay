@@ -513,7 +513,6 @@ function fSettings(s: any) {
     })(),
     buyRewardPercent: parseFloat(s.buyRewardPercent || "5"),
     sellRewardPercent: parseFloat(s.sellRewardPercent || "0"),
-    deviceRegistrationLimit: parseInt(s.deviceRegistrationLimit || "3"),
     broadcastNotification,
   };
 }
@@ -578,7 +577,6 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
   addScalar("buyLockMinutes", b.buyLockMinutes); addScalar("sellerConfirmMinutes", b.sellerConfirmMinutes);
   addScalar("disputeWindowHours", b.disputeWindowHours);
   addScalar("sellRewardPercent", b.sellRewardPercent);
-  addScalar("deviceRegistrationLimit", b.deviceRegistrationLimit);
   addScalar("smsAutoDeleteEnabled", b.smsAutoDeleteEnabled);
   addScalar("highValueThreshold", b.highValueThreshold); addScalar("highValueCriticalThreshold", b.highValueCriticalThreshold);
   addScalar("platformCommissionPerChunk", b.platformCommissionPerChunk);

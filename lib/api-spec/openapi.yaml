@@ -119,64 +119,76 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /auth/google/link:
+  /auth/otp/send:
     post:
-      operationId: googleLink
+      operationId: otpSend
       tags: [auth]
-      summary: Link Google account to current user
+      summary: Send a one-time-password to a phone number
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/GoogleIdTokenBody"
+              $ref: "#/components/schemas/OtpSendBody"
       responses:
         "200":
-          description: Linked
+          description: OTP dispatched
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
+                $ref: "#/components/schemas/MessageResponse"
         "400":
           description: Bad request
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-        "409":
-          description: Already linked to another user
+        "429":
+          description: Rate limited
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /auth/google/unlink:
+  /auth/otp/verify:
     post:
-      operationId: googleUnlink
+      operationId: otpVerify
       tags: [auth]
-      summary: Unlink Google account from current user
-      responses:
-        "200":
-          description: Unlinked
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/User"
-
-  /auth/google/reset-password:
-    post:
-      operationId: googleResetPassword
-      tags: [auth]
-      summary: Reset password using a verified Google ID token
+      summary: Verify an OTP and receive a short-lived verifiedToken
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/GoogleResetPasswordBody"
+              $ref: "#/components/schemas/OtpVerifyBody"
       responses:
         "200":
-          description: Password reset
+          description: Verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OtpVerifyResponse"
+        "400":
+          description: Wrong/expired OTP
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/forgot-password:
+    post:
+      operationId: forgotPassword
+      tags: [auth]
+      summary: Reset password using an OTP-verifiedToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordBody"
+      responses:
+        "200":
+          description: Password updated
           content:
             application/json:
               schema:
@@ -188,7 +200,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "404":
-          description: No account linked to this Google identity
+          description: Phone not registered
           content:
             application/json:
               schema:
@@ -1079,7 +1091,13 @@ components:
           type: string
         phone:
           type: string
-      required: [username, password]
+        referralCode:
+          type: string
+        deviceFingerprint:
+          type: string
+        verifiedToken:
+          type: string
+      required: [username, password, phone, verifiedToken]
 
     LoginBody:
       type: object
@@ -1292,8 +1310,6 @@ components:
           type: string
         forceAppDownload:
           type: boolean
-        googleClientId:
-          type: string
         buyRules:
           type: string
         sellRules:
@@ -1306,21 +1322,50 @@ components:
           type: string
       required: [upiId, upiName, appName]
 
-    GoogleIdTokenBody:
+    OtpSendBody:
       type: object
       properties:
-        idToken:
+        phone:
           type: string
-      required: [idToken]
+        purpose:
+          type: string
+          enum: [register, forgot]
+        website:
+          type: string
+          description: Honeypot — leave empty.
+      required: [phone, purpose]
 
-    GoogleResetPasswordBody:
+    OtpVerifyBody:
       type: object
       properties:
-        idToken:
+        phone:
+          type: string
+        purpose:
+          type: string
+          enum: [register, forgot]
+        code:
+          type: string
+      required: [phone, purpose, code]
+
+    OtpVerifyResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        verifiedToken:
+          type: string
+      required: [success, verifiedToken]
+
+    ForgotPasswordBody:
+      type: object
+      properties:
+        phone:
           type: string
         newPassword:
           type: string
-      required: [idToken, newPassword]
+        verifiedToken:
+          type: string
+      required: [phone, newPassword, verifiedToken]
 
     FeeTier:
       type: object

@@ -20,7 +20,6 @@ export interface AppSettings {
   apkDownloadUrl?: string;
   apkVersion?: string;
   forceAppDownload?: boolean;
-  googleClientId?: string;
   buyRules?: string;
   sellRules?: string;
   buyRulesImageUrl?: string;

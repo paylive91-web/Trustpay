@@ -20,7 +20,10 @@ export const HealthCheckResponse = zod.object({
 export const RegisterBody = zod.object({
   username: zod.string(),
   password: zod.string(),
-  phone: zod.string().optional(),
+  phone: zod.string(),
+  referralCode: zod.string().optional(),
+  deviceFingerprint: zod.string().optional(),
+  verifiedToken: zod.string(),
 });
 
 export const RegisterResponse = zod.object({
@@ -90,52 +93,42 @@ export const GetMeResponse = zod.object({
 });
 
 /**
- * @summary Link Google account to current user
+ * @summary Send a one-time-password to a phone number
  */
-export const GoogleLinkBody = zod.object({
-  idToken: zod.string(),
+export const OtpSendBody = zod.object({
+  phone: zod.string(),
+  purpose: zod.enum(["register", "forgot"]),
+  website: zod.string().optional().describe("Honeypot — leave empty."),
 });
 
-export const GoogleLinkResponse = zod.object({
-  id: zod.number(),
-  username: zod.string(),
-  phone: zod.string().optional(),
-  balance: zod.number(),
-  totalDeposits: zod.number(),
-  totalWithdrawals: zod.number(),
-  role: zod.enum(["user", "admin"]),
-  email: zod.string().optional(),
-  googleVerified: zod.boolean().optional(),
-  isVerifiedAgent: zod.boolean().optional(),
-  createdAt: zod.string().optional(),
+export const OtpSendResponse = zod.object({
+  message: zod.string(),
 });
 
 /**
- * @summary Unlink Google account from current user
+ * @summary Verify an OTP and receive a short-lived verifiedToken
  */
-export const GoogleUnlinkResponse = zod.object({
-  id: zod.number(),
-  username: zod.string(),
-  phone: zod.string().optional(),
-  balance: zod.number(),
-  totalDeposits: zod.number(),
-  totalWithdrawals: zod.number(),
-  role: zod.enum(["user", "admin"]),
-  email: zod.string().optional(),
-  googleVerified: zod.boolean().optional(),
-  isVerifiedAgent: zod.boolean().optional(),
-  createdAt: zod.string().optional(),
+export const OtpVerifyBody = zod.object({
+  phone: zod.string(),
+  purpose: zod.enum(["register", "forgot"]),
+  code: zod.string(),
+});
+
+export const OtpVerifyResponse = zod.object({
+  success: zod.boolean(),
+  verifiedToken: zod.string(),
 });
 
 /**
- * @summary Reset password using a verified Google ID token
+ * @summary Reset password using an OTP-verifiedToken
  */
-export const GoogleResetPasswordBody = zod.object({
-  idToken: zod.string(),
+export const ForgotPasswordBody = zod.object({
+  phone: zod.string(),
   newPassword: zod.string(),
+  verifiedToken: zod.string(),
 });
 
-export const GoogleResetPasswordResponse = zod.object({
+export const ForgotPasswordResponse = zod.object({
   message: zod.string(),
 });
 
@@ -341,7 +334,6 @@ export const GetAppSettingsResponse = zod.object({
   apkDownloadUrl: zod.string().optional(),
   apkVersion: zod.string().optional(),
   forceAppDownload: zod.boolean().optional(),
-  googleClientId: zod.string().optional(),
   buyRules: zod.string().optional(),
   sellRules: zod.string().optional(),
   buyRulesImageUrl: zod.string().optional(),
@@ -623,7 +615,6 @@ export const AdminGetSettingsResponse = zod
     apkDownloadUrl: zod.string().optional(),
     apkVersion: zod.string().optional(),
     forceAppDownload: zod.boolean().optional(),
-    googleClientId: zod.string().optional(),
     buyRules: zod.string().optional(),
     sellRules: zod.string().optional(),
     buyRulesImageUrl: zod.string().optional(),
@@ -721,7 +712,6 @@ export const AdminUpdateSettingsResponse = zod
     apkDownloadUrl: zod.string().optional(),
     apkVersion: zod.string().optional(),
     forceAppDownload: zod.boolean().optional(),
-    googleClientId: zod.string().optional(),
     buyRules: zod.string().optional(),
     sellRules: zod.string().optional(),
     buyRulesImageUrl: zod.string().optional(),

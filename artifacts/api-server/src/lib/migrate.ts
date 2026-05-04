@@ -261,6 +261,42 @@ export async function ensureSchema(): Promise<void> {
 
     await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS sms_active_patterns_dedup ON sms_active_patterns(sender_key, utr_regex)`);
 
+    // ── OTP verification (phone-based registration & forgot-password) ────
+    // Each row is a single OTP issuance keyed by phone+purpose. The hash
+    // (bcrypt) of the 6-digit code is stored — never the plaintext. Old
+    // entries are kept for ~24h to satisfy the per-phone hourly rate-limit
+    // window; a periodic cleanup is unnecessary at TrustPay's scale and
+    // can be added later if needed.
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS otp_codes (
+          id SERIAL PRIMARY KEY,
+          phone TEXT NOT NULL,
+          purpose TEXT NOT NULL,
+          code_hash TEXT NOT NULL,
+          attempts INTEGER NOT NULL DEFAULT 0,
+          expires_at TIMESTAMP NOT NULL,
+          consumed_at TIMESTAMP,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        )
+      `);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS otp_codes_phone_idx ON otp_codes(phone, purpose, created_at DESC)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS otp_codes_created_idx ON otp_codes(created_at)`);
+
+      // Per-IP rate limiter — independent of phone so a single IP can't
+      // burn through the per-phone limit on many different numbers.
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS otp_rate_limits (
+          id SERIAL PRIMARY KEY,
+          ip TEXT NOT NULL,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        )
+      `);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS otp_rate_limits_ip_idx ON otp_rate_limits(ip, created_at DESC)`);
+    } catch (err) {
+      logger.error({ err }, "otp tables bootstrap failed");
+    }
+
     // disputes — bring older deployments in sync with the current schema.
     // Each ALTER is `ADD COLUMN IF NOT EXISTS` so repeated runs are no-ops.
     // Without these, drizzle's INSERT into disputes was failing on prod with

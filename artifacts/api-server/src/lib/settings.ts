@@ -72,8 +72,6 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   buyRewardTiers: "",       // empty string = not configured; fall back to buyRewardPercent
   buyRewardPercent: "5",   // legacy flat %; only active when buyRewardTiers is not yet set in DB
   sellRewardPercent: "0",  // seller reward % on each trade (default 0%, can enable anytime)
-  // Max accounts allowed per device fingerprint (default 3)
-  deviceRegistrationLimit: "3",
   smsAutoDeleteEnabled: "false",
 };
 

@@ -20,7 +20,10 @@ export interface MessageResponse {
 export interface RegisterBody {
   username: string;
   password: string;
-  phone?: string;
+  phone: string;
+  referralCode?: string;
+  deviceFingerprint?: string;
+  verifiedToken: string;
 }
 
 export interface LoginBody {
@@ -176,7 +179,6 @@ export interface AppSettings {
   apkDownloadUrl?: string;
   apkVersion?: string;
   forceAppDownload?: boolean;
-  googleClientId?: string;
   buyRules?: string;
   sellRules?: string;
   buyRulesImageUrl?: string;
@@ -184,13 +186,44 @@ export interface AppSettings {
   inviteShareImageUrl?: string;
 }
 
-export interface GoogleIdTokenBody {
-  idToken: string;
+export type OtpSendBodyPurpose =
+  (typeof OtpSendBodyPurpose)[keyof typeof OtpSendBodyPurpose];
+
+export const OtpSendBodyPurpose = {
+  register: "register",
+  forgot: "forgot",
+} as const;
+
+export interface OtpSendBody {
+  phone: string;
+  purpose: OtpSendBodyPurpose;
+  /** Honeypot — leave empty. */
+  website?: string;
 }
 
-export interface GoogleResetPasswordBody {
-  idToken: string;
+export type OtpVerifyBodyPurpose =
+  (typeof OtpVerifyBodyPurpose)[keyof typeof OtpVerifyBodyPurpose];
+
+export const OtpVerifyBodyPurpose = {
+  register: "register",
+  forgot: "forgot",
+} as const;
+
+export interface OtpVerifyBody {
+  phone: string;
+  purpose: OtpVerifyBodyPurpose;
+  code: string;
+}
+
+export interface OtpVerifyResponse {
+  success: boolean;
+  verifiedToken: string;
+}
+
+export interface ForgotPasswordBody {
+  phone: string;
   newPassword: string;
+  verifiedToken: string;
 }
 
 export interface FeeTier {

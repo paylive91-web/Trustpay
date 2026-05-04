@@ -5,12 +5,10 @@
  * TrustPay API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { OtpVerifyBodyPurpose } from "./otpVerifyBodyPurpose";
 
-export interface RegisterBody {
-  username: string;
-  password: string;
+export interface OtpVerifyBody {
   phone: string;
-  referralCode?: string;
-  deviceFingerprint?: string;
-  verifiedToken: string;
+  purpose: OtpVerifyBodyPurpose;
+  code: string;
 }

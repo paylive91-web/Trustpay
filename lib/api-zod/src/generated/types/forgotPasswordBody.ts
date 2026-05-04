@@ -6,7 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface GoogleResetPasswordBody {
-  idToken: string;
+export interface ForgotPasswordBody {
+  phone: string;
   newPassword: string;
+  verifiedToken: string;
 }

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface GoogleIdTokenBody {
-  idToken: string;
+export interface OtpVerifyResponse {
+  success: boolean;
+  verifiedToken: string;
 }

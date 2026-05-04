@@ -7,36 +7,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldCheck, Loader2 } from "lucide-react";
-const logoPath = `${import.meta.env.BASE_URL}trustpay-logo.png`;
 import Layout from "@/components/layout";
-import { getGoogleIdToken } from "@/lib/google-id";
-
+import { ShieldCheck, Zap, Star, User as UserIcon, Lock, Loader2 } from "lucide-react";
 import { API_BASE } from "@/lib/api-config";
 
-type LoginStep = "login" | "forgot_google";
+const logoPath = `${import.meta.env.BASE_URL}trustpay-logo.png`;
 
 export default function Login() {
   const { data: settings } = useGetAppSettings();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { data: user, isLoading: isUserLoading } = useGetMe({ query: { queryKey: ["me"], retry: false } });
-  const [step, setStep] = useState<LoginStep>("login");
-  const [loading, setLoading] = useState(false);
+  const { data: user, isLoading } = useGetMe({ query: { queryKey: ["me"], retry: false } });
+
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
-  const [googleIdToken, setGoogleIdToken] = useState<string | null>(null);
-  const [verifiedHint, setVerifiedHint] = useState<string>("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmNewPassword, setConfirmNewPassword] = useState("");
-
-  const googleClientId = settings?.googleClientId;
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user && !isUserLoading) {
-      setLocation("/");
-    }
-  }, [user, isUserLoading, setLocation]);
+    if (user && !isLoading) setLocation("/");
+  }, [user, isLoading, setLocation]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,9 +41,8 @@ export default function Login() {
         body: JSON.stringify({ identifier, password, deviceFingerprint: getDeviceFingerprint() }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || `Login failed (${res.status})`);
+      if (!res.ok) throw new Error(data.error || "Login failed");
       setAuthToken(data.token);
-      localStorage.removeItem("popup_seen_session");
       toast({ title: "Login successful" });
       setLocation("/");
     } catch (err: any) {
@@ -64,156 +52,91 @@ export default function Login() {
     }
   };
 
-  const handleVerifyWithGoogle = async () => {
-    if (!googleClientId) {
-      toast({ title: "Google verification is not configured. Please contact support.", variant: "destructive" });
-      return;
-    }
-    setLoading(true);
-    try {
-      const idToken = await getGoogleIdToken(googleClientId);
-      let hint = "";
-      try {
-        const payload = JSON.parse(atob(idToken.split(".")[1]));
-        hint = payload?.email || "";
-      } catch {}
-      setGoogleIdToken(idToken);
-      setVerifiedHint(hint);
-      toast({ title: "Google verified", description: hint });
-    } catch (err: any) {
-      toast({ title: "Verification failed", description: err?.message || "Unknown error", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResetPasswordWithGoogle = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!googleIdToken) {
-      toast({ title: "Please complete Google verification first", variant: "destructive" });
-      return;
-    }
-    if (newPassword.length < 6) {
-      toast({ title: "Password must be at least 6 characters", variant: "destructive" });
-      return;
-    }
-    if (newPassword !== confirmNewPassword) {
-      toast({ title: "Passwords don't match", variant: "destructive" });
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_BASE}/auth/google/reset-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken: googleIdToken, newPassword }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || `Failed to reset password (${res.status})`);
-      toast({ title: "Password changed!", description: "Please log in with your new password." });
-      setStep("login");
-      setPassword("");
-      setNewPassword("");
-      setConfirmNewPassword("");
-      setGoogleIdToken(null);
-      setVerifiedHint("");
-    } catch (err: any) {
-      toast({ title: "Error", description: err?.message || "Unknown error", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const appName = (settings as any)?.appName || "TrustPay";
+  const logoUrl = (settings as any)?.appLogoUrl || logoPath;
 
   return (
     <Layout showBottomNav={false}>
-      <div className="flex flex-col items-center justify-center min-h-screen p-6">
-        <img src={settings?.appLogoUrl || logoPath} alt={`${settings?.appName || "TrustPay"} Logo`} className="w-24 h-24 mb-2 rounded-2xl object-contain" />
-        <div className="text-xl font-bold mb-6 text-primary">{settings?.appName || "TrustPay"}</div>
+      <div className="min-h-screen w-full bg-white relative overflow-hidden">
+        {/* Soft gradient corner accents */}
+        <div className="absolute -top-40 -right-40 w-[28rem] h-[28rem] rounded-full bg-gradient-to-br from-indigo-200/60 via-violet-200/50 to-fuchsia-100/40 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-40 -left-40 w-[26rem] h-[26rem] rounded-full bg-gradient-to-tr from-cyan-100/50 via-sky-100/40 to-transparent blur-3xl pointer-events-none" />
 
-        {step === "login" && (
-          <>
-            <h1 className="text-2xl font-bold mb-2">Welcome Back</h1>
-            <p className="text-muted-foreground mb-8 text-center">Login with your username or mobile number</p>
-            <form onSubmit={handleLogin} className="w-full space-y-4">
-              <div className="space-y-2">
-                <Label>Username or Mobile Number</Label>
-                <Input type="text" placeholder="Username or 10-digit mobile" value={identifier} onChange={(e) => setIdentifier(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Password</Label>
-                <Input type="password" placeholder="Enter password" value={password} onChange={(e) => setPassword(e.target.value)} />
-              </div>
-              <div className="text-right">
-                <button
-                  type="button"
-                  className="text-sm text-primary font-medium"
-                  onClick={() => {
-                    setStep("forgot_google");
-                    setGoogleIdToken(null);
-                    setVerifiedHint("");
-                  }}
-                  data-testid="link-forgot-password"
-                >
-                  Forgot Password?
-                </button>
-              </div>
-              <Button type="submit" className="w-full mt-2 h-12 text-base" disabled={loading}>
-                {loading ? "Logging in..." : "Login"}
-              </Button>
-            </form>
-            <div className="mt-8 text-sm">
-              Don't have an account? <Link href="/register" className="text-primary font-medium">Register here</Link>
+        <div className="relative max-w-md mx-auto px-5 pt-10 pb-12">
+          {/* Brand header */}
+          <div className="flex flex-col items-center mb-6">
+            <div className="relative mb-3">
+              <div className="absolute inset-0 rounded-[26px] bg-indigo-500/20 blur-xl scale-110" />
+              <img src={logoUrl} alt={`${appName} Logo`} className="relative w-20 h-20 rounded-[26px] object-contain shadow-xl ring-1 ring-slate-200/60 bg-white" />
             </div>
-          </>
-        )}
+            <div className="text-[22px] font-extrabold text-slate-900 tracking-tight">{appName}</div>
+            <div className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-[0.14em]">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> Secure P2P UPI Platform
+            </div>
+          </div>
 
-        {step === "forgot_google" && (
-          <>
-            <h1 className="text-2xl font-bold mb-2">Forgot Password</h1>
-            <p className="text-muted-foreground mb-6 text-center">Apne bound Google account se verify karke naya password set karein.</p>
-            <form onSubmit={handleResetPasswordWithGoogle} className="w-full space-y-4">
-              <div className="rounded-xl border p-4 bg-muted/30">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className={`p-2 rounded-lg ${googleIdToken ? "bg-green-100 text-green-600" : "bg-amber-100 text-amber-600"}`}>
-                    <ShieldCheck className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold">Step 1 — Google Verification</div>
-                    {googleIdToken ? (
-                      <div className="text-xs text-green-700 mt-0.5 truncate">Verified: {verifiedHint || "OK"}</div>
-                    ) : (
-                      <div className="text-xs text-muted-foreground mt-0.5">Sirf wahi user reset kar sakta hai jo profile me Gmail bind kar chuka ho.</div>
-                    )}
-                  </div>
+          <div className="rounded-[28px] bg-white border border-slate-100 shadow-[0_24px_60px_-15px_rgba(15,23,42,0.18)] p-6">
+            <h1 className="text-[24px] font-extrabold text-slate-900 mb-1">Welcome Back</h1>
+            <p className="text-sm text-slate-500 mb-6">Login with your username or mobile number.</p>
+
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-[13px] font-semibold text-slate-700">Username or Mobile</Label>
+                <div className="relative">
+                  <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Input
+                    type="text"
+                    placeholder="username or 10-digit mobile"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    className="pl-10 h-12 rounded-xl bg-slate-50/70 border-slate-200 focus-visible:ring-indigo-500/40 focus-visible:border-indigo-300"
+                  />
                 </div>
-                <Button
-                  type="button"
-                  variant={googleIdToken ? "outline" : "default"}
-                  className="w-full"
-                  onClick={handleVerifyWithGoogle}
-                  disabled={loading}
-                  data-testid="button-google-forgot-verify"
-                >
-                  {loading && !googleIdToken ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                  {googleIdToken ? "Re-verify with Google" : "Verify with Google"}
-                </Button>
               </div>
 
-              <div className="space-y-2">
-                <Label>New Password</Label>
-                <Input type="password" placeholder="At least 6 characters" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} disabled={!googleIdToken} />
+              <div className="space-y-1.5">
+                <Label className="text-[13px] font-semibold text-slate-700">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Input
+                    type="password"
+                    placeholder="Enter password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10 h-12 rounded-xl bg-slate-50/70 border-slate-200 focus-visible:ring-indigo-500/40 focus-visible:border-indigo-300"
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Confirm Password</Label>
-                <Input type="password" placeholder="Repeat new password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} disabled={!googleIdToken} />
+
+              <div className="text-right">
+                <Link href="/forgot-password" className="text-sm text-indigo-600 font-semibold hover:underline" data-testid="link-forgot-password">
+                  Forgot Password?
+                </Link>
               </div>
-              <Button type="submit" className="w-full h-12 text-base" disabled={loading || !googleIdToken} data-testid="button-reset-password">
-                {loading ? "Saving..." : "Save New Password"}
+
+              <Button type="submit" disabled={loading} className="w-full h-12 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold shadow-lg shadow-indigo-500/25">
+                {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Logging in...</> : "Login"}
               </Button>
-              <Button type="button" variant="ghost" className="w-full" onClick={() => setStep("login")}>Back to Login</Button>
             </form>
-          </>
-        )}
+
+            <div className="mt-5 grid grid-cols-3 gap-2">
+              {[
+                { icon: <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />, label: "Encrypted" },
+                { icon: <Zap className="w-3.5 h-3.5 text-amber-500" />, label: "Instant" },
+                { icon: <Star className="w-3.5 h-3.5 text-indigo-500" />, label: "Trusted" },
+              ].map((b) => (
+                <div key={b.label} className="flex items-center justify-center gap-1.5 rounded-lg bg-slate-50 border border-slate-100 py-2">
+                  {b.icon}
+                  <span className="text-[11px] font-semibold text-slate-600">{b.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-6 text-center text-sm text-slate-500">
+            Don't have an account? <Link href="/register" className="text-indigo-600 font-semibold">Register here</Link>
+          </div>
+        </div>
       </div>
     </Layout>
   );
