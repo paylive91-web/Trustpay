@@ -509,3 +509,9 @@ id = "hWDlxWPiPFPCTy-URofSV"
 uri = "file://attached_assets/generated_images/trustpay_buy_promo_edited.jpg"
 type = "image"
 title = "TrustPay Buy Page — Edited Promo (with your real screenshot)"
+
+[[outputs]]
+id = "5hPPTqfpcNAQpvNo0YXoi"
+uri = "file://attached_assets/generated_images/trustpay_buy_promo_mobile.jpg"
+type = "image"
+title = "TrustPay Buy Promo — Mobile (clean & punchy)"

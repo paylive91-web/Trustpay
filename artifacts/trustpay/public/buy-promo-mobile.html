@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>TrustPay</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+  .bg-promo {
+    background:
+      radial-gradient(700px 400px at 90% -5%, rgba(56,189,248,.45), transparent 60%),
+      radial-gradient(700px 500px at -10% 110%, rgba(217,70,239,.35), transparent 60%),
+      linear-gradient(160deg,#0b1437 0%,#1e1b4b 45%,#312e81 100%);
+  }
+  .ring-green { box-shadow: 0 0 0 4px rgba(52,211,153,.4), 0 14px 40px rgba(16,185,129,.5); }
+  .ring-gold  { box-shadow: 0 0 0 4px rgba(251,191,36,.4), 0 14px 40px rgba(251,191,36,.5); }
+  .floaty { animation: floaty 3s ease-in-out infinite; }
+  @keyframes floaty { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  .pulse-dot::before {
+    content:''; display:inline-block; width:8px; height:8px; border-radius:50%;
+    background:#34d399; margin-right:8px; box-shadow:0 0 0 0 rgba(52,211,153,.7);
+    animation: ring 1.6s infinite;
+  }
+  @keyframes ring {
+    0%{box-shadow:0 0 0 0 rgba(52,211,153,.7)}
+    70%{box-shadow:0 0 0 12px rgba(52,211,153,0)}
+    100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}
+  }
+</style>
+</head>
+<body class="bg-promo text-white">
+<div class="w-[720px] mx-auto p-8 relative overflow-hidden" style="min-height:1280px;">
+
+  <!-- bg sparkle -->
+  <div class="absolute top-6 left-6 text-yellow-300/20 text-[160px] font-black select-none leading-none">₹</div>
+  <div class="absolute bottom-6 right-6 text-cyan-300/20 text-[160px] font-black select-none leading-none">₹</div>
+
+  <!-- Header strip -->
+  <div class="flex items-center justify-between mb-5 relative z-10">
+    <div class="flex items-center gap-3">
+      <div class="w-12 h-12 rounded-2xl bg-white grid place-items-center shadow-lg">
+        <span class="text-blue-700 font-extrabold text-xl">T</span>
+      </div>
+      <div class="text-3xl font-black tracking-tight">TrustPay</div>
+    </div>
+    <div class="text-[11px] font-semibold pulse-dot bg-white/10 border border-white/20 rounded-full px-3 py-1.5">
+      LIVE
+    </div>
+  </div>
+
+  <!-- Headline (short, punchy) -->
+  <div class="relative z-10 text-center mb-5">
+    <div class="inline-block bg-yellow-400 text-slate-900 text-[11px] font-extrabold tracking-[0.25em] px-3 py-1 rounded-md uppercase">
+      Buy · Earn · Repeat
+    </div>
+    <h1 class="text-[64px] leading-[1] font-black mt-3">
+      Earn <span class="text-emerald-400">₹295</span>
+    </h1>
+    <div class="text-2xl font-bold text-white/85 mt-1">on every ₹9,835 buy</div>
+  </div>
+
+  <!-- Phone screenshot center (no callouts inside, just badges around) -->
+  <div class="relative z-10 flex justify-center mb-5">
+    <div class="relative">
+      <div class="rounded-[44px] bg-slate-950 p-3 shadow-2xl ring-1 ring-white/10">
+        <div class="rounded-[36px] overflow-hidden bg-white relative">
+          <img src="/buy-screenshot.jpg" alt="" class="block w-[440px]" />
+        </div>
+      </div>
+
+      <!-- Floating badge: top -->
+      <div class="absolute -top-5 -right-6 bg-emerald-500 text-white text-base font-black rounded-full px-5 py-3 shadow-lg ring-green floaty">
+        +₹295
+      </div>
+      <!-- Floating badge: bottom-left -->
+      <div class="absolute" style="bottom:130px; left:-44px;">
+        <div class="bg-yellow-400 text-slate-900 text-base font-black rounded-full px-5 py-3 shadow-lg ring-gold floaty">
+          +₹604
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 key benefits - clean horizontal row -->
+  <div class="grid grid-cols-3 gap-3 mb-6 relative z-10">
+    <div class="rounded-2xl bg-white/10 border border-white/20 p-4 text-center">
+      <div class="text-3xl mb-1">⚡</div>
+      <div class="text-sm font-extrabold">Instant Payout</div>
+      <div class="text-[11px] text-white/70 mt-1">&lt;30 sec settlement</div>
+    </div>
+    <div class="rounded-2xl bg-white/10 border border-white/20 p-4 text-center">
+      <div class="text-3xl mb-1">💰</div>
+      <div class="text-sm font-extrabold">Up to 6%</div>
+      <div class="text-[11px] text-white/70 mt-1">on every buy</div>
+    </div>
+    <div class="rounded-2xl bg-white/10 border border-white/20 p-4 text-center">
+      <div class="text-3xl mb-1">🛡️</div>
+      <div class="text-sm font-extrabold">100% Safe</div>
+      <div class="text-[11px] text-white/70 mt-1">UTR verified</div>
+    </div>
+  </div>
+
+  <!-- Bottom CTA -->
+  <div class="rounded-3xl bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-500 p-5 text-slate-900 shadow-2xl relative z-10 overflow-hidden">
+    <div class="absolute -right-6 -bottom-12 text-white/30 text-[180px] font-black select-none leading-none">₹</div>
+    <div class="relative text-center">
+      <div class="text-2xl font-black">Start Earning Today</div>
+      <div class="text-sm font-semibold mt-1 text-slate-800">Sign up free · Buy in 1 tap · Get paid instantly</div>
+      <div class="inline-block mt-3 bg-slate-900 text-white font-black px-7 py-3 rounded-2xl shadow-lg text-base">
+        DOWNLOAD NOW →
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
