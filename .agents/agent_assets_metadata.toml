@@ -180,6 +180,12 @@ uri = "file://attached_assets/generated_images/trustpay_app_promo.png"
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "Dte3hwtsPyV3E-WFJFMVS"
+uri = "file://attached_assets/generated_images/trustpay_buy_earnings_promo.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "9i2SMWhGKDU824ilpyHpE"
 uri = "file://screenshots/home-redesign.jpg"
@@ -485,3 +491,9 @@ id = "t8CA7x1P__dVBmY5atq_X"
 uri = "file://attached_assets/generated_images/trustpay_app_promo.png"
 type = "image"
 title = "TrustPay App — Promo"
+
+[[outputs]]
+id = "ma8gu6RVEl06pGQqyi0q3"
+uri = "file://attached_assets/generated_images/trustpay_buy_earnings_promo.png"
+type = "image"
+title = "TrustPay Buy Page Earnings — Promo"
