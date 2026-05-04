@@ -497,3 +497,9 @@ id = "ma8gu6RVEl06pGQqyi0q3"
 uri = "file://attached_assets/generated_images/trustpay_buy_earnings_promo.png"
 type = "image"
 title = "TrustPay Buy Page Earnings — Promo"
+
+[[outputs]]
+id = "XYwu-2UNP0yr3YblY_TCw"
+uri = "file://attached_assets/generated_images/trustpay_orders_earnings_promo.jpg"
+type = "image"
+title = "TrustPay Orders — Earnings Promo (real app UI)"
