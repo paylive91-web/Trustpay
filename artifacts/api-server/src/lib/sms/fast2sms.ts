@@ -36,14 +36,25 @@ export async function sendOtpViaFast2Sms(phone: string, otp: string): Promise<bo
     const text = await res.text();
     let body: any = null;
     try { body = JSON.parse(text); } catch {}
+    // Surface the actual Fast2SMS error message in BOTH the log and the
+    // thrown error. Previously we threw a generic "SMS send failed (400)"
+    // which made it impossible for the user (or us) to tell whether the
+    // problem was a bad API key, an unverified sender id, insufficient
+    // wallet balance, or something else.
+    const fastMsg = (() => {
+      if (body) {
+        if (Array.isArray(body.message)) return body.message.join(", ");
+        if (typeof body.message === "string") return body.message;
+      }
+      return text.slice(0, 200);
+    })();
     if (!res.ok) {
-      logger.warn({ status: res.status, body: text.slice(0, 300) }, "fast2sms non-200");
-      throw new Error(`SMS send failed (${res.status})`);
+      logger.warn({ status: res.status, body: text.slice(0, 500) }, "fast2sms non-200");
+      throw new Error(`SMS provider error (${res.status}): ${fastMsg || "unknown"}`);
     }
     if (body && body.return === false) {
-      const msg = String(body.message || "SMS send failed");
       logger.warn({ body }, "fast2sms returned false");
-      throw new Error(msg);
+      throw new Error(`SMS provider rejected: ${fastMsg || "unknown reason"}`);
     }
     return true;
   } finally {

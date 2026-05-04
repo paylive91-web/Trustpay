@@ -376,6 +376,18 @@ export async function ensureSchema(): Promise<void> {
       logger.error({ err }, "zombie dispute backfill failed");
     }
 
+    // ── Seed admin phone number — required so the admin can use the new
+    // phone-only login flow. Idempotent: only sets the phone if it's
+    // currently NULL/empty, never overwrites an existing value. ──
+    try {
+      await db.execute(sql`
+        UPDATE users SET phone = '7379587449'
+        WHERE role = 'admin' AND (phone IS NULL OR phone = '')
+      `);
+    } catch (err) {
+      logger.error({ err }, "admin phone seed failed");
+    }
+
     // ── One-time cleanup: remove duplicate admin account (ID 22, username "admin") ──
     // The real admin is ID 1 ("Storehsswis"). ID 22 is a leftover duplicate with
     // no rows in any FK-constrained table, so a direct delete is safe.
