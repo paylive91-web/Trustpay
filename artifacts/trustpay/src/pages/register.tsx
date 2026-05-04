@@ -126,6 +126,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [referralCode, setReferralCode] = useState("");
   const [honeypot, setHoneypot] = useState("");
   const [otp, setOtp] = useState("");
@@ -151,6 +152,7 @@ export default function Register() {
   const validateForm = (): string | null => {
     if (!/^[6-9]\d{9}$/.test(phone)) return "Enter a valid 10-digit mobile number";
     if (password.length < 6) return "Password must be at least 6 characters";
+    if (password !== confirmPassword) return "Passwords don't match";
     if (!referralCode.trim()) return "Referral code required";
     return null;
   };
@@ -245,8 +247,8 @@ export default function Register() {
       <AuthShell badge="Join Trusted P2P Network">
         {step === "form" && (
           <>
-            <h1 className="text-[22px] font-extrabold text-slate-900 tracking-tight">Create Account</h1>
-            <p className="text-[13px] text-slate-500 mb-4">Sign up with your mobile — username auto-generated.</p>
+            <h1 className="text-[22px] font-extrabold text-slate-900 tracking-tight">Registration</h1>
+            <p className="text-[13px] text-slate-500 mb-4">Create your TrustPay account to get started.</p>
 
             <form onSubmit={handleSubmitForm} className="space-y-3">
               <Honeypot value={honeypot} onChange={setHoneypot} />
@@ -277,6 +279,15 @@ export default function Register() {
                 <PremiumInputWrap>
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400 pointer-events-none" />
                   <Input type="password" placeholder="At least 6 characters" value={password} onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10 h-11 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0" />
+                </PremiumInputWrap>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[12px] font-semibold text-slate-700 tracking-wide">Confirm Password</Label>
+                <PremiumInputWrap>
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400 pointer-events-none" />
+                  <Input type="password" placeholder="Repeat password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
                     className="pl-10 h-11 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0" />
                 </PremiumInputWrap>
               </div>

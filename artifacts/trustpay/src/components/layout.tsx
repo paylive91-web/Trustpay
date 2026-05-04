@@ -44,7 +44,7 @@ export default function Layout({ children, showBottomNav = true }: LayoutProps) 
   return (
     <div className="min-h-[100dvh] w-full bg-muted/30 flex justify-center">
       <div className="w-full max-w-[430px] bg-background min-h-[100dvh] shadow-xl relative overflow-hidden">
-        <div className="min-h-[100dvh] overflow-y-auto pb-28">
+        <div className={`min-h-[100dvh] overflow-y-auto ${showBottomNav ? "pb-28" : ""}`}>
           {children}
         </div>
         <SellerAlertsPopup />
