@@ -70,6 +70,29 @@ export async function issueOtp(opts: { phone: string; purpose: OtpPurpose; ip: s
   if (guard) return { ok: false, error: guard, status: 429 };
 
   const otp = generateOtp();
+
+  // CRITICAL ORDERING: Send the SMS BEFORE writing anything to the DB.
+  //
+  // The previous order (insert OTP row → call Fast2SMS) had a nasty failure
+  // mode: if Fast2SMS errored / timed out (Render cold start, network
+  // hiccup, provider 5xx), the user saw "OTP send failed" but the row was
+  // already persisted. That row then:
+  //   - blocked retries for 60s via the resend cooldown,
+  //   - and consumed one of the 3-per-hour quota slots.
+  //
+  // Doing the SMS first means a failed send leaves no trace, the user can
+  // immediately retry, and counters/cooldowns only advance when the user
+  // actually received an SMS.
+  try {
+    await sendOtp(phone, otp);
+  } catch (err: any) {
+    logger.error(
+      { err: String(err?.message || err), phone, purpose },
+      "sendOtp failed — no DB row written, user can retry immediately",
+    );
+    return { ok: false, error: err?.message || "Failed to send OTP", status: 502 };
+  }
+
   const codeHash = await bcrypt.hash(otp, 8);
   const expiresAt = new Date(Date.now() + OTP_TTL_MS);
 
@@ -87,12 +110,6 @@ export async function issueOtp(opts: { phone: string; purpose: OtpPurpose; ip: s
     await db.execute(sql`INSERT INTO otp_rate_limits (ip) VALUES (${ip})`);
   }
 
-  try {
-    await sendOtp(phone, otp);
-  } catch (err: any) {
-    logger.error({ err: String(err?.message || err), phone }, "sendOtp failed");
-    return { ok: false, error: err?.message || "Failed to send OTP", status: 502 };
-  }
   return { ok: true };
 }
 
