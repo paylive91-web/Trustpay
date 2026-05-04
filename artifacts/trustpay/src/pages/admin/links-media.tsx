@@ -206,11 +206,11 @@ export default function AdminLinksMedia() {
               <CardContent className="space-y-4">
                 {inviteShareImageUrl ? (
                   <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
-                    <div className="aspect-video bg-muted flex items-center justify-center overflow-hidden">
+                    <div className="bg-muted flex items-center justify-center overflow-hidden p-2">
                       <img
                         src={inviteShareImageUrl}
                         alt="Invite Share Image"
-                        className="w-full h-full object-contain"
+                        className="max-h-[480px] max-w-full w-auto h-auto object-contain rounded"
                       />
                     </div>
                     <div className="p-3 flex items-center justify-between gap-2">
