@@ -102,6 +102,15 @@ function f(o: any, sellerInfo?: any) {
     utrNumber: o.utrNumber,
     screenshotUrl: o.screenshotUrl,
     recordingUrl: o.recordingUrl,
+    // OCR fraud-check fields — surfaced so the seller's confirmation popup
+    // can show a clear warning banner when the system flagged the screenshot.
+    // Without these on the response, the seller only saw a notification in
+    // the bell tray (often missed) and confirmed flagged payments blindly.
+    ocrStatus: o.ocrStatus || null,
+    ocrAmount: o.ocrAmount || null,
+    ocrUtr: o.ocrUtr || null,
+    ocrAmountMatch: o.ocrAmountMatch || null,
+    ocrUtrMatch: o.ocrUtrMatch || null,
     createdAt: o.createdAt,
     updatedAt: o.updatedAt,
     qrImageUrl: undefined as string | undefined,

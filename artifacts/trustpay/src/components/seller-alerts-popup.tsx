@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BellRing, Clock, AlertTriangle, Loader2 } from "lucide-react";
+import { BellRing, Clock, AlertTriangle, Loader2, ShieldCheck, ShieldAlert, Search } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 import { playAlarm } from "@/lib/alarm";
 import { useToast } from "@/hooks/use-toast";
@@ -22,7 +22,39 @@ type SellerAlert = {
   buyer?: { id?: number; username?: string } | null;
   confirmDeadline?: string | null;
   lockedAt?: string | null;
+  // OCR fraud-check results — populated by the async OCR pipeline shortly
+  // after the buyer submits payment proof. Used to render the verification
+  // banner inside the popup so the seller can see flags BEFORE confirming.
+  ocrStatus?: "pending" | "done" | "failed" | "unreadable" | null;
+  ocrAmount?: string | null;
+  ocrUtr?: string | null;
+  ocrAmountMatch?: "match" | "mismatch" | "not_extracted" | null;
+  ocrUtrMatch?: "match" | "mismatch" | "not_extracted" | null;
 };
+
+type VerificationState =
+  | { kind: "pending" }
+  | { kind: "clean" }
+  | { kind: "flagged"; issues: string[] };
+
+function buildVerificationState(a: SellerAlert): VerificationState {
+  const status = a.ocrStatus;
+  if (!status || status === "pending") return { kind: "pending" };
+  const issues: string[] = [];
+  if (status === "failed" || status === "unreadable") {
+    issues.push("System could not read the screenshot clearly. Verify manually in your bank app.");
+  }
+  if (a.ocrAmountMatch === "mismatch") {
+    const shown = a.ocrAmount ? `₹${a.ocrAmount}` : "different amount";
+    issues.push(`Amount mismatch: screenshot shows ${shown}, order is ₹${Number(a.amount).toFixed(2)}.`);
+  }
+  if (a.ocrUtrMatch === "mismatch") {
+    const shown = a.ocrUtr ? a.ocrUtr : "different UTR";
+    issues.push(`UTR mismatch: screenshot shows ${shown}, buyer submitted ${a.utrNumber || "—"}.`);
+  }
+  if (issues.length > 0) return { kind: "flagged", issues };
+  return { kind: "clean" };
+}
 
 import { API_BASE } from "@/lib/api-config";
 
@@ -130,6 +162,9 @@ export default function SellerAlertsPopup() {
     ? Math.max(0, new Date(current.confirmDeadline).getTime() - now)
     : 0;
 
+  const verification = buildVerificationState(current);
+  const isFlagged = verification.kind === "flagged";
+
   return (
     <>
       <Dialog open={true}>
@@ -150,7 +185,65 @@ export default function SellerAlertsPopup() {
                 </div>
               </DialogHeader>
               <div className="p-4 space-y-4">
-                <div className="rounded-2xl bg-muted/50 p-4">
+                {/* Verification banner — surfaces system OCR fraud-check
+                    result inline so the seller cannot miss it. Notifications
+                    in the bell tray were being ignored; this banner sits
+                    directly above the amount block where the eye lands first. */}
+                {verification.kind === "flagged" && (
+                  <div
+                    role="alert"
+                    className="rounded-2xl border-2 border-red-400 bg-gradient-to-br from-red-50 to-rose-50 p-4 shadow-sm"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="rounded-full bg-red-100 p-2 shrink-0">
+                        <ShieldAlert className="h-5 w-5 text-red-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-black text-red-700 uppercase tracking-wide">
+                          System flagged this payment
+                        </div>
+                        <p className="text-[12px] text-red-700/90 mt-0.5 font-medium">
+                          Verify carefully in your bank app before confirming.
+                        </p>
+                        <ul className="mt-2 space-y-1.5">
+                          {verification.issues.map((issue, i) => (
+                            <li key={i} className="flex items-start gap-2 text-[13px] text-red-800 leading-snug">
+                              <span className="text-red-500 font-bold mt-0.5">•</span>
+                              <span>{issue}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {verification.kind === "pending" && (
+                  <div className="rounded-2xl border border-sky-200 bg-sky-50 p-3 flex items-center gap-3">
+                    <Loader2 className="h-4 w-4 text-sky-600 animate-spin shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-semibold text-sky-800">
+                        System verification in progress
+                      </div>
+                      <p className="text-[11px] text-sky-700/80 leading-snug">
+                        We're checking the screenshot and UTR. Wait a few seconds for the result before confirming.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {verification.kind === "clean" && (
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 flex items-center gap-3">
+                    <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-semibold text-emerald-800">
+                        System verified — amount and UTR match
+                      </div>
+                      <p className="text-[11px] text-emerald-700/80 leading-snug">
+                        Still confirm the credit in your bank app before pressing YES.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                <div className={`rounded-2xl p-4 ${isFlagged ? "bg-red-50/40 border border-red-200" : "bg-muted/50"}`}>
                   <div className="text-sm text-muted-foreground">Amount</div>
                   <div className="text-3xl font-black">₹{Number(current.amount).toFixed(2)}</div>
                   <div className="text-xs text-muted-foreground mt-1">
@@ -177,18 +270,27 @@ export default function SellerAlertsPopup() {
                 </div>
                 <div className="grid grid-cols-1 gap-2">
                   <Button
-                    className="h-12 bg-green-600 hover:bg-green-700"
+                    className={`h-12 ${
+                      isFlagged
+                        ? "bg-amber-600 hover:bg-amber-700 ring-2 ring-red-300 ring-offset-2"
+                        : "bg-green-600 hover:bg-green-700"
+                    }`}
                     onClick={() => setShowHistoryWarning(true)}
                   >
-                    YES — Payment Received
+                    {isFlagged ? "YES — Confirm anyway" : "YES — Payment Received"}
                   </Button>
                   <Button
-                    variant="outline"
+                    variant={isFlagged ? "destructive" : "outline"}
                     className="h-11"
                     onClick={() => setShowDisputeWarning(true)}
                   >
                     NOT received — Open Dispute
                   </Button>
+                  {isFlagged && (
+                    <p className="text-[11px] text-center text-red-700 font-medium leading-snug">
+                      Confirm only if the credit is visible in your bank statement. False confirmations cannot be reversed.
+                    </p>
+                  )}
                 </div>
                 <div className="text-[11px] text-center text-muted-foreground">
                   This popup will stay open until you confirm or dispute.
