@@ -120,7 +120,17 @@ interface BuyRewardTier {
 export default function AdminSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: settings, isLoading: settingsLoading, isError: settingsError, error: settingsErr } = useAdminGetSettings({ query: { queryKey: getAdminGetSettingsQueryKey(), retry: false, refetchOnWindowFocus: false } });
+  const { data: settings, isLoading: settingsLoading, isError: settingsError, error: settingsErr } = useAdminGetSettings({
+    query: {
+      queryKey: getAdminGetSettingsQueryKey(),
+      retry: false,
+      refetchOnWindowFocus: false,
+      // Cache between admin tab switches to avoid a fresh DB round-trip
+      // on every navigation (Settings ↔ Links & Media ↔ etc).
+      staleTime: 60_000,
+      gcTime: 5 * 60_000,
+    },
+  });
   const notifyMut = useAdminNotifyAll();
   const [broadcastTitle, setBroadcastTitle] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
@@ -212,9 +222,12 @@ export default function AdminSettings() {
 
   const updateSettingsMut = useAdminUpdateSettings({
     mutation: {
-      onSuccess: () => {
+      onSuccess: (data) => {
         toast({ title: "Settings updated successfully" });
-        queryClient.invalidateQueries({ queryKey: getAdminGetSettingsQueryKey() });
+        // PUT response already contains the fresh settings — write straight
+        // to cache instead of triggering another GET. Skips one full
+        // round-trip to Supabase, save feels instant.
+        if (data) queryClient.setQueryData(getAdminGetSettingsQueryKey(), data);
         queryClient.invalidateQueries({ queryKey: getGetAppSettingsQueryKey() });
         setAdminPassword("");
       },

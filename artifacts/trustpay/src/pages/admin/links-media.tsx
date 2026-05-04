@@ -37,7 +37,18 @@ export default function AdminLinksMedia() {
     data: settings,
     isLoading,
     isError,
-  } = useAdminGetSettings({ query: { queryKey: getAdminGetSettingsQueryKey(), retry: false, refetchOnWindowFocus: false } });
+  } = useAdminGetSettings({
+    query: {
+      queryKey: getAdminGetSettingsQueryKey(),
+      retry: false,
+      refetchOnWindowFocus: false,
+      // Cache settings client-side. Admins jump between Settings, Links &
+      // Media, etc. — without staleTime each navigation re-fetched from
+      // Supabase (often 200-500ms round-trip) which felt very slow.
+      staleTime: 60_000,
+      gcTime: 5 * 60_000,
+    },
+  });
 
   const [telegramLink, setTelegramLink] = useState("");
   const [bannerImages, setBannerImages] = useState<string[]>([]);
@@ -63,9 +74,15 @@ export default function AdminLinksMedia() {
   const uploadMut = useAdminUploadImage();
   const updateMut = useAdminUpdateSettings({
     mutation: {
-      onSuccess: () => {
+      onSuccess: (data) => {
         toast({ title: "Saved" });
-        queryClient.invalidateQueries({ queryKey: getAdminGetSettingsQueryKey() });
+        // The PUT already returns the full updated settings object — write
+        // it directly into the cache instead of triggering a fresh GET.
+        // Saves one round-trip (~200-500ms on Supabase) and the UI feels
+        // instant after Save.
+        if (data) queryClient.setQueryData(getAdminGetSettingsQueryKey(), data);
+        // Public settings still need a refresh so users see new banners /
+        // invite image, but we don't block on it.
         queryClient.invalidateQueries({ queryKey: getGetAppSettingsQueryKey() });
       },
       onError: (e: any) =>
@@ -75,8 +92,9 @@ export default function AdminLinksMedia() {
 
   const onPickBanner = async (file: File | null) => {
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "Image must be under 5 MB", variant: "destructive" });
+    if (file.size > 20 * 1024 * 1024) {
+      const mb = (file.size / (1024 * 1024)).toFixed(1);
+      toast({ title: `Image too large (${mb} MB)`, description: "Max allowed is 20 MB.", variant: "destructive" });
       return;
     }
     try {
@@ -93,8 +111,9 @@ export default function AdminLinksMedia() {
 
   const onPickInviteImage = async (file: File | null) => {
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "Image must be under 5 MB", variant: "destructive" });
+    if (file.size > 20 * 1024 * 1024) {
+      const mb = (file.size / (1024 * 1024)).toFixed(1);
+      toast({ title: `Image too large (${mb} MB)`, description: "Max allowed is 20 MB.", variant: "destructive" });
       return;
     }
     try {
@@ -114,6 +133,11 @@ export default function AdminLinksMedia() {
     which: "buy" | "sell",
   ) => {
     if (!file) return;
+    if (file.size > 20 * 1024 * 1024) {
+      const mb = (file.size / (1024 * 1024)).toFixed(1);
+      toast({ title: `Image too large (${mb} MB)`, description: "Max allowed is 20 MB.", variant: "destructive" });
+      return;
+    }
     const ref = which === "buy" ? buyRulesInputRef : sellRulesInputRef;
     try {
       const dataUrl = await fileToDataUrl(file);

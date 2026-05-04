@@ -102,15 +102,42 @@ export async function getSettings(keys: string[]): Promise<Record<string, string
   }
 }
 
+// Short in-memory cache of the full settings table. The /admin/settings,
+// /settings/app, and many internal helpers all call getAllSettings() — on
+// busy admin pages this was firing 4-5 Supabase round-trips per second.
+// A 5s TTL is short enough that admins never see stale data after Save
+// (setSettings/setSetting bust the cache), but long enough to coalesce
+// the burst of reads triggered by a single page load.
+let _settingsCache: { at: number; data: Record<string, string> } | null = null;
+const SETTINGS_TTL_MS = 5_000;
+let _inflight: Promise<Record<string, string>> | null = null;
+
+function invalidateSettingsCache() {
+  _settingsCache = null;
+}
+
 export async function getAllSettings(): Promise<Record<string, string>> {
-  const result: Record<string, string> = { ...DEFAULT_SETTINGS };
+  if (_settingsCache && Date.now() - _settingsCache.at < SETTINGS_TTL_MS) {
+    return _settingsCache.data;
+  }
+  // Coalesce concurrent callers into a single DB round-trip.
+  if (_inflight) return _inflight;
+  _inflight = (async () => {
+    const result: Record<string, string> = { ...DEFAULT_SETTINGS };
+    try {
+      const allRows = await db.select().from(settingsTable);
+      for (const row of allRows) {
+        result[row.key] = row.value;
+      }
+    } catch {}
+    _settingsCache = { at: Date.now(), data: result };
+    return result;
+  })();
   try {
-    const allRows = await db.select().from(settingsTable);
-    for (const row of allRows) {
-      result[row.key] = row.value;
-    }
-  } catch {}
-  return result;
+    return await _inflight;
+  } finally {
+    _inflight = null;
+  }
 }
 
 export async function setSetting(key: string, value: string): Promise<void> {
@@ -121,6 +148,7 @@ export async function setSetting(key: string, value: string): Promise<void> {
         target: settingsTable.key,
         set: { value, updatedAt: sql`now()` },
       });
+    invalidateSettingsCache();
   } catch {
     return;
   }
@@ -139,6 +167,7 @@ export async function setSettings(entries: Record<string, string>): Promise<void
           updatedAt: sql`now()`,
         },
       });
+    invalidateSettingsCache();
   } catch (err) {
     console.error("[setSettings] failed to save settings:", err);
     return;
