@@ -181,6 +181,7 @@ export interface AppSettings {
   sellRules?: string;
   buyRulesImageUrl?: string;
   sellRulesImageUrl?: string;
+  inviteShareImageUrl?: string;
 }
 
 export interface GoogleIdTokenBody {
@@ -233,6 +234,7 @@ export interface AdminUpdateSettingsBody {
   sellRules?: string;
   buyRulesImageUrl?: string;
   sellRulesImageUrl?: string;
+  inviteShareImageUrl?: string;
   adminPassword?: string;
   feeTiers?: FeeTier[];
   agentTiers?: AgentTier[];

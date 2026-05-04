@@ -25,4 +25,5 @@ export interface AppSettings {
   sellRules?: string;
   buyRulesImageUrl?: string;
   sellRulesImageUrl?: string;
+  inviteShareImageUrl?: string;
 }

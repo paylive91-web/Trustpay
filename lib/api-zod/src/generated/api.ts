@@ -346,6 +346,7 @@ export const GetAppSettingsResponse = zod.object({
   sellRules: zod.string().optional(),
   buyRulesImageUrl: zod.string().optional(),
   sellRulesImageUrl: zod.string().optional(),
+  inviteShareImageUrl: zod.string().optional(),
 });
 
 /**
@@ -627,6 +628,7 @@ export const AdminGetSettingsResponse = zod
     sellRules: zod.string().optional(),
     buyRulesImageUrl: zod.string().optional(),
     sellRulesImageUrl: zod.string().optional(),
+    inviteShareImageUrl: zod.string().optional(),
   })
   .and(
     zod.object({
@@ -678,6 +680,7 @@ export const AdminUpdateSettingsBody = zod.object({
   sellRules: zod.string().optional(),
   buyRulesImageUrl: zod.string().optional(),
   sellRulesImageUrl: zod.string().optional(),
+  inviteShareImageUrl: zod.string().optional(),
   adminPassword: zod.string().optional(),
   feeTiers: zod
     .array(
@@ -723,6 +726,7 @@ export const AdminUpdateSettingsResponse = zod
     sellRules: zod.string().optional(),
     buyRulesImageUrl: zod.string().optional(),
     sellRulesImageUrl: zod.string().optional(),
+    inviteShareImageUrl: zod.string().optional(),
   })
   .and(
     zod.object({

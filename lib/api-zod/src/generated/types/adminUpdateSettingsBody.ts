@@ -23,6 +23,7 @@ export interface AdminUpdateSettingsBody {
   sellRules?: string;
   buyRulesImageUrl?: string;
   sellRulesImageUrl?: string;
+  inviteShareImageUrl?: string;
   adminPassword?: string;
   feeTiers?: FeeTier[];
   agentTiers?: AgentTier[];

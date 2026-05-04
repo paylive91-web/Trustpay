@@ -1302,6 +1302,8 @@ components:
           type: string
         sellRulesImageUrl:
           type: string
+        inviteShareImageUrl:
+          type: string
       required: [upiId, upiName, appName]
 
     GoogleIdTokenBody:
@@ -1406,6 +1408,8 @@ components:
         buyRulesImageUrl:
           type: string
         sellRulesImageUrl:
+          type: string
+        inviteShareImageUrl:
           type: string
         adminPassword:
           type: string
