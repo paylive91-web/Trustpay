@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import Layout from "@/components/layout";
-import { Download, ShieldCheck, Zap, Star, ShieldAlert, LogIn, Phone, Lock, Gift, ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
+import {
+  Download, ShieldCheck, Zap, Star, ShieldAlert, LogIn,
+  Phone, Lock, Gift, ArrowLeft, ArrowRight, CheckCircle2, Loader2,
+} from "lucide-react";
 import { API_BASE } from "@/lib/api-config";
-
-const logoPath = `${import.meta.env.BASE_URL}trustpay-logo.png`;
+import { AuthShell, PremiumInputWrap, PremiumButton, TrustRow, useBranding } from "@/components/auth-shell";
 
 function PWAInstallPopup({ onDownload, appName, logoUrl }: { onDownload: () => void; appName: string; logoUrl: string }) {
   const [downloaded, setDownloaded] = useState(false);
@@ -107,16 +108,8 @@ function DuplicateDialog({ onClose, onLogin }: { onClose: () => void; onLogin: (
 
 function Honeypot({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
-    <input
-      type="text"
-      name="website"
-      autoComplete="off"
-      tabIndex={-1}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      style={{ position: "absolute", left: "-9999px", width: 1, height: 1, opacity: 0 }}
-      aria-hidden="true"
-    />
+    <input type="text" name="website" autoComplete="off" tabIndex={-1} value={value} onChange={(e) => onChange(e.target.value)}
+      style={{ position: "absolute", left: "-9999px", width: 1, height: 1, opacity: 0 }} aria-hidden="true" />
   );
 }
 
@@ -124,6 +117,7 @@ type Step = "form" | "otp";
 
 export default function Register() {
   const { data: brandSettings } = useGetAppSettings();
+  const { appName, logoUrl } = useBranding();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { data: user, isLoading: isUserLoading } = useGetMe({ query: { queryKey: ["me"], retry: false } });
@@ -139,8 +133,6 @@ export default function Register() {
   const [showInstallPopup, setShowInstallPopup] = useState(false);
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
 
-  const appName = (brandSettings as any)?.appName || "TrustPay";
-  const logoUrl = (brandSettings as any)?.appLogoUrl || logoPath;
   const apkDownloadUrl = (brandSettings as any)?.apkDownloadUrl || "https://trustpay-l0xq.onrender.com";
 
   useEffect(() => {
@@ -234,7 +226,7 @@ export default function Register() {
   };
 
   return (
-    <Layout showBottomNav={false}>
+    <>
       {showInstallPopup && (
         <PWAInstallPopup
           appName={appName}
@@ -247,131 +239,113 @@ export default function Register() {
         />
       )}
       {showDuplicateDialog && (
-        <DuplicateDialog
-          onClose={() => setShowDuplicateDialog(false)}
-          onLogin={() => { setShowDuplicateDialog(false); setLocation("/login"); }}
-        />
+        <DuplicateDialog onClose={() => setShowDuplicateDialog(false)} onLogin={() => { setShowDuplicateDialog(false); setLocation("/login"); }} />
       )}
 
-      <div className="min-h-[100svh] w-full bg-white relative overflow-hidden flex flex-col">
-        <div className="absolute -top-32 -right-32 w-[22rem] h-[22rem] rounded-full bg-gradient-to-br from-indigo-200/60 via-violet-200/50 to-fuchsia-100/40 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-32 -left-32 w-[22rem] h-[22rem] rounded-full bg-gradient-to-tr from-cyan-100/50 via-sky-100/40 to-transparent blur-3xl pointer-events-none" />
+      <AuthShell badge="Join Trusted P2P Network">
+        {step === "form" && (
+          <>
+            <h1 className="text-[22px] font-extrabold text-slate-900 tracking-tight">Create Account</h1>
+            <p className="text-[13px] text-slate-500 mb-4">Sign up with your mobile — username auto-generated.</p>
 
-        <div className="relative max-w-md w-full mx-auto px-5 py-4 flex-1 flex flex-col justify-center">
-          {/* Brand header — logo + name in one row, compact */}
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="relative shrink-0">
-              <div className="absolute inset-0 rounded-2xl bg-indigo-500/25 blur-lg scale-110" />
-              <img src={logoUrl} alt={`${appName} Logo`} className="relative w-14 h-14 rounded-2xl object-contain shadow-lg ring-1 ring-slate-200/60 bg-white" />
-            </div>
-            <div className="flex flex-col">
-              <div className="text-[22px] font-extrabold text-slate-900 tracking-tight leading-tight">{appName}</div>
-              <div className="flex items-center gap-1 text-[10px] font-semibold text-slate-500 uppercase tracking-[0.12em]">
-                <ShieldCheck className="w-3 h-3 text-emerald-500" /> Secure UPI Platform
-              </div>
-            </div>
-          </div>
+            <form onSubmit={handleSubmitForm} className="space-y-3">
+              <Honeypot value={honeypot} onChange={setHoneypot} />
 
-          <div className="rounded-3xl bg-white border border-slate-100 shadow-[0_20px_50px_-15px_rgba(15,23,42,0.18)] p-5">
-            {step === "form" && (
-              <>
-                <h1 className="text-[20px] font-extrabold text-slate-900 mb-0.5">Create Account</h1>
-                <p className="text-[13px] text-slate-500 mb-3">Sign up with your mobile number.</p>
-
-                <form onSubmit={handleSubmitForm} className="space-y-3">
-                  <Honeypot value={honeypot} onChange={setHoneypot} />
-
-                  <div className="space-y-1">
-                    <Label className="text-[12px] font-semibold text-slate-700">Mobile Number</Label>
-                    <div className="flex gap-2">
-                      <div className="flex items-center px-3 bg-slate-100 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700">+91</div>
-                      <div className="relative flex-1">
-                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <Input
-                          type="tel"
-                          inputMode="numeric"
-                          placeholder="10-digit mobile"
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                          maxLength={10}
-                          className="pl-10 h-11 rounded-xl bg-slate-50/70 border-slate-200 focus-visible:ring-indigo-500/40 focus-visible:border-indigo-300"
-                        />
-                      </div>
-                    </div>
+              <div className="space-y-1.5">
+                <Label className="text-[12px] font-semibold text-slate-700 tracking-wide">Mobile Number</Label>
+                <div className="flex gap-2">
+                  <div className="flex items-center px-3 rounded-xl bg-gradient-to-br from-indigo-50 to-violet-50 ring-1 ring-indigo-100 text-sm font-bold text-indigo-700">
+                    +91
                   </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-[12px] font-semibold text-slate-700">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                      <Input type="password" placeholder="At least 6 characters" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10 h-11 rounded-xl bg-slate-50/70 border-slate-200 focus-visible:ring-indigo-500/40 focus-visible:border-indigo-300" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-[12px] font-semibold text-slate-700">Referral Code</Label>
-                    <div className="relative">
-                      <Gift className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                      <Input placeholder="Invite code" value={referralCode} onChange={(e) => setReferralCode(e.target.value.toUpperCase())} required className="pl-10 h-11 rounded-xl bg-slate-50/70 border-slate-200 focus-visible:ring-indigo-500/40 focus-visible:border-indigo-300" />
-                    </div>
-                  </div>
-
-                  <Button type="submit" disabled={loading} className="w-full h-12 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold shadow-lg shadow-indigo-500/25 hover:opacity-95 active:scale-[0.99]">
-                    {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sending OTP...</> : "Send OTP & Continue"}
-                  </Button>
-                </form>
-              </>
-            )}
-
-            {step === "otp" && (
-              <>
-                <button type="button" onClick={() => setStep("form")} className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-2">
-                  <ArrowLeft className="w-4 h-4" /> Back
-                </button>
-                <h1 className="text-[20px] font-extrabold text-slate-900 mb-0.5">Verify Mobile</h1>
-                <p className="text-[13px] text-slate-500 mb-4">
-                  6-digit code sent to <span className="font-semibold text-slate-900">+91 {phone}</span>
-                </p>
-
-                <form onSubmit={handleVerifyAndRegister} className="space-y-3">
-                  <div className="space-y-1">
-                    <Label className="text-[12px] font-semibold text-slate-700">Enter OTP</Label>
+                  <PremiumInputWrap>
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400 pointer-events-none" />
                     <Input
                       type="tel"
                       inputMode="numeric"
-                      autoFocus
-                      placeholder="• • • • • •"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                      maxLength={6}
-                      className="h-14 rounded-xl bg-slate-50/70 border-slate-200 text-center text-2xl tracking-[0.5em] font-bold focus-visible:ring-indigo-500/40 focus-visible:border-indigo-300"
+                      placeholder="10-digit mobile"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                      maxLength={10}
+                      className="pl-10 h-11 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                     />
-                  </div>
+                  </PremiumInputWrap>
+                </div>
+              </div>
 
-                  <div className="flex items-center justify-between text-[13px]">
-                    <span className="text-slate-500">Didn't receive it?</span>
-                    {resendIn > 0 ? (
-                      <span className="text-slate-400 font-medium">Resend in {resendIn}s</span>
-                    ) : (
-                      <button type="button" onClick={sendOtp} disabled={loading} className="text-indigo-600 font-semibold hover:underline disabled:opacity-50">
-                        Resend OTP
-                      </button>
-                    )}
-                  </div>
+              <div className="space-y-1.5">
+                <Label className="text-[12px] font-semibold text-slate-700 tracking-wide">Password</Label>
+                <PremiumInputWrap>
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400 pointer-events-none" />
+                  <Input type="password" placeholder="At least 6 characters" value={password} onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10 h-11 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0" />
+                </PremiumInputWrap>
+              </div>
 
-                  <Button type="submit" disabled={loading || otp.length !== 6} className="w-full h-12 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold shadow-lg shadow-indigo-500/25">
-                    {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Verifying...</> : <><CheckCircle2 className="w-4 h-4 mr-2" /> Verify & Create Account</>}
-                  </Button>
-                </form>
-              </>
-            )}
-          </div>
+              <div className="space-y-1.5">
+                <Label className="text-[12px] font-semibold text-slate-700 tracking-wide">Referral Code</Label>
+                <PremiumInputWrap>
+                  <Gift className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400 pointer-events-none" />
+                  <Input placeholder="Invite code" value={referralCode} onChange={(e) => setReferralCode(e.target.value.toUpperCase())} required
+                    className="pl-10 h-11 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0" />
+                </PremiumInputWrap>
+              </div>
 
-          <div className="mt-4 text-center text-[13px] text-slate-500">
-            Already have an account? <Link href="/login" className="text-indigo-600 font-semibold">Login here</Link>
-          </div>
+              <PremiumButton disabled={loading}>
+                {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending OTP...</> : <>Send OTP & Continue <ArrowRight className="w-4 h-4" /></>}
+              </PremiumButton>
+            </form>
+
+            <TrustRow />
+          </>
+        )}
+
+        {step === "otp" && (
+          <>
+            <button type="button" onClick={() => setStep("form")} className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-2">
+              <ArrowLeft className="w-4 h-4" /> Back
+            </button>
+            <h1 className="text-[22px] font-extrabold text-slate-900 tracking-tight">Verify Mobile</h1>
+            <p className="text-[13px] text-slate-500 mb-4">
+              6-digit code sent to <span className="font-semibold text-slate-900">+91 {phone}</span>
+            </p>
+
+            <form onSubmit={handleVerifyAndRegister} className="space-y-3">
+              <PremiumInputWrap>
+                <Input
+                  type="tel"
+                  inputMode="numeric"
+                  autoFocus
+                  placeholder="• • • • • •"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  maxLength={6}
+                  className="h-14 bg-transparent border-0 text-center text-2xl tracking-[0.5em] font-bold focus-visible:ring-0 focus-visible:ring-offset-0"
+                />
+              </PremiumInputWrap>
+
+              <div className="flex items-center justify-between text-[13px]">
+                <span className="text-slate-500">Didn't receive it?</span>
+                {resendIn > 0 ? (
+                  <span className="text-slate-400 font-medium">Resend in {resendIn}s</span>
+                ) : (
+                  <button type="button" onClick={sendOtp} disabled={loading} className="text-indigo-600 font-semibold hover:underline disabled:opacity-50">
+                    Resend OTP
+                  </button>
+                )}
+              </div>
+
+              <PremiumButton disabled={loading || otp.length !== 6}>
+                {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Verifying...</> : <><CheckCircle2 className="w-4 h-4" /> Verify & Create Account</>}
+              </PremiumButton>
+            </form>
+          </>
+        )}
+
+        <div className="mt-4 text-center text-[13px] text-slate-500">
+          Already have an account?{" "}
+          <Link href="/login" className="text-indigo-600 font-semibold hover:underline">Login here</Link>
         </div>
-      </div>
-    </Layout>
+      </AuthShell>
+    </>
   );
 }
