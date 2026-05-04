@@ -388,6 +388,64 @@ export async function ensureSchema(): Promise<void> {
       logger.error({ err }, "admin phone seed failed");
     }
 
+    // ── media_blobs: stores admin-uploaded images (banners, rules, invite share)
+    // when PRIVATE_OBJECT_DIR is not available (e.g. on Render). Without this,
+    // the upload fallback returns the entire base64 data URL as the "url",
+    // causing the settings.value column to grow to several MB and any
+    // subsequent Save Changes to exceed the express.json() body limit (HTTP 413).
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS media_blobs (
+          id SERIAL PRIMARY KEY,
+          mime TEXT NOT NULL,
+          data BYTEA NOT NULL,
+          size_bytes INTEGER NOT NULL,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // ── Backfill: convert any existing data:image base64 URLs stored inside
+      // settings.value into media_blobs rows, replacing them with short
+      // /api/media/:id URLs. Idempotent — once a value contains no data:
+      // URL substrings it's left alone.
+      const rows = await db.execute(sql`
+        SELECT id, value FROM settings WHERE value LIKE '%data:image/%;base64,%'
+      `);
+      const settingsRows = (rows as any).rows || (rows as any) || [];
+      const dataUrlRe = /data:image\/(png|jpeg|jpg|gif|webp);base64,([A-Za-z0-9+/=]+)/gi;
+      for (const row of settingsRows) {
+        const id = (row as any).id;
+        const value: string = (row as any).value;
+        if (!value || typeof value !== "string") continue;
+        let newValue = value;
+        const matches = [...value.matchAll(dataUrlRe)];
+        for (const m of matches) {
+          try {
+            const rawExt = m[1].toLowerCase();
+            const mime = `image/${rawExt === "jpg" ? "jpeg" : rawExt}`;
+            const buf = Buffer.from(m[2], "base64");
+            const ins = await db.execute(sql`
+              INSERT INTO media_blobs (mime, data, size_bytes)
+              VALUES (${mime}, ${buf}, ${buf.length})
+              RETURNING id
+            `);
+            const newId = ((ins as any).rows?.[0] || (ins as any)[0])?.id;
+            if (newId) {
+              newValue = newValue.replace(m[0], `/api/media/${newId}`);
+            }
+          } catch (e) {
+            logger.warn({ err: e, settingId: id }, "media_blobs backfill: skipped one data URL");
+          }
+        }
+        if (newValue !== value) {
+          await db.execute(sql`UPDATE settings SET value = ${newValue} WHERE id = ${id}`);
+          logger.info({ settingId: id, before: value.length, after: newValue.length }, "media_blobs backfill: shrunk setting");
+        }
+      }
+    } catch (err) {
+      logger.error({ err }, "media_blobs bootstrap failed");
+    }
+
     // ── One-time cleanup: remove duplicate admin account (ID 22, username "admin") ──
     // The real admin is ID 1 ("Storehsswis"). ID 22 is a leftover duplicate with
     // no rows in any FK-constrained table, so a direct delete is safe.

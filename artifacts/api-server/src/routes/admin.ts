@@ -1235,8 +1235,29 @@ router.post("/upload-image", requireAdmin, async (req, res) => {
     }
   }
 
-  // Fallback: return the base64 data URL directly
-  res.json({ url: dataUrl, kind: kind || "image", sizeBytes });
+  // Fallback: store the image in the media_blobs table and return a short
+  // /api/media/:id URL. This keeps settings.value tiny so subsequent
+  // Save Changes payloads stay well under the 10MB body limit even when
+  // multiple banners are configured.
+  try {
+    const rawExt = mimeMatch[1].toLowerCase();
+    const mime = `image/${rawExt === "jpg" ? "jpeg" : rawExt}`;
+    const base64Data = dataUrl.substring(dataUrl.indexOf(",") + 1);
+    const buffer = Buffer.from(base64Data, "base64");
+    const ins: any = await db.execute(sql`
+      INSERT INTO media_blobs (mime, data, size_bytes)
+      VALUES (${mime}, ${buffer}, ${buffer.length})
+      RETURNING id
+    `);
+    const newId = (ins.rows?.[0] || ins[0])?.id;
+    if (!newId) throw new Error("media_blobs insert returned no id");
+    res.json({ url: `/api/media/${newId}`, kind: kind || "image", sizeBytes });
+    return;
+  } catch (dbErr) {
+    req.log.error({ err: dbErr }, "media_blobs insert failed; returning data URL");
+    // Last-resort fallback: original data URL behaviour
+    res.json({ url: dataUrl, kind: kind || "image", sizeBytes });
+  }
 });
 
 // ── SMS Safe Learning ────────────────────────────────────────────────────────

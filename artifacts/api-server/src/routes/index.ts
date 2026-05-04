@@ -12,6 +12,7 @@ import upiRouter from "./upi.js";
 import notificationsRouter from "./notifications.js";
 import smsRouter from "./sms.js";
 import storageRouter from "./storage.js";
+import mediaRouter from "./media.js";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use("/upi", upiRouter);
 router.use("/notifications", notificationsRouter);
 router.use("/sms", smsRouter);
 router.use(storageRouter);
+router.use(mediaRouter);
 
 export default router;
