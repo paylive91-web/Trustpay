@@ -78,31 +78,37 @@ export default function Invite() {
   };
 
   const handleShare = async () => {
+    // Combine the message and link into a single `text` string. WhatsApp
+    // (and a few other Android share targets) drop the `text` field when
+    // a separate `url` field is also passed — so the user only saw the
+    // bare link with no caption. Putting the link inside `text` makes
+    // WhatsApp render the full message with the URL as an auto-link.
     const text = `Join TrustPay and start earning! 6% earning platform. Use my referral code: ${referralCode}\n${shareUrl}`;
-    if (navigator.share) {
-      // Try sharing with image via Web Share API
-      if (inviteShareImageUrl) {
-        try {
-          const blob = inviteShareImageUrl.startsWith("data:")
-            ? dataUrlToBlob(inviteShareImageUrl)
-            : await fetch(inviteShareImageUrl).then((r) => r.blob());
-          const ext = blob.type.includes("png") ? "png" : "jpg";
-          const file = new File([blob], `trustpay-invite.${ext}`, { type: blob.type || "image/jpeg" });
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({ title: "Join TrustPay", text, files: [file] });
-            return;
-          }
-        } catch {}
-        toast({
-          title: "Save image first",
-          description: "Tap 'Save Image' below → then attach from gallery to share",
-        });
-      }
-      // Text + link share
+    if (!navigator.share) {
+      handleCopyLink();
+      return;
+    }
+    // Try image + caption share first
+    if (inviteShareImageUrl) {
       try {
-        await navigator.share({ title: "Join TrustPay", text: `Join TrustPay and start earning! 6% earning platform. Use my referral code: ${referralCode}`, url: shareUrl });
-      } catch {}
-    } else {
+        const blob = inviteShareImageUrl.startsWith("data:")
+          ? dataUrlToBlob(inviteShareImageUrl)
+          : await fetch(inviteShareImageUrl).then((r) => r.blob());
+        const ext = blob.type.includes("png") ? "png" : "jpg";
+        const file = new File([blob], `trustpay-invite.${ext}`, { type: blob.type || "image/jpeg" });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ title: "Join TrustPay", text, files: [file] });
+          return;
+        }
+      } catch {
+        // Fall through to text-only share
+      }
+    }
+    // Text-only share (link merged into text — see comment above)
+    try {
+      await navigator.share({ title: "Join TrustPay", text });
+    } catch {
+      // User cancelled or share unsupported — copy link as last resort
       handleCopyLink();
     }
   };

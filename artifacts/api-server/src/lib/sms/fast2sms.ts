@@ -81,6 +81,12 @@ export async function sendOtpViaFast2Sms(phone: string, otp: string): Promise<bo
       logger.warn({ body }, "fast2sms returned false");
       throw new Error(`SMS provider rejected: ${fastMsg || "unknown reason"}`);
     }
+    // Log the Fast2SMS request_id so we can trace delivery in the
+    // Fast2SMS dashboard when the API reports success but the SMS
+    // doesn't arrive (e.g. DLT not approved, low wallet balance,
+    // carrier filtering on a particular handset).
+    const requestId = body?.request_id || (Array.isArray(body?.message) ? body.message[0] : undefined);
+    logger.info({ phone: phone.slice(-4), route, requestId, body }, "fast2sms accepted");
     return true;
   } finally {
     clearTimeout(timer);
