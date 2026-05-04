@@ -25,32 +25,37 @@ export async function sendOtpViaFast2Sms(phone: string, otp: string): Promise<bo
   if (!apiKey) {
     throw new Error("SMS provider not configured");
   }
-  const route = (process.env.FAST2SMS_ROUTE || "q").toLowerCase();
-  const url = new URL(FAST2SMS_BASE);
-  url.searchParams.set("authorization", apiKey);
-  url.searchParams.set("route", route);
-  url.searchParams.set("numbers", phone);
+  // Fast2SMS now mandates the dedicated OTP route on new accounts (the
+  // Quick `q` route was retired post-TRAI). Override via FAST2SMS_ROUTE
+  // env var if the account is later switched to DLT (route=dlt_manual).
+  const route = (process.env.FAST2SMS_ROUTE || "otp").toLowerCase();
+
+  // Use POST + JSON body + header-based auth — Fast2SMS's recommended
+  // method. Query-string GET is supported but more flaky (URL-encoding
+  // edge cases, stricter caching, occasional 404s on certain routes).
+  const reqBody: Record<string, string> = {
+    route,
+    numbers: phone,
+  };
   if (route === "otp") {
-    // Dedicated OTP route uses Fast2SMS's stock template:
-    //   "Your OTP: {#var#}. Pls do not share..."
-    url.searchParams.set("variables_values", otp);
+    reqBody.variables_values = otp;
   } else {
-    // Quick route — send the full message text. Keep it short and
-    // unmistakably an OTP so carriers don't filter it as promotional.
-    url.searchParams.set(
-      "message",
-      `Your TrustPay OTP is ${otp}. Valid for 5 minutes. Do not share with anyone.`,
-    );
-    url.searchParams.set("language", "english");
-    url.searchParams.set("flash", "0");
+    reqBody.message = `Your TrustPay OTP is ${otp}. Valid for 5 minutes. Do not share with anyone.`;
+    reqBody.language = "english";
+    reqBody.flash = "0";
   }
 
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 15_000);
   try {
-    const res = await fetch(url.toString(), {
-      method: "GET",
-      headers: { "cache-control": "no-cache" },
+    const res = await fetch(FAST2SMS_BASE, {
+      method: "POST",
+      headers: {
+        authorization: apiKey,
+        "Content-Type": "application/json",
+        "cache-control": "no-cache",
+      },
+      body: JSON.stringify(reqBody),
       signal: ctrl.signal,
     });
     const text = await res.text();
