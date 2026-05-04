@@ -25,10 +25,13 @@ export async function sendOtpViaFast2Sms(phone: string, otp: string): Promise<bo
   if (!apiKey) {
     throw new Error("SMS provider not configured");
   }
-  // Fast2SMS now mandates the dedicated OTP route on new accounts (the
-  // Quick `q` route was retired post-TRAI). Override via FAST2SMS_ROUTE
-  // env var if the account is later switched to DLT (route=dlt_manual).
-  const route = (process.env.FAST2SMS_ROUTE || "otp").toLowerCase();
+  // Default to the Quick (`q`) route because it works WITHOUT DLT
+  // registration, which is the state of brand-new Fast2SMS accounts.
+  // The dedicated `otp` route silently swallows the request when DLT
+  // is not approved (API returns success but no SMS arrives and no
+  // entry shows up in Delivery Reports). Once the account completes
+  // DLT registration, set FAST2SMS_ROUTE=dlt_manual or =otp.
+  const route = (process.env.FAST2SMS_ROUTE || "q").toLowerCase();
 
   // Use POST + JSON body + header-based auth — Fast2SMS's recommended
   // method. Query-string GET is supported but more flaky (URL-encoding
