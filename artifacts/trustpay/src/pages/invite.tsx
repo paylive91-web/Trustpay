@@ -104,11 +104,18 @@ export default function Invite() {
         // Fall through to text-only share
       }
     }
-    // Text-only share (link merged into text — see comment above)
+    // Text-only path: open WhatsApp directly via wa.me deep link.
+    // Web Share API + WhatsApp had two recurring failure modes for the
+    // user — (a) text dropped when url was a separate field, (b) WhatsApp
+    // showing "Can't send empty message" after a contact was picked,
+    // because Android's share intent didn't propagate the text caption
+    // reliably to WhatsApp's compose screen. wa.me/?text=... bypasses
+    // both quirks: WhatsApp opens its own contact picker with the full
+    // message pre-filled and ready to send.
     try {
-      await navigator.share({ title: "Join TrustPay", text });
+      const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(waUrl, "_blank");
     } catch {
-      // User cancelled or share unsupported — copy link as last resort
       handleCopyLink();
     }
   };
