@@ -42,7 +42,9 @@ export default function Profile() {
   };
 
   const handleContactSupport = () => {
-    const link = (settings as any)?.telegramLink;
+    const link =
+      (settings as any)?.telegramSupportUrl ||
+      (settings as any)?.telegramLink;
     if (link) window.open(link, "_blank");
     else toast({ title: "Support link not available", variant: "destructive" });
   };

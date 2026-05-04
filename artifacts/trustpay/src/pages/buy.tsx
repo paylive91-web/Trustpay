@@ -644,7 +644,7 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
               <Button variant="ghost" size="sm" className="w-full rounded-2xl border border-rose-200 bg-gradient-to-r from-white to-rose-50 text-rose-700 hover:from-rose-50 hover:to-rose-100 shadow-sm" onClick={() => cancelMut.mutate()}>
                 Cancel Buy
               </Button>
-              <Button variant="outline" size="sm" className="w-full rounded-2xl border-fuchsia-200 bg-gradient-to-r from-fuchsia-50 to-sky-50 text-fuchsia-700 shadow-sm hover:from-fuchsia-100 hover:to-sky-100" onClick={() => window.open((settings as any)?.telegramLink || "/support", "_blank")}>
+              <Button variant="outline" size="sm" className="w-full rounded-2xl border-fuchsia-200 bg-gradient-to-r from-fuchsia-50 to-sky-50 text-fuchsia-700 shadow-sm hover:from-fuchsia-100 hover:to-sky-100" onClick={() => window.open((settings as any)?.telegramSupportUrl || (settings as any)?.telegramLink || "/support", "_blank")}>
                 <Headset className="mr-2 h-4 w-4" />
                 Contact Support
               </Button>

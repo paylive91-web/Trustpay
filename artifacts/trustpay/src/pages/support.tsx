@@ -32,8 +32,11 @@ export default function Support() {
   };
 
   const handleContactSupport = () => {
-    if (settings?.telegramLink) {
-      window.open(settings.telegramLink, "_blank");
+    const link =
+      (settings as any)?.telegramSupportUrl ||
+      (settings as any)?.telegramLink;
+    if (link) {
+      window.open(link, "_blank");
     } else {
       toast({ title: "Support link not available", variant: "destructive" });
     }

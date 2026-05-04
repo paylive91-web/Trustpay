@@ -560,6 +560,15 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
   addScalar("popupMessage", b.popupMessage); addScalar("popupImageUrl", b.popupImageUrl);
   addScalar("telegramLink", b.telegramLink); addScalar("inviteShareImageUrl", b.inviteShareImageUrl);
   addScalar("telegramSupportUrl", b.telegramSupportUrl);
+  // Auto-sync the two Telegram URL fields so admins don't have to set the
+  // same link in two places. If one is provided non-empty and the other
+  // isn't being explicitly set in this request, mirror the value.
+  {
+    const tl = typeof b.telegramLink === "string" ? b.telegramLink.trim() : "";
+    const tsu = typeof b.telegramSupportUrl === "string" ? b.telegramSupportUrl.trim() : "";
+    if (tl && b.telegramSupportUrl == null) scalarMap["telegramSupportUrl"] = tl;
+    if (tsu && b.telegramLink == null) scalarMap["telegramLink"] = tsu;
+  }
   addScalar("appName", b.appName); addScalar("appLogoUrl", b.appLogoUrl); addScalar("popupSoundUrl", b.popupSoundUrl);
   addScalar("buyRules", b.buyRules); addScalar("sellRules", b.sellRules);
   addScalar("buyRulesImageUrl", b.buyRulesImageUrl); addScalar("sellRulesImageUrl", b.sellRulesImageUrl);
