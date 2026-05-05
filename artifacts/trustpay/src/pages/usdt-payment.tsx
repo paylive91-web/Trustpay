@@ -68,6 +68,52 @@ function fmtCountdown(ms: number) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+// Isolated countdown so the every-1s tick doesn't re-render the parent
+// payment form (which would dismiss the mobile keyboard while the user
+// is typing the TxID, and was the root cause of "kuch nahi likh pa rha").
+function CountdownPill({ expiresAt, totalWindowMs, totalCredit }: { expiresAt: string; totalWindowMs: number; totalCredit: number }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const expiresMs = new Date(expiresAt).getTime() - now;
+  const expired = expiresMs <= 0;
+  const ringPct = totalWindowMs > 0 ? Math.max(0, Math.min(100, (expiresMs / totalWindowMs) * 100)) : 0;
+  return (
+    <div className={`relative overflow-hidden rounded-2xl p-3 text-white shadow-lg ${expired ? "bg-gradient-to-r from-rose-500 to-rose-700" : "bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 ring-1 ring-amber-400/30"}`}>
+      <div className="flex items-center gap-3">
+        <div className="relative w-12 h-12 shrink-0">
+          <svg className="w-12 h-12 -rotate-90" viewBox="0 0 48 48">
+            <circle cx="24" cy="24" r="20" stroke="rgba(255,255,255,0.15)" strokeWidth="4" fill="none" />
+            <circle
+              cx="24" cy="24" r="20"
+              stroke={expired ? "#fff" : "#fbbf24"}
+              strokeWidth="4"
+              fill="none"
+              strokeDasharray={`${2 * Math.PI * 20}`}
+              strokeDashoffset={`${2 * Math.PI * 20 * (1 - ringPct / 100)}`}
+              strokeLinecap="round"
+              style={{ transition: "stroke-dashoffset 1s linear" }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center font-mono font-black text-[11px]">
+            {fmtCountdown(expiresMs)}
+          </div>
+        </div>
+        <div className="flex-1 leading-tight">
+          <div className="text-[9px] uppercase tracking-[0.18em] text-amber-300/80 font-semibold">Pay within</div>
+          <div className="text-base font-black text-amber-200">{expired ? "Expired" : "Time remaining"}</div>
+        </div>
+        <div className="text-right">
+          <div className="text-[9px] uppercase tracking-wide text-amber-300/70 font-bold">You get</div>
+          <div className="text-sm font-black text-amber-300">₹{totalCredit.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function UsdtPayment() {
   const { data: user, isLoading: userLoading } = useGetMe({ query: { queryKey: ["me"], retry: false } });
   const [, setLocation] = useLocation();
@@ -75,7 +121,6 @@ export default function UsdtPayment() {
   const id = Number(params?.id);
   const { toast } = useToast();
   const qc = useQueryClient();
-  const [now, setNow] = useState(Date.now());
   const [txId, setTxId] = useState("");
   const [screenshot, setScreenshot] = useState<string>("");
   const [uploading, setUploading] = useState(false);
@@ -85,11 +130,6 @@ export default function UsdtPayment() {
   useEffect(() => {
     if (!userLoading && !user) setLocation("/login");
   }, [user, userLoading, setLocation]);
-
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, []);
 
   const { data: order, isLoading } = useQuery<UsdtOrder>({
     queryKey: ["usdt-order", id],
@@ -123,17 +163,19 @@ export default function UsdtPayment() {
     },
   });
 
-  const expiresMs = order ? new Date(order.expiresAt).getTime() - now : 0;
-  const expired = order ? expiresMs <= 0 : false;
+  // The countdown ring + tick lives in <CountdownPill /> below — keeping
+  // the every-1s setNow out of this component is critical so the TxID
+  // input and Upload button don't re-render every second (which on
+  // mobile causes the keyboard to dismiss mid-typing).
   // Use the order's actual payment window (expiresAt − createdAt) so the
-  // ring stays accurate even if admin changes the configured window after
-  // the order was created. Fallback to 15 min only if dates are missing.
+  // ring stays accurate even if admin changes the configured window
+  // after the order was created. Fallback to 15 min only if dates are
+  // missing.
   const totalWindowMs = useMemo(() => {
     if (!order?.createdAt || !order?.expiresAt) return 15 * 60 * 1000;
     const span = new Date(order.expiresAt).getTime() - new Date(order.createdAt).getTime();
     return Number.isFinite(span) && span > 0 ? span : 15 * 60 * 1000;
   }, [order?.createdAt, order?.expiresAt]);
-  const ringPct = totalWindowMs > 0 ? Math.max(0, Math.min(100, (expiresMs / totalWindowMs) * 100)) : 0;
 
   const handleFile = async (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -334,37 +376,11 @@ export default function UsdtPayment() {
       </div>
 
       <div className="px-3 py-3 space-y-2.5">
-        {/* Compact timer pill */}
-        <div className={`relative overflow-hidden rounded-2xl p-3 text-white shadow-lg ${expired ? "bg-gradient-to-r from-rose-500 to-rose-700" : "bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 ring-1 ring-amber-400/30"}`}>
-          <div className="flex items-center gap-3">
-            <div className="relative w-12 h-12 shrink-0">
-              <svg className="w-12 h-12 -rotate-90" viewBox="0 0 48 48">
-                <circle cx="24" cy="24" r="20" stroke="rgba(255,255,255,0.15)" strokeWidth="4" fill="none" />
-                <circle
-                  cx="24" cy="24" r="20"
-                  stroke={expired ? "#fff" : "#fbbf24"}
-                  strokeWidth="4"
-                  fill="none"
-                  strokeDasharray={`${2 * Math.PI * 20}`}
-                  strokeDashoffset={`${2 * Math.PI * 20 * (1 - ringPct / 100)}`}
-                  strokeLinecap="round"
-                  style={{ transition: "stroke-dashoffset 1s linear" }}
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center font-mono font-black text-[11px]">
-                {fmtCountdown(expiresMs)}
-              </div>
-            </div>
-            <div className="flex-1 leading-tight">
-              <div className="text-[9px] uppercase tracking-[0.18em] text-amber-300/80 font-semibold">Pay within</div>
-              <div className="text-base font-black text-amber-200">{expired ? "Expired" : "Time remaining"}</div>
-            </div>
-            <div className="text-right">
-              <div className="text-[9px] uppercase tracking-wide text-amber-300/70 font-bold">You get</div>
-              <div className="text-sm font-black text-amber-300">₹{fmt(order.totalCredit)}</div>
-            </div>
-          </div>
-        </div>
+        <CountdownPill
+          expiresAt={order.expiresAt}
+          totalWindowMs={totalWindowMs}
+          totalCredit={order.totalCredit}
+        />
 
         {/* Send/Rate/Get inline */}
         <div className="grid grid-cols-3 gap-2">
@@ -424,7 +440,6 @@ export default function UsdtPayment() {
             placeholder="Paste or type your TxID"
             value={txId}
             onChange={(e) => setTxId(e.target.value)}
-            disabled={expired}
             className="h-11 font-mono text-xs rounded-xl border-slate-200 focus-visible:ring-amber-300 focus-visible:border-amber-400"
             data-testid="input-tx-id"
             autoComplete="off"
@@ -448,9 +463,9 @@ export default function UsdtPayment() {
           {!screenshot ? (
             <button
               type="button"
-              disabled={expired || uploading}
+              disabled={uploading}
               onClick={() => fileInputRef.current?.click()}
-              className="w-full h-16 rounded-xl border-2 border-dashed border-slate-300 hover:border-amber-400 hover:bg-amber-50/40 transition-all flex items-center justify-center gap-2 text-slate-500 hover:text-amber-700"
+              className="w-full h-16 rounded-xl border-2 border-dashed border-slate-300 hover:border-amber-400 hover:bg-amber-50/40 transition-all flex items-center justify-center gap-2 text-slate-500 hover:text-amber-700 disabled:opacity-60"
             >
               {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
               <span className="text-xs font-semibold">{uploading ? "Reading…" : "Tap to upload screenshot"}</span>
@@ -473,7 +488,7 @@ export default function UsdtPayment() {
         <Button
           type="button"
           onClick={() => submitMut.mutate()}
-          disabled={expired || submitMut.isPending || !txId.trim() || !screenshot || txId.trim().length < 10}
+          disabled={submitMut.isPending || !txId.trim() || !screenshot || txId.trim().length < 10}
           className="w-full h-12 rounded-xl text-[15px] font-black bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-500 hover:from-amber-500 hover:to-yellow-600 text-slate-900 shadow-lg shadow-amber-500/30 disabled:opacity-50"
           data-testid="button-submit-usdt"
         >

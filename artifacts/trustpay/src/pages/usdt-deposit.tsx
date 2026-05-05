@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, ArrowRight, Coins, History as HistoryIcon, IndianRupee, Loader2, Sparkles, ShieldCheck, Info } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Clock, Coins, Hourglass, History as HistoryIcon, IndianRupee, Loader2, ShieldAlert, Sparkles, X } from "lucide-react";
 import { API_BASE } from "@/lib/api-config";
 import { getAuthToken } from "@/lib/auth";
 
@@ -21,6 +21,24 @@ type UsdtConfig = {
   windowMinutes: number;
   addressCount: number;
   notes: string;
+};
+
+type RecentOrder = {
+  id: number;
+  usdtAmount: number;
+  totalCredit: number;
+  status: "pending" | "submitted" | "processing" | "approved" | "rejected" | "expired" | "cancelled";
+  createdAt: string;
+};
+
+const STATUS_META: Record<RecentOrder["status"], { label: string; cls: string; icon: any }> = {
+  pending:    { label: "Pending",    cls: "bg-slate-100 text-slate-700",     icon: Clock },
+  submitted:  { label: "Review",     cls: "bg-amber-100 text-amber-800",     icon: Clock },
+  processing: { label: "Processing", cls: "bg-yellow-100 text-yellow-800",   icon: Hourglass },
+  approved:   { label: "Approved",   cls: "bg-emerald-100 text-emerald-700", icon: CheckCircle2 },
+  rejected:   { label: "Rejected",   cls: "bg-rose-100 text-rose-700",       icon: ShieldAlert },
+  expired:    { label: "Expired",    cls: "bg-slate-100 text-slate-500",     icon: X },
+  cancelled:  { label: "Cancelled",  cls: "bg-slate-100 text-slate-500",     icon: X },
 };
 
 async function api(path: string, opts: RequestInit = {}) {
@@ -61,6 +79,24 @@ export default function UsdtDeposit() {
     },
     staleTime: 30_000,
   });
+
+  // Recent orders (top 4) shown on the deposit page so the user can
+  // jump back to an in-flight order or re-open a finished one without
+  // hopping to the history tab first.
+  const { data: recentOrders } = useQuery<RecentOrder[]>({
+    queryKey: ["usdt-recent-orders"],
+    queryFn: async () => {
+      const token = getAuthToken();
+      const r = await fetch(`${API_BASE}/usdt/my-orders?limit=4`, {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      });
+      if (!r.ok) throw new Error("Failed");
+      return r.json();
+    },
+    refetchInterval: 15_000,
+    enabled: !!user,
+  });
+  const recents = (recentOrders || []).slice(0, 3);
 
   const startMut = useMutation<any, Error, number>({
     mutationFn: async (usdtAmount: number) => api(`/usdt/start`, { method: "POST", body: JSON.stringify({ usdtAmount }) }),
@@ -231,27 +267,49 @@ export default function UsdtDeposit() {
           </CardContent>
         </Card>
 
-        {/* Trust + window info */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-2xl bg-white border border-slate-200 p-3 flex items-start gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-slate-900 to-slate-700 flex items-center justify-center shrink-0 shadow-sm">
-              <ShieldCheck className="h-4 w-4 text-amber-400" />
+        {/* Recent orders — quick jump back into in-flight or finished deposits */}
+        {recents.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-[12px] font-black uppercase tracking-[0.14em] text-slate-600">Recent Orders</h3>
+              <Link href="/usdt-history" className="text-[11px] font-bold text-amber-600 hover:text-amber-700" data-testid="link-view-all-orders">
+                View all →
+              </Link>
             </div>
-            <div>
-              <div className="text-[12px] font-bold text-slate-800">Verified by TrustPay</div>
-              <div className="text-[11px] text-slate-500 leading-snug">TrustPay reviews TxID + screenshot before crediting.</div>
+            <div className="space-y-2">
+              {recents.map((o) => {
+                const meta = STATUS_META[o.status] || STATUS_META.pending;
+                const Icon = meta.icon;
+                return (
+                  <Link key={o.id} href={`/usdt-payment/${o.id}`} className="block" data-testid={`recent-order-${o.id}`}>
+                    <Card className="hover:shadow-md transition-shadow border-slate-200">
+                      <CardContent className="p-3 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-900 to-slate-700 flex items-center justify-center text-amber-400 shrink-0 shadow-sm">
+                          <Coins className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-900 text-sm">{o.usdtAmount} <span className="text-[10px] text-slate-500 font-normal">USDT</span></span>
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${meta.cls}`}>
+                              <Icon className="h-2.5 w-2.5" />{meta.label}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">
+                            {new Date(o.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className="text-[11px] uppercase tracking-wide text-slate-400 font-bold">Credit</div>
+                          <div className="text-sm font-black text-slate-900">₹{fmt(o.totalCredit)}</div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
             </div>
           </div>
-          <div className="rounded-2xl bg-white border border-slate-200 p-3 flex items-start gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shrink-0 shadow-sm">
-              <Info className="h-4 w-4 text-slate-900" />
-            </div>
-            <div>
-              <div className="text-[12px] font-bold text-slate-800">{config.windowMinutes}-min window</div>
-              <div className="text-[11px] text-slate-500 leading-snug">Pay within {config.windowMinutes} minutes after starting.</div>
-            </div>
-          </div>
-        </div>
+        )}
 
         {config.notes && (
           <Card className="border-slate-200 bg-slate-50">

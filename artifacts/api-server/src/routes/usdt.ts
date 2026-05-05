@@ -351,9 +351,20 @@ router.get("/my-orders", async (req, res) => {
 router.get("/order/:id", async (req, res) => {
   const u = (req as any).user as { id: number };
   const id = Number(req.params.id);
-  // Same defensive auto-flip on the single-order read so the payment
-  // screen (polled every 5s) flips to "processing" the moment the SLA
+  // Mirror /my-orders defensive transitions on the single-order read so
+  // the payment screen (polled every 5s) reflects reality the moment a
   // window closes — without waiting for the background job tick.
+  // - pending past expires_at → expired (so user sees "Expired" view
+  //   instead of a pending UI with disabled inputs).
+  // - submitted past 15-min SLA → processing (TrustPay queue).
+  await db.execute(sql`
+    UPDATE usdt_orders
+       SET status = 'expired', updated_at = NOW()
+     WHERE id = ${id}
+       AND user_id = ${u.id}
+       AND status = 'pending'
+       AND expires_at <= NOW()
+  `).catch(() => {});
   await autoFlipSubmittedToProcessing(u.id);
   const rows = await db.execute(sql`
     SELECT id, usdt_amount, rate_snapshot, bonus_pct_snapshot,
