@@ -605,16 +605,31 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
   addScalar("disputeWindowHours", b.disputeWindowHours);
   addScalar("sellRewardPercent", b.sellRewardPercent);
   // Home reward-highlight card — admin-editable headline + example
-  // numbers + on/off toggle.
+  // numbers + on/off toggle. Validate numeric fields and clamp to safe
+  // ranges so the home page can never render negative/absurd values.
   if (b.homeRewardCardEnabled != null) {
-    scalarMap["homeRewardCardEnabled"] = typeof b.homeRewardCardEnabled === "boolean"
-      ? String(b.homeRewardCardEnabled)
-      : String(b.homeRewardCardEnabled);
+    scalarMap["homeRewardCardEnabled"] = (b.homeRewardCardEnabled === true || b.homeRewardCardEnabled === "true") ? "true" : "false";
   }
-  addScalar("homeRewardUpiTitle", b.homeRewardUpiTitle);
-  addScalar("homeRewardUpiExampleAmount", b.homeRewardUpiExampleAmount);
-  addScalar("homeRewardUpiExampleBonus", b.homeRewardUpiExampleBonus);
-  addScalar("homeRewardUsdtTitle", b.homeRewardUsdtTitle);
+  if (b.homeRewardUpiTitle != null) {
+    scalarMap["homeRewardUpiTitle"] = String(b.homeRewardUpiTitle).slice(0, 80);
+  }
+  if (b.homeRewardUsdtTitle != null) {
+    scalarMap["homeRewardUsdtTitle"] = String(b.homeRewardUsdtTitle).slice(0, 80);
+  }
+  if (b.homeRewardUpiExampleAmount != null) {
+    const n = Number(b.homeRewardUpiExampleAmount);
+    if (!Number.isFinite(n) || n < 0) {
+      return res.status(400).json({ error: "Home reward UPI example amount must be a non-negative number" });
+    }
+    scalarMap["homeRewardUpiExampleAmount"] = String(Math.min(10_000_000, Math.floor(n)));
+  }
+  if (b.homeRewardUpiExampleBonus != null) {
+    const n = Number(b.homeRewardUpiExampleBonus);
+    if (!Number.isFinite(n) || n < 0) {
+      return res.status(400).json({ error: "Home reward UPI example bonus must be a non-negative number" });
+    }
+    scalarMap["homeRewardUpiExampleBonus"] = String(Math.min(10_000_000, Math.floor(n)));
+  }
   addScalar("smsAutoDeleteEnabled", b.smsAutoDeleteEnabled);
   // Device-based registration cap. Floor 1, ceiling 50 — anything above
   // that is effectively "unlimited" and not worth a knob.

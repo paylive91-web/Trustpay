@@ -344,27 +344,40 @@ function HomeRewardCard({ settings }: { settings: any }) {
     : settings.homeRewardCardEnabled === true || settings.homeRewardCardEnabled === "true";
   if (!enabled) return null;
 
-  const upiTitle = settings.homeRewardUpiTitle || "UPI REWARD UP TO 6%";
-  const upiAmount = Number(settings.homeRewardUpiExampleAmount) || 10000;
-  const upiBonus = Number(settings.homeRewardUpiExampleBonus) || 300;
+  // Defensive parser: allow 0 (admin's intentional value) but never
+  // surface negatives or NaN. Falls back to `dflt` only when the value
+  // is not finite, so admin-set 0 is preserved.
+  const safeNum = (v: any, dflt: number) => {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return dflt;
+    return Math.max(0, n);
+  };
 
-  const usdtTitle = settings.homeRewardUsdtTitle || "USDT REWARD";
+  const upiTitle = (settings.homeRewardUpiTitle ?? "UPI REWARD UP TO 6%") || "UPI REWARD UP TO 6%";
+  const upiAmount = safeNum(settings.homeRewardUpiExampleAmount, 10000);
+  const upiBonus = safeNum(settings.homeRewardUpiExampleBonus, 300);
+
+  const usdtTitle = (settings.homeRewardUsdtTitle ?? "USDT REWARD") || "USDT REWARD";
   const usdtEnabled = settings.usdtEnabled === true || settings.usdtEnabled === "true";
-  const usdtRate = Number(settings.usdtRatePerUnit) || 0;
-  const usdtBonusPct = Number(settings.usdtBonusPercent) || 0;
+  const usdtRate = safeNum(settings.usdtRatePerUnit, 0);
+  const usdtBonusPct = safeNum(settings.usdtBonusPercent, 0);
   const usdtExampleUnits = 100; // canonical example
   const usdtBaseInr = usdtExampleUnits * usdtRate;
   const usdtBonusInr = usdtBaseInr * (usdtBonusPct / 100);
   const usdtTotalInr = usdtBaseInr + usdtBonusInr;
   const showUsdt = usdtEnabled && usdtRate > 0;
 
-  if (!showUsdt && upiAmount <= 0) return null;
+  // Hide entire card if neither side has anything useful to show
+  // (UPI example is 0 AND usdt is unavailable). Keeps fresh installs clean.
+  const showUpi = upiAmount > 0 || upiBonus > 0;
+  if (!showUsdt && !showUpi) return null;
 
   const fmtINR = (n: number) => "₹" + n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 
   return (
     <div className="space-y-2.5">
       {/* UPI side — orange/amber gradient (matches existing primary brand) */}
+      {showUpi && (
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 border border-orange-200 p-4 shadow-sm">
         <div className="absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-400 to-rose-400 text-white text-[10px] font-black tracking-wide shadow">
           <Sparkles className="h-2.5 w-2.5" /> HOT
@@ -389,6 +402,7 @@ function HomeRewardCard({ settings }: { settings: any }) {
           </div>
         </Link>
       </div>
+      )}
 
       {/* USDT side — slate + gold gradient (matches usdt deposit/payment theme) */}
       {showUsdt && (
