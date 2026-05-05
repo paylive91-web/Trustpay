@@ -168,7 +168,7 @@ export default function Home() {
       <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-rose-500 text-white px-4 pt-3 pb-5 shadow-lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-white rounded-xl p-1.5 shadow-sm">
+            <div className="bg-white/15 rounded-xl p-1.5 backdrop-blur-sm">
               <img src={assetUrl((settings as any)?.appLogoUrl) || logoPath} alt={(settings as any)?.appName || "TrustPay"} className="w-8 h-8 rounded object-contain" />
             </div>
             <div>
