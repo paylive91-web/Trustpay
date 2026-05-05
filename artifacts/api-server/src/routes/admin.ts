@@ -8,6 +8,7 @@ import { signToken, requireAdmin, formatUser } from "../lib/auth.js";
 import { getSetting, getAllSettings, setSetting, setSettings } from "../lib/settings.js";
 import { listFraudRules, setFraudRuleEnabled } from "../lib/fraud.js";
 import { proposePatterns, normalizeSenderKey, buildContextRegex } from "../lib/sms-bridge.js";
+import { normalizeAppUrl, normalizeAppUrlList } from "../lib/normalizeAppUrl.js";
 import { getSmsLearningStatus, runSmsAutoCleanup } from "../lib/sms-cleanup.js";
 
 function asString(v: string | string[] | undefined): string {
@@ -469,15 +470,16 @@ function fSettings(s: any) {
   return {
     upiId: s.upiId || "trustpay@upi",
     upiName: s.upiName || "TrustPay",
-    multipleUpiIds, popupMessage: s.popupMessage || "", popupImageUrl: s.popupImageUrl || "",
+    multipleUpiIds, popupMessage: s.popupMessage || "", popupImageUrl: normalizeAppUrl(s.popupImageUrl || ""),
     announcements, telegramLink: s.telegramLink || "",
     telegramSupportUrl: s.telegramSupportUrl || "",
-    bannerImages: JSON.parse(s.bannerImages || "[]"),
+    bannerImages: normalizeAppUrlList(JSON.parse(s.bannerImages || "[]")),
     appName: s.appName || "TrustPay",
-    appLogoUrl: s.appLogoUrl || "",
-    popupSoundUrl: s.popupSoundUrl || "",
+    appLogoUrl: normalizeAppUrl(s.appLogoUrl || ""),
+    popupSoundUrl: normalizeAppUrl(s.popupSoundUrl || ""),
     buyRules: s.buyRules || "", sellRules: s.sellRules || "",
-    buyRulesImageUrl: s.buyRulesImageUrl || "", sellRulesImageUrl: s.sellRulesImageUrl || "",
+    buyRulesImageUrl: normalizeAppUrl(s.buyRulesImageUrl || ""), sellRulesImageUrl: normalizeAppUrl(s.sellRulesImageUrl || ""),
+    inviteShareImageUrl: normalizeAppUrl(s.inviteShareImageUrl || ""),
     chunkMin: parseInt(s.chunkMin || "100"),
     chunkMax: parseInt(s.chunkMax || "50000"),
     adminChunkMin: parseInt(s.adminChunkMin || "5000"),
@@ -583,8 +585,12 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
   const scalarMap: Record<string, string> = {};
   const addScalar = (k: string, v: any) => { if (v != null) scalarMap[k] = String(v); };
   addScalar("upiId", b.upiId); addScalar("upiName", b.upiName);
-  addScalar("popupMessage", b.popupMessage); addScalar("popupImageUrl", b.popupImageUrl);
-  addScalar("telegramLink", b.telegramLink); addScalar("inviteShareImageUrl", b.inviteShareImageUrl);
+  // For media-URL scalars, normalize to relative path on save so we never
+  // persist an absolute URL tied to whatever host the admin happened to be
+  // on at upload/save time. See lib/normalizeAppUrl for the why.
+  const normIfStr = (v: unknown) => (typeof v === "string" ? normalizeAppUrl(v) : v);
+  addScalar("popupMessage", b.popupMessage); addScalar("popupImageUrl", normIfStr(b.popupImageUrl));
+  addScalar("telegramLink", b.telegramLink); addScalar("inviteShareImageUrl", normIfStr(b.inviteShareImageUrl));
   addScalar("telegramSupportUrl", b.telegramSupportUrl);
   // Auto-sync the two Telegram URL fields so admins don't have to set the
   // same link in two places. If one is provided non-empty and the other
@@ -595,9 +601,9 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
     if (tl && b.telegramSupportUrl == null) scalarMap["telegramSupportUrl"] = tl;
     if (tsu && b.telegramLink == null) scalarMap["telegramLink"] = tsu;
   }
-  addScalar("appName", b.appName); addScalar("appLogoUrl", b.appLogoUrl); addScalar("popupSoundUrl", b.popupSoundUrl);
+  addScalar("appName", b.appName); addScalar("appLogoUrl", normIfStr(b.appLogoUrl)); addScalar("popupSoundUrl", normIfStr(b.popupSoundUrl));
   addScalar("buyRules", b.buyRules); addScalar("sellRules", b.sellRules);
-  addScalar("buyRulesImageUrl", b.buyRulesImageUrl); addScalar("sellRulesImageUrl", b.sellRulesImageUrl);
+  addScalar("buyRulesImageUrl", normIfStr(b.buyRulesImageUrl)); addScalar("sellRulesImageUrl", normIfStr(b.sellRulesImageUrl));
   addScalar("chunkMin", b.chunkMin); addScalar("chunkMax", b.chunkMax);
   addScalar("adminChunkMin", b.adminChunkMin); addScalar("adminChunkMax", b.adminChunkMax);
   addScalar("newUserChunkCap", b.newUserChunkCap); addScalar("newUserTradeThreshold", b.newUserTradeThreshold);
@@ -666,7 +672,14 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
   if (b.forceAppDownload != null) scalarMap["forceAppDownload"] = typeof b.forceAppDownload === "boolean" ? String(b.forceAppDownload) : b.forceAppDownload;
   if (b.multipleUpiIds != null) scalarMap["multipleUpiIds"] = JSON.stringify(b.multipleUpiIds);
   if (b.announcements != null) scalarMap["announcements"] = JSON.stringify(b.announcements);
-  if (b.bannerImages != null) scalarMap["bannerImages"] = JSON.stringify(b.bannerImages);
+  if (b.bannerImages != null) {
+    // Normalize each banner URL to relative path on save, so existing
+    // absolute-URL entries get rewritten the next time the admin clicks Save.
+    const normalized = Array.isArray(b.bannerImages)
+      ? b.bannerImages.map((u: any) => (typeof u === "string" ? normalizeAppUrl(u) : ""))
+      : [];
+    scalarMap["bannerImages"] = JSON.stringify(normalized);
+  }
   if (cleanedTiers) scalarMap["feeTiers"] = JSON.stringify(cleanedTiers);
   await setSettings(scalarMap);
   // Observability: log key reward fields so we can confirm via server logs
@@ -1307,9 +1320,14 @@ router.post("/upload-image", requireAdmin, async (req, res) => {
         resumable: false,
         metadata: { contentType: mime },
       });
-      const protocol = req.headers["x-forwarded-proto"] || req.protocol || "https";
-      const host = req.headers["x-forwarded-host"] || req.get("host") || "localhost";
-      const url = `${protocol}://${host}/api/storage/objects/uploads/admin-img-${uuid}.${ext}`;
+      // IMPORTANT: store as a RELATIVE path, not an absolute URL.
+      // The Replit dev domain (and any preview host) changes between sessions,
+      // and the deployed app lives on a different host (e.g. *.onrender.com).
+      // If we hard-code the upload-time host here, every banner breaks the
+      // moment the user views the app from a different origin. Browsers
+      // resolve relative `src` against the current page origin, so a path
+      // like "/api/storage/objects/uploads/..." Just Works on every host.
+      const url = `/api/storage/objects/uploads/admin-img-${uuid}.${ext}`;
       res.json({ url, kind: kind || "image", sizeBytes });
       return;
     } catch (uploadErr) {

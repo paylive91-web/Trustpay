@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { getAllSettings } from "../lib/settings.js";
 import { googleClientId } from "../lib/google.js";
+import { normalizeAppUrl, normalizeAppUrlList } from "../lib/normalizeAppUrl.js";
 
 const router = Router();
 
@@ -34,7 +35,7 @@ router.get("/app", async (req, res) => {
     upiName: s.upiName || "TrustPay",
     multipleUpiIds,
     popupMessage: s.popupMessage || "",
-    popupImageUrl: s.popupImageUrl || "",
+    popupImageUrl: normalizeAppUrl(s.popupImageUrl || ""),
     announcements,
     telegramLink: s.telegramLink || "",
     // Dispute support URL — separate setting so a dedicated dispute team
@@ -42,15 +43,15 @@ router.get("/app", async (req, res) => {
     // generic telegramLink so the Contact Support button never points
     // nowhere.
     telegramSupportUrl: s.telegramSupportUrl || s.telegramLink || "",
-    bannerImages: JSON.parse(s.bannerImages || "[]"),
+    bannerImages: normalizeAppUrlList(JSON.parse(s.bannerImages || "[]")),
     appName: s.appName || "TrustPay",
-    appLogoUrl: s.appLogoUrl || "",
-    popupSoundUrl: s.popupSoundUrl || "",
+    appLogoUrl: normalizeAppUrl(s.appLogoUrl || ""),
+    popupSoundUrl: normalizeAppUrl(s.popupSoundUrl || ""),
     buyRules: s.buyRules || "",
     sellRules: s.sellRules || "",
-    buyRulesImageUrl: s.buyRulesImageUrl || "",
-    sellRulesImageUrl: s.sellRulesImageUrl || "",
-    inviteShareImageUrl: s.inviteShareImageUrl || "",
+    buyRulesImageUrl: normalizeAppUrl(s.buyRulesImageUrl || ""),
+    sellRulesImageUrl: normalizeAppUrl(s.sellRulesImageUrl || ""),
+    inviteShareImageUrl: normalizeAppUrl(s.inviteShareImageUrl || ""),
     // APK URL precedence: env var (so a CI deploy can override without DB
     // edits) > admin-configured value > empty string. Admin UI still wins
     // when env is unset.
