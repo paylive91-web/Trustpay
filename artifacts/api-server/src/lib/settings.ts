@@ -111,6 +111,26 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   usdtAddresses: JSON.stringify([]),
   usdtPaymentWindowMinutes: "15",
   usdtNotes: "Only TRC-20 (Tron network) deposits are accepted. Sending on any other network will result in permanent loss of funds.",
+
+  // -------------------------------------------------------------------------
+  // Home page Rewards highlight card
+  // -------------------------------------------------------------------------
+  // Two-pane card on the home screen showing the UPI buy bonus + USDT
+  // deposit bonus side-by-side so users discover the rewards without
+  // opening the BUY page. Admin can fully change the headline + example
+  // numbers, or hide the card entirely with the enabled toggle.
+  //  - homeRewardCardEnabled: master switch.
+  //  - homeRewardUpiTitle: short headline e.g. "UPI REWARD UP TO 6%".
+  //  - homeRewardUpiExampleAmount / Bonus: ₹ amounts shown in the
+  //    "Pay X → Get Y bonus" example line on the UPI side.
+  //  - The USDT side auto-derives from usdtRatePerUnit + usdtBonusPercent
+  //    so admins don't have to keep two places in sync. Only the title
+  //    string is admin-editable for the USDT half.
+  homeRewardCardEnabled: "true",
+  homeRewardUpiTitle: "UPI REWARD UP TO 6%",
+  homeRewardUpiExampleAmount: "10000",
+  homeRewardUpiExampleBonus: "300",
+  homeRewardUsdtTitle: "USDT REWARD",
 };
 
 export async function getSetting(key: string): Promise<string> {

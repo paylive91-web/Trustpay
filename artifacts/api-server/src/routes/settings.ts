@@ -70,6 +70,20 @@ router.get("/app", async (req, res) => {
     // the simple percentage scalars here.
     sellRewardPercent: parseFloat(s.sellRewardPercent || "0"),
     buyRewardPercent: parseFloat(s.buyRewardPercent || "0"),
+    // Home page reward-highlight card. Frontend uses these to render
+    // the UPI half of the card; the USDT half reads usdt rate/bonus
+    // (also exposed below) and auto-computes the example.
+    homeRewardCardEnabled: (s.homeRewardCardEnabled ?? "true") === "true",
+    homeRewardUpiTitle: s.homeRewardUpiTitle || "UPI REWARD UP TO 6%",
+    homeRewardUpiExampleAmount: parseFloat(s.homeRewardUpiExampleAmount || "10000"),
+    homeRewardUpiExampleBonus: parseFloat(s.homeRewardUpiExampleBonus || "300"),
+    homeRewardUsdtTitle: s.homeRewardUsdtTitle || "USDT REWARD",
+    // USDT pricing — surfaced here so the home reward card doesn't need
+    // a separate fetch. /usdt/public-config still exists for the deposit
+    // page (it carries enabled flag, address count, notes etc).
+    usdtEnabled: (s.usdtEnabled ?? "false") === "true",
+    usdtRatePerUnit: parseFloat(s.usdtRatePerUnit || "0"),
+    usdtBonusPercent: parseFloat(s.usdtBonusPercent || "0"),
   });
 });
 

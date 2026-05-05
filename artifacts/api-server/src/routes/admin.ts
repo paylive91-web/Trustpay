@@ -604,6 +604,17 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
   addScalar("buyLockMinutes", b.buyLockMinutes); addScalar("sellerConfirmMinutes", b.sellerConfirmMinutes);
   addScalar("disputeWindowHours", b.disputeWindowHours);
   addScalar("sellRewardPercent", b.sellRewardPercent);
+  // Home reward-highlight card — admin-editable headline + example
+  // numbers + on/off toggle.
+  if (b.homeRewardCardEnabled != null) {
+    scalarMap["homeRewardCardEnabled"] = typeof b.homeRewardCardEnabled === "boolean"
+      ? String(b.homeRewardCardEnabled)
+      : String(b.homeRewardCardEnabled);
+  }
+  addScalar("homeRewardUpiTitle", b.homeRewardUpiTitle);
+  addScalar("homeRewardUpiExampleAmount", b.homeRewardUpiExampleAmount);
+  addScalar("homeRewardUpiExampleBonus", b.homeRewardUpiExampleBonus);
+  addScalar("homeRewardUsdtTitle", b.homeRewardUsdtTitle);
   addScalar("smsAutoDeleteEnabled", b.smsAutoDeleteEnabled);
   // Device-based registration cap. Floor 1, ceiling 50 — anything above
   // that is effectively "unlimited" and not worth a knob.

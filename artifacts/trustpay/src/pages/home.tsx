@@ -8,7 +8,7 @@ import NotificationsBell from "@/components/notifications-bell";
 const logoPath = `${import.meta.env.BASE_URL}trustpay-logo.png`;
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowDownCircle, ArrowUpCircle, ChevronRight, Download, Link as LinkIcon, ShieldAlert, ShieldCheck, Wallet, TrendingUp, TrendingDown, AlertCircle, Award, Medal, Crown, Gem } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, ChevronRight, Coins, Download, IndianRupee, Link as LinkIcon, ShieldAlert, ShieldCheck, Sparkles, Wallet, TrendingUp, TrendingDown, AlertCircle, Award, Medal, Crown, Gem } from "lucide-react";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { Skeleton } from "@/components/ui/skeleton";
 import useEmblaCarousel from "embla-carousel-react";
@@ -289,6 +289,7 @@ export default function Home() {
         </Card>
 
         <DisputePauseBanner />
+        <HomeRewardCard settings={settings} />
         <LiveOrdersSection />
 
         <Card className="border-none shadow-sm bg-secondary/5">
@@ -328,6 +329,96 @@ export default function Home() {
         </Card>
       </div>
     </Layout>
+  );
+}
+
+// Two-pane reward highlight: UPI bonus (admin-editable headline + example)
+// on the left, USDT bonus (auto-derived from usdt rate + bonus %) on the
+// right. Hidden if admin disables the card from settings, or if both
+// sides have nothing meaningful to show (no UPI bonus AND USDT not
+// enabled — keeps the home screen clean for fresh installs).
+function HomeRewardCard({ settings }: { settings: any }) {
+  if (!settings) return null;
+  const enabled = settings.homeRewardCardEnabled === undefined
+    ? true
+    : settings.homeRewardCardEnabled === true || settings.homeRewardCardEnabled === "true";
+  if (!enabled) return null;
+
+  const upiTitle = settings.homeRewardUpiTitle || "UPI REWARD UP TO 6%";
+  const upiAmount = Number(settings.homeRewardUpiExampleAmount) || 10000;
+  const upiBonus = Number(settings.homeRewardUpiExampleBonus) || 300;
+
+  const usdtTitle = settings.homeRewardUsdtTitle || "USDT REWARD";
+  const usdtEnabled = settings.usdtEnabled === true || settings.usdtEnabled === "true";
+  const usdtRate = Number(settings.usdtRatePerUnit) || 0;
+  const usdtBonusPct = Number(settings.usdtBonusPercent) || 0;
+  const usdtExampleUnits = 100; // canonical example
+  const usdtBaseInr = usdtExampleUnits * usdtRate;
+  const usdtBonusInr = usdtBaseInr * (usdtBonusPct / 100);
+  const usdtTotalInr = usdtBaseInr + usdtBonusInr;
+  const showUsdt = usdtEnabled && usdtRate > 0;
+
+  if (!showUsdt && upiAmount <= 0) return null;
+
+  const fmtINR = (n: number) => "₹" + n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
+
+  return (
+    <div className="space-y-2.5">
+      {/* UPI side — orange/amber gradient (matches existing primary brand) */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 border border-orange-200 p-4 shadow-sm">
+        <div className="absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-400 to-rose-400 text-white text-[10px] font-black tracking-wide shadow">
+          <Sparkles className="h-2.5 w-2.5" /> HOT
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-md shrink-0">
+            <IndianRupee className="h-6 w-6 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] uppercase tracking-[0.14em] font-bold text-orange-700/70">Buy Rupee</div>
+            <div className="text-base font-black text-slate-900 leading-tight">{upiTitle}</div>
+          </div>
+        </div>
+        <Link href="/buy">
+          <div className="mt-3 rounded-xl bg-white/80 border border-orange-200 px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-white transition-colors" data-testid="link-home-reward-upi">
+            <div className="flex items-center gap-2 text-[13px] font-bold text-slate-800">
+              <span className="text-orange-700">Pay {fmtINR(upiAmount)}</span>
+              <ChevronRight className="h-3 w-3 text-orange-400" />
+              <span className="text-emerald-700">+{fmtINR(upiBonus)} bonus</span>
+            </div>
+            <ChevronRight className="h-4 w-4 text-orange-400" />
+          </div>
+        </Link>
+      </div>
+
+      {/* USDT side — slate + gold gradient (matches usdt deposit/payment theme) */}
+      {showUsdt && (
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 ring-1 ring-amber-400/30 p-4 shadow-lg">
+          <div className="absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-900 text-[10px] font-black tracking-wide shadow">
+            <Sparkles className="h-2.5 w-2.5" /> POPULAR
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-md shrink-0">
+              <Coins className="h-6 w-6 text-slate-900" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[10px] uppercase tracking-[0.14em] font-bold text-amber-300/70">Buy USDT</div>
+              <div className="text-base font-black text-white leading-tight">{usdtTitle}</div>
+              <div className="text-[11px] text-amber-200/90 mt-0.5">Platform price ₹{usdtRate}{usdtBonusPct > 0 ? ` + ${usdtBonusPct}% bonus` : ""}</div>
+            </div>
+          </div>
+          <Link href="/usdt-deposit">
+            <div className="mt-3 rounded-xl bg-white/10 backdrop-blur-sm border border-amber-300/20 px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-white/15 transition-colors" data-testid="link-home-reward-usdt">
+              <div className="flex items-center gap-2 text-[13px] font-bold">
+                <span className="text-amber-200">{usdtExampleUnits} USDT</span>
+                <ChevronRight className="h-3 w-3 text-amber-400/60" />
+                <span className="text-emerald-300">{fmtINR(usdtTotalInr)}{usdtBonusPct > 0 ? ` (+${fmtINR(usdtBonusInr)} bonus)` : ""}</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-amber-400/70" />
+            </div>
+          </Link>
+        </div>
+      )}
+    </div>
   );
 }
 

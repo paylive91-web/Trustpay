@@ -163,6 +163,12 @@ export default function AdminSettings() {
   ]);
   const [sellRewardPercent, setSellRewardPercent] = useState<number>(0);
   const [maxRegistrationsPerDevice, setMaxRegistrationsPerDevice] = useState<number>(3);
+  // Home page Rewards card (UPI + USDT highlight on the home screen)
+  const [homeRewardCardEnabled, setHomeRewardCardEnabled] = useState<boolean>(true);
+  const [homeRewardUpiTitle, setHomeRewardUpiTitle] = useState<string>("UPI REWARD UP TO 6%");
+  const [homeRewardUpiExampleAmount, setHomeRewardUpiExampleAmount] = useState<number>(10000);
+  const [homeRewardUpiExampleBonus, setHomeRewardUpiExampleBonus] = useState<number>(300);
+  const [homeRewardUsdtTitle, setHomeRewardUsdtTitle] = useState<string>("USDT REWARD");
   // SMS Auto Delete UI removed — cleanup now runs system-wide, automatically,
   // every 6 hours via the learning auto-cleanup job (server-side). No manual
   // toggle or "Run Cleanup" button is needed.
@@ -206,6 +212,12 @@ export default function AdminSettings() {
       }
       setSellRewardPercent(Number((settings as any).sellRewardPercent) || 0);
       setMaxRegistrationsPerDevice(Number((settings as any).maxRegistrationsPerDevice) || 3);
+      const enabledRaw = (settings as any).homeRewardCardEnabled;
+      setHomeRewardCardEnabled(enabledRaw === undefined ? true : enabledRaw === true || enabledRaw === "true");
+      setHomeRewardUpiTitle((settings as any).homeRewardUpiTitle || "UPI REWARD UP TO 6%");
+      setHomeRewardUpiExampleAmount(Number((settings as any).homeRewardUpiExampleAmount) || 10000);
+      setHomeRewardUpiExampleBonus(Number((settings as any).homeRewardUpiExampleBonus) || 300);
+      setHomeRewardUsdtTitle((settings as any).homeRewardUsdtTitle || "USDT REWARD");
       setAdminPassword("");
     }
   }, [settings]);
@@ -330,6 +342,11 @@ export default function AdminSettings() {
       buyRewardTiers,
       sellRewardPercent,
       maxRegistrationsPerDevice,
+      homeRewardCardEnabled,
+      homeRewardUpiTitle,
+      homeRewardUpiExampleAmount,
+      homeRewardUpiExampleBonus,
+      homeRewardUsdtTitle,
     };
     if (adminPassword) payload.adminPassword = adminPassword;
     updateSettingsMut.mutate({ data: payload });
@@ -663,6 +680,71 @@ export default function AdminSettings() {
                   />
                   <p className="text-[11px] text-muted-foreground">Seller ko ₹100 trade pe ₹{(100 * sellRewardPercent / 100).toFixed(2)} milega</p>
                 </div>
+                {/* Home page Rewards highlight card */}
+                <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-bold text-amber-900">Home Page Rewards Card</Label>
+                    <label className="inline-flex items-center gap-2 text-xs cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={homeRewardCardEnabled}
+                        onChange={(e) => setHomeRewardCardEnabled(e.target.checked)}
+                        className="h-4 w-4 rounded border-amber-400"
+                        data-testid="checkbox-home-reward-enabled"
+                      />
+                      <span className="font-semibold">{homeRewardCardEnabled ? "Visible" : "Hidden"}</span>
+                    </label>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground -mt-1">
+                    Home screen par UPI + USDT reward highlight card show karta hai. USDT side automatically rate aur bonus % se compute hoti hai.
+                  </p>
+                  <div className="grid grid-cols-1 gap-2.5">
+                    <div className="space-y-1">
+                      <Label className="text-[11px] font-medium">UPI side — Headline</Label>
+                      <Input
+                        value={homeRewardUpiTitle}
+                        onChange={(e) => setHomeRewardUpiTitle(e.target.value)}
+                        placeholder="UPI REWARD UP TO 6%"
+                        className="h-8 text-xs"
+                        data-testid="input-home-reward-upi-title"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-medium">UPI Example — Pay (₹)</Label>
+                        <Input
+                          type="number" min={0} step={100}
+                          value={homeRewardUpiExampleAmount}
+                          onChange={(e) => setHomeRewardUpiExampleAmount(parseFloat(e.target.value) || 0)}
+                          className="h-8 text-xs"
+                          data-testid="input-home-reward-upi-amount"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-medium">UPI Example — Bonus (₹)</Label>
+                        <Input
+                          type="number" min={0} step={1}
+                          value={homeRewardUpiExampleBonus}
+                          onChange={(e) => setHomeRewardUpiExampleBonus(parseFloat(e.target.value) || 0)}
+                          className="h-8 text-xs"
+                          data-testid="input-home-reward-upi-bonus"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] font-medium">USDT side — Headline</Label>
+                      <Input
+                        value={homeRewardUsdtTitle}
+                        onChange={(e) => setHomeRewardUsdtTitle(e.target.value)}
+                        placeholder="USDT REWARD"
+                        className="h-8 text-xs"
+                        data-testid="input-home-reward-usdt-title"
+                      />
+                      <p className="text-[10px] text-muted-foreground">USDT example auto-computed from current USDT rate + bonus %.</p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium">Max accounts allowed per device</Label>
                   <Input
