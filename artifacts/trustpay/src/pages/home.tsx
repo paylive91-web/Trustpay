@@ -240,7 +240,7 @@ export default function Home() {
               <div className="flex items-center justify-between mb-4 gap-3">
                 <div>
                   <div className="text-muted-foreground text-sm">My Total Assets</div>
-                  <div className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">₹ {balance.toFixed(2)}</div>
+                  <div className="text-3xl sm:text-4xl font-bold tracking-tight bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-600 bg-clip-text text-transparent drop-shadow-sm">₹ {balance.toFixed(2)}</div>
                 </div>
                 <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center flex-shrink-0 shadow-md">
                   <Wallet className="h-6 w-6 text-white" />
