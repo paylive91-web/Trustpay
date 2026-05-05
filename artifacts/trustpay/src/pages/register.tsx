@@ -95,9 +95,9 @@ function DuplicateDialog({ title, message, onClose, onLogin }: { title: string; 
         </div>
         <div className="bg-white px-5 pt-4 pb-6 flex flex-col gap-3">
           <Button onClick={onLogin} className="w-full h-12 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold shadow-lg shadow-red-500/30">
-            <LogIn className="w-4 h-4 mr-2" /> Login Karo
+            <LogIn className="w-4 h-4 mr-2" /> Go to Login
           </Button>
-          <Button variant="ghost" onClick={onClose} className="w-full h-10 rounded-2xl text-slate-400 text-sm">Wapas Jao</Button>
+          <Button variant="ghost" onClick={onClose} className="w-full h-10 rounded-2xl text-slate-400 text-sm">Go Back</Button>
         </div>
       </div>
     </div>
@@ -167,14 +167,14 @@ export default function Register() {
         if (data?.code === "device_limit_reached") {
           setDuplicate({
             title: "Device Limit Reached",
-            message: "Is device par allowed account limit pure ho gaye hain. Naya account banane ke liye apna existing account use karein ya support se contact karein.",
+            message: "This device has reached its allowed account limit. To create a new account, please use your existing account or contact support.",
           });
           return;
         }
         if (msg.includes("1 account is allowed") || msg.includes("already registered") || msg.includes("Mobile already")) {
           setDuplicate({
             title: "Mobile Already Registered",
-            message: "Is mobile number par pehle se ek account hai. Login kar ke continue karein.",
+            message: "An account already exists for this mobile number. Please log in to continue.",
           });
           return;
         }

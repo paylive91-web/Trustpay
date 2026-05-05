@@ -174,7 +174,6 @@ export function PremiumButton({
 export function TrustRow() {
   const items = [
     { dot: "bg-emerald-500", label: "256-bit Encrypted" },
-    { dot: "bg-amber-500", label: "Instant Payouts" },
     { dot: "bg-indigo-500", label: "10K+ Traders" },
   ];
   return (

@@ -101,7 +101,7 @@ export default function ForgotPassword() {
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div className="text-xs text-amber-900 leading-relaxed">
-                Sirf wahi user reset kar sakta hai jisne profile me apna Gmail bind kar rakha ho. Agar tune Gmail bind nahi kiya, toh pehle login karo aur Profile → Google Verification se Gmail link karo.
+                Only users who have linked their Gmail account in Profile can reset their password here. If you haven't linked your Gmail yet, please log in first and go to Profile → Google Verification to link it.
               </div>
             </div>
           </div>
@@ -181,7 +181,7 @@ export default function ForgotPassword() {
             <CheckCircle2 className="w-9 h-9" />
           </div>
           <div className="text-sm text-slate-600">
-            Tumhare account ka password update ho gaya hai. Ab naye password se login karo.
+            Your account password has been updated. You can now log in with your new password.
           </div>
           <PremiumButton type="button" onClick={() => setLocation("/login")}>
             Go to Login
