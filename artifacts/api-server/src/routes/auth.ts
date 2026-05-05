@@ -6,6 +6,7 @@ import { eq, or, desc, and, sql, inArray } from "drizzle-orm";
 import { signToken, requireAuth, formatUser } from "../lib/auth.js";
 import { recordDeviceFingerprint, checkAccountFraud, checkReferralSelfLoop } from "../lib/fraud.js";
 import { issueOtp, verifyOtpAndIssueToken, consumeVerifiedToken } from "../lib/otp.js";
+import { verifyGoogleIdToken } from "../lib/google.js";
 
 const router = Router();
 
@@ -232,6 +233,89 @@ router.post("/forgot-password", async (req, res) => {
   const passwordHash = await bcrypt.hash(newPassword, 10);
   await db.update(usersTable).set({ passwordHash }).where(eq(usersTable.id, user.id));
   res.json({ message: "Password updated. Please login with your new password." });
+});
+
+// ---------------------------------------------------------------------------
+// Google verification flow
+// ---------------------------------------------------------------------------
+//
+// Two entry points, both consume a Google Identity Services credential
+// (`idToken`) issued for our web client.
+//
+//  1. POST /google/link  (auth required) — bind the verified Gmail to the
+//     currently logged-in user. Refuses to overwrite an existing binding,
+//     refuses if the same Google account is already bound to a different user.
+//
+//  2. POST /google/reset-password  (no auth) — verify the Google credential,
+//     find the matching user by google_sub, set a new password atomically.
+//     Replaces the SMS-OTP forgot-password flow for users who have completed
+//     Google verification in their profile.
+
+router.post("/google/link", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  const { idToken } = req.body || {};
+  let identity;
+  try {
+    identity = await verifyGoogleIdToken(idToken);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || "Google verification failed" });
+    return;
+  }
+
+  // Don't let one Gmail bind to multiple TrustPay accounts. The unique
+  // partial index on google_sub also guards this at the DB level.
+  const [other] = await db.select().from(usersTable).where(eq(usersTable.googleSub, identity.sub)).limit(1);
+  if (other && other.id !== u.id) {
+    res.status(409).json({ error: "This Google account is already linked to another user" });
+    return;
+  }
+
+  await db.update(usersTable).set({
+    email: identity.email,
+    googleSub: identity.sub,
+  }).where(eq(usersTable.id, u.id));
+
+  res.json({ success: true, email: identity.email });
+});
+
+router.post("/google/unlink", requireAuth, async (req, res) => {
+  const u = (req as any).user;
+  await db.update(usersTable).set({ email: null, googleSub: null }).where(eq(usersTable.id, u.id));
+  res.json({ success: true });
+});
+
+router.post("/google/reset-password", async (req, res) => {
+  const { idToken, newPassword } = req.body || {};
+  if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6) {
+    res.status(400).json({ error: "New password must be at least 6 characters" });
+    return;
+  }
+  let identity;
+  try {
+    identity = await verifyGoogleIdToken(idToken);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || "Google verification failed" });
+    return;
+  }
+
+  // Lookup strictly by google_sub (stable Google user id). We deliberately
+  // don't fall back to email-only matching because email aliasing /
+  // re-assignment by Google for non-Workspace accounts is not guaranteed,
+  // and sub is what proves possession of the verified Google account.
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.googleSub, identity.sub)).limit(1);
+  if (!user) {
+    res.status(404).json({ error: "No account is linked to this Gmail. Please log in with your password and complete Google verification in your profile first." });
+    return;
+  }
+  if (user.isBlocked) {
+    res.status(403).json({ error: "Account blocked", reason: user.blockedReason || "Contact support" });
+    return;
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await db.update(usersTable).set({ passwordHash }).where(eq(usersTable.id, user.id));
+
+  res.json({ success: true });
 });
 
 router.post("/admin/seed-referral-code", async (_req, res) => {

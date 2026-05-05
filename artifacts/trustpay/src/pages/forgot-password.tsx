@@ -1,77 +1,47 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useLocation, Link } from "wouter";
+import { useGetAppSettings } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Phone, Lock, Loader2, ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
+import { ShieldCheck, Loader2, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { API_BASE } from "@/lib/api-config";
 import { AuthShell, PremiumInputWrap, PremiumButton } from "@/components/auth-shell";
+import { getGoogleIdToken } from "@/lib/google-id";
 
-type Step = "phone" | "otp" | "reset" | "done";
+type Step = "verify" | "reset" | "done";
 
 export default function ForgotPassword() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { data: settings } = useGetAppSettings();
+  const googleClientId = (settings as any)?.googleClientId as string | undefined;
 
-  const [step, setStep] = useState<Step>("phone");
-  const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
-  const [verifiedToken, setVerifiedToken] = useState("");
+  const [step, setStep] = useState<Step>("verify");
+  const [googleIdToken, setGoogleIdToken] = useState<string | null>(null);
+  const [verifiedEmail, setVerifiedEmail] = useState<string>("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [honeypot, setHoneypot] = useState("");
   const [loading, setLoading] = useState(false);
-  const [resendIn, setResendIn] = useState(0);
 
-  useEffect(() => {
-    if (resendIn <= 0) return;
-    const t = setTimeout(() => setResendIn((s) => s - 1), 1000);
-    return () => clearTimeout(t);
-  }, [resendIn]);
-
-  const sendOtp = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_BASE}/auth/otp/send`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, purpose: "forgot", website: honeypot }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || `Failed to send OTP (${res.status})`);
-      toast({ title: "OTP sent", description: `Code sent to +91 ${phone}` });
-      setStep("otp");
-      setResendIn(60);
-    } catch (err: any) {
-      toast({ title: "OTP error", description: err?.message || "Failed to send OTP", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmitPhone = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!/^[6-9]\d{9}$/.test(phone)) {
-      toast({ title: "Enter a valid 10-digit mobile number", variant: "destructive" });
+  const handleVerifyWithGoogle = async () => {
+    if (!googleClientId) {
+      toast({ title: "Google verification is not configured. Please contact support.", variant: "destructive" });
       return;
     }
-    await sendOtp();
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!/^\d{6}$/.test(otp)) { toast({ title: "Enter the 6-digit OTP", variant: "destructive" }); return; }
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/auth/otp/verify`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, purpose: "forgot", code: otp }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || `Verification failed (${res.status})`);
-      setVerifiedToken(data.verifiedToken);
+      const idToken = await getGoogleIdToken(googleClientId);
+      let email = "";
+      try {
+        const payload = JSON.parse(atob(idToken.split(".")[1]));
+        email = payload?.email || "";
+      } catch {}
+      setGoogleIdToken(idToken);
+      setVerifiedEmail(email);
       setStep("reset");
+      toast({ title: "Google verified", description: email });
     } catch (err: any) {
       toast({ title: "Verification failed", description: err?.message || "Unknown error", variant: "destructive" });
     } finally {
@@ -79,133 +49,145 @@ export default function ForgotPassword() {
     }
   };
 
-  const handleReset = async (e: React.FormEvent) => {
+  const resetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPassword.length < 6) { toast({ title: "Password must be at least 6 characters", variant: "destructive" }); return; }
-    if (newPassword !== confirmPassword) { toast({ title: "Passwords don't match", variant: "destructive" }); return; }
+    if (!googleIdToken) {
+      toast({ title: "Please verify with Google first", variant: "destructive" });
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast({ title: "Password must be at least 6 characters", variant: "destructive" });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast({ title: "Passwords don't match", variant: "destructive" });
+      return;
+    }
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+      const res = await fetch(`${API_BASE}/auth/google/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, newPassword, verifiedToken }),
+        body: JSON.stringify({ idToken: googleIdToken, newPassword }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || `Reset failed (${res.status})`);
+      if (!res.ok) throw new Error(data.error || `Failed to reset password (${res.status})`);
       setStep("done");
     } catch (err: any) {
-      toast({ title: "Reset failed", description: err?.message || "Unknown error", variant: "destructive" });
+      toast({ title: "Error", description: err?.message || "Unknown error", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AuthShell badge="Account Recovery">
-      {step === "phone" && (
-        <>
-          <h1 className="text-[22px] font-extrabold text-slate-900 tracking-tight">Forgot Password</h1>
-          <p className="text-[13px] text-slate-500 mb-4">Enter your registered mobile — we'll send a 6-digit code.</p>
-          <form onSubmit={handleSubmitPhone} className="space-y-3">
-            <input type="text" name="website" autoComplete="off" tabIndex={-1} value={honeypot} onChange={(e) => setHoneypot(e.target.value)}
-              style={{ position: "absolute", left: "-9999px", width: 1, height: 1, opacity: 0 }} aria-hidden="true" />
-            <div className="space-y-1.5">
-              <Label className="text-[12px] font-semibold text-slate-700 tracking-wide">Mobile Number</Label>
-              <div className="flex gap-2">
-                <div className="flex items-center px-3 rounded-xl bg-gradient-to-br from-indigo-50 to-violet-50 ring-1 ring-indigo-100 text-sm font-bold text-indigo-700">+91</div>
-                <PremiumInputWrap>
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400 pointer-events-none" />
-                  <Input type="tel" inputMode="numeric" placeholder="10-digit mobile" value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))} maxLength={10}
-                    className="pl-10 h-11 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0" />
-                </PremiumInputWrap>
+    <AuthShell>
+      <h1 className="text-[22px] font-extrabold text-slate-900 text-center mb-1">
+        {step === "done" ? "Password Updated" : step === "reset" ? "Set New Password" : "Forgot Password"}
+      </h1>
+      <p className="text-[13px] text-slate-600 text-center mb-5">
+        {step === "done"
+          ? "You can now log in with your new password."
+          : step === "reset"
+          ? "Choose a new password for your TrustPay account."
+          : "Verify with the Google account you linked in your profile, then set a new password."}
+      </p>
+
+      {step === "verify" && (
+        <div className="space-y-5">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-amber-100 text-amber-700 shrink-0">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div className="text-xs text-amber-900 leading-relaxed">
+                Sirf wahi user reset kar sakta hai jisne profile me apna Gmail bind kar rakha ho. Agar tune Gmail bind nahi kiya, toh pehle login karo aur Profile → Google Verification se Gmail link karo.
               </div>
             </div>
-            <PremiumButton disabled={loading}>
-              {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending OTP...</> : <>Send OTP <ArrowRight className="w-4 h-4" /></>}
-            </PremiumButton>
-          </form>
-        </>
-      )}
-
-      {step === "otp" && (
-        <>
-          <button type="button" onClick={() => setStep("phone")} className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-2">
-            <ArrowLeft className="w-4 h-4" /> Back
-          </button>
-          <h1 className="text-[22px] font-extrabold text-slate-900 tracking-tight">Verify OTP</h1>
-          <p className="text-[13px] text-slate-500 mb-4">Code sent to <span className="font-semibold text-slate-900">+91 {phone}</span></p>
-          <form onSubmit={handleVerifyOtp} className="space-y-3">
-            <PremiumInputWrap>
-              <Input type="tel" inputMode="numeric" autoFocus placeholder="• • • • • •" value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} maxLength={6}
-                className="h-14 bg-transparent border-0 text-center text-2xl tracking-[0.5em] font-bold focus-visible:ring-0 focus-visible:ring-offset-0" />
-            </PremiumInputWrap>
-            <div className="flex items-center justify-between text-[13px]">
-              <span className="text-slate-500">Didn't receive it?</span>
-              {resendIn > 0 ? (
-                <span className="text-slate-400 font-medium">Resend in {resendIn}s</span>
-              ) : (
-                <button type="button" onClick={sendOtp} disabled={loading} className="text-indigo-600 font-semibold hover:underline">Resend OTP</button>
-              )}
-            </div>
-            <PremiumButton disabled={loading || otp.length !== 6}>
-              {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Verifying...</> : <>Verify OTP <ArrowRight className="w-4 h-4" /></>}
-            </PremiumButton>
-          </form>
-        </>
-      )}
-
-      {step === "reset" && (
-        <>
-          <h1 className="text-[22px] font-extrabold text-slate-900 tracking-tight">New Password</h1>
-          <p className="text-[13px] text-slate-500 mb-4">Set a new password for your account.</p>
-          <form onSubmit={handleReset} className="space-y-3">
-            <div className="space-y-1.5">
-              <Label className="text-[12px] font-semibold text-slate-700 tracking-wide">New Password</Label>
-              <PremiumInputWrap>
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400 pointer-events-none" />
-                <Input type="password" placeholder="At least 6 characters" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-                  className="pl-10 h-11 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0" />
-              </PremiumInputWrap>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[12px] font-semibold text-slate-700 tracking-wide">Confirm Password</Label>
-              <PremiumInputWrap>
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400 pointer-events-none" />
-                <Input type="password" placeholder="Repeat password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="pl-10 h-11 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0" />
-              </PremiumInputWrap>
-            </div>
-            <PremiumButton disabled={loading}>
-              {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Updating...</> : <>Update Password <ArrowRight className="w-4 h-4" /></>}
-            </PremiumButton>
-          </form>
-        </>
-      )}
-
-      {step === "done" && (
-        <div className="flex flex-col items-center py-4 gap-4">
-          <div className="relative">
-            <div className="absolute inset-0 rounded-full bg-emerald-400/30 blur-xl scale-110" />
-            <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg">
-              <CheckCircle2 className="w-9 h-9 text-white" />
-            </div>
           </div>
-          <div className="text-center">
-            <p className="text-[18px] font-extrabold text-slate-900 mb-1">Password Updated!</p>
-            <p className="text-[13px] text-slate-500 leading-relaxed">Login with your new password to continue.</p>
-          </div>
-          <PremiumButton type="button" onClick={() => setLocation("/login")}>
-            Go to Login <ArrowRight className="w-4 h-4" />
+
+          <PremiumButton
+            type="button"
+            onClick={handleVerifyWithGoogle}
+            disabled={loading || !googleClientId}
+          >
+            {loading ? <Loader2 className="w-5 h-5 mr-2 animate-spin inline" /> : <ShieldCheck className="w-5 h-5 mr-2 inline" />}
+            {googleClientId ? "Verify with Google" : "Loading…"}
           </PremiumButton>
+
+          <div className="text-center">
+            <Link href="/login" className="text-sm text-indigo-600 font-medium inline-flex items-center gap-1">
+              <ArrowLeft className="w-4 h-4" /> Back to login
+            </Link>
+          </div>
         </div>
       )}
 
-      <div className="mt-4 text-center text-[13px] text-slate-500">
-        Remembered your password?{" "}
-        <Link href="/login" className="text-indigo-600 font-semibold hover:underline">Login here</Link>
-      </div>
+      {step === "reset" && (
+        <form onSubmit={resetPassword} className="space-y-4">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3">
+            <div className="flex items-center gap-2 text-emerald-800 text-xs">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span className="truncate">Verified: {verifiedEmail || "Google account"}</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm">New password</Label>
+            <PremiumInputWrap>
+              <Input
+                type="password"
+                placeholder="At least 6 characters"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 h-11 text-base"
+                data-testid="input-new-password"
+              />
+            </PremiumInputWrap>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm">Confirm new password</Label>
+            <PremiumInputWrap>
+              <Input
+                type="password"
+                placeholder="Repeat new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 h-11 text-base"
+                data-testid="input-confirm-password"
+              />
+            </PremiumInputWrap>
+          </div>
+
+          <PremiumButton type="submit" disabled={loading}>
+            {loading ? <Loader2 className="w-5 h-5 mr-2 animate-spin inline" /> : null}
+            Save New Password
+          </PremiumButton>
+
+          <button
+            type="button"
+            className="w-full text-sm text-slate-500 hover:text-slate-700"
+            onClick={() => { setStep("verify"); setGoogleIdToken(null); setVerifiedEmail(""); }}
+          >
+            Re-verify with a different Google account
+          </button>
+        </form>
+      )}
+
+      {step === "done" && (
+        <div className="space-y-6 text-center">
+          <div className="mx-auto w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+            <CheckCircle2 className="w-9 h-9" />
+          </div>
+          <div className="text-sm text-slate-600">
+            Tumhare account ka password update ho gaya hai. Ab naye password se login karo.
+          </div>
+          <PremiumButton type="button" onClick={() => setLocation("/login")}>
+            Go to Login
+          </PremiumButton>
+        </div>
+      )}
     </AuthShell>
   );
 }

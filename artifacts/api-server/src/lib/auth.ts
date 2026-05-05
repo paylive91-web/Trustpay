@@ -89,6 +89,11 @@ export function formatUser(user: any) {
     autoSellEnabled: !!user.autoSellEnabled,
     mustInstallApp: !!user.mustInstallApp,
     email: user.email || null,
+    // True once the user has bound a Google account (google_sub is set by
+    // POST /auth/google/link). Drives the "Verified with Google" badge in
+    // the profile and gates the self-serve "Forgot password" flow on the
+    // login screen — only users with this bit can reset via Google.
+    googleVerified: !!user.googleSub,
     blockedReason: user.blockedReason,
     matchingExpiresAt: user.matchingExpiresAt || null,
     displayName: user.displayName || null,
