@@ -2,13 +2,14 @@ import React from "react";
 import { useGetAppSettings } from "@workspace/api-client-react";
 import Layout from "@/components/layout";
 import { ShieldCheck } from "lucide-react";
+import { assetUrl } from "@/lib/api-config";
 
 const logoPath = `${import.meta.env.BASE_URL}trustpay-logo.png`;
 
 export function useBranding() {
   const { data: settings } = useGetAppSettings();
   const appName = (settings as any)?.appName || "TrustPay";
-  const logoUrl = (settings as any)?.appLogoUrl || logoPath;
+  const logoUrl = assetUrl((settings as any)?.appLogoUrl) || logoPath;
   return { appName, logoUrl };
 }
 

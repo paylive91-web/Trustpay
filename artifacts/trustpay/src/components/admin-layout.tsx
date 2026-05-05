@@ -8,7 +8,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 const logoPath = `${import.meta.env.BASE_URL}trustpay-logo.png`;
 import { cn } from "@/lib/utils";
-import { BASE_ORIGIN as BASE } from "@/lib/api-config";
+import { BASE_ORIGIN as BASE, assetUrl } from "@/lib/api-config";
 const adminPath = (path: string) => `${BASE}${path}`;
 
 interface AdminLayoutProps {
@@ -84,7 +84,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       {/* Sidebar */}
       <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col shadow-xl z-10 hidden md:flex">
         <div className="p-4 flex items-center gap-3 border-b border-sidebar-border">
-          <img src={(brandSettings as any)?.appLogoUrl || logoPath} alt={(brandSettings as any)?.appName || "TrustPay"} className="w-8 h-8 bg-white p-1 rounded object-contain" />
+          <img src={assetUrl((brandSettings as any)?.appLogoUrl) || logoPath} alt={(brandSettings as any)?.appName || "TrustPay"} className="w-8 h-8 bg-white p-1 rounded object-contain" />
           <span className="font-bold text-lg">{(brandSettings as any)?.appName || "TrustPay"} Admin</span>
         </div>
         
@@ -125,7 +125,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         {/* Mobile Header */}
         <header className="h-16 bg-card border-b flex items-center justify-between px-4 md:hidden shadow-sm z-20">
           <div className="flex items-center gap-2">
-            <img src={(brandSettings as any)?.appLogoUrl || logoPath} alt={(brandSettings as any)?.appName || "TrustPay"} className="w-6 h-6 object-contain" />
+            <img src={assetUrl((brandSettings as any)?.appLogoUrl) || logoPath} alt={(brandSettings as any)?.appName || "TrustPay"} className="w-6 h-6 object-contain" />
             <span className="font-bold">{(brandSettings as any)?.appName || "TrustPay"} Admin</span>
           </div>
           {isInstallable && (

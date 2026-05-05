@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Gift, Copy, Share2, Users, TrendingUp, IndianRupee, Award, Flame, Download } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
-import { API_BASE } from "@/lib/api-config";
+import { API_BASE, assetUrl } from "@/lib/api-config";
 
 export default function Invite() {
   const { toast } = useToast();
@@ -36,7 +36,7 @@ export default function Invite() {
   const currentDailyReward = agentTiers
     .filter((tier: any) => todayActiveCount >= Number(tier.minActiveDeposits || 0))
     .reduce((sum: number, tier: any) => sum + Number(tier.reward || 0), 0);
-  const inviteShareImageUrl = (appSettings as any)?.inviteShareImageUrl || "";
+  const inviteShareImageUrl = assetUrl((appSettings as any)?.inviteShareImageUrl);
   const shareUrl = `${window.location.origin}/register?ref=${referralCode}`;
 
   const handleCopyCode = () => {

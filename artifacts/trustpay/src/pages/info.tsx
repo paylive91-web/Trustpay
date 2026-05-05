@@ -3,13 +3,14 @@ import Layout from "@/components/layout";
 import { useGetAppSettings } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, ShieldAlert, AlertTriangle } from "lucide-react";
+import { assetUrl } from "@/lib/api-config";
 
 export default function Info() {
   const { data: settings } = useGetAppSettings();
   const buy = settings?.buyRules;
   const sell = settings?.sellRules;
-  const buyImg = settings?.buyRulesImageUrl;
-  const sellImg = settings?.sellRulesImageUrl;
+  const buyImg = assetUrl(settings?.buyRulesImageUrl);
+  const sellImg = assetUrl(settings?.sellRulesImageUrl);
 
   return (
     <Layout>

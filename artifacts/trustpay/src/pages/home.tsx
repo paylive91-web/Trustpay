@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getAuthToken } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 
-import { API_BASE } from "@/lib/api-config";
+import { API_BASE, assetUrl } from "@/lib/api-config";
 
 async function api(path: string, opts: RequestInit = {}) {
   const token = getAuthToken();
@@ -174,7 +174,7 @@ export default function Home() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-white rounded-xl p-1.5 shadow-sm">
-              <img src={(settings as any)?.appLogoUrl || logoPath} alt={(settings as any)?.appName || "TrustPay"} className="w-8 h-8 rounded object-contain" />
+              <img src={assetUrl((settings as any)?.appLogoUrl) || logoPath} alt={(settings as any)?.appName || "TrustPay"} className="w-8 h-8 rounded object-contain" />
             </div>
             <div>
               <div className="font-bold text-[19px] leading-none">
@@ -210,7 +210,7 @@ export default function Home() {
             <div className="flex">
               {settings.bannerImages.map((img, i) => (
                 <div className="flex-[0_0_100%] min-w-0 relative" key={i}>
-                  <img src={img} alt={`Banner ${i}`} className="w-full h-36 sm:h-44 object-cover" />
+                  <img src={assetUrl(img)} alt={`Banner ${i}`} className="w-full h-36 sm:h-44 object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-r from-black/25 via-transparent to-black/10" />
                 </div>
               ))}

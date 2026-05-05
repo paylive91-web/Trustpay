@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useGetAppSettings } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { X, ChevronRight } from "lucide-react";
+import { assetUrl } from "@/lib/api-config";
 
 export default function AppStartupPopup() {
   const [annOpen, setAnnOpen] = useState(false);
@@ -22,7 +23,7 @@ export default function AppStartupPopup() {
       try {
         const n = new Notification(broadcast.title || "TrustPay", {
           body: broadcast.message,
-          icon: (settings as any)?.appLogoUrl || (broadcast.imageUrl || undefined),
+          icon: assetUrl((settings as any)?.appLogoUrl) || assetUrl(broadcast.imageUrl) || undefined,
         });
         setTimeout(() => { try { n.close(); } catch {} }, 8000);
       } catch {}
@@ -51,10 +52,10 @@ export default function AppStartupPopup() {
     const announcements = (settings as any)?.announcements;
     if (announcements?.length) {
       announcements.forEach((ann: any) => {
-        if (ann.message) items.push({ title: ann.title || "Announcement", message: ann.message, imageUrl: ann.imageUrl });
+        if (ann.message) items.push({ title: ann.title || "Announcement", message: ann.message, imageUrl: assetUrl(ann.imageUrl) });
       });
     } else if (settings?.popupMessage) {
-      items.push({ title: "Announcement", message: settings.popupMessage, imageUrl: (settings as any)?.popupImageUrl });
+      items.push({ title: "Announcement", message: settings.popupMessage, imageUrl: assetUrl((settings as any)?.popupImageUrl) });
     }
 
     if (items.length > 0) {
@@ -85,7 +86,7 @@ export default function AppStartupPopup() {
 
   useEffect(() => {
     if (queue.length === 0) return;
-    const url = (settings as any)?.popupSoundUrl;
+    const url = assetUrl((settings as any)?.popupSoundUrl);
     if (!url) return;
     try {
       const a = new Audio(url);

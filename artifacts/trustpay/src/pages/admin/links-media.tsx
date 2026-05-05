@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Upload, Trash2, Plus, Link as LinkIcon, ImageIcon } from "lucide-react";
+import { assetUrl } from "@/lib/api-config";
 
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -232,7 +233,7 @@ export default function AdminLinksMedia() {
                   <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
                     <div className="bg-muted flex items-center justify-center overflow-hidden p-2">
                       <img
-                        src={inviteShareImageUrl}
+                        src={assetUrl(inviteShareImageUrl)}
                         alt="Invite Share Image"
                         className="max-h-[480px] max-w-full w-auto h-auto object-contain rounded"
                       />
@@ -294,7 +295,7 @@ export default function AdminLinksMedia() {
                   <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
                     <div className="bg-muted flex items-center justify-center overflow-hidden p-2">
                       <img
-                        src={buyRulesImageUrl}
+                        src={assetUrl(buyRulesImageUrl)}
                         alt="Buy Rules Image"
                         className="max-h-[480px] w-auto h-auto object-contain rounded"
                       />
@@ -356,7 +357,7 @@ export default function AdminLinksMedia() {
                   <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
                     <div className="bg-muted flex items-center justify-center overflow-hidden p-2">
                       <img
-                        src={sellRulesImageUrl}
+                        src={assetUrl(sellRulesImageUrl)}
                         alt="Sell Rules Image"
                         className="max-h-[480px] w-auto h-auto object-contain rounded"
                       />
@@ -429,7 +430,7 @@ export default function AdminLinksMedia() {
                         <div className="aspect-[3/1] bg-muted flex items-center justify-center overflow-hidden">
                           {url ? (
                             <img
-                              src={url}
+                              src={assetUrl(url)}
                               alt={`Banner ${idx + 1}`}
                               className="w-full h-full object-cover"
                             />

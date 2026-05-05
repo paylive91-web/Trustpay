@@ -14,7 +14,7 @@ import { getAdminGetSettingsQueryKey, getGetAppSettingsQueryKey } from "@workspa
 import { getAuthToken } from "@/lib/auth";
 import { Plus, Trash2, Bell, Upload, Award, Info } from "lucide-react";
 
-import { BASE_ORIGIN as BASE } from "@/lib/api-config";
+import { BASE_ORIGIN as BASE, assetUrl } from "@/lib/api-config";
 
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -430,7 +430,7 @@ export default function AdminSettings() {
                 <Input placeholder="https://... (audio URL)" value={popupSoundUrl} onChange={(e) => setPopupSoundUrl(e.target.value)} />
                 <SoundPicker value={popupSoundUrl} onChange={setPopupSoundUrl} />
                 {popupSoundUrl && (
-                  <audio src={popupSoundUrl} controls className="w-full h-10" />
+                  <audio src={assetUrl(popupSoundUrl)} controls className="w-full h-10" />
                 )}
               </CardContent>
             </Card>
