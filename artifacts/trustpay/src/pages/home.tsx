@@ -164,8 +164,8 @@ export default function Home() {
     <Layout>
       <AppStartupPopup />
 
-      {/* Top bar — UPI card colour (orange-50 → amber-50 → orange-100) */}
-      <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 border-b border-orange-200 px-4 pt-4 pb-3">
+      {/* Top bar — no background, flows with page */}
+      <div className="px-4 pt-4 pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={assetUrl((settings as any)?.appLogoUrl) || logoPath} alt={(settings as any)?.appName || "TrustPay"} className="w-10 h-10 rounded-xl object-contain shadow-sm" />
@@ -173,12 +173,12 @@ export default function Home() {
               <div className="font-bold text-[19px] leading-none text-slate-900">
                 {(settings as any)?.appName || "TrustPay"}
               </div>
-              <div className="text-[11px] text-orange-700/70 mt-0.5">Secure P2P UPI trading</div>
+              <div className="text-[11px] text-muted-foreground mt-0.5">Secure P2P UPI trading</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <div className="text-right">
-              <div className="text-[11px] text-orange-700/70">Hello,</div>
+              <div className="text-[11px] text-muted-foreground">Hello,</div>
               <div className="text-sm font-semibold text-slate-900 leading-none">{displayName}</div>
             </div>
             {isInstallable && (
@@ -237,7 +237,7 @@ export default function Home() {
               <div className="flex items-center justify-between mb-4 gap-3">
                 <div>
                   <div className="text-muted-foreground text-sm">My Total Assets</div>
-                  <div className="text-3xl sm:text-4xl font-bold tracking-tight bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-600 bg-clip-text text-transparent drop-shadow-sm">₹ {balance.toFixed(2)}</div>
+                  <div className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">₹ {balance.toFixed(2)}</div>
                 </div>
                 <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center flex-shrink-0 shadow-md">
                   <Wallet className="h-6 w-6 text-white" />
@@ -252,13 +252,13 @@ export default function Home() {
             <div className="p-4 sm:p-5 pt-0">
               <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
                 <Link href="/buy" className="w-full">
-                  <Button className="w-full min-h-12 sm:min-h-13 text-base rounded-2xl shadow-md bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white border-none">
+                  <Button className="w-full min-h-12 sm:min-h-13 text-base rounded-2xl shadow-md bg-primary hover:bg-primary/90 text-primary-foreground">
                     <ArrowDownCircle className="mr-2 h-5 w-5" />
                     BUY
                   </Button>
                 </Link>
                 <Link href="/sell" className="w-full">
-                  <Button className="w-full min-h-12 sm:min-h-13 text-base rounded-2xl shadow-md bg-gradient-to-r from-rose-500 to-fuchsia-600 hover:from-rose-600 hover:to-fuchsia-700 text-white border-none">
+                  <Button className="w-full min-h-12 sm:min-h-13 text-base rounded-2xl shadow-md bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white border-none">
                     <ArrowUpCircle className="mr-2 h-5 w-5" />
                     SELL
                   </Button>
