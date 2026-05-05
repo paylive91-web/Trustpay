@@ -80,14 +80,14 @@ export default function UsdtDeposit() {
     staleTime: 30_000,
   });
 
-  // Recent orders (top 4) shown on the deposit page so the user can
+  // Recent orders (top 3) shown on the deposit page so the user can
   // jump back to an in-flight order or re-open a finished one without
   // hopping to the history tab first.
   const { data: recentOrders } = useQuery<RecentOrder[]>({
     queryKey: ["usdt-recent-orders"],
     queryFn: async () => {
       const token = getAuthToken();
-      const r = await fetch(`${API_BASE}/usdt/my-orders?limit=4`, {
+      const r = await fetch(`${API_BASE}/usdt/my-orders?limit=3`, {
         headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       });
       if (!r.ok) throw new Error("Failed");

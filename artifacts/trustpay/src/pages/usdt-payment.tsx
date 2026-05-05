@@ -360,70 +360,70 @@ export default function UsdtPayment() {
   // Pending — main payment UI (compact single-screen layout)
   return (
     <Layout>
-      <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white shadow-lg">
-        <Link href="/usdt-deposit"><ArrowLeft className="cursor-pointer" /></Link>
+      <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white shadow-lg">
+        <Link href="/usdt-deposit"><ArrowLeft className="cursor-pointer h-5 w-5" /></Link>
         <div className="flex-1">
-          <div className="font-bold text-base leading-tight">Pay USDT</div>
-          <div className="text-[10px] text-slate-300">#{order.id} · TRC-20</div>
+          <div className="font-bold text-lg leading-tight">Pay USDT</div>
+          <div className="text-[11px] text-slate-300">#{order.id} · TRC-20</div>
         </div>
         <Link
           href="/usdt-history"
-          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold border border-white/20 transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/20 transition-colors"
           data-testid="link-usdt-history"
         >
-          <HistoryIcon className="h-3 w-3" /> History
+          <HistoryIcon className="h-3.5 w-3.5" /> History
         </Link>
       </div>
 
-      <div className="px-3 py-3 space-y-2.5">
+      <div className="px-4 py-4 space-y-3.5">
         <CountdownPill
           expiresAt={order.expiresAt}
           totalWindowMs={totalWindowMs}
           totalCredit={order.totalCredit}
         />
 
-        {/* Send/Rate/Get inline */}
-        <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-xl bg-slate-900 p-2 text-center text-white shadow-sm">
-            <div className="text-[8px] uppercase tracking-wide font-bold text-amber-300/70">Send</div>
-            <div className="text-base font-black text-amber-300 mt-0.5">{order.usdtAmount}</div>
-            <div className="text-[8px] text-slate-400">USDT</div>
+        {/* Send/Rate/Bonus inline */}
+        <div className="grid grid-cols-3 gap-2.5">
+          <div className="rounded-xl bg-slate-900 p-2.5 text-center text-white shadow-sm">
+            <div className="text-[10px] uppercase tracking-wide font-bold text-amber-300/70">Send</div>
+            <div className="text-lg font-black text-amber-300 mt-0.5 leading-tight">{order.usdtAmount}</div>
+            <div className="text-[10px] text-slate-400">USDT</div>
           </div>
-          <div className="rounded-xl bg-slate-100 p-2 text-center">
-            <div className="text-[8px] uppercase tracking-wide font-bold text-slate-600">Rate</div>
-            <div className="text-base font-black text-slate-800 mt-0.5">₹{fmt(order.rate)}</div>
-            <div className="text-[8px] text-slate-500">per USDT</div>
+          <div className="rounded-xl bg-slate-100 p-2.5 text-center">
+            <div className="text-[10px] uppercase tracking-wide font-bold text-slate-600">Rate</div>
+            <div className="text-lg font-black text-slate-800 mt-0.5 leading-tight">₹{fmt(order.rate)}</div>
+            <div className="text-[10px] text-slate-500">per USDT</div>
           </div>
-          <div className="relative rounded-xl bg-gradient-to-br from-amber-400 to-yellow-500 p-2 text-center shadow-md ring-1 ring-amber-300/60 overflow-hidden">
-            <div className="text-[8px] uppercase tracking-wide font-bold text-slate-900/70">Bonus</div>
-            <div className="text-base font-black text-slate-900 mt-0.5 inline-flex items-center gap-0.5">
-              <Sparkles className="h-2.5 w-2.5" />+{order.bonusPercent}%
+          <div className="relative rounded-xl bg-gradient-to-br from-amber-400 to-yellow-500 p-2.5 text-center shadow-md ring-1 ring-amber-300/60 overflow-hidden">
+            <div className="text-[10px] uppercase tracking-wide font-bold text-slate-900/70">Bonus</div>
+            <div className="text-lg font-black text-slate-900 mt-0.5 inline-flex items-center gap-0.5 leading-tight">
+              <Sparkles className="h-3 w-3" />+{order.bonusPercent}%
             </div>
-            <div className="text-[8px] text-slate-900/70 font-semibold">FREE</div>
+            <div className="text-[10px] text-slate-900/70 font-semibold">FREE</div>
           </div>
         </div>
 
         {/* Address card with QR side-by-side */}
         <Card className="overflow-hidden border-slate-200">
-          <div className="bg-slate-900 px-3 py-1.5 text-white flex items-center justify-between">
-            <div className="text-[9px] uppercase tracking-[0.16em] font-bold text-amber-300">TRC-20 Address {order.addressLabel ? `· ${order.addressLabel}` : ""}</div>
-            <div className="text-[9px] text-rose-300 font-semibold">⚠ TRC-20 only</div>
+          <div className="bg-slate-900 px-3 py-2 text-white flex items-center justify-between">
+            <div className="text-[10px] uppercase tracking-[0.16em] font-bold text-amber-300">TRC-20 Address {order.addressLabel ? `· ${order.addressLabel}` : ""}</div>
+            <div className="text-[10px] text-rose-300 font-semibold">⚠ TRC-20 only</div>
           </div>
           <CardContent className="p-3">
             <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-white p-1.5 shadow ring-1 ring-slate-200 shrink-0">
+              <div className="rounded-xl bg-white p-2 shadow ring-1 ring-slate-200 shrink-0">
                 <img src={qrSrc} alt="USDT TRC-20 QR" className="w-24 h-24 rounded-md" />
               </div>
-              <div className="flex-1 min-w-0 space-y-1.5">
-                <div className="text-[9px] uppercase tracking-wide font-bold text-slate-500">Wallet Address</div>
-                <code className="block text-[11px] font-mono break-all text-slate-800 leading-snug bg-slate-50 rounded-md p-1.5 border border-slate-200" data-testid="text-usdt-address">{order.address}</code>
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="text-[10px] uppercase tracking-wide font-bold text-slate-500">Wallet Address</div>
+                <code className="block text-[12px] font-mono break-all text-slate-800 leading-snug bg-slate-50 rounded-md p-2 border border-slate-200" data-testid="text-usdt-address">{order.address}</code>
                 <button
                   type="button"
                   onClick={() => copy(order.address, "Address")}
-                  className="w-full inline-flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-amber-300 text-[11px] font-bold transition-colors"
+                  className="w-full inline-flex items-center justify-center gap-1.5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-amber-300 text-xs font-bold transition-colors"
                   data-testid="button-copy-address"
                 >
-                  <Copy className="h-3 w-3" /> Copy address
+                  <Copy className="h-3.5 w-3.5" /> Copy address
                 </button>
               </div>
             </div>
@@ -431,16 +431,16 @@ export default function UsdtPayment() {
         </Card>
 
         {/* TxID input */}
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-[10px] uppercase tracking-wide font-bold text-slate-600">TxID / Transaction Hash</label>
-            <span className="text-[9px] text-slate-400">From your wallet</span>
+            <label className="text-[11px] uppercase tracking-wide font-bold text-slate-600">TxID / Transaction Hash</label>
+            <span className="text-[10px] text-slate-400">From your wallet</span>
           </div>
           <Input
             placeholder="Paste or type your TxID"
             value={txId}
             onChange={(e) => setTxId(e.target.value)}
-            className="h-11 font-mono text-xs rounded-xl border-slate-200 focus-visible:ring-amber-300 focus-visible:border-amber-400"
+            className="h-12 font-mono text-sm rounded-xl border-slate-200 focus-visible:ring-amber-300 focus-visible:border-amber-400"
             data-testid="input-tx-id"
             autoComplete="off"
             autoCorrect="off"
@@ -449,9 +449,9 @@ export default function UsdtPayment() {
           />
         </div>
 
-        {/* Screenshot upload (compact) */}
-        <div className="space-y-1.5">
-          <label className="text-[10px] uppercase tracking-wide font-bold text-slate-600">Payment Screenshot</label>
+        {/* Screenshot upload */}
+        <div className="space-y-2">
+          <label className="text-[11px] uppercase tracking-wide font-bold text-slate-600">Payment Screenshot</label>
           <input
             ref={fileInputRef}
             type="file"
@@ -465,20 +465,20 @@ export default function UsdtPayment() {
               type="button"
               disabled={uploading}
               onClick={() => fileInputRef.current?.click()}
-              className="w-full h-16 rounded-xl border-2 border-dashed border-slate-300 hover:border-amber-400 hover:bg-amber-50/40 transition-all flex items-center justify-center gap-2 text-slate-500 hover:text-amber-700 disabled:opacity-60"
+              className="w-full h-20 rounded-xl border-2 border-dashed border-slate-300 hover:border-amber-400 hover:bg-amber-50/40 transition-all flex items-center justify-center gap-2 text-slate-500 hover:text-amber-700 disabled:opacity-60"
             >
               {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
-              <span className="text-xs font-semibold">{uploading ? "Reading…" : "Tap to upload screenshot"}</span>
+              <span className="text-sm font-semibold">{uploading ? "Reading…" : "Tap to upload screenshot"}</span>
             </button>
           ) : (
             <div className="relative rounded-xl overflow-hidden border border-slate-200">
-              <img src={screenshot} alt="Screenshot preview" className="w-full max-h-32 object-cover bg-slate-50" />
+              <img src={screenshot} alt="Screenshot preview" className="w-full max-h-40 object-cover bg-slate-50" />
               <button
                 type="button"
                 onClick={() => setScreenshot("")}
-                className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-lg hover:bg-rose-600"
+                className="absolute top-2 right-2 w-8 h-8 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-lg hover:bg-rose-600"
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
           )}
@@ -489,27 +489,29 @@ export default function UsdtPayment() {
           type="button"
           onClick={() => submitMut.mutate()}
           disabled={submitMut.isPending || !txId.trim() || !screenshot || txId.trim().length < 10}
-          className="w-full h-12 rounded-xl text-[15px] font-black bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-500 hover:from-amber-500 hover:to-yellow-600 text-slate-900 shadow-lg shadow-amber-500/30 disabled:opacity-50"
+          className="w-full h-14 rounded-xl text-base font-black bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-500 hover:from-amber-500 hover:to-yellow-600 text-slate-900 shadow-lg shadow-amber-500/30 disabled:opacity-50"
           data-testid="button-submit-usdt"
         >
           {submitMut.isPending ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Submitting…</> : "Submit"}
         </Button>
 
+        {/* Cancel — proper outlined danger button (was a tiny text link) */}
         {!confirmCancel ? (
           <button
             type="button"
             onClick={() => setConfirmCancel(true)}
-            className="w-full text-center text-[11px] font-semibold text-slate-400 hover:text-rose-600 transition-colors py-1"
+            className="w-full h-12 rounded-xl border-2 border-rose-200 bg-white hover:bg-rose-50 hover:border-rose-300 text-rose-600 hover:text-rose-700 text-sm font-bold inline-flex items-center justify-center gap-2 transition-colors"
+            data-testid="button-cancel-order"
           >
-            Cancel this order
+            <X className="h-4 w-4" /> Cancel this order
           </button>
         ) : (
-          <div className="rounded-xl bg-rose-50 border border-rose-200 p-2.5 space-y-2">
-            <p className="text-[11px] font-semibold text-rose-700">Cancel this order? You'll need to start a fresh one.</p>
+          <div className="rounded-xl bg-rose-50 border-2 border-rose-200 p-3 space-y-2.5">
+            <p className="text-sm font-semibold text-rose-700 text-center">Cancel this order? You'll need to start a fresh one.</p>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setConfirmCancel(false)} className="flex-1 h-8 text-xs">Keep</Button>
-              <Button onClick={() => cancelMut.mutate()} disabled={cancelMut.isPending} className="flex-1 h-8 text-xs bg-rose-500 hover:bg-rose-600">
-                {cancelMut.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Yes, cancel"}
+              <Button variant="outline" onClick={() => setConfirmCancel(false)} className="flex-1 h-11 text-sm font-bold border-slate-300">Keep</Button>
+              <Button onClick={() => cancelMut.mutate()} disabled={cancelMut.isPending} className="flex-1 h-11 text-sm font-bold bg-rose-500 hover:bg-rose-600 text-white">
+                {cancelMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Yes, cancel"}
               </Button>
             </div>
           </div>
