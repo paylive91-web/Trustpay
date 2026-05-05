@@ -144,6 +144,7 @@ function OrdersTab() {
 
   const FILTERS = [
     { key: "submitted", label: "Pending Review" },
+    { key: "processing", label: "Processing (overdue)" },
     { key: "pending", label: "Awaiting Pay" },
     { key: "approved", label: "Approved" },
     { key: "rejected", label: "Rejected" },
@@ -212,11 +213,12 @@ function OrdersTab() {
                     <td className="py-2.5 px-2">
                       <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
                         o.status === "submitted" ? "bg-amber-100 text-amber-700" :
+                        o.status === "processing" ? "bg-rose-100 text-rose-700 ring-1 ring-rose-300 animate-pulse" :
                         o.status === "approved" ? "bg-emerald-100 text-emerald-700" :
                         o.status === "rejected" ? "bg-rose-100 text-rose-700" :
                         "bg-slate-100 text-slate-600"
                       }`}>
-                        {o.status}
+                        {o.status === "processing" ? "OVERDUE" : o.status}
                       </span>
                     </td>
                     <td className="py-2.5 px-2 text-right">
@@ -224,7 +226,7 @@ function OrdersTab() {
                         <Button size="sm" variant="outline" onClick={() => setPreviewOrder(o)} className="h-8 px-2" data-testid={`admin-usdt-view-${o.id}`}>
                           <Eye className="h-3.5 w-3.5" />
                         </Button>
-                        {o.status === "submitted" && (
+                        {(o.status === "submitted" || o.status === "processing") && (
                           <>
                             <Button size="sm" onClick={() => approveMut.mutate(o.id)} disabled={approveMut.isPending} className="h-8 px-2 bg-emerald-500 hover:bg-emerald-600" data-testid={`admin-usdt-approve-${o.id}`}>
                               <CheckCircle2 className="h-3.5 w-3.5" />
@@ -300,7 +302,7 @@ function OrdersTab() {
               )}
             </div>
           )}
-          {previewOrder?.status === "submitted" && (
+          {(previewOrder?.status === "submitted" || previewOrder?.status === "processing") && (
             <DialogFooter className="gap-2">
               <Button onClick={() => previewOrder && approveMut.mutate(previewOrder.id)} disabled={approveMut.isPending} className="bg-emerald-500 hover:bg-emerald-600">
                 <CheckCircle2 className="h-4 w-4 mr-1.5" /> Approve & Credit

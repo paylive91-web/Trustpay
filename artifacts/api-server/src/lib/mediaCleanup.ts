@@ -1,6 +1,7 @@
 import { db } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import { logger } from "./logger.js";
+import { usdtAutoFlipSubmittedToProcessing } from "../routes/usdt.js";
 
 /**
  * Auto-cleanup of payment media (screenshots, videos, dispute proofs).
@@ -174,6 +175,12 @@ export async function runMediaCleanup() {
       .catch((err) => { logger.warn({ err }, "cleanOldNotifications failed"); return 0; });
     const usdtCleared = await cleanUsdtOrderMedia()
       .catch((err) => { logger.warn({ err }, "cleanUsdtOrderMedia failed"); return 0; });
+    // Run the submitted→processing 15-min SLA flip across every user.
+    // The /my-orders and /order/:id endpoints also do per-user flips so
+    // active sessions see the change immediately; this background pass
+    // catches users who closed the tab.
+    await usdtAutoFlipSubmittedToProcessing()
+      .catch((err) => { logger.warn({ err }, "usdtAutoFlipSubmittedToProcessing failed"); });
 
     if (confirmedCleared || disputeCleared || disputedOrderCleared || notificationsCleared || usdtCleared) {
       logger.info(

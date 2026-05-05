@@ -100,7 +100,7 @@ export default function UsdtDeposit() {
     return (
       <Layout>
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
           <p className="text-sm text-muted-foreground">Loading…</p>
         </div>
       </Layout>
@@ -112,7 +112,7 @@ export default function UsdtDeposit() {
   if (!config?.enabled || config.addressCount === 0 || config.rate <= 0) {
     return (
       <Layout>
-        <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white">
+        <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white">
           <Link href="/buy"><ArrowLeft className="cursor-pointer" /></Link>
           <span className="font-bold text-lg flex-1">USDT Deposit</span>
         </div>
@@ -129,40 +129,46 @@ export default function UsdtDeposit() {
 
   return (
     <Layout>
-      <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white shadow-lg">
+      <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white shadow-lg">
         <Link href="/buy"><ArrowLeft className="cursor-pointer" /></Link>
         <div className="flex-1">
           <div className="font-bold text-lg leading-tight">Buy with USDT</div>
-          <div className="text-[11px] text-emerald-100">TRC-20 Network · Instant credit on approval</div>
+          <div className="text-[11px] text-slate-300">TRC-20 Network · Instant credit on approval</div>
         </div>
-        <Link href="/usdt-history" className="p-2 rounded-full bg-white/15 hover:bg-white/25 transition-colors" title="History">
-          <HistoryIcon className="h-4 w-4" />
+        <Link
+          href="/usdt-history"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-[12px] font-bold border border-white/20 transition-colors"
+          data-testid="link-usdt-history"
+        >
+          <HistoryIcon className="h-3.5 w-3.5" /> USDT History
         </Link>
       </div>
 
       <div className="p-4 space-y-4">
-        {/* Hero rate card */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 p-5 text-white shadow-xl">
-          <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10 blur-3xl" />
-          <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-emerald-300/20 blur-2xl" />
+        {/* Hero rate card — slate + gold */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-5 text-white shadow-xl ring-1 ring-amber-400/20">
+          <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-amber-400/10 blur-3xl" />
+          <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-yellow-300/10 blur-2xl" />
           <div className="relative flex items-start justify-between">
             <div>
-              <div className="text-[11px] uppercase tracking-[0.18em] font-semibold text-emerald-100">Live Rate</div>
-              <div className="mt-1 text-4xl font-black tracking-tight">₹{fmt(config.rate)}<span className="text-lg font-bold text-emerald-100"> / USDT</span></div>
+              <div className="text-[11px] uppercase tracking-[0.18em] font-semibold text-amber-300/80">Live Rate</div>
+              <div className="mt-1 text-4xl font-black tracking-tight bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 bg-clip-text text-transparent">
+                ₹{fmt(config.rate)}<span className="text-lg font-bold text-amber-200/80"> / USDT</span>
+              </div>
               {config.bonusPercent > 0 && (
-                <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/15 backdrop-blur-sm px-3 py-1 text-xs font-bold ring-1 ring-white/20">
-                  <Sparkles className="h-3 w-3" /> +{config.bonusPercent}% bonus included
+                <div className="mt-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black text-slate-900 ring-1 ring-amber-200/60 shadow-md animate-gold-shimmer animate-gold-pulse">
+                  <Sparkles className="h-3.5 w-3.5" /> FREE +{config.bonusPercent}% BONUS
                 </div>
               )}
             </div>
-            <div className="rounded-2xl bg-white/20 backdrop-blur-sm p-3 ring-1 ring-white/25">
-              <Coins className="h-7 w-7" />
+            <div className="rounded-2xl bg-gradient-to-br from-amber-400 to-yellow-500 p-3 ring-1 ring-amber-200/60 shadow-lg">
+              <Coins className="h-7 w-7 text-slate-900" />
             </div>
           </div>
         </div>
 
         {/* Amount input + calculator */}
-        <Card className="border-emerald-100 shadow-sm">
+        <Card className="border-slate-200 shadow-sm">
           <CardContent className="p-5 space-y-5">
             <div className="space-y-2">
               <Label className="text-[12px] font-bold uppercase tracking-[0.14em] text-slate-600">USDT Amount</Label>
@@ -172,13 +178,13 @@ export default function UsdtDeposit() {
                   inputMode="decimal"
                   step="0.01"
                   min={0}
-                  placeholder={`${config.minAmount} – ${config.maxAmount || "∞"}`}
+                  placeholder=""
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="h-16 text-3xl font-black tracking-tight pr-20 rounded-2xl bg-gradient-to-br from-slate-50 to-emerald-50 border-emerald-200 focus-visible:ring-emerald-300"
+                  className="h-16 text-3xl font-black tracking-tight pr-20 rounded-2xl bg-slate-50 border-slate-200 focus-visible:ring-amber-300 focus-visible:border-amber-400"
                   data-testid="input-usdt-amount"
                 />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-emerald-600">USDT</span>
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-amber-600">USDT</span>
               </div>
               <div className="flex items-center justify-between text-[11px] text-slate-500">
                 <span>Min: <span className="font-semibold text-slate-700">{config.minAmount} USDT</span></span>
@@ -195,16 +201,16 @@ export default function UsdtDeposit() {
               </div>
               {config.bonusPercent > 0 && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-1.5 text-emerald-600 font-semibold">
+                  <span className="flex items-center gap-1.5 text-amber-700 font-semibold">
                     <Sparkles className="h-3.5 w-3.5" /> Bonus ({config.bonusPercent}%)
                   </span>
-                  <span className="font-bold text-emerald-700 tabular-nums">+ ₹{fmt(calc.bonus)}</span>
+                  <span className="font-black text-amber-700 tabular-nums">+ ₹{fmt(calc.bonus)}</span>
                 </div>
               )}
               <div className="border-t border-dashed border-slate-300 pt-3 flex items-center justify-between">
                 <span className="text-sm font-semibold text-slate-700">You'll receive</span>
-                <span className="text-2xl font-black text-emerald-600 tabular-nums flex items-center gap-1">
-                  <IndianRupee className="h-5 w-5" />{fmt(calc.total)}
+                <span className="text-2xl font-black tabular-nums flex items-center gap-1 bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent">
+                  <IndianRupee className="h-5 w-5 text-amber-600" />{fmt(calc.total)}
                 </span>
               </div>
             </div>
@@ -213,7 +219,7 @@ export default function UsdtDeposit() {
               type="button"
               disabled={!numericAmount || !!validation || startMut.isPending}
               onClick={() => startMut.mutate(numericAmount)}
-              className="w-full h-14 rounded-2xl text-[16px] font-bold bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg shadow-emerald-500/30"
+              className="w-full h-14 rounded-2xl text-[16px] font-black bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-500 hover:from-amber-500 hover:to-yellow-600 text-slate-900 shadow-lg shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
               data-testid="button-continue-usdt"
             >
               {startMut.isPending ? (
@@ -228,21 +234,21 @@ export default function UsdtDeposit() {
         {/* Trust + window info */}
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-2xl bg-white border border-slate-200 p-3 flex items-start gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-              <ShieldCheck className="h-4 w-4 text-emerald-600" />
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-slate-900 to-slate-700 flex items-center justify-center shrink-0 shadow-sm">
+              <ShieldCheck className="h-4 w-4 text-amber-400" />
             </div>
             <div>
-              <div className="text-[12px] font-bold text-slate-800">Verified Manually</div>
-              <div className="text-[11px] text-slate-500 leading-snug">Admin reviews TxID + screenshot before crediting.</div>
+              <div className="text-[12px] font-bold text-slate-800">Verified by TrustPay</div>
+              <div className="text-[11px] text-slate-500 leading-snug">TrustPay reviews TxID + screenshot before crediting.</div>
             </div>
           </div>
           <div className="rounded-2xl bg-white border border-slate-200 p-3 flex items-start gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
-              <Info className="h-4 w-4 text-amber-600" />
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shrink-0 shadow-sm">
+              <Info className="h-4 w-4 text-slate-900" />
             </div>
             <div>
               <div className="text-[12px] font-bold text-slate-800">{config.windowMinutes}-min window</div>
-              <div className="text-[11px] text-slate-500 leading-snug">Pay within {config.windowMinutes} minutes after starting the order.</div>
+              <div className="text-[11px] text-slate-500 leading-snug">Pay within {config.windowMinutes} minutes after starting.</div>
             </div>
           </div>
         </div>

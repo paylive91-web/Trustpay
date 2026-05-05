@@ -269,6 +269,33 @@ router.post("/cancel/:id", async (req, res) => {
   res.json({ ok: true });
 });
 
+// 15-minute admin review window. After this, submitted orders auto-shift
+// to "processing" status — still pending admin action, but UI surfaces
+// it as a different state ("under processing" vs "under review") so the
+// user knows the SLA window has passed and the request is queued.
+const REVIEW_WINDOW_MS = 15 * 60 * 1000;
+
+function computeReviewSecondsRemaining(submittedAt: Date | string | null): number | null {
+  if (!submittedAt) return null;
+  const subMs = new Date(submittedAt).getTime();
+  if (!Number.isFinite(subMs)) return null;
+  return Math.max(0, Math.ceil((subMs + REVIEW_WINDOW_MS - Date.now()) / 1000));
+}
+
+// Defensive auto-shift: any submitted order past the 15-min review SLA
+// is moved to "processing" so admin queue + user UI both reflect the
+// degraded state. Same row can still be approved/rejected by admin.
+async function autoFlipSubmittedToProcessing(userId?: number) {
+  const where = userId
+    ? sql`WHERE user_id = ${userId} AND status = 'submitted' AND submitted_at IS NOT NULL AND submitted_at <= NOW() - INTERVAL '15 minutes'`
+    : sql`WHERE status = 'submitted' AND submitted_at IS NOT NULL AND submitted_at <= NOW() - INTERVAL '15 minutes'`;
+  await db.execute(sql`
+    UPDATE usdt_orders
+       SET status = 'processing', updated_at = NOW()
+    ${where}
+  `).catch(() => {});
+}
+
 router.get("/my-orders", async (req, res) => {
   const u = (req as any).user as { id: number };
   const limit = Math.min(200, Math.max(1, parseInt(String(req.query.limit || "50")) || 50));
@@ -281,6 +308,7 @@ router.get("/my-orders", async (req, res) => {
        AND status = 'pending'
        AND expires_at <= NOW()
   `);
+  await autoFlipSubmittedToProcessing(u.id);
   const rows = await db.execute(sql`
     SELECT id, usdt_amount, rate_snapshot, bonus_pct_snapshot,
            inr_value, bonus_inr, total_credit,
@@ -312,12 +340,17 @@ router.get("/my-orders", async (req, res) => {
     approvedAt: r.approved_at,
     cancelledAt: r.cancelled_at,
     createdAt: r.created_at,
+    reviewSecondsRemaining: r.status === "submitted" ? computeReviewSecondsRemaining(r.submitted_at) : null,
   })));
 });
 
 router.get("/order/:id", async (req, res) => {
   const u = (req as any).user as { id: number };
   const id = Number(req.params.id);
+  // Same defensive auto-flip on the single-order read so the payment
+  // screen (polled every 5s) flips to "processing" the moment the SLA
+  // window closes — without waiting for the background job tick.
+  await autoFlipSubmittedToProcessing(u.id);
   const rows = await db.execute(sql`
     SELECT id, usdt_amount, rate_snapshot, bonus_pct_snapshot,
            inr_value, bonus_inr, total_credit,
@@ -352,7 +385,12 @@ router.get("/order/:id", async (req, res) => {
     approvedAt: r.approved_at,
     cancelledAt: r.cancelled_at,
     createdAt: r.created_at,
+    reviewSecondsRemaining: r.status === "submitted" ? computeReviewSecondsRemaining(r.submitted_at) : null,
   });
 });
+
+// Exported so the background mediaCleanup job can run the same flip
+// across every user without each user having to hit /my-orders first.
+export const usdtAutoFlipSubmittedToProcessing = autoFlipSubmittedToProcessing;
 
 export default router;

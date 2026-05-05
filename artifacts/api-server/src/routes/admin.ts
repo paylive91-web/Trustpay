@@ -1867,8 +1867,8 @@ router.post("/usdt/approve/:id", requireAdmin, async (req, res): Promise<any> =>
     | { id: number; user_id: number; status: string; total_credit: string; usdt_amount: string }
     | undefined;
   if (!order) return res.status(404).json({ error: "Order not found" });
-  if (order.status !== "submitted") {
-    return res.status(409).json({ error: `Order is ${order.status} — only submitted orders can be approved` });
+  if (order.status !== "submitted" && order.status !== "processing") {
+    return res.status(409).json({ error: `Order is ${order.status} — only submitted/processing orders can be approved` });
   }
   const credit = Number(order.total_credit);
   if (!Number.isFinite(credit) || credit <= 0) {
@@ -1889,7 +1889,7 @@ router.post("/usdt/approve/:id", requireAdmin, async (req, res): Promise<any> =>
              reviewed_by = ${adminId},
              admin_note = ${note},
              updated_at = NOW()
-       WHERE id = ${id} AND status = 'submitted'
+       WHERE id = ${id} AND status IN ('submitted', 'processing')
       RETURNING id
     `);
     const claimedRow = ((claim as any).rows?.[0] || (claim as any)[0]);
@@ -1927,7 +1927,7 @@ router.post("/usdt/reject/:id", requireAdmin, async (req, res): Promise<any> => 
            reviewed_by = ${adminId},
            admin_note = ${note},
            updated_at = NOW()
-     WHERE id = ${id} AND status IN ('submitted', 'pending')
+     WHERE id = ${id} AND status IN ('submitted', 'pending', 'processing')
     RETURNING id
   `);
   const row = ((r as any).rows?.[0] || (r as any)[0]);
