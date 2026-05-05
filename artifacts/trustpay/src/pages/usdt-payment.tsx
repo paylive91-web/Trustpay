@@ -29,6 +29,7 @@ type UsdtOrder = {
   screenshotUrl: string | null;
   status: "pending" | "submitted" | "processing" | "approved" | "rejected" | "expired" | "cancelled";
   expiresAt: string;
+  createdAt: string;
   reviewSecondsRemaining: number | null;
 };
 
@@ -124,7 +125,14 @@ export default function UsdtPayment() {
 
   const expiresMs = order ? new Date(order.expiresAt).getTime() - now : 0;
   const expired = order ? expiresMs <= 0 : false;
-  const totalWindowMs = useMemo(() => 15 * 60 * 1000, []);
+  // Use the order's actual payment window (expiresAt − createdAt) so the
+  // ring stays accurate even if admin changes the configured window after
+  // the order was created. Fallback to 15 min only if dates are missing.
+  const totalWindowMs = useMemo(() => {
+    if (!order?.createdAt || !order?.expiresAt) return 15 * 60 * 1000;
+    const span = new Date(order.expiresAt).getTime() - new Date(order.createdAt).getTime();
+    return Number.isFinite(span) && span > 0 ? span : 15 * 60 * 1000;
+  }, [order?.createdAt, order?.expiresAt]);
   const ringPct = totalWindowMs > 0 ? Math.max(0, Math.min(100, (expiresMs / totalWindowMs) * 100)) : 0;
 
   const handleFile = async (file: File) => {

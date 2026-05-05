@@ -103,13 +103,17 @@ router.post("/start", async (req, res) => {
     return;
   }
 
-  // Refuse if user already has an active (pending/submitted) order — keeps
-  // the address pool clean and prevents accidental double-pays.
+  // Refuse if user already has an unresolved order — keeps the address
+  // pool clean and prevents accidental double-pays. Pending must be
+  // within its payment window; submitted/processing are admin-side
+  // states with no payment-window guard (admin SLA controls them).
   const active = await db.execute(sql`
     SELECT id, status FROM usdt_orders
      WHERE user_id = ${u.id}
-       AND status IN ('pending', 'submitted')
-       AND expires_at > NOW()
+       AND (
+         (status = 'pending' AND expires_at > NOW())
+         OR status IN ('submitted', 'processing')
+       )
      LIMIT 1
   `);
   const activeRow = ((active as any).rows?.[0] || (active as any)[0]) as { id?: number } | undefined;
