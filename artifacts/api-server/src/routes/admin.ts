@@ -514,6 +514,33 @@ function fSettings(s: any) {
     buyRewardPercent: parseFloat(s.buyRewardPercent || "5"),
     sellRewardPercent: parseFloat(s.sellRewardPercent || "0"),
     broadcastNotification,
+    // Device-based registration cap. Default 3 (matches lib/settings.ts).
+    maxRegistrationsPerDevice: Math.max(1, Math.min(50, parseInt(s.maxRegistrationsPerDevice || "3"))),
+    // USDT (TRC-20) deposit settings — must be returned here, otherwise the
+    // admin/usdt Settings tab reads `undefined` after refresh and resets all
+    // controls back to their useState defaults even though save persisted.
+    usdtEnabled: (s.usdtEnabled ?? "false") === "true",
+    usdtRatePerUnit: parseFloat(s.usdtRatePerUnit || "85"),
+    usdtBonusPercent: parseFloat(s.usdtBonusPercent || "0"),
+    usdtMinAmount: parseFloat(s.usdtMinAmount || "10"),
+    usdtMaxAmount: parseFloat(s.usdtMaxAmount || "10000"),
+    usdtPaymentWindowMinutes: parseInt(s.usdtPaymentWindowMinutes || "15"),
+    usdtNotes: s.usdtNotes || "",
+    usdtAddresses: (() => {
+      try {
+        const raw = JSON.parse(s.usdtAddresses || "[]");
+        if (!Array.isArray(raw)) return [];
+        return raw
+          .map((a: any) => ({
+            address: String(a?.address || ""),
+            label: a?.label ? String(a.label) : "",
+            qrImageUrl: a?.qrImageUrl ? String(a.qrImageUrl) : "",
+          }))
+          .filter((a: { address: string }) => a.address.length > 0);
+      } catch {
+        return [];
+      }
+    })(),
   };
 }
 
