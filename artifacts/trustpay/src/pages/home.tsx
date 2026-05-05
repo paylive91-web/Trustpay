@@ -12,7 +12,6 @@ import { ArrowDownCircle, ArrowUpCircle, ChevronRight, Coins, Download, IndianRu
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { Skeleton } from "@/components/ui/skeleton";
 import useEmblaCarousel from "embla-carousel-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { getAuthToken } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
@@ -50,14 +49,14 @@ function LiveOrdersSection() {
 
   if (isLoading || liveOrders.length === 0) {
     return (
-      <Card className="border-none shadow-sm bg-primary/5">
+      <Card className="border-none shadow-sm bg-orange-50/60">
         <CardContent className="p-4 flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-primary">My Orders</h3>
+            <h3 className="font-semibold text-orange-700">My Orders</h3>
             <p className="text-sm text-muted-foreground">{isLoading ? "Loading..." : "No active orders right now"}</p>
           </div>
           <Link href="/orders">
-            <Button variant="outline" size="sm" className="rounded-full gap-1">View <ChevronRight className="h-4 w-4" /></Button>
+            <Button variant="outline" size="sm" className="rounded-full gap-1 border-orange-200 text-orange-700 hover:bg-orange-50">View <ChevronRight className="h-4 w-4" /></Button>
           </Link>
         </CardContent>
       </Card>
@@ -73,30 +72,26 @@ function LiveOrdersSection() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500" />
             </span>
-            <h3 className="font-semibold text-sm">Live Orders</h3>
+            <h3 className="font-semibold text-sm text-orange-800">Live Orders</h3>
           </div>
           <Link href="/orders">
-            <Button variant="ghost" size="sm" className="rounded-full gap-1 text-xs h-7">All <ChevronRight className="h-3 w-3" /></Button>
+            <Button variant="ghost" size="sm" className="rounded-full gap-1 text-xs h-7 text-orange-600 hover:text-orange-700 hover:bg-orange-50">All <ChevronRight className="h-3 w-3" /></Button>
           </Link>
         </div>
-        <div className="divide-y">
+        <div className="divide-y divide-orange-50">
           {liveOrders.map((o: any) => {
             const st = STATUS_LABEL[o.status] || { label: o.status, color: "bg-muted text-muted-foreground" };
             const isBuy = o.side === "buy";
-            // Disputed orders should jump straight into the dispute view
-            // so the user can upload proof — taking them to /buy or /sell
-            // showed the regular order page (or for buyers, a fresh BUY
-            // form) which made it look like the dispute was lost.
             const target = o.status === "disputed"
               ? "/orders?tab=disputes"
               : (isBuy ? "/buy" : "/sell");
             return (
               <Link key={o.id} href={target}>
-                <div className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors cursor-pointer">
-                  <div className={`p-1.5 rounded-full ${isBuy ? "bg-primary/10" : "bg-violet-100"}`}>
+                <div className="flex items-center gap-3 px-4 py-3 hover:bg-orange-50/40 transition-colors cursor-pointer">
+                  <div className={`p-1.5 rounded-full ${isBuy ? "bg-orange-100" : "bg-rose-100"}`}>
                     {isBuy
-                      ? <TrendingDown className="h-4 w-4 text-primary" />
-                      : <TrendingUp className="h-4 w-4 text-violet-600" />}
+                      ? <TrendingDown className="h-4 w-4 text-orange-600" />
+                      : <TrendingUp className="h-4 w-4 text-rose-600" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -106,7 +101,7 @@ function LiveOrdersSection() {
                     <div className="text-[11px] text-muted-foreground">{isBuy ? "Buy" : "Sell"} · Order #{o.id}</div>
                   </div>
                   {o.status === "disputed" && <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />}
-                  <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <ChevronRight className="h-4 w-4 text-orange-300 flex-shrink-0" />
                 </div>
               </Link>
             );
@@ -135,8 +130,6 @@ export default function Home() {
   useEffect(() => {
     if (isError) setLocation("/login");
   }, [isError, setLocation]);
-
-  // Heartbeat is now sent globally from <Layout /> on every authenticated page.
 
   // Auto-advance banner carousel every 4 seconds
   useEffect(() => {
@@ -170,7 +163,9 @@ export default function Home() {
   return (
     <Layout>
       <AppStartupPopup />
-      <div className="bg-gradient-to-r from-primary via-primary to-sky-600 text-primary-foreground px-4 pt-3 pb-4 shadow-lg">
+
+      {/* ── Header ── warm orange → rose gradient (matches UPI card accent) */}
+      <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-rose-500 text-white px-4 pt-3 pb-5 shadow-lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-white rounded-xl p-1.5 shadow-sm">
@@ -204,14 +199,15 @@ export default function Home() {
         </div>
       </div>
 
+      {/* ── Banner carousel ── overlaps header bottom */}
       {settings?.bannerImages && settings.bannerImages.length > 0 && (
         <div className="px-4 -mt-3">
-          <div className="overflow-hidden rounded-3xl shadow-xl ring-1 ring-black/5" ref={emblaRef}>
+          <div className="overflow-hidden rounded-3xl shadow-xl ring-1 ring-orange-200/40" ref={emblaRef}>
             <div className="flex">
               {settings.bannerImages.map((img, i) => (
                 <div className="flex-[0_0_100%] min-w-0 relative" key={i}>
                   <img src={assetUrl(img)} alt={`Banner ${i}`} className="w-full h-36 sm:h-44 object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/25 via-transparent to-black/10" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-orange-900/20 via-transparent to-rose-900/10" />
                 </div>
               ))}
             </div>
@@ -221,7 +217,7 @@ export default function Home() {
 
       <div className="px-3 sm:px-4 py-4 space-y-3 sm:space-y-4">
         {isFrozen && (
-          <Card className="border-red-500/30 bg-gradient-to-r from-red-50 to-red-100 shadow-sm">
+          <Card className="border-red-300 bg-gradient-to-r from-red-50 to-red-100 shadow-sm">
             <CardContent className="p-4 flex items-center gap-3">
               <ShieldAlert className="text-red-600 h-6 w-6" />
               <div className="text-sm text-red-700">
@@ -236,43 +232,42 @@ export default function Home() {
           tiers={(settings as any)?.agentTiers || []}
         />
 
-        <Card className="shadow-xl border-none bg-gradient-to-br from-card via-white to-sky-50 overflow-hidden">
+        {/* ── Balance card ── orange-amber tinted */}
+        <Card className="shadow-xl border-none overflow-hidden bg-gradient-to-br from-white via-orange-50/40 to-amber-50">
           <CardContent className="p-0">
-            <div className="p-4 sm:p-5 pb-4 bg-gradient-to-r from-primary/5 to-sky-500/10">
+            <div className="p-4 sm:p-5 pb-4 bg-gradient-to-r from-orange-400/10 to-rose-400/10">
               <div className="flex items-center justify-between mb-4 gap-3">
                 <div>
                   <div className="text-muted-foreground text-sm">My Total Assets</div>
-                  <div className="text-3xl sm:text-4xl font-bold tracking-tight">₹ {balance.toFixed(2)}</div>
+                  <div className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">₹ {balance.toFixed(2)}</div>
                 </div>
-                <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Wallet className="h-6 w-6 text-primary" />
+                <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center flex-shrink-0 shadow-md">
+                  <Wallet className="h-6 w-6 text-white" />
                 </div>
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                <span>Trust Score: <span className={trustScore >= 0 ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>{trustScore}</span></span>
+                <ShieldCheck className="h-3.5 w-3.5 text-orange-500" />
+                <span>Trust Score: <span className={trustScore >= 0 ? "text-emerald-600 font-semibold" : "text-red-600 font-semibold"}>{trustScore}</span></span>
               </div>
             </div>
 
             <div className="p-4 sm:p-5 pt-0">
               <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
                 <Link href="/buy" className="w-full">
-                  <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground min-h-12 sm:min-h-13 text-base rounded-2xl shadow-md">
+                  <Button className="w-full min-h-12 sm:min-h-13 text-base rounded-2xl shadow-md bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white border-none">
                     <ArrowDownCircle className="mr-2 h-5 w-5" />
                     BUY
                   </Button>
                 </Link>
                 <Link href="/sell" className="w-full">
-                  <Button
-                    className="w-full min-h-12 sm:min-h-13 text-base rounded-2xl shadow-md bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white"
-                  >
+                  <Button className="w-full min-h-12 sm:min-h-13 text-base rounded-2xl shadow-md bg-gradient-to-r from-rose-500 to-fuchsia-600 hover:from-rose-600 hover:to-fuchsia-700 text-white border-none">
                     <ArrowUpCircle className="mr-2 h-5 w-5" />
                     SELL
                   </Button>
                 </Link>
               </div>
               {hasUpi ? (
-                <div className="mt-3 rounded-2xl bg-emerald-50 px-3 py-2 text-[11px] sm:text-xs text-emerald-700 flex items-center justify-between gap-2">
+                <div className="mt-3 rounded-2xl bg-emerald-50 border border-emerald-100 px-3 py-2 text-[11px] sm:text-xs text-emerald-700 flex items-center justify-between gap-2">
                   <span>{activeUpiList.length} UPI linked & ready</span>
                   <Link href="/upi" className="font-medium underline">Manage</Link>
                 </div>
@@ -292,18 +287,20 @@ export default function Home() {
         <HomeRewardCard settings={settings} />
         <LiveOrdersSection />
 
-        <Card className="border-none shadow-sm bg-secondary/5">
+        {/* ── Sell Queue quick link ── amber tinted */}
+        <Card className="border-none shadow-sm bg-amber-50/60">
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-secondary">My Sell Queue</h3>
+              <h3 className="font-semibold text-amber-800">My Sell Queue</h3>
               <p className="text-sm text-muted-foreground">Quick rules & support</p>
             </div>
             <Link href="/sell">
-              <Button variant="outline" size="sm" className="rounded-full gap-1">Open <ChevronRight className="h-4 w-4" /></Button>
+              <Button variant="outline" size="sm" className="rounded-full gap-1 border-amber-200 text-amber-700 hover:bg-amber-50">Open <ChevronRight className="h-4 w-4" /></Button>
             </Link>
           </CardContent>
         </Card>
 
+        {/* ── Rules preview ── orange + rose tinted panels */}
         <Card className="border-none shadow-sm">
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center justify-between">
@@ -312,16 +309,16 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground">Buy and sell rules</p>
               </div>
               <Link href="/info">
-                <Button variant="outline" size="sm" className="rounded-full gap-1">Open <ChevronRight className="h-4 w-4" /></Button>
+                <Button variant="outline" size="sm" className="rounded-full gap-1 border-orange-200 text-orange-700 hover:bg-orange-50">Open <ChevronRight className="h-4 w-4" /></Button>
               </Link>
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
-              <div className="rounded-2xl bg-sky-50 p-3">
-                <div className="text-xs font-semibold text-sky-700 mb-1">Buy Rules</div>
+              <div className="rounded-2xl bg-orange-50 border border-orange-100 p-3">
+                <div className="text-xs font-semibold text-orange-700 mb-1">Buy Rules</div>
                 <div className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap">{buyRules}</div>
               </div>
-              <div className="rounded-2xl bg-fuchsia-50 p-3">
-                <div className="text-xs font-semibold text-fuchsia-700 mb-1">Sell Rules</div>
+              <div className="rounded-2xl bg-rose-50 border border-rose-100 p-3">
+                <div className="text-xs font-semibold text-rose-700 mb-1">Sell Rules</div>
                 <div className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap">{sellRules}</div>
               </div>
             </div>
@@ -332,11 +329,6 @@ export default function Home() {
   );
 }
 
-// Two-pane reward highlight: UPI bonus (admin-editable headline + example)
-// on the left, USDT bonus (auto-derived from usdt rate + bonus %) on the
-// right. Hidden if admin disables the card from settings, or if both
-// sides have nothing meaningful to show (no UPI bonus AND USDT not
-// enabled — keeps the home screen clean for fresh installs).
 function HomeRewardCard({ settings }: { settings: any }) {
   if (!settings) return null;
   const enabled = settings.homeRewardCardEnabled === undefined
@@ -344,9 +336,6 @@ function HomeRewardCard({ settings }: { settings: any }) {
     : settings.homeRewardCardEnabled === true || settings.homeRewardCardEnabled === "true";
   if (!enabled) return null;
 
-  // Defensive parser: allow 0 (admin's intentional value) but never
-  // surface negatives or NaN. Falls back to `dflt` only when the value
-  // is not finite, so admin-set 0 is preserved.
   const safeNum = (v: any, dflt: number) => {
     const n = Number(v);
     if (!Number.isFinite(n)) return dflt;
@@ -361,14 +350,12 @@ function HomeRewardCard({ settings }: { settings: any }) {
   const usdtEnabled = settings.usdtEnabled === true || settings.usdtEnabled === "true";
   const usdtRate = safeNum(settings.usdtRatePerUnit, 0);
   const usdtBonusPct = safeNum(settings.usdtBonusPercent, 0);
-  const usdtExampleUnits = 100; // canonical example
+  const usdtExampleUnits = 100;
   const usdtBaseInr = usdtExampleUnits * usdtRate;
   const usdtBonusInr = usdtBaseInr * (usdtBonusPct / 100);
   const usdtTotalInr = usdtBaseInr + usdtBonusInr;
   const showUsdt = usdtEnabled && usdtRate > 0;
 
-  // Hide entire card if neither side has anything useful to show
-  // (UPI example is 0 AND usdt is unavailable). Keeps fresh installs clean.
   const showUpi = upiAmount > 0 || upiBonus > 0;
   if (!showUsdt && !showUpi) return null;
 
@@ -376,35 +363,33 @@ function HomeRewardCard({ settings }: { settings: any }) {
 
   return (
     <div className="space-y-2.5">
-      {/* UPI side — orange/amber gradient (matches existing primary brand) */}
       {showUpi && (
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 border border-orange-200 p-4 shadow-sm">
-        <div className="absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-400 to-rose-400 text-white text-[10px] font-black tracking-wide shadow">
-          <Sparkles className="h-2.5 w-2.5" /> HOT
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-md shrink-0">
-            <IndianRupee className="h-6 w-6 text-white" />
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 border border-orange-200 p-4 shadow-sm">
+          <div className="absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-400 to-rose-400 text-white text-[10px] font-black tracking-wide shadow">
+            <Sparkles className="h-2.5 w-2.5" /> HOT
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[10px] uppercase tracking-[0.14em] font-bold text-orange-700/70">Buy Rupee</div>
-            <div className="text-base font-black text-slate-900 leading-tight">{upiTitle}</div>
-          </div>
-        </div>
-        <Link href="/buy">
-          <div className="mt-3 rounded-xl bg-white/80 border border-orange-200 px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-white transition-colors" data-testid="link-home-reward-upi">
-            <div className="flex items-center gap-2 text-[13px] font-bold text-slate-800">
-              <span className="text-orange-700">Pay {fmtINR(upiAmount)}</span>
-              <ChevronRight className="h-3 w-3 text-orange-400" />
-              <span className="text-emerald-700">+{fmtINR(upiBonus)} bonus</span>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-md shrink-0">
+              <IndianRupee className="h-6 w-6 text-white" />
             </div>
-            <ChevronRight className="h-4 w-4 text-orange-400" />
+            <div className="flex-1 min-w-0">
+              <div className="text-[10px] uppercase tracking-[0.14em] font-bold text-orange-700/70">Buy Rupee</div>
+              <div className="text-base font-black text-slate-900 leading-tight">{upiTitle}</div>
+            </div>
           </div>
-        </Link>
-      </div>
+          <Link href="/buy">
+            <div className="mt-3 rounded-xl bg-white/80 border border-orange-200 px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-white transition-colors" data-testid="link-home-reward-upi">
+              <div className="flex items-center gap-2 text-[13px] font-bold text-slate-800">
+                <span className="text-orange-700">Pay {fmtINR(upiAmount)}</span>
+                <ChevronRight className="h-3 w-3 text-orange-400" />
+                <span className="text-emerald-700">+{fmtINR(upiBonus)} bonus</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-orange-400" />
+            </div>
+          </Link>
+        </div>
       )}
 
-      {/* USDT side — slate + gold gradient (matches usdt deposit/payment theme) */}
       {showUsdt && (
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 ring-1 ring-amber-400/30 p-4 shadow-lg">
           <div className="absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-900 text-[10px] font-black tracking-wide shadow">
@@ -444,33 +429,26 @@ interface AgentTierBadgeProps {
 function AgentTierBadge({ level, tiers }: AgentTierBadgeProps) {
   if (!level || level < 1) return null;
 
-  // Tier styling is positional (1st = Bronze, 2nd = Silver, 3rd = Gold,
-  // 4th+ = Diamond). Admin can rename labels in settings, but the visual
-  // tier always follows the level index so users see consistent badges.
   const styles = [
     {
-      // Bronze
       gradient: "from-amber-700 via-amber-600 to-amber-800",
       border: "border-amber-400",
       icon: Medal,
       defaultName: "Bronze Agent",
     },
     {
-      // Silver
       gradient: "from-slate-400 via-slate-300 to-slate-500",
       border: "border-slate-200",
       icon: Award,
       defaultName: "Silver Agent",
     },
     {
-      // Gold
       gradient: "from-yellow-500 via-yellow-400 to-amber-500",
       border: "border-yellow-300",
       icon: Crown,
       defaultName: "Gold Agent",
     },
     {
-      // Diamond
       gradient: "from-cyan-300 via-sky-400 to-blue-500",
       border: "border-cyan-200",
       icon: Gem,
@@ -481,8 +459,6 @@ function AgentTierBadge({ level, tiers }: AgentTierBadgeProps) {
   const idx = Math.min(level - 1, styles.length - 1);
   const s = styles[idx];
   const Icon = s.icon;
-  // Use admin-configured label if present; otherwise fall back to the
-  // standard tier name (Bronze/Silver/Gold/Diamond).
   const adminLabel = tiers[idx]?.label?.trim();
   const name = adminLabel && adminLabel.length > 0 ? adminLabel : s.defaultName;
 
