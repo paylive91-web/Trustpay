@@ -164,57 +164,54 @@ export default function Home() {
     <Layout>
       <AppStartupPopup />
 
-      {/* ── Full-page warm gradient background — no separate header bar ── */}
-      <div className="min-h-screen bg-gradient-to-b from-orange-500 via-amber-400 to-orange-50">
-
-        {/* Top bar — transparent, floats on gradient */}
-        <div className="px-4 pt-4 pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <img src={assetUrl((settings as any)?.appLogoUrl) || logoPath} alt={(settings as any)?.appName || "TrustPay"} className="w-10 h-10 rounded-xl object-contain shadow-md" />
-              <div>
-                <div className="font-bold text-[19px] leading-none text-white drop-shadow-sm">
-                  {(settings as any)?.appName || "TrustPay"}
-                </div>
-                <div className="text-[11px] text-white/80 mt-0.5">Secure P2P UPI trading</div>
+      {/* Top bar — UPI card colour (orange-50 → amber-50 → orange-100) */}
+      <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 border-b border-orange-200 px-4 pt-4 pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src={assetUrl((settings as any)?.appLogoUrl) || logoPath} alt={(settings as any)?.appName || "TrustPay"} className="w-10 h-10 rounded-xl object-contain shadow-sm" />
+            <div>
+              <div className="font-bold text-[19px] leading-none text-slate-900">
+                {(settings as any)?.appName || "TrustPay"}
               </div>
+              <div className="text-[11px] text-orange-700/70 mt-0.5">Secure P2P UPI trading</div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="text-right">
-                <div className="text-[11px] text-white/80">Hello,</div>
-                <div className="text-sm font-semibold text-white leading-none">{displayName}</div>
-              </div>
-              {isInstallable && (
-                <button
-                  type="button"
-                  aria-label="Install App"
-                  onClick={handleInstall}
-                  className="relative p-2 rounded-full hover:bg-white/10 transition-colors text-white"
-                  title="Download App"
-                >
-                  <Download className="h-5 w-5" />
-                </button>
-              )}
-              <NotificationsBell />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="text-right">
+              <div className="text-[11px] text-orange-700/70">Hello,</div>
+              <div className="text-sm font-semibold text-slate-900 leading-none">{displayName}</div>
+            </div>
+            {isInstallable && (
+              <button
+                type="button"
+                aria-label="Install App"
+                onClick={handleInstall}
+                className="relative p-2 rounded-full hover:bg-orange-200/50 transition-colors text-orange-600"
+                title="Download App"
+              >
+                <Download className="h-5 w-5" />
+              </button>
+            )}
+            <NotificationsBell />
+          </div>
+        </div>
+      </div>
+
+      {/* Banner carousel */}
+      {settings?.bannerImages && settings.bannerImages.length > 0 && (
+        <div className="px-4 pb-3">
+          <div className="overflow-hidden rounded-3xl shadow-xl ring-1 ring-black/5" ref={emblaRef}>
+            <div className="flex">
+              {settings.bannerImages.map((img, i) => (
+                <div className="flex-[0_0_100%] min-w-0 relative" key={i}>
+                  <img src={assetUrl(img)} alt={`Banner ${i}`} className="w-full h-36 sm:h-44 object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/10" />
+                </div>
+              ))}
             </div>
           </div>
         </div>
-
-        {/* Banner carousel */}
-        {settings?.bannerImages && settings.bannerImages.length > 0 && (
-          <div className="px-4 pb-3">
-            <div className="overflow-hidden rounded-3xl shadow-xl ring-1 ring-white/20" ref={emblaRef}>
-              <div className="flex">
-                {settings.bannerImages.map((img, i) => (
-                  <div className="flex-[0_0_100%] min-w-0 relative" key={i}>
-                    <img src={assetUrl(img)} alt={`Banner ${i}`} className="w-full h-36 sm:h-44 object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-orange-900/20 via-transparent to-rose-900/10" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+      )}
 
       <div className="px-3 sm:px-4 pb-4 space-y-3 sm:space-y-4">
         {isFrozen && (
@@ -325,7 +322,6 @@ export default function Home() {
             </div>
           </CardContent>
         </Card>
-      </div>
       </div>
     </Layout>
   );
