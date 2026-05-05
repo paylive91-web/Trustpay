@@ -1,0 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+  --tp-primary: 213 85% 42%;
+  --tp-primary-fg: 0 0% 100%;
+  --tp-secondary: 186 70% 40%;
+  --tp-bg: 210 20% 98%;
+  --tp-fg: 220 30% 15%;
+  --tp-muted: 210 20% 92%;
+  --tp-muted-fg: 220 15% 50%;
+  --tp-card: 0 0% 100%;
+  --tp-border: 210 20% 88%;
+}
+
+.tp-root {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: hsl(var(--tp-bg));
+  color: hsl(var(--tp-fg));
+  min-height: 100vh;
+}
