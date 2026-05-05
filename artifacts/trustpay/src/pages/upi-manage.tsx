@@ -8,11 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, CheckCircle, PlusCircle, Trash2, Wifi, AlertTriangle } from "lucide-react";
+import { ArrowLeft, CheckCircle, PlusCircle, Trash2, Wifi, AlertTriangle, Zap, ShieldCheck } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
-
 import { API_BASE } from "@/lib/api-config";
+
 async function api(path: string, opts: RequestInit = {}) {
   const token = getAuthToken();
   const res = await fetch(`${API_BASE}${path}`, {
@@ -91,44 +91,72 @@ export default function UpiManage() {
   if (!user) return null;
   const activeList = (upiList as any[]).filter((u) => u.isActive);
   const inactiveList = (upiList as any[]).filter((u) => !u.isActive);
-  const wrap = (cb: (id: number) => void) => (id: number) => cb(id);
 
   return (
     <Layout>
-      <div className="flex items-center gap-3 p-4 bg-primary text-primary-foreground">
-        <Link href="/"><ArrowLeft className="cursor-pointer" /></Link>
-        <span className="font-bold text-lg flex-1">Manage UPI</span>
-        <button onClick={() => setShowAdd((v) => !v)} className="flex items-center gap-1 text-xs bg-primary-foreground/20 px-2.5 py-1.5 rounded-full">
-          <PlusCircle className="w-3.5 h-3.5" /> Add UPI
-        </button>
+      {/* Header */}
+      <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 border-b border-orange-200 px-4 pt-4 pb-4">
+        <div className="flex items-center gap-3 mb-4">
+          <Link href="/"><ArrowLeft className="cursor-pointer text-slate-700 w-5 h-5" /></Link>
+          <div className="flex-1">
+            <h1 className="text-lg font-bold text-slate-900">Manage UPI</h1>
+            <p className="text-[11px] text-orange-700/70">Connect your UPI to start Auto-Sell</p>
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="rounded-2xl bg-white/70 border border-orange-200 p-3 flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-sm">
+              <ShieldCheck className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Active</div>
+              <div className="text-lg font-black text-slate-900">{activeList.length}</div>
+            </div>
+          </div>
+          <div className="rounded-2xl bg-white/70 border border-orange-200 p-3 flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-sm">
+              <Wifi className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Total</div>
+              <div className="text-lg font-black text-slate-900">{(upiList as any[]).length}</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="p-4 space-y-4">
+        {/* Add UPI form */}
         {showAdd && (
-          <Card className="border-primary/30 bg-primary/5">
+          <Card className="border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 shadow-md">
             <CardContent className="p-4 space-y-3">
-              <div className="font-semibold text-sm text-primary">Add New UPI</div>
-              <div className="space-y-1.5">
-                <Label>UPI ID</Label>
-                <Input placeholder="yourname@paytm" value={upiId} onChange={(e) => setUpiId(e.target.value)} />
+              <div className="font-semibold text-sm text-orange-700 flex items-center gap-2">
+                <PlusCircle className="w-4 h-4" /> Add New UPI
               </div>
               <div className="space-y-1.5">
-                <Label>UPI App / Platform</Label>
-                <Input placeholder="e.g. PhonePe, Google Pay, Paytm" value={platform} onChange={(e) => setPlatform(e.target.value)} />
+                <Label className="text-xs font-semibold text-slate-600">UPI ID</Label>
+                <Input placeholder="yourname@paytm" value={upiId} onChange={(e) => setUpiId(e.target.value)} className="rounded-xl border-orange-200 focus-visible:ring-orange-300" />
               </div>
               <div className="space-y-1.5">
-                <Label>Bank Name</Label>
-                <Input placeholder="e.g. SBI, HDFC" value={bankName} onChange={(e) => setBankName(e.target.value)} />
+                <Label className="text-xs font-semibold text-slate-600">UPI App / Platform</Label>
+                <Input placeholder="e.g. PhonePe, Google Pay, Paytm" value={platform} onChange={(e) => setPlatform(e.target.value)} className="rounded-xl border-orange-200 focus-visible:ring-orange-300" />
               </div>
               <div className="space-y-1.5">
-                <Label>Account Holder Name</Label>
-                <Input placeholder="As per bank records" value={holderName} onChange={(e) => setHolderName(e.target.value)} />
+                <Label className="text-xs font-semibold text-slate-600">Bank Name</Label>
+                <Input placeholder="e.g. SBI, HDFC" value={bankName} onChange={(e) => setBankName(e.target.value)} className="rounded-xl border-orange-200 focus-visible:ring-orange-300" />
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button variant="ghost" onClick={() => setShowAdd(false)}>Cancel</Button>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-slate-600">Account Holder Name</Label>
+                <Input placeholder="As per bank records" value={holderName} onChange={(e) => setHolderName(e.target.value)} className="rounded-xl border-orange-200 focus-visible:ring-orange-300" />
+              </div>
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <Button variant="outline" onClick={() => setShowAdd(false)} className="rounded-xl border-orange-200 text-slate-600">Cancel</Button>
                 <Button
                   onClick={() => addMut.mutate()}
                   disabled={addMut.isPending || !upiId || !platform || !bankName || !holderName}
+                  className="rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white border-none shadow-md"
                 >
                   {addMut.isPending ? "Adding..." : "Add & Activate"}
                 </Button>
@@ -137,26 +165,45 @@ export default function UpiManage() {
           </Card>
         )}
 
+        {/* Empty state — big centered connect button */}
         {activeList.length === 0 && !showAdd && (
-          <Card className="border-dashed">
-            <CardContent className="p-8 text-center space-y-3">
-              <Wifi className="w-10 h-10 mx-auto text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">No active UPI linked. Add one to start auto-selling.</p>
-              <Button onClick={() => setShowAdd(true)}>
-                <PlusCircle className="w-4 h-4 mr-2" /> Add UPI
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 ring-1 ring-amber-400/30 p-8 shadow-xl text-center">
+            <div className="absolute -top-8 -right-8 w-32 h-32 bg-orange-500/10 rounded-full blur-2xl" />
+            <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center mb-4 shadow-lg ring-2 ring-orange-300/30">
+              <Wifi className="w-10 h-10 text-white" />
+            </div>
+            <h2 className="text-xl font-black text-white mb-1">No UPI Connected</h2>
+            <p className="text-slate-400 text-sm mb-6 leading-relaxed">
+              Link your UPI ID to activate Auto-Sell and start earning
+            </p>
+            <Button
+              onClick={() => setShowAdd(true)}
+              className="mx-auto px-8 h-13 text-base rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white border-none shadow-lg font-bold gap-2"
+            >
+              <PlusCircle className="w-5 h-5" /> Connect UPI
+            </Button>
+            <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] text-emerald-400">
+              <Zap className="w-3 h-3" /> Auto-Sell activates instantly after connecting
+            </div>
+          </div>
         )}
 
+        {/* Active UPIs */}
         {activeList.length > 0 && (
           <div className="space-y-2">
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">Active UPIs ({activeList.length})</div>
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1 flex items-center justify-between">
+              <span>Active UPIs ({activeList.length})</span>
+              <button
+                type="button"
+                onClick={() => setShowAdd((v) => !v)}
+                className="flex items-center gap-1 text-[11px] bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full font-semibold hover:bg-orange-200 transition-colors"
+              >
+                <PlusCircle className="w-3 h-3" /> Add UPI
+              </button>
+            </div>
             {activeList.map((u) => (
               <UpiCard
-                key={u.id}
-                u={u}
-                isActive
+                key={u.id} u={u} isActive
                 onDeactivate={() => deactivateMut.mutate(u.id)}
                 onDelete={() => deleteMut.mutate(u.id)}
                 deactivating={deactivateMut.isPending}
@@ -166,14 +213,13 @@ export default function UpiManage() {
           </div>
         )}
 
+        {/* Saved (inactive) UPIs */}
         {inactiveList.length > 0 && (
           <div className="space-y-2">
             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">Saved UPIs</div>
             {inactiveList.map((u) => (
               <UpiCard
-                key={u.id}
-                u={u}
-                isActive={false}
+                key={u.id} u={u} isActive={false}
                 onActivate={() => activateMut.mutate(u.id)}
                 onDelete={() => deleteMut.mutate(u.id)}
                 activating={activateMut.isPending}
@@ -183,11 +229,12 @@ export default function UpiManage() {
           </div>
         )}
 
-        <div className="text-xs text-muted-foreground text-center pt-2">
-          Multiple UPIs can be active at once. During matching, incoming chunks are split across all active UPIs round-robin.
-        </div>
+        <p className="text-xs text-muted-foreground text-center pt-1">
+          Multiple UPIs can be active at once. Incoming chunks are split round-robin across all active UPIs.
+        </p>
 
-        <div className="mt-4 rounded-2xl border-2 border-red-300 bg-gradient-to-br from-red-50 to-amber-50 p-4 shadow-sm">
+        {/* Security warning */}
+        <div className="mt-2 rounded-2xl border-2 border-red-300 bg-gradient-to-br from-red-50 to-amber-50 p-4 shadow-sm">
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0 mt-0.5">
               <div className="h-9 w-9 rounded-full bg-red-100 flex items-center justify-center">
@@ -195,28 +242,12 @@ export default function UpiManage() {
               </div>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-bold text-red-700 mb-1.5">
-                ⚠️ ज़रूरी सुरक्षा सलाह — ध्यान से पढ़ें
-              </div>
+              <div className="text-sm font-bold text-red-700 mb-1.5">⚠️ ज़रूरी सुरक्षा सलाह — ध्यान से पढ़ें</div>
               <div className="text-[13px] leading-relaxed text-gray-800 space-y-2">
-                <p>
-                  अगर आपकी UPI ID में आपका <span className="font-semibold text-red-700">मोबाइल नंबर</span> दिख रहा है
-                  (जैसे <span className="font-mono bg-white px-1 rounded">9876543210@ybl</span>), तो Sell के समय
-                  scammers आपका नंबर देख लेते हैं और आपको सीधे call करके
-                  <span className="font-semibold"> "मैंने payment कर दिया है" </span>
-                  झूठ बोलकर बार-बार परेशान कर सकते हैं।
-                </p>
-                <p className="font-semibold text-green-800">
-                  ✅ हमेशा वही UPI ID add करें जिसमें आपका phone number दिखाई न दे —
-                  जैसे <span className="font-mono bg-white px-1 rounded text-green-900">yourname@okaxis</span>,
-                  <span className="font-mono bg-white px-1 rounded text-green-900 ml-1">yourname@ybl</span> आदि।
-                </p>
-                <p className="text-[12px] text-gray-600 italic">
-                  आप अपनी UPI app (PhonePe / GPay / Paytm) में जाकर एक नई username-based UPI ID बना सकते हैं और वही यहाँ add करें।
-                </p>
-                <p className="mt-2 text-[13px] font-extrabold text-black bg-yellow-200 border-l-4 border-black px-2 py-1.5 rounded">
-                  📞 याद रखें: TrustPay कभी भी आपको call नहीं करता। अगर कोई "TrustPay" बनकर call करे, तो वो 100% scammer है।
-                </p>
+                <p>अगर आपकी UPI ID में आपका <span className="font-semibold text-red-700">मोबाइल नंबर</span> दिख रहा है (जैसे <span className="font-mono bg-white px-1 rounded">9876543210@ybl</span>), तो Sell के समय scammers आपका नंबर देख लेते हैं और आपको सीधे call करके <span className="font-semibold">"मैंने payment कर दिया है"</span> झूठ बोलकर बार-बार परेशान कर सकते हैं।</p>
+                <p className="font-semibold text-green-800">✅ हमेशा वही UPI ID add करें जिसमें आपका phone number दिखाई न दे — जैसे <span className="font-mono bg-white px-1 rounded text-green-900">yourname@okaxis</span>, <span className="font-mono bg-white px-1 rounded text-green-900 ml-1">yourname@ybl</span> आदि।</p>
+                <p className="text-[12px] text-gray-600 italic">आप अपनी UPI app (PhonePe / GPay / Paytm) में जाकर एक नई username-based UPI ID बना सकते हैं और वही यहाँ add करें।</p>
+                <p className="mt-2 text-[13px] font-extrabold text-black bg-yellow-200 border-l-4 border-black px-2 py-1.5 rounded">📞 याद रखें: TrustPay कभी भी आपको call नहीं करता। अगर कोई "TrustPay" बनकर call करे, तो वो 100% scammer है।</p>
               </div>
             </div>
           </div>
@@ -232,27 +263,33 @@ function UpiCard({ u, isActive, onActivate, onDeactivate, onDelete, activating, 
   activating?: boolean; deactivating?: boolean; deleting?: boolean;
 }) {
   return (
-    <Card className={isActive ? "border-green-400 bg-green-50" : ""}>
+    <Card className={`overflow-hidden border-none shadow-md ${isActive ? "ring-1 ring-emerald-400/50" : ""}`}>
+      <div className={`h-1 ${isActive ? "bg-gradient-to-r from-emerald-400 to-teal-400" : "bg-muted"}`} />
       <CardContent className="p-3 flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <div className="font-semibold text-sm truncate">{u.upiId}</div>
-            {isActive && <Badge className="bg-green-600 text-white text-xs shrink-0">Active</Badge>}
+        <div className="flex items-start gap-2.5 flex-1 min-w-0">
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isActive ? "bg-emerald-100" : "bg-slate-100"}`}>
+            <Wifi className={`w-4 h-4 ${isActive ? "text-emerald-600" : "text-slate-400"}`} />
           </div>
-          <div className="text-xs text-muted-foreground mt-0.5">{u.platform} · {u.bankName} · {u.holderName}</div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <div className="font-semibold text-sm truncate">{u.upiId}</div>
+              {isActive && <Badge className="bg-emerald-600 text-white text-[10px] shrink-0 px-1.5">Active</Badge>}
+            </div>
+            <div className="text-xs text-muted-foreground mt-0.5">{u.platform} · {u.bankName} · {u.holderName}</div>
+          </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {!isActive && onActivate && (
-            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={onActivate} disabled={activating}>
+            <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg border-orange-200 text-orange-700 hover:bg-orange-50" onClick={onActivate} disabled={activating}>
               <CheckCircle className="w-3 h-3 mr-1" /> Activate
             </Button>
           )}
           {isActive && onDeactivate && (
-            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={onDeactivate} disabled={deactivating}>
+            <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg" onClick={onDeactivate} disabled={deactivating}>
               Pause
             </Button>
           )}
-          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50" onClick={onDelete} disabled={deleting}>
+          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg" onClick={onDelete} disabled={deleting}>
             <Trash2 className="w-3.5 h-3.5" />
           </Button>
         </div>
