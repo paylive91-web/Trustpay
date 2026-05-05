@@ -73,6 +73,44 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   buyRewardPercent: "5",   // legacy flat %; only active when buyRewardTiers is not yet set in DB
   sellRewardPercent: "0",  // seller reward % on each trade (default 0%, can enable anytime)
   smsAutoDeleteEnabled: "false",
+
+  // -------------------------------------------------------------------------
+  // Device-based registration limit
+  // -------------------------------------------------------------------------
+  // How many distinct user accounts can ever be registered from the same
+  // device fingerprint. Counted across users (not events) — once a user is
+  // registered from a device the count goes up by 1 for that device. The
+  // /register handler rejects new sign-ups when this cap is reached so a
+  // single phone can't be used to farm referral bonuses indefinitely.
+  // Admin-configurable; default 3 strikes a balance between family-sharing
+  // and abuse.
+  maxRegistrationsPerDevice: "3",
+
+  // -------------------------------------------------------------------------
+  // USDT (TRC-20) buy flow
+  // -------------------------------------------------------------------------
+  // Master switch + pricing for the USDT → INR deposit tab in the buy page.
+  //  - usdtEnabled: "true"|"false". When false the USDT tab is hidden in the
+  //    user app and the API rejects /usdt/start.
+  //  - usdtRatePerUnit: how many INR a single USDT is worth (admin-set).
+  //  - usdtBonusPercent: flat % bonus credited on top of (usdt * rate) when
+  //    the admin approves the order. 0 disables the bonus line.
+  //  - usdtMinAmount / usdtMaxAmount: min/max USDT (in whole units) that a
+  //    user can submit in a single order.
+  //  - usdtAddresses: JSON array of TRC-20 addresses (with optional label +
+  //    qrImageUrl). The /usdt/start endpoint round-robins across these.
+  //  - usdtPaymentWindowMinutes: how long the user has to pay + submit TxID
+  //    before the order auto-expires. Default 15 (mirrors UPI buyLockMinutes).
+  //  - usdtNotes: optional admin-controlled instructions shown on the
+  //    payment screen (network warnings etc).
+  usdtEnabled: "false",
+  usdtRatePerUnit: "85",
+  usdtBonusPercent: "0",
+  usdtMinAmount: "10",
+  usdtMaxAmount: "10000",
+  usdtAddresses: JSON.stringify([]),
+  usdtPaymentWindowMinutes: "15",
+  usdtNotes: "Only TRC-20 (Tron network) deposits are accepted. Sending on any other network will result in permanent loss of funds.",
 };
 
 export async function getSetting(key: string): Promise<string> {

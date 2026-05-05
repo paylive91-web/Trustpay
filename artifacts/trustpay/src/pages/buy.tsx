@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle, Clock, Copy, Headset, Loader2, ShieldCheck, Upload, ShieldAlert } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle, Clock, Copy, Headset, Loader2, ShieldCheck, Upload, ShieldAlert, Coins, IndianRupee } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
@@ -232,6 +232,11 @@ export default function Buy() {
         <span className="font-bold text-lg flex-1">Buy</span>
       </div>
       <div className="p-4 space-y-4">
+        {/* Buy modality switcher — INR (existing UPI flow) vs USDT TRC-20.
+            Routes to dedicated USDT pages so the existing P2P state, locks
+            and chunk-carousel logic below stay untouched. */}
+        <BuyModeTabs />
+
         {myBuy ? (
           <ActiveBuyCard buy={myBuy} refetch={refetchBuy} user={user} />
         ) : (
@@ -299,6 +304,39 @@ export default function Buy() {
         )}
       </div>
     </Layout>
+  );
+}
+
+function BuyModeTabs() {
+  const [, setLocation] = useLocation();
+  const { data: usdtConfig } = useQuery<any>({
+    queryKey: ["usdt-public-config"],
+    queryFn: async () => {
+      const r = await fetch(`${API_BASE}/usdt/public-config`);
+      if (!r.ok) return { enabled: false };
+      return r.json();
+    },
+    staleTime: 60_000,
+  });
+  if (!usdtConfig?.enabled) return null;
+  return (
+    <div className="rounded-2xl bg-white border border-slate-200 p-1 flex shadow-sm">
+      <button
+        type="button"
+        className="flex-1 rounded-xl px-3 py-2.5 flex items-center justify-center gap-2 text-sm font-bold bg-gradient-to-br from-primary via-primary to-sky-600 text-primary-foreground shadow-md"
+        data-testid="tab-buy-inr"
+      >
+        <IndianRupee className="h-4 w-4" /> INR (UPI)
+      </button>
+      <button
+        type="button"
+        onClick={() => setLocation("/usdt-deposit")}
+        className="flex-1 rounded-xl px-3 py-2.5 flex items-center justify-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+        data-testid="tab-buy-usdt"
+      >
+        <Coins className="h-4 w-4 text-emerald-500" /> USDT (TRC-20)
+      </button>
+    </div>
   );
 }
 

@@ -162,6 +162,7 @@ export default function AdminSettings() {
     { min: 501, max: 50000, reward: 5 },
   ]);
   const [sellRewardPercent, setSellRewardPercent] = useState<number>(0);
+  const [maxRegistrationsPerDevice, setMaxRegistrationsPerDevice] = useState<number>(3);
   // SMS Auto Delete UI removed — cleanup now runs system-wide, automatically,
   // every 6 hours via the learning auto-cleanup job (server-side). No manual
   // toggle or "Run Cleanup" button is needed.
@@ -204,6 +205,7 @@ export default function AdminSettings() {
         setBuyRewardTiers(bTiersRaw.map((t: any) => ({ min: Number(t.min) || 0, max: Number(t.max) || 0, reward: Number(t.reward) || 0 })));
       }
       setSellRewardPercent(Number((settings as any).sellRewardPercent) || 0);
+      setMaxRegistrationsPerDevice(Number((settings as any).maxRegistrationsPerDevice) || 3);
       setAdminPassword("");
     }
   }, [settings]);
@@ -327,6 +329,7 @@ export default function AdminSettings() {
       forceAppDownload,
       buyRewardTiers,
       sellRewardPercent,
+      maxRegistrationsPerDevice,
     };
     if (adminPassword) payload.adminPassword = adminPassword;
     updateSettingsMut.mutate({ data: payload });
@@ -659,6 +662,23 @@ export default function AdminSettings() {
                     className="max-w-[180px]"
                   />
                   <p className="text-[11px] text-muted-foreground">Seller ko ₹100 trade pe ₹{(100 * sellRewardPercent / 100).toFixed(2)} milega</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Max accounts allowed per device</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={50}
+                    step={1}
+                    value={maxRegistrationsPerDevice}
+                    onChange={(e) => setMaxRegistrationsPerDevice(Math.max(1, Math.min(50, parseInt(e.target.value) || 1)))}
+                    placeholder="3"
+                    className="max-w-[180px]"
+                    data-testid="input-max-registrations-per-device"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Same device par jitne accounts ban sakte hain (default 3). Limit cross hone par registration block ho jayega.
+                  </p>
                 </div>
               </CardContent>
             </Card>

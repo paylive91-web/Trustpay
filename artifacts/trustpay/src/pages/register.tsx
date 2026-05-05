@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import {
   Download, ShieldCheck, Zap, Star, ShieldAlert, LogIn,
-  Phone, Lock, Gift, ArrowLeft, ArrowRight, CheckCircle2, Loader2,
+  Phone, Lock, Gift, ArrowRight, Loader2, Eye, EyeOff,
 } from "lucide-react";
 import { API_BASE } from "@/lib/api-config";
 import { AuthShell, PremiumInputWrap, PremiumButton, TrustRow, useBranding } from "@/components/auth-shell";
@@ -78,7 +78,7 @@ function PWAInstallPopup({ onDownload, appName, logoUrl }: { onDownload: () => v
   );
 }
 
-function DuplicateDialog({ onClose, onLogin }: { onClose: () => void; onLogin: () => void }) {
+function DuplicateDialog({ title, message, onClose, onLogin }: { title: string; message: string; onClose: () => void; onLogin: () => void }) {
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" />
@@ -88,12 +88,10 @@ function DuplicateDialog({ onClose, onLogin }: { onClose: () => void; onLogin: (
             <ShieldAlert className="w-8 h-8 text-white" />
           </div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-red-200 mb-1">Security Alert</p>
-          <h2 className="text-[20px] font-extrabold text-white">Mobile Already Registered</h2>
+          <h2 className="text-[20px] font-extrabold text-white text-center">{title}</h2>
         </div>
         <div className="bg-white px-6 pt-5 pb-2">
-          <p className="text-[15px] text-slate-600 text-center leading-relaxed">
-            Is mobile number par pehle se ek account hai. Ek mobile par sirf <span className="font-semibold text-red-600">1 account</span> allowed hai.
-          </p>
+          <p className="text-[15px] text-slate-600 text-center leading-relaxed">{message}</p>
         </div>
         <div className="bg-white px-5 pt-4 pb-6 flex flex-col gap-3">
           <Button onClick={onLogin} className="w-full h-12 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold shadow-lg shadow-red-500/30">
@@ -113,8 +111,6 @@ function Honeypot({ value, onChange }: { value: string; onChange: (v: string) =>
   );
 }
 
-type Step = "form" | "otp";
-
 export default function Register() {
   const { data: brandSettings } = useGetAppSettings();
   const { appName, logoUrl } = useBranding();
@@ -122,17 +118,15 @@ export default function Register() {
   const { toast } = useToast();
   const { data: user, isLoading: isUserLoading } = useGetMe({ query: { queryKey: ["me"], retry: false } });
 
-  const [step, setStep] = useState<Step>("form");
   const [loading, setLoading] = useState(false);
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [referralCode, setReferralCode] = useState("");
   const [honeypot, setHoneypot] = useState("");
-  const [otp, setOtp] = useState("");
-  const [resendIn, setResendIn] = useState(0);
   const [showInstallPopup, setShowInstallPopup] = useState(false);
-  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [duplicate, setDuplicate] = useState<{ title: string; message: string } | null>(null);
 
   const apkDownloadUrl = (brandSettings as any)?.apkDownloadUrl || "https://trustpay-l0xq.onrender.com";
 
@@ -143,12 +137,6 @@ export default function Register() {
     if (ref) setReferralCode(ref.toUpperCase());
   }, [user, isUserLoading, setLocation, showInstallPopup]);
 
-  useEffect(() => {
-    if (resendIn <= 0) return;
-    const t = setTimeout(() => setResendIn((s) => s - 1), 1000);
-    return () => clearTimeout(t);
-  }, [resendIn]);
-
   const validateForm = (): string | null => {
     if (!/^[6-9]\d{9}$/.test(phone)) return "Enter a valid 10-digit mobile number";
     if (password.length < 6) return "Password must be at least 6 characters";
@@ -157,54 +145,12 @@ export default function Register() {
     return null;
   };
 
-  const sendOtp = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_BASE}/auth/otp/send`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, purpose: "register", website: honeypot }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || `Failed to send OTP (${res.status})`);
-      toast({ title: "OTP sent", description: `Code sent to +91 ${phone}` });
-      setStep("otp");
-      setResendIn(60);
-    } catch (err: any) {
-      const msg = err?.message || "Failed to send OTP";
-      if (msg.includes("already registered")) setShowDuplicateDialog(true);
-      else toast({ title: "OTP error", description: msg, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
     const err = validateForm();
     if (err) { toast({ title: err, variant: "destructive" }); return; }
-    await sendOtp();
-  };
-
-  const handleVerifyAndRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!/^\d{6}$/.test(otp)) { toast({ title: "Enter the 6-digit OTP", variant: "destructive" }); return; }
     setLoading(true);
-    // Track which step failed so the toast title is accurate (was always
-    // saying "Registration failed" even when the OTP verify step is what
-    // actually broke).
-    let stage: "verify" | "register" = "verify";
     try {
-      const vres = await fetch(`${API_BASE}/auth/otp/verify`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, purpose: "register", code: otp }),
-      });
-      const vdata = await vres.json().catch(() => ({}));
-      if (!vres.ok) throw new Error(vdata.error || `OTP verification failed (${vres.status})`);
-      const tok = vdata.verifiedToken as string;
-
-      stage = "register";
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -212,22 +158,33 @@ export default function Register() {
           phone, password,
           deviceFingerprint: getDeviceFingerprint(),
           referralCode: (referralCode.trim() || "TP000001").toUpperCase(),
-          verifiedToken: tok,
+          website: honeypot,
         }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || `Registration failed (${res.status})`);
+      if (!res.ok) {
+        const msg = data?.error || `Registration failed (${res.status})`;
+        if (data?.code === "device_limit_reached") {
+          setDuplicate({
+            title: "Device Limit Reached",
+            message: "Is device par allowed account limit pure ho gaye hain. Naya account banane ke liye apna existing account use karein ya support se contact karein.",
+          });
+          return;
+        }
+        if (msg.includes("1 account is allowed") || msg.includes("already registered") || msg.includes("Mobile already")) {
+          setDuplicate({
+            title: "Mobile Already Registered",
+            message: "Is mobile number par pehle se ek account hai. Login kar ke continue karein.",
+          });
+          return;
+        }
+        throw new Error(msg);
+      }
       setAuthToken(data.token);
       toast({ title: "Account created!" });
       setShowInstallPopup(true);
     } catch (err: any) {
-      const msg = err?.message || "Unknown error";
-      if (msg.includes("1 account is allowed") || msg.includes("already registered")) {
-        setShowDuplicateDialog(true);
-      } else {
-        const title = stage === "verify" ? "OTP verification failed" : "Registration failed";
-        toast({ title, description: msg, variant: "destructive" });
-      }
+      toast({ title: "Registration failed", description: err?.message || "Unknown error", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -246,117 +203,95 @@ export default function Register() {
           }}
         />
       )}
-      {showDuplicateDialog && (
-        <DuplicateDialog onClose={() => setShowDuplicateDialog(false)} onLogin={() => { setShowDuplicateDialog(false); setLocation("/login"); }} />
+      {duplicate && (
+        <DuplicateDialog
+          title={duplicate.title}
+          message={duplicate.message}
+          onClose={() => setDuplicate(null)}
+          onLogin={() => { setDuplicate(null); setLocation("/login"); }}
+        />
       )}
 
       <AuthShell badge="Join Trusted P2P Network">
-        {step === "form" && (
-          <>
-            <h1 className="text-[22px] font-extrabold text-slate-900 tracking-tight">Registration</h1>
-            <p className="text-[13px] text-slate-500 mb-4">Create your TrustPay account to get started.</p>
+        <h1 className="text-[22px] font-extrabold text-slate-900 tracking-tight">Registration</h1>
+        <p className="text-[13px] text-slate-500 mb-4">Create your TrustPay account in seconds.</p>
 
-            <form onSubmit={handleSubmitForm} className="space-y-3">
-              <Honeypot value={honeypot} onChange={setHoneypot} />
+        <form onSubmit={handleSubmitForm} className="space-y-3">
+          <Honeypot value={honeypot} onChange={setHoneypot} />
 
-              <div className="space-y-1.5">
-                <Label className="text-[12px] font-semibold text-slate-700 tracking-wide">Mobile Number</Label>
-                <div className="flex gap-2">
-                  <div className="flex items-center px-3 rounded-xl bg-gradient-to-br from-indigo-50 to-violet-50 ring-1 ring-indigo-100 text-sm font-bold text-indigo-700">
-                    +91
-                  </div>
-                  <PremiumInputWrap>
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400 pointer-events-none" />
-                    <Input
-                      type="tel"
-                      inputMode="numeric"
-                      placeholder="10-digit mobile"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                      maxLength={10}
-                      className="pl-10 h-11 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-                    />
-                  </PremiumInputWrap>
-                </div>
+          <div className="space-y-1.5">
+            <Label className="text-[12px] font-semibold text-slate-700 tracking-wide">Mobile Number</Label>
+            <div className="flex gap-2">
+              <div className="flex items-center px-3 rounded-xl bg-gradient-to-br from-indigo-50 to-violet-50 ring-1 ring-indigo-100 text-sm font-bold text-indigo-700">
+                +91
               </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-[12px] font-semibold text-slate-700 tracking-wide">Password</Label>
-                <PremiumInputWrap>
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400 pointer-events-none" />
-                  <Input type="password" placeholder="At least 6 characters" value={password} onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 h-11 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0" />
-                </PremiumInputWrap>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-[12px] font-semibold text-slate-700 tracking-wide">Confirm Password</Label>
-                <PremiumInputWrap>
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400 pointer-events-none" />
-                  <Input type="password" placeholder="Repeat password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-10 h-11 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0" />
-                </PremiumInputWrap>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-[12px] font-semibold text-slate-700 tracking-wide">Referral Code</Label>
-                <PremiumInputWrap>
-                  <Gift className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400 pointer-events-none" />
-                  <Input placeholder="Invite code" value={referralCode} onChange={(e) => setReferralCode(e.target.value.toUpperCase())} required
-                    className="pl-10 h-11 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0" />
-                </PremiumInputWrap>
-              </div>
-
-              <PremiumButton disabled={loading}>
-                {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending OTP...</> : <>Send OTP & Continue <ArrowRight className="w-4 h-4" /></>}
-              </PremiumButton>
-            </form>
-
-            <TrustRow />
-          </>
-        )}
-
-        {step === "otp" && (
-          <>
-            <button type="button" onClick={() => setStep("form")} className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-2">
-              <ArrowLeft className="w-4 h-4" /> Back
-            </button>
-            <h1 className="text-[22px] font-extrabold text-slate-900 tracking-tight">Verify Mobile</h1>
-            <p className="text-[13px] text-slate-500 mb-4">
-              6-digit code sent to <span className="font-semibold text-slate-900">+91 {phone}</span>
-            </p>
-
-            <form onSubmit={handleVerifyAndRegister} className="space-y-3">
               <PremiumInputWrap>
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400 pointer-events-none" />
                 <Input
                   type="tel"
                   inputMode="numeric"
-                  autoFocus
-                  placeholder="• • • • • •"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  maxLength={6}
-                  className="h-14 bg-transparent border-0 text-center text-2xl tracking-[0.5em] font-bold focus-visible:ring-0 focus-visible:ring-offset-0"
+                  placeholder="10-digit mobile"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  maxLength={10}
+                  className="pl-10 h-11 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                 />
               </PremiumInputWrap>
+            </div>
+          </div>
 
-              <div className="flex items-center justify-between text-[13px]">
-                <span className="text-slate-500">Didn't receive it?</span>
-                {resendIn > 0 ? (
-                  <span className="text-slate-400 font-medium">Resend in {resendIn}s</span>
-                ) : (
-                  <button type="button" onClick={sendOtp} disabled={loading} className="text-indigo-600 font-semibold hover:underline disabled:opacity-50">
-                    Resend OTP
-                  </button>
-                )}
-              </div>
+          <div className="space-y-1.5">
+            <Label className="text-[12px] font-semibold text-slate-700 tracking-wide">Password</Label>
+            <PremiumInputWrap>
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400 pointer-events-none" />
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="At least 6 characters"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="pl-10 pr-10 h-11 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </PremiumInputWrap>
+          </div>
 
-              <PremiumButton disabled={loading || otp.length !== 6}>
-                {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Verifying...</> : <><CheckCircle2 className="w-4 h-4" /> Verify & Create Account</>}
-              </PremiumButton>
-            </form>
-          </>
-        )}
+          <div className="space-y-1.5">
+            <Label className="text-[12px] font-semibold text-slate-700 tracking-wide">Confirm Password</Label>
+            <PremiumInputWrap>
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400 pointer-events-none" />
+              <Input
+                type="text"
+                placeholder="Repeat password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="pl-10 h-11 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
+            </PremiumInputWrap>
+            <p className="text-[11px] text-slate-400">Confirm field is shown in plain text so you can verify your password before submitting.</p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-[12px] font-semibold text-slate-700 tracking-wide">Referral Code</Label>
+            <PremiumInputWrap>
+              <Gift className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400 pointer-events-none" />
+              <Input placeholder="Invite code" value={referralCode} onChange={(e) => setReferralCode(e.target.value.toUpperCase())} required
+                className="pl-10 h-11 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0" />
+            </PremiumInputWrap>
+          </div>
+
+          <PremiumButton disabled={loading}>
+            {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating account...</> : <>Create Account <ArrowRight className="w-4 h-4" /></>}
+          </PremiumButton>
+        </form>
+
+        <TrustRow />
 
         <div className="mt-4 text-center text-[13px] text-slate-500">
           Already have an account?{" "}

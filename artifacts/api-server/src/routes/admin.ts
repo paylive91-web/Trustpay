@@ -578,6 +578,35 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
   addScalar("disputeWindowHours", b.disputeWindowHours);
   addScalar("sellRewardPercent", b.sellRewardPercent);
   addScalar("smsAutoDeleteEnabled", b.smsAutoDeleteEnabled);
+  // Device-based registration cap. Floor 1, ceiling 50 — anything above
+  // that is effectively "unlimited" and not worth a knob.
+  if (b.maxRegistrationsPerDevice != null) {
+    const n = Math.max(1, Math.min(50, Math.floor(Number(b.maxRegistrationsPerDevice) || 3)));
+    scalarMap["maxRegistrationsPerDevice"] = String(n);
+  }
+  // USDT scalars (the addresses array is handled separately further below).
+  addScalar("usdtEnabled", b.usdtEnabled === true ? "true" : b.usdtEnabled === false ? "false" : b.usdtEnabled);
+  addScalar("usdtRatePerUnit", b.usdtRatePerUnit);
+  addScalar("usdtBonusPercent", b.usdtBonusPercent);
+  addScalar("usdtMinAmount", b.usdtMinAmount);
+  addScalar("usdtMaxAmount", b.usdtMaxAmount);
+  addScalar("usdtPaymentWindowMinutes", b.usdtPaymentWindowMinutes);
+  addScalar("usdtNotes", b.usdtNotes);
+  if (Array.isArray(b.usdtAddresses)) {
+    const cleanedUsdt: Array<{ address: string; label?: string; qrImageUrl?: string }> = [];
+    for (const a of b.usdtAddresses) {
+      const address = String(a?.address || "").trim();
+      if (!address) continue;
+      // TRC-20 addresses are 34 chars, base58, leading 'T'. Loose check —
+      // never refuse the admin's input, just sanity-warn at the API level.
+      cleanedUsdt.push({
+        address,
+        label: a?.label ? String(a.label).slice(0, 80) : undefined,
+        qrImageUrl: a?.qrImageUrl ? String(a.qrImageUrl) : undefined,
+      });
+    }
+    scalarMap["usdtAddresses"] = JSON.stringify(cleanedUsdt);
+  }
   addScalar("highValueThreshold", b.highValueThreshold); addScalar("highValueCriticalThreshold", b.highValueCriticalThreshold);
   addScalar("platformCommissionPerChunk", b.platformCommissionPerChunk);
   addScalar("apkDownloadUrl", b.apkDownloadUrl); addScalar("apkVersion", b.apkVersion);
@@ -1744,6 +1773,140 @@ router.get("/system-pulse", requireAdmin, async (req, res) => {
    req.log.error({ err }, "system-pulse failed");
    res.status(500).json({ error: "Failed to load system pulse", detail: (err as Error)?.message || String(err) });
  }
+});
+
+// ---------------------------------------------------------------------------
+// USDT admin endpoints
+// ---------------------------------------------------------------------------
+//
+// All USDT-side admin actions are routed through here. The corresponding
+// user-facing endpoints live in routes/usdt.ts. The credit on /approve is
+// done in a single transaction so the user's balance and the audit row in
+// transactionsTable can never get out of sync.
+
+router.get("/usdt/orders", requireAdmin, async (req, res) => {
+  const status = String(req.query.status || "").trim();
+  const limit = Math.min(500, Math.max(1, parseInt(String(req.query.limit || "100")) || 100));
+  const where = status && status !== "all" ? sql`WHERE o.status = ${status}` : sql``;
+  const rows = await db.execute(sql`
+    SELECT o.id, o.user_id, o.usdt_amount, o.rate_snapshot, o.bonus_pct_snapshot,
+           o.inr_value, o.bonus_inr, o.total_credit,
+           o.address, o.address_label, o.tx_id, o.screenshot_url,
+           o.status, o.admin_note, o.expires_at,
+           o.submitted_at, o.approved_at, o.cancelled_at, o.created_at,
+           u.username AS user_username, u.phone AS user_phone
+      FROM usdt_orders o
+      JOIN users u ON u.id = o.user_id
+      ${where}
+     ORDER BY o.created_at DESC
+     LIMIT ${limit}
+  `);
+  const list = ((rows as any).rows || (rows as any) || []) as any[];
+  res.json(list.map((r) => ({
+    id: r.id,
+    userId: r.user_id,
+    user: { username: r.user_username, phone: r.user_phone },
+    usdtAmount: Number(r.usdt_amount),
+    rate: Number(r.rate_snapshot),
+    bonusPercent: Number(r.bonus_pct_snapshot),
+    inrValue: Number(r.inr_value),
+    bonusInr: Number(r.bonus_inr),
+    totalCredit: Number(r.total_credit),
+    address: r.address,
+    addressLabel: r.address_label,
+    txId: r.tx_id,
+    screenshotUrl: r.screenshot_url,
+    status: r.status,
+    adminNote: r.admin_note,
+    expiresAt: r.expires_at,
+    submittedAt: r.submitted_at,
+    approvedAt: r.approved_at,
+    cancelledAt: r.cancelled_at,
+    createdAt: r.created_at,
+  })));
+});
+
+router.post("/usdt/approve/:id", requireAdmin, async (req, res): Promise<any> => {
+  const id = Number(req.params.id);
+  const adminId = (req as any).user?.id as number;
+  const note = String((req.body || {}).note || "").slice(0, 500) || null;
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid order id" });
+
+  const found = await db.execute(sql`
+    SELECT id, user_id, status, total_credit, usdt_amount
+      FROM usdt_orders WHERE id = ${id} LIMIT 1
+  `);
+  const order = ((found as any).rows?.[0] || (found as any)[0]) as
+    | { id: number; user_id: number; status: string; total_credit: string; usdt_amount: string }
+    | undefined;
+  if (!order) return res.status(404).json({ error: "Order not found" });
+  if (order.status !== "submitted") {
+    return res.status(409).json({ error: `Order is ${order.status} — only submitted orders can be approved` });
+  }
+  const credit = Number(order.total_credit);
+  if (!Number.isFinite(credit) || credit <= 0) {
+    return res.status(400).json({ error: "Invalid credit amount on order" });
+  }
+
+  // Race-safe approval: claim the order FIRST inside the transaction with
+  // an atomic status='submitted' guard and check rowCount. If two admins
+  // (or a double-click) approve concurrently, only one update succeeds and
+  // only that one credits the user. The other gets a 409 instead of a
+  // duplicate balance bump + duplicate transactions row.
+  let claimed = false;
+  await db.transaction(async (tx) => {
+    const claim = await tx.execute(sql`
+      UPDATE usdt_orders
+         SET status = 'approved',
+             approved_at = NOW(),
+             reviewed_by = ${adminId},
+             admin_note = ${note},
+             updated_at = NOW()
+       WHERE id = ${id} AND status = 'submitted'
+      RETURNING id
+    `);
+    const claimedRow = ((claim as any).rows?.[0] || (claim as any)[0]);
+    if (!claimedRow) return; // someone else got there first — abort credit
+    claimed = true;
+    await tx.update(usersTable).set({
+      balance: sql`${usersTable.balance} + ${credit}`,
+      totalDeposits: sql`${usersTable.totalDeposits} + ${credit}`,
+    }).where(eq(usersTable.id, order.user_id));
+    await tx.insert(transactionsTable).values({
+      userId: order.user_id,
+      type: "credit",
+      amount: String(credit),
+      description: `USDT deposit approved (${Number(order.usdt_amount)} USDT, order #${order.id})`,
+    });
+  });
+  if (!claimed) {
+    return res.status(409).json({ error: "Order already finalised by another admin" });
+  }
+  await logAdminAction(adminId, "usdt_approve", "usdt_order", id, `+₹${credit}`);
+  res.json({ ok: true });
+});
+
+router.post("/usdt/reject/:id", requireAdmin, async (req, res): Promise<any> => {
+  const id = Number(req.params.id);
+  const adminId = (req as any).user?.id as number;
+  const note = String((req.body || {}).note || "").slice(0, 500);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid order id" });
+  if (!note.trim()) return res.status(400).json({ error: "Rejection reason is required" });
+
+  const r = await db.execute(sql`
+    UPDATE usdt_orders
+       SET status = 'rejected',
+           cancelled_at = NOW(),
+           reviewed_by = ${adminId},
+           admin_note = ${note},
+           updated_at = NOW()
+     WHERE id = ${id} AND status IN ('submitted', 'pending')
+    RETURNING id
+  `);
+  const row = ((r as any).rows?.[0] || (r as any)[0]);
+  if (!row) return res.status(409).json({ error: "Order can't be rejected (already finalised)" });
+  await logAdminAction(adminId, "usdt_reject", "usdt_order", id, note);
+  res.json({ ok: true });
 });
 
 export default router;

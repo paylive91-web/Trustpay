@@ -454,6 +454,54 @@ export async function ensureSchema(): Promise<void> {
       DELETE FROM users WHERE id = 22 AND role = 'admin'
     `);
 
+    // ── USDT (TRC-20) deposit orders ───────────────────────────────────────────
+    // Mirrors the UPI orders flow but stores the USDT-specific bits:
+    //   - usdt_amount: amount in USDT the user agreed to send
+    //   - rate_snapshot / bonus_pct_snapshot: locked at /start time so a later
+    //     admin rate change can't retro-actively change a user's quote.
+    //   - inr_value / bonus_inr / total_credit: pre-computed for audit.
+    //   - address: which TRC-20 wallet the user was assigned (round-robin).
+    //   - tx_id + screenshot_url: user-submitted proof.
+    //   - status: pending | submitted | approved | rejected | cancelled | expired
+    //   - admin_note: optional rejection / approval note shown to user.
+    //   - expires_at: payment window deadline (default 15 min from start).
+    //   - approved_at / cancelled_at: media-cleanup uses these to NULL the
+    //     screenshot 5 min after settlement (mirrors orders flow).
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS usdt_orders (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id),
+          usdt_amount NUMERIC(14,4) NOT NULL,
+          rate_snapshot NUMERIC(12,4) NOT NULL,
+          bonus_pct_snapshot NUMERIC(6,2) NOT NULL DEFAULT '0',
+          inr_value NUMERIC(14,2) NOT NULL,
+          bonus_inr NUMERIC(14,2) NOT NULL DEFAULT '0',
+          total_credit NUMERIC(14,2) NOT NULL,
+          address TEXT NOT NULL,
+          address_label TEXT,
+          tx_id TEXT,
+          screenshot_url TEXT,
+          status TEXT NOT NULL DEFAULT 'pending',
+          admin_note TEXT,
+          expires_at TIMESTAMP NOT NULL,
+          submitted_at TIMESTAMP,
+          approved_at TIMESTAMP,
+          cancelled_at TIMESTAMP,
+          reviewed_by INTEGER,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+        )
+      `);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS usdt_orders_user_idx ON usdt_orders(user_id)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS usdt_orders_status_idx ON usdt_orders(status)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS usdt_orders_created_idx ON usdt_orders(created_at DESC)`);
+      // Look-up by tx_id for duplicate-submission check + admin search.
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS usdt_orders_tx_idx ON usdt_orders(tx_id) WHERE tx_id IS NOT NULL`);
+    } catch (err) {
+      logger.error({ err }, "usdt_orders bootstrap failed");
+    }
+
     logger.info("ensureSchema OK");
   } catch (err) {
     logger.error({ err }, "ensureSchema failed");

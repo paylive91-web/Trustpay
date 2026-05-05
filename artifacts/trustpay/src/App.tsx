@@ -20,6 +20,9 @@ import Stats from "@/pages/stats";
 import Invite from "@/pages/invite";
 import Info from "@/pages/info";
 import UpiManage from "@/pages/upi-manage";
+import UsdtDeposit from "@/pages/usdt-deposit";
+import UsdtPayment from "@/pages/usdt-payment";
+import UsdtHistory from "@/pages/usdt-history";
 
 import AdminLogin from "@/pages/admin/login";
 import AdminDashboard from "@/pages/admin/dashboard";
@@ -38,6 +41,7 @@ import AdminActivityLog from "@/pages/admin/activity-log";
 import AdminSmsLearning from "@/pages/admin/sms-learning";
 import AdminPaymentLearning from "@/pages/admin/payment-learning";
 import AdminSystemPulse from "@/pages/admin/system-pulse";
+import AdminUsdt from "@/pages/admin/usdt";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +62,9 @@ function Router() {
       <Route path="/invite" component={Invite} />
       <Route path="/info" component={Info} />
       <Route path="/upi" component={UpiManage} />
+      <Route path="/usdt-deposit" component={UsdtDeposit} />
+      <Route path="/usdt-payment/:id" component={UsdtPayment} />
+      <Route path="/usdt-history" component={UsdtHistory} />
 
       <Route path="/admin" component={AdminLogin} />
       <Route path="/admin/login" component={AdminLogin} />
@@ -77,6 +84,7 @@ function Router() {
       <Route path="/admin/sms-learning" component={AdminSmsLearning} />
       <Route path="/admin/payment-learning" component={AdminPaymentLearning} />
       <Route path="/admin/system-pulse" component={AdminSystemPulse} />
+      <Route path="/admin/usdt" component={AdminUsdt} />
 
       <Route component={NotFound} />
     </Switch>

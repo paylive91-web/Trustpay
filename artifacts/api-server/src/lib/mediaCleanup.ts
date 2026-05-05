@@ -134,6 +134,33 @@ async function cleanOldNotifications() {
   return rowCount(r);
 }
 
+/**
+ * Clean USDT order screenshots 5 minutes after the order moved to a
+ * terminal state (approved/rejected/cancelled/expired). Mirrors the UPI
+ * orders policy — TxID + audit row stays, only the heavy image bytes
+ * are dropped. Wrapped in IF EXISTS so deployments that haven't run the
+ * migrate.ts add for usdt_orders yet skip silently.
+ */
+async function cleanUsdtOrderMedia() {
+  const exists = await db.execute(sql`
+    SELECT to_regclass('public.usdt_orders') AS t
+  `);
+  const row = ((exists as any).rows?.[0] || (exists as any)[0]) as { t?: string | null } | undefined;
+  if (!row?.t) return 0;
+  const r = await db.execute(sql`
+    UPDATE usdt_orders
+       SET screenshot_url = NULL
+     WHERE screenshot_url IS NOT NULL
+       AND (
+            (approved_at IS NOT NULL AND approved_at < NOW() - INTERVAL '5 minutes')
+         OR (cancelled_at IS NOT NULL AND cancelled_at < NOW() - INTERVAL '5 minutes')
+         OR (status IN ('rejected', 'expired')
+             AND updated_at < NOW() - INTERVAL '5 minutes')
+       )
+  `);
+  return rowCount(r);
+}
+
 export async function runMediaCleanup() {
   const start = Date.now();
   try {
@@ -145,10 +172,12 @@ export async function runMediaCleanup() {
       .catch((err) => { logger.warn({ err }, "cleanDisputedOrderMedia failed"); return 0; });
     const notificationsCleared = await cleanOldNotifications()
       .catch((err) => { logger.warn({ err }, "cleanOldNotifications failed"); return 0; });
+    const usdtCleared = await cleanUsdtOrderMedia()
+      .catch((err) => { logger.warn({ err }, "cleanUsdtOrderMedia failed"); return 0; });
 
-    if (confirmedCleared || disputeCleared || disputedOrderCleared || notificationsCleared) {
+    if (confirmedCleared || disputeCleared || disputedOrderCleared || notificationsCleared || usdtCleared) {
       logger.info(
-        { confirmedCleared, disputeCleared, disputedOrderCleared, notificationsCleared, ms: Date.now() - start },
+        { confirmedCleared, disputeCleared, disputedOrderCleared, notificationsCleared, usdtCleared, ms: Date.now() - start },
         "Media cleanup complete",
       );
     }

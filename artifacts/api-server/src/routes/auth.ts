@@ -7,6 +7,7 @@ import { signToken, requireAuth, formatUser } from "../lib/auth.js";
 import { recordDeviceFingerprint, checkAccountFraud, checkReferralSelfLoop } from "../lib/fraud.js";
 import { issueOtp, verifyOtpAndIssueToken, consumeVerifiedToken } from "../lib/otp.js";
 import { verifyGoogleIdToken } from "../lib/google.js";
+import { getSetting } from "../lib/settings.js";
 
 const router = Router();
 
@@ -100,7 +101,7 @@ router.post("/otp/verify", async (req, res) => {
 });
 
 router.post("/register", async (req, res) => {
-  const { phone, password, referralCode, deviceFingerprint, verifiedToken } = req.body || {};
+  const { phone, password, referralCode, deviceFingerprint } = req.body || {};
   if (!phone || !password) {
     res.status(400).json({ error: "Mobile number and password are required" });
     return;
@@ -113,17 +114,38 @@ router.post("/register", async (req, res) => {
     res.status(400).json({ error: "Password must be at least 6 characters" });
     return;
   }
-  // OTP gate — verifiedToken must have been issued for THIS phone with
-  // purpose=register within the last 10 minutes.
-  if (!verifiedToken || !consumeVerifiedToken(String(verifiedToken), "register", String(phone))) {
-    res.status(400).json({ error: "Mobile number not verified. Please verify with OTP first." });
-    return;
-  }
 
   const existingPhone = await db.select().from(usersTable).where(eq(usersTable.phone, phone)).limit(1);
   if (existingPhone[0]) {
     res.status(400).json({ error: "Only 1 account is allowed per mobile number. Please login to your existing account." });
     return;
+  }
+
+  // Device-based registration cap. Counts the number of distinct user_ids
+  // ever recorded against this fingerprint and rejects the registration
+  // when the admin-configured limit is already reached. Skipped when the
+  // client doesn't send a fingerprint (older clients) — their accounts
+  // are still tracked through IP-based fraud alerts downstream.
+  if (deviceFingerprint && typeof deviceFingerprint === "string") {
+    try {
+      const maxStr = await getSetting("maxRegistrationsPerDevice");
+      const maxAllowed = Math.max(1, Math.floor(Number(maxStr) || 3));
+      const countRows = await db.execute(sql`
+        SELECT COUNT(DISTINCT user_id)::int AS c
+          FROM device_fingerprints
+         WHERE fingerprint = ${deviceFingerprint}
+      `);
+      const distinctUsers = Number(((countRows as any).rows?.[0] || (countRows as any)[0])?.c || 0);
+      if (distinctUsers >= maxAllowed) {
+        res.status(429).json({
+          error: `Maximum ${maxAllowed} accounts allowed per device. Please login to your existing account.`,
+          code: "device_limit_reached",
+        });
+        return;
+      }
+    } catch (err) {
+      req.log.warn({ err }, "device-fingerprint registration cap check failed; allowing through");
+    }
   }
 
   const normalizedReferralCode = String(referralCode || "").trim().toUpperCase() || ADMIN_REFERRAL_CODE;
