@@ -178,28 +178,28 @@ export default function UpiManage() {
             </p>
             <Button
               onClick={() => setShowAdd(true)}
-              className="mx-auto px-8 h-13 text-base rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white border-none shadow-lg font-bold gap-2"
+              className="mx-auto w-full h-14 text-lg rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white border-none shadow-lg font-bold gap-2"
             >
-              <PlusCircle className="w-5 h-5" /> Connect UPI
+              <PlusCircle className="w-6 h-6" /> Add UPI
             </Button>
-            <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] text-emerald-400">
-              <Zap className="w-3 h-3" /> Auto-Sell activates instantly after connecting
-            </div>
           </div>
+        )}
+
+        {/* Big Add UPI button — always visible when UPIs exist */}
+        {(activeList.length > 0 || inactiveList.length > 0) && !showAdd && (
+          <Button
+            onClick={() => setShowAdd(true)}
+            className="w-full h-14 text-base rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white border-none shadow-lg font-bold gap-2"
+          >
+            <PlusCircle className="w-5 h-5" /> Add UPI
+          </Button>
         )}
 
         {/* Active UPIs */}
         {activeList.length > 0 && (
           <div className="space-y-2">
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1 flex items-center justify-between">
-              <span>Active UPIs ({activeList.length})</span>
-              <button
-                type="button"
-                onClick={() => setShowAdd((v) => !v)}
-                className="flex items-center gap-1 text-[11px] bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full font-semibold hover:bg-orange-200 transition-colors"
-              >
-                <PlusCircle className="w-3 h-3" /> Add UPI
-              </button>
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">
+              Active UPIs ({activeList.length})
             </div>
             {activeList.map((u) => (
               <UpiCard
@@ -228,10 +228,6 @@ export default function UpiManage() {
             ))}
           </div>
         )}
-
-        <p className="text-xs text-muted-foreground text-center pt-1">
-          Multiple UPIs can be active at once. Incoming chunks are split round-robin across all active UPIs.
-        </p>
 
         {/* Security warning */}
         <div className="mt-2 rounded-2xl border-2 border-red-300 bg-gradient-to-br from-red-50 to-amber-50 p-4 shadow-sm">
@@ -262,6 +258,12 @@ function UpiCard({ u, isActive, onActivate, onDeactivate, onDelete, activating, 
   onActivate?: () => void; onDeactivate?: () => void; onDelete: () => void;
   activating?: boolean; deactivating?: boolean; deleting?: boolean;
 }) {
+  const handleDelete = () => {
+    if (window.confirm(`Remove UPI "${u.upiId}"? This will cancel all pending chunks linked to this UPI.`)) {
+      onDelete();
+    }
+  };
+
   return (
     <Card className={`overflow-hidden border-none shadow-md ${isActive ? "ring-1 ring-emerald-400/50" : ""}`}>
       <div className={`h-1 ${isActive ? "bg-gradient-to-r from-emerald-400 to-teal-400" : "bg-muted"}`} />
@@ -289,8 +291,8 @@ function UpiCard({ u, isActive, onActivate, onDeactivate, onDelete, activating, 
               Pause
             </Button>
           )}
-          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg" onClick={onDelete} disabled={deleting}>
-            <Trash2 className="w-3.5 h-3.5" />
+          <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-red-500 hover:text-white hover:bg-red-500 rounded-lg transition-colors" onClick={handleDelete} disabled={deleting}>
+            <Trash2 className="w-4 h-4" />
           </Button>
         </div>
       </CardContent>

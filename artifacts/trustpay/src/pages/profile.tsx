@@ -8,8 +8,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { clearAuthToken, getAuthToken } from "@/lib/auth";
 import {
-  Headset, LogOut, ChevronRight, Wallet, ArrowDownCircle,
-  ArrowUpCircle, Phone, Gift, Copy, Trophy, ShieldOff,
+  Headset, LogOut, ChevronRight,
+  Phone, Gift, Copy, Trophy, ShieldOff,
   ShieldCheck, Mail, Loader2, IndianRupee, Star,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -169,43 +169,6 @@ export default function Profile() {
             </div>
           </div>
         </div>
-
-        {/* Stats grid */}
-        <Card className="border-none shadow-md overflow-hidden">
-          <CardContent className="p-4">
-            <h3 className="font-semibold text-sm text-muted-foreground mb-3 uppercase tracking-wide">Account Statistics</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl p-3 bg-orange-50 border border-orange-100">
-                <div className="flex items-center gap-2 mb-2">
-                  <Wallet className="w-4 h-4 text-orange-500" />
-                  <span className="text-xs font-medium text-muted-foreground">Balance</span>
-                </div>
-                <div className="text-base font-bold text-slate-900">₹{fmt(balance)}</div>
-              </div>
-              <div className="rounded-xl p-3 bg-emerald-50 border border-emerald-100">
-                <div className="flex items-center gap-2 mb-2">
-                  <ArrowDownCircle className="w-4 h-4 text-emerald-500" />
-                  <span className="text-xs font-medium text-muted-foreground">Buy Total</span>
-                </div>
-                <div className="text-base font-bold text-slate-900">₹{fmt(user?.totalDeposits || 0)}</div>
-              </div>
-              <div className="rounded-xl p-3 bg-amber-50 border border-amber-100">
-                <div className="flex items-center gap-2 mb-2">
-                  <Gift className="w-4 h-4 text-amber-500" />
-                  <span className="text-xs font-medium text-muted-foreground">Invite Earnings</span>
-                </div>
-                <div className="text-base font-bold text-slate-900">₹{fmt(inviteEarnings)}</div>
-              </div>
-              <div className="rounded-xl p-3 bg-rose-50 border border-rose-100">
-                <div className="flex items-center gap-2 mb-2">
-                  <ArrowUpCircle className="w-4 h-4 text-rose-500" />
-                  <span className="text-xs font-medium text-muted-foreground">Sell Total</span>
-                </div>
-                <div className="text-base font-bold text-slate-900">₹{fmt(user?.totalWithdrawals || 0)}</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Rewards & Earnings link */}
         <div
