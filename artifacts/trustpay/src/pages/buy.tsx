@@ -243,12 +243,11 @@ export default function Buy() {
         {/* Buy modality switcher — INR (existing UPI flow) vs USDT TRC-20.
             Routes to dedicated USDT pages so the existing P2P state, locks
             and chunk-carousel logic below stay untouched. */}
-        <BuyModeTabs />
-
         {myBuy ? (
           <ActiveBuyCard buy={myBuy} refetch={refetchBuy} user={user} />
         ) : (
           <>
+            <BuyModeTabs />
             {/* Buyer Cooldown Banner */}
             {cooldownData?.inCooldown && cooldownMs > 0 && (
               <div className="rounded-[20px] border border-orange-300 bg-gradient-to-br from-orange-50 via-amber-50 to-red-50 p-4 shadow-md space-y-3">
