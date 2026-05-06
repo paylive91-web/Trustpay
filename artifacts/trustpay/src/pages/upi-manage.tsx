@@ -166,7 +166,7 @@ export default function UpiManage() {
         )}
 
         {/* Empty state — big centered connect button */}
-        {activeList.length === 0 && !showAdd && (
+        {(upiList as any[]).length === 0 && !showAdd && (
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 ring-1 ring-amber-400/30 p-8 shadow-xl text-center">
             <div className="absolute -top-8 -right-8 w-32 h-32 bg-orange-500/10 rounded-full blur-2xl" />
             <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center mb-4 shadow-lg ring-2 ring-orange-300/30">
