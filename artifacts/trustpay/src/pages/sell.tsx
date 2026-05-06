@@ -191,9 +191,17 @@ export default function Sell() {
 
   return (
     <Layout>
-      <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-secondary via-secondary to-primary text-white">
-        <Link href="/"><ArrowLeft className="cursor-pointer" /></Link>
-        <span className="font-bold text-lg flex-1">Sell — Matching</span>
+      <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 border-b border-orange-200 px-4 pt-4 pb-4">
+        <div className="flex items-center gap-3">
+          <Link href="/"><ArrowLeft className="cursor-pointer text-slate-700 w-5 h-5" /></Link>
+          <div className="flex-1">
+            <span className="font-bold text-lg text-slate-900">Sell — Matching</span>
+            <p className="text-[11px] text-orange-700/70">Activate Auto-Sell to earn rewards</p>
+          </div>
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 flex items-center justify-center shadow-sm">
+            <Wallet className="w-5 h-5 text-white" />
+          </div>
+        </div>
       </div>
       {isFrozen && (
         <div className="px-4 pt-3">

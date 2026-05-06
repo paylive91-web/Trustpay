@@ -227,9 +227,17 @@ export default function Buy() {
 
   return (
     <Layout>
-      <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-primary via-primary to-sky-600 text-primary-foreground">
-        <Link href="/"><ArrowLeft className="cursor-pointer" /></Link>
-        <span className="font-bold text-lg flex-1">Buy</span>
+      <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 border-b border-orange-200 px-4 pt-4 pb-4">
+        <div className="flex items-center gap-3">
+          <Link href="/"><ArrowLeft className="cursor-pointer text-slate-700 w-5 h-5" /></Link>
+          <div className="flex-1">
+            <span className="font-bold text-lg text-slate-900">Buy Balance</span>
+            <p className="text-[11px] text-orange-700/70">Pick an order and pay via UPI</p>
+          </div>
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-sm">
+            <IndianRupee className="w-5 h-5 text-white" />
+          </div>
+        </div>
       </div>
       <div className="p-4 space-y-4">
         {/* Buy modality switcher — INR (existing UPI flow) vs USDT TRC-20.
@@ -488,7 +496,7 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
           </div>
         </div>
       )}
-      <Card className="rounded-[28px] shadow-xl border border-white/70 bg-gradient-to-br from-white via-sky-50 to-indigo-50 overflow-hidden">
+      <Card className="rounded-[28px] shadow-xl border border-orange-200 bg-gradient-to-br from-white via-orange-50/40 to-amber-50 overflow-hidden">
         <CardContent className="p-4 space-y-4 relative">
           <div className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-sky-300 to-transparent" />
           <div className="flex items-center justify-between">
