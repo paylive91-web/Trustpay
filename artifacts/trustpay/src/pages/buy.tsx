@@ -328,10 +328,10 @@ function BuyModeTabs() {
   });
   if (!usdtConfig?.enabled) return null;
   return (
-    <div className="rounded-2xl bg-white border border-slate-200 p-1 flex shadow-sm">
+    <div className="rounded-2xl bg-white border border-orange-100 p-1 flex shadow-sm">
       <button
         type="button"
-        className="flex-1 rounded-xl px-3 py-2.5 flex items-center justify-center gap-2 text-sm font-bold bg-gradient-to-br from-primary via-primary to-sky-600 text-primary-foreground shadow-md"
+        className="flex-1 rounded-xl px-3 py-2.5 flex items-center justify-center gap-2 text-sm font-bold bg-gradient-to-br from-orange-500 via-amber-500 to-orange-600 text-white shadow-md"
         data-testid="tab-buy-inr"
       >
         <IndianRupee className="h-4 w-4" /> INR (UPI)
@@ -339,7 +339,7 @@ function BuyModeTabs() {
       <button
         type="button"
         onClick={() => setLocation("/usdt-deposit")}
-        className="flex-1 rounded-xl px-3 py-2.5 flex items-center justify-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+        className="flex-1 rounded-xl px-3 py-2.5 flex items-center justify-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-orange-50 transition-colors"
         data-testid="tab-buy-usdt"
       >
         <Coins className="h-4 w-4 text-emerald-500" /> USDT (TRC-20)
