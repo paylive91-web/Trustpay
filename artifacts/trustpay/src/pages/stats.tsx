@@ -5,7 +5,7 @@ import Layout from "@/components/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  ArrowLeft, Trophy, Star, Gift, Zap, ShoppingCart, Banknote, ChevronDown, ChevronUp,
+  ArrowLeft, Trophy, Star, Gift, Zap, ShoppingCart, Banknote, ChevronDown, ChevronUp, IndianRupee,
 } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 import { API_BASE } from "@/lib/api-config";
@@ -56,40 +56,43 @@ export default function Stats() {
 
   return (
     <Layout>
-      {/* Dark header */}
-      <div style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", paddingBottom: 24 }}>
-        {/* Top nav */}
-        <div className="flex items-center gap-3 px-4 pt-10 pb-4">
+      {/* Header — home orange-amber theme */}
+      <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 border-b border-orange-200 pb-6">
+        <div className="flex items-center gap-3 px-4 pt-4 pb-4">
           <button
             onClick={() => setLocation("/profile")}
-            className="w-9 h-9 rounded-xl flex items-center justify-center"
-            style={{ background: "rgba(255,255,255,0.08)" }}
+            className="w-9 h-9 rounded-xl bg-white/70 border border-orange-200 flex items-center justify-center"
           >
-            <ArrowLeft className="w-5 h-5 text-white" />
+            <ArrowLeft className="w-5 h-5 text-slate-700" />
           </button>
-          <h1 className="text-white font-bold text-lg">Rewards & Stats</h1>
+          <div className="flex-1">
+            <h1 className="text-slate-900 font-bold text-lg">Rewards & Stats</h1>
+            <p className="text-[11px] text-orange-700/70">Your earnings at a glance</p>
+          </div>
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-sm">
+            <Trophy className="w-5 h-5 text-white" />
+          </div>
         </div>
 
-        {/* Summary card */}
-        <div className="mx-4 rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
-          <div style={{ color: "#94a3b8", fontSize: 13, marginBottom: 6 }}>Total Lifetime Earnings</div>
-          <div style={{ color: "#f59e0b", fontSize: 34, fontWeight: 800, lineHeight: 1.1 }}>
-            ₹ {fmt(lifetimeTotal)}
+        {/* Summary hero card */}
+        <div className="mx-4 rounded-2xl bg-white/80 border border-orange-200 shadow-sm p-4">
+          <div className="text-[11px] text-orange-700/70 uppercase tracking-wide font-bold mb-1">Total Lifetime Earnings</div>
+          <div className="flex items-baseline gap-1 mb-3">
+            <IndianRupee className="w-6 h-6 text-orange-500" />
+            <div className="text-3xl font-black text-slate-900">{fmt(lifetimeTotal)}</div>
           </div>
-          <div className="flex gap-5 mt-3">
-            <div>
-              <div style={{ color: "#475569", fontSize: 11 }}>Today</div>
-              <div style={{ color: "#fbbf24", fontSize: 16, fontWeight: 700 }}>₹ {fmt(todayRewards)}</div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="rounded-xl bg-orange-50 border border-orange-100 p-2.5 text-center">
+              <div className="text-[10px] text-orange-700/70 uppercase tracking-wide font-bold">Today</div>
+              <div className="text-sm font-black text-orange-700">₹{fmt(todayRewards)}</div>
             </div>
-            <div style={{ width: 1, background: "rgba(255,255,255,0.06)" }} />
-            <div>
-              <div style={{ color: "#475569", fontSize: 11 }}>Agent</div>
-              <div style={{ color: "#94a3b8", fontSize: 16, fontWeight: 700 }}>₹ {fmt(myStats?.agentEarning.total || 0)}</div>
+            <div className="rounded-xl bg-amber-50 border border-amber-100 p-2.5 text-center">
+              <div className="text-[10px] text-amber-700/70 uppercase tracking-wide font-bold">Agent</div>
+              <div className="text-sm font-black text-amber-700">₹{fmt(myStats?.agentEarning.total || 0)}</div>
             </div>
-            <div style={{ width: 1, background: "rgba(255,255,255,0.06)" }} />
-            <div>
-              <div style={{ color: "#475569", fontSize: 11 }}>Invite</div>
-              <div style={{ color: "#a855f7", fontSize: 16, fontWeight: 700 }}>₹ {fmt(inviteEarnings)}</div>
+            <div className="rounded-xl bg-violet-50 border border-violet-100 p-2.5 text-center">
+              <div className="text-[10px] text-violet-700/70 uppercase tracking-wide font-bold">Invite</div>
+              <div className="text-sm font-black text-violet-700">₹{fmt(inviteEarnings)}</div>
             </div>
           </div>
         </div>
@@ -97,106 +100,106 @@ export default function Stats() {
 
       <div className="px-4 pt-4 pb-8 space-y-4">
         {/* Reward breakdown */}
-        <div className="rounded-2xl overflow-hidden shadow-md" style={{ background: "#0f172a" }}>
+        <div className="rounded-2xl overflow-hidden shadow-md border border-orange-100 bg-white">
           <button
-            className="w-full flex items-center justify-between p-4"
+            className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-amber-50"
             onClick={() => setShowRewardDetail(!showRewardDetail)}
           >
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(245,158,11,0.15)" }}>
-                <Trophy className="w-5 h-5" style={{ color: "#f59e0b" }} />
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-sm">
+                <Trophy className="w-5 h-5 text-white" />
               </div>
-              <span className="text-white font-semibold text-sm">Reward Breakdown</span>
+              <span className="text-slate-900 font-semibold text-sm">Reward Breakdown</span>
             </div>
             {showRewardDetail
-              ? <ChevronUp className="w-4 h-4" style={{ color: "#475569" }} />
-              : <ChevronDown className="w-4 h-4" style={{ color: "#475569" }} />}
+              ? <ChevronUp className="w-4 h-4 text-orange-400" />
+              : <ChevronDown className="w-4 h-4 text-orange-400" />}
           </button>
 
           {showRewardDetail && (
-            <div className="px-4 pb-4 space-y-3">
-              <div style={{ height: 1, background: "#1e293b", marginBottom: 8 }} />
+            <div className="px-4 pb-4 space-y-3 pt-3">
+              <div className="h-px bg-orange-100" />
 
               {loading ? (
                 <div className="space-y-2">
-                  <Skeleton className="h-16 w-full rounded-xl" style={{ background: "#1e293b" }} />
-                  <Skeleton className="h-16 w-full rounded-xl" style={{ background: "#1e293b" }} />
+                  <Skeleton className="h-16 w-full rounded-xl" />
+                  <Skeleton className="h-16 w-full rounded-xl" />
                 </div>
               ) : (
                 <>
                   {/* Buy + Sell reward cards */}
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-xl p-3" style={{ background: "#0d1829", border: "1px solid #1e3a5f" }}>
+                    <div className="rounded-xl p-3 bg-orange-50 border border-orange-100">
                       <div className="flex items-center gap-2 mb-2">
-                        <ShoppingCart className="w-4 h-4" style={{ color: "#3b82f6" }} />
-                        <span className="text-xs font-medium" style={{ color: "#64748b" }}>Buy Reward</span>
+                        <ShoppingCart className="w-4 h-4 text-orange-500" />
+                        <span className="text-xs font-semibold text-orange-700">Buy Reward</span>
                       </div>
-                      <div className="font-bold text-base" style={{ color: "#fbbf24" }}>
-                        ₹ {fmt(myStats?.buyReward.today || 0)}
+                      <div className="font-black text-base text-slate-900">
+                        ₹{fmt(myStats?.buyReward.today || 0)}
                       </div>
-                      <div className="text-xs mt-0.5" style={{ color: "#475569" }}>Today</div>
-                      <div className="text-xs mt-1" style={{ color: "#334155" }}>
-                        Overall: ₹ {fmt(myStats?.buyReward.total || 0)}
+                      <div className="text-xs text-orange-600/70 mt-0.5">Today</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Overall: ₹{fmt(myStats?.buyReward.total || 0)}
                       </div>
                     </div>
 
-                    <div className="rounded-xl p-3" style={{ background: "#0d1f1a", border: "1px solid #14532d" }}>
+                    <div className="rounded-xl p-3 bg-emerald-50 border border-emerald-100">
                       <div className="flex items-center gap-2 mb-2">
-                        <Banknote className="w-4 h-4" style={{ color: "#22c55e" }} />
-                        <span className="text-xs font-medium" style={{ color: "#64748b" }}>Sell Reward</span>
+                        <Banknote className="w-4 h-4 text-emerald-500" />
+                        <span className="text-xs font-semibold text-emerald-700">Sell Reward</span>
                       </div>
-                      <div className="font-bold text-base" style={{ color: "#fbbf24" }}>
-                        ₹ {fmt(myStats?.sellReward.today || 0)}
+                      <div className="font-black text-base text-slate-900">
+                        ₹{fmt(myStats?.sellReward.today || 0)}
                       </div>
-                      <div className="text-xs mt-0.5" style={{ color: "#475569" }}>Today</div>
-                      <div className="text-xs mt-1" style={{ color: "#334155" }}>
-                        Overall: ₹ {fmt(myStats?.sellReward.total || 0)}
+                      <div className="text-xs text-emerald-600/70 mt-0.5">Today</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Overall: ₹{fmt(myStats?.sellReward.total || 0)}
                       </div>
                     </div>
                   </div>
 
                   {/* Agent Earning */}
-                  <div className="rounded-xl p-3 flex items-center justify-between" style={{ background: "#12101f", border: "1px solid #312e81" }}>
+                  <div className="rounded-xl p-3 flex items-center justify-between bg-amber-50 border border-amber-100">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}>
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-sm">
                         <Star className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <div className="text-xs font-medium" style={{ color: "#94a3b8" }}>Agent Earning</div>
-                        <div className="text-xs mt-0.5" style={{ color: "#475569" }}>
+                        <div className="text-xs font-semibold text-amber-800">Agent Earning</div>
+                        <div className="text-xs text-amber-600/70 mt-0.5">
                           {(user as any)?.isVerifiedAgent ? "Active Agent" : "Based on invitee activity"}
                         </div>
                       </div>
                     </div>
-                    <div className="font-bold text-lg" style={{ color: "#e2e8f0" }}>
-                      ₹ {fmt(myStats?.agentEarning.total || 0)}
+                    <div className="font-black text-base text-amber-800">
+                      ₹{fmt(myStats?.agentEarning.total || 0)}
                     </div>
                   </div>
 
                   {/* Invite Earning */}
-                  <div className="rounded-xl p-3 flex items-center justify-between" style={{ background: "#1a0a2e", border: "1px solid #4c1d95" }}>
+                  <div className="rounded-xl p-3 flex items-center justify-between bg-violet-50 border border-violet-100">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "rgba(168,85,247,0.2)" }}>
-                        <Gift className="w-5 h-5" style={{ color: "#a855f7" }} />
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-400 to-fuchsia-500 flex items-center justify-center shadow-sm">
+                        <Gift className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <div className="text-xs font-medium" style={{ color: "#94a3b8" }}>Invite Earning (L1)</div>
-                        <div className="text-xs mt-0.5" style={{ color: "#475569" }}>1% per referred buyer trade</div>
+                        <div className="text-xs font-semibold text-violet-800">Invite Earning (L1)</div>
+                        <div className="text-xs text-violet-600/70 mt-0.5">1% per referred buyer trade</div>
                       </div>
                     </div>
-                    <div className="font-bold text-lg" style={{ color: "#a855f7" }}>
-                      ₹ {fmt(inviteEarnings)}
+                    <div className="font-black text-base text-violet-800">
+                      ₹{fmt(inviteEarnings)}
                     </div>
                   </div>
 
                   {/* Total */}
-                  <div className="rounded-xl p-3 flex items-center justify-between" style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)" }}>
+                  <div className="rounded-xl p-3 flex items-center justify-between bg-gradient-to-r from-orange-100 to-amber-100 border border-orange-200">
                     <div className="flex items-center gap-2">
-                      <Zap className="w-4 h-4" style={{ color: "#f59e0b" }} />
-                      <span className="text-sm font-semibold" style={{ color: "#f59e0b" }}>Total Lifetime Earnings</span>
+                      <Zap className="w-4 h-4 text-orange-600" />
+                      <span className="text-sm font-bold text-orange-800">Total Lifetime Earnings</span>
                     </div>
-                    <div className="font-bold text-base" style={{ color: "#f59e0b" }}>
-                      ₹ {fmt(lifetimeTotal)}
+                    <div className="font-black text-base text-orange-800">
+                      ₹{fmt(lifetimeTotal)}
                     </div>
                   </div>
                 </>
@@ -214,7 +217,9 @@ export default function Stats() {
               <button
                 onClick={() => setHistoryTab("buy")}
                 className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${
-                  historyTab === "buy" ? "bg-primary text-white shadow-sm" : "bg-muted text-muted-foreground"
+                  historyTab === "buy"
+                    ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-sm"
+                    : "bg-orange-50 text-orange-700 border border-orange-100"
                 }`}
               >
                 <ShoppingCart className="w-3.5 h-3.5 inline mr-1.5" />
@@ -223,7 +228,9 @@ export default function Stats() {
               <button
                 onClick={() => setHistoryTab("sell")}
                 className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${
-                  historyTab === "sell" ? "bg-primary text-white shadow-sm" : "bg-muted text-muted-foreground"
+                  historyTab === "sell"
+                    ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-sm"
+                    : "bg-orange-50 text-orange-700 border border-orange-100"
                 }`}
               >
                 <Banknote className="w-3.5 h-3.5 inline mr-1.5" />
@@ -240,24 +247,24 @@ export default function Stats() {
               !myStats?.buyOrders.length ? (
                 <div className="text-center py-10 text-muted-foreground text-sm">No buy transactions yet</div>
               ) : (
-                <div className="divide-y">
+                <div className="divide-y divide-orange-50">
                   {myStats.buyOrders.map((o) => (
                     <div key={o.id} className="flex items-center justify-between py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center">
-                          <ShoppingCart className="w-4 h-4 text-blue-600" />
+                        <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center">
+                          <ShoppingCart className="w-4 h-4 text-orange-600" />
                         </div>
                         <div>
-                          <div className="font-semibold text-sm">₹ {fmt(parseFloat(o.amount))}</div>
+                          <div className="font-semibold text-sm">₹{fmt(parseFloat(o.amount))}</div>
                           <div className="text-xs text-muted-foreground">{timeAgo(o.createdAt)}</div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-green-600 font-semibold text-sm">
-                          +₹ {fmt(parseFloat(o.rewardAmount || "0"))}
+                        <div className="text-emerald-600 font-semibold text-sm">
+                          +₹{fmt(parseFloat(o.rewardAmount || "0"))}
                         </div>
                         <span className={`text-xs px-2 py-0.5 rounded-full inline-block mt-0.5 ${
-                          o.status === "confirmed" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
+                          o.status === "confirmed" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
                         }`}>
                           {o.status === "confirmed" ? "Completed" : o.status}
                         </span>
@@ -270,26 +277,26 @@ export default function Stats() {
               !myStats?.sellOrders.length ? (
                 <div className="text-center py-10 text-muted-foreground text-sm">No sell transactions yet</div>
               ) : (
-                <div className="divide-y">
+                <div className="divide-y divide-orange-50">
                   {myStats.sellOrders.map((o) => (
                     <div key={o.id} className="flex items-center justify-between py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center">
-                          <Banknote className="w-4 h-4 text-red-600" />
+                        <div className="w-9 h-9 rounded-full bg-violet-100 flex items-center justify-center">
+                          <Banknote className="w-4 h-4 text-violet-600" />
                         </div>
                         <div>
-                          <div className="font-semibold text-sm">₹ {fmt(parseFloat(o.amount))}</div>
+                          <div className="font-semibold text-sm">₹{fmt(parseFloat(o.amount))}</div>
                           <div className="text-xs text-muted-foreground">{timeAgo(o.createdAt)}</div>
                         </div>
                       </div>
                       <div className="text-right">
                         {parseFloat(o.sellRewardAmount || "0") > 0 && (
-                          <div className="text-green-600 font-semibold text-sm">
-                            +₹ {fmt(parseFloat(o.sellRewardAmount))}
+                          <div className="text-emerald-600 font-semibold text-sm">
+                            +₹{fmt(parseFloat(o.sellRewardAmount))}
                           </div>
                         )}
                         <span className={`text-xs px-2 py-0.5 rounded-full inline-block mt-0.5 ${
-                          o.status === "confirmed" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
+                          o.status === "confirmed" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
                         }`}>
                           {o.status === "confirmed" ? "Completed" : o.status}
                         </span>

@@ -172,21 +172,20 @@ export default function Profile() {
 
         {/* Rewards & Earnings link */}
         <div
-          className="rounded-2xl shadow-lg cursor-pointer overflow-hidden"
-          style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)" }}
+          className="rounded-2xl shadow-md cursor-pointer overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 border border-orange-200"
           onClick={() => setLocation("/stats")}
         >
           <div className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-400/15 flex items-center justify-center">
-                <Trophy className="w-5 h-5 text-amber-400" />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-sm">
+                <Trophy className="w-5 h-5 text-white" />
               </div>
               <div>
-                <div className="text-white font-bold text-sm">Rewards & Earnings</div>
-                <div className="text-xs text-slate-500">Buy reward · Sell reward · Agent earning</div>
+                <div className="text-slate-900 font-bold text-sm">Rewards & Earnings</div>
+                <div className="text-xs text-orange-700/70">Buy reward · Sell reward · Agent earning</div>
               </div>
             </div>
-            <ChevronRight className="w-5 h-5 text-slate-500" />
+            <ChevronRight className="w-5 h-5 text-orange-300" />
           </div>
         </div>
 
