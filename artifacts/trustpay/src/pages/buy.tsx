@@ -498,14 +498,14 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
       )}
       <Card className="rounded-[28px] shadow-xl border border-orange-200 bg-gradient-to-br from-white via-orange-50/40 to-amber-50 overflow-hidden">
         <CardContent className="p-4 space-y-4 relative">
-          <div className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-sky-300 to-transparent" />
+          <div className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-orange-300 to-transparent" />
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2">
                 <div className="text-2xl font-black tracking-tight">₹{buy.amount}</div>
                 <button
                   type="button"
-                  className="flex items-center justify-center w-7 h-7 rounded-full bg-sky-100 hover:bg-sky-200 transition-colors"
+                  className="flex items-center justify-center w-7 h-7 rounded-full bg-orange-100 hover:bg-orange-200 transition-colors"
                   title="Copy amount"
                   onClick={() => {
                     navigator.clipboard.writeText(String(buy.amount)).then(() => {
@@ -515,7 +515,7 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
                     });
                   }}
                 >
-                  <Copy className="w-3.5 h-3.5 text-sky-600" />
+                  <Copy className="w-3.5 h-3.5 text-orange-600" />
                 </button>
               </div>
               <div className="inline-flex items-center gap-1 mt-1 text-xs text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full">
@@ -523,7 +523,7 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
                 +₹{Number(buy.rewardAmount || 0).toFixed(2)} reward ({buy.rewardPercent}%)
               </div>
             </div>
-            <div className={`flex items-center gap-2 text-sm px-3 py-2 rounded-full border ${expired ? "bg-red-50 text-red-600 border-red-100" : remaining < 5 * 60 * 1000 ? "bg-orange-50 text-orange-600 border-orange-100" : "bg-sky-50 text-sky-700 border-sky-100"}`}>
+            <div className={`flex items-center gap-2 text-sm px-3 py-2 rounded-full border ${expired ? "bg-red-50 text-red-600 border-red-100" : remaining < 5 * 60 * 1000 ? "bg-orange-50 text-orange-600 border-orange-100" : "bg-amber-50 text-amber-700 border-amber-100"}`}>
               <Clock className="h-4 w-4" />
               <span className="font-mono font-semibold">{fmtCountdown(remaining)}</span>
             </div>
@@ -532,7 +532,7 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
           {/* QR Code */}
           {!qrError && (
             <div className="flex flex-col items-center gap-2 py-2">
-              <div className="p-4 rounded-[28px] bg-gradient-to-br from-white via-sky-50 to-fuchsia-50 shadow-[0_18px_50px_rgba(59,130,246,0.12)] border border-sky-200/70">
+              <div className="p-4 rounded-[28px] bg-gradient-to-br from-white via-orange-50 to-amber-50 shadow-[0_18px_50px_rgba(251,146,60,0.14)] border border-orange-200/70">
                 <img
                   src={qrUrl}
                   alt="UPI QR Code"
@@ -544,10 +544,10 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
             </div>
           )}
 
-          <div className="rounded-[24px] p-3 space-y-2 text-sm bg-gradient-to-r from-sky-50 via-white to-fuchsia-50 border border-sky-200 shadow-sm">
+          <div className="rounded-[24px] p-3 space-y-2 text-sm bg-gradient-to-r from-orange-50 via-white to-amber-50 border border-orange-200 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground text-xs">Pay to UPI:</span>
-              <button onClick={() => { navigator.clipboard.writeText(buy.upiId); toast({ title: "Copied!" }); }} className="text-fuchsia-700 text-xs flex items-center gap-1 font-semibold">
+              <button onClick={() => { navigator.clipboard.writeText(buy.upiId); toast({ title: "Copied!" }); }} className="text-orange-700 text-xs flex items-center gap-1 font-semibold">
                 <Copy className="h-3 w-3" /> Copy
               </button>
             </div>
@@ -592,7 +592,7 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
               <div className="space-y-1.5">
                 <Label className="text-xs">UTR / Reference Number</Label>
                 <Input
-                  className={`focus-visible:ring-fuchsia-300 ${utr && utrError(utr) ? "border-red-400 bg-red-50/60" : utr && !utrError(utr) ? "border-emerald-400 bg-emerald-50/40" : "border-fuchsia-200 bg-fuchsia-50/40"}`}
+                  className={`focus-visible:ring-orange-300 ${utr && utrError(utr) ? "border-red-400 bg-red-50/60" : utr && !utrError(utr) ? "border-emerald-400 bg-emerald-50/40" : "border-orange-200 bg-orange-50/40"}`}
                   placeholder="12-character UTR (e.g. T12345678901)"
                   value={utr}
                   maxLength={12}
@@ -613,8 +613,8 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">Payment Screenshot <span className="text-red-600">*</span></Label>
-                <label className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed ${screenshotUrl ? "border-emerald-400 bg-emerald-50" : "border-sky-300 bg-sky-50/70"} rounded-2xl p-5 cursor-pointer hover:bg-sky-100 transition-colors`}>
-                  <Upload className={`w-8 h-8 ${screenshotUrl ? "text-emerald-600" : "text-sky-600"}`} />
+                <label className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed ${screenshotUrl ? "border-emerald-400 bg-emerald-50" : "border-orange-300 bg-orange-50/70"} rounded-2xl p-5 cursor-pointer hover:bg-orange-100 transition-colors`}>
+                  <Upload className={`w-8 h-8 ${screenshotUrl ? "text-emerald-600" : "text-orange-500"}`} />
                   <div className="text-sm font-semibold">
                     {screenshotUrl ? "Screenshot uploaded ✓" : "Tap to upload screenshot"}
                   </div>
@@ -622,7 +622,7 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
                   <input type="file" accept="image/*" onChange={(e) => handleFile(e, "shot")} className="hidden" />
                 </label>
                 {screenshotCheck?.checking && (
-                  <p className="text-xs text-sky-600 flex items-center gap-1">
+                  <p className="text-xs text-orange-600 flex items-center gap-1">
                     <Loader2 className="h-3 w-3 animate-spin" /> Verifying screenshot...
                   </p>
                 )}
@@ -645,11 +645,11 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
                   </p>
                 )}
               </div>
-              <div className="text-[11px] text-muted-foreground bg-gradient-to-r from-slate-50 to-rose-50 rounded-xl p-2.5 leading-snug border border-rose-100">
+              <div className="text-[11px] text-muted-foreground bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-2.5 leading-snug border border-orange-100">
                 Optional: also record your screen while paying. You'll need it only if a dispute opens later.
               </div>
               <Button
-                className="w-full h-12 text-base font-bold rounded-2xl bg-gradient-to-r from-primary via-sky-600 to-fuchsia-600 shadow-lg border border-fuchsia-200/60"
+                className="w-full h-12 text-base font-bold rounded-2xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 shadow-lg border border-orange-300/60 text-white"
                 disabled={!utr || !!utrError(utr) || !screenshotUrl || submitMut.isPending || !!uploading}
                 onClick={() => setShowWarning(true)}
               >
@@ -690,7 +690,7 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
               <Button variant="ghost" size="sm" className="w-full rounded-2xl border border-rose-200 bg-gradient-to-r from-white to-rose-50 text-rose-700 hover:from-rose-50 hover:to-rose-100 shadow-sm" onClick={() => cancelMut.mutate()}>
                 Cancel Buy
               </Button>
-              <Button variant="outline" size="sm" className="w-full rounded-2xl border-fuchsia-200 bg-gradient-to-r from-fuchsia-50 to-sky-50 text-fuchsia-700 shadow-sm hover:from-fuchsia-100 hover:to-sky-100" onClick={() => window.open((settings as any)?.telegramSupportUrl || (settings as any)?.telegramLink || "/support", "_blank")}>
+              <Button variant="outline" size="sm" className="w-full rounded-2xl border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 text-orange-700 shadow-sm hover:from-orange-100 hover:to-amber-100" onClick={() => window.open((settings as any)?.telegramSupportUrl || (settings as any)?.telegramLink || "/support", "_blank")}>
                 <Headset className="mr-2 h-4 w-4" />
                 Contact Support
               </Button>
