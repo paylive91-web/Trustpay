@@ -190,17 +190,25 @@ async function regenerateChunksForUserInner(userId: number) {
   // avoiding floods of tiny dust or single huge chunks.
   const lo = Math.max(chunkMin, Math.min(sweetMin, chunkMax));
   const hi = Math.max(lo, Math.min(sweetMax, chunkMax));
+  // Round to nearest 100 so all order amounts look clean (e.g. 1000, 1200, 1500)
+  function randRound100(a: number, b: number): number {
+    const lo100 = Math.ceil(a / 100) * 100;
+    const hi100 = Math.floor(b / 100) * 100;
+    if (lo100 > hi100) return lo100;
+    const steps = Math.floor((hi100 - lo100) / 100);
+    return lo100 + Math.floor(Math.random() * (steps + 1)) * 100;
+  }
   function pickSize(maxAvail: number): number {
     const useSweet = Math.random() < sweetBias;
     if (useSweet) {
       const a = Math.min(lo, maxAvail);
       const b = Math.min(hi, maxAvail);
-      if (b >= a && b >= chunkMin) return rand(a, b);
+      if (b >= a && b >= chunkMin) return randRound100(a, b);
     }
     // Tail: anywhere in [chunkMin, chunkMax] for variety, capped by maxAvail.
     const a = chunkMin;
     const b = Math.min(chunkMax, maxAvail);
-    return rand(a, b);
+    return randRound100(a, b);
   }
   const chunks: number[] = [];
   while (avail >= chunkMin) {
