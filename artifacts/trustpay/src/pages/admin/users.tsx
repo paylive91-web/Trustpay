@@ -12,7 +12,7 @@ import { getAdminGetUsersQueryKey } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Trash2, Pencil, ShieldOff, ShieldCheck, Star, RefreshCw, BlocksIcon, Info } from "lucide-react";
+import { Trash2, Pencil, ShieldOff, ShieldCheck, Star, RefreshCw, BlocksIcon, Info, Gauge } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 
 import { API_BASE } from "@/lib/api-config";
@@ -56,6 +56,30 @@ export default function AdminUsers() {
   const [blockReason, setBlockReason] = useState("");
   const [blockLoading, setBlockLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [trustScoreUser, setTrustScoreUser] = useState<any>(null);
+  const [trustScoreValue, setTrustScoreValue] = useState("");
+  const [trustScoreLoading, setTrustScoreLoading] = useState(false);
+
+  const handleSetTrustScore = async () => {
+    if (!trustScoreUser) return;
+    const score = parseInt(trustScoreValue);
+    if (isNaN(score) || score < 0 || score > 100) {
+      toast({ title: "0 se 100 ke beech value daalo", variant: "destructive" });
+      return;
+    }
+    setTrustScoreLoading(true);
+    try {
+      await api(`/admin/users/${trustScoreUser.id}/set-trust-score`, { method: "POST", body: JSON.stringify({ score }) });
+      toast({ title: `${trustScoreUser.username} ka trust score ${score} ho gaya` });
+      setTrustScoreUser(null);
+      setTrustScoreValue("");
+      queryClient.invalidateQueries({ queryKey: getAdminGetUsersQueryKey() });
+    } catch (e: any) {
+      toast({ title: "Failed", description: e.message, variant: "destructive" });
+    } finally {
+      setTrustScoreLoading(false);
+    }
+  };
 
   const markTrusted = async (user: any, isTrusted: boolean) => {
     setActionLoading(`trust-${user.id}`);
@@ -331,6 +355,15 @@ export default function AdminUsers() {
                             <Button size="sm" variant="outline" className="text-violet-600 border-violet-300" onClick={() => setBlockUser(user)}>
                               <BlocksIcon className="h-3.5 w-3.5 mr-1" /> Block Trade
                             </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-orange-600 border-orange-300"
+                              onClick={() => { setTrustScoreUser(user); setTrustScoreValue(String(user.trustScore ?? 0)); }}
+                              title="Trust Score adjust karo"
+                            >
+                              <Gauge className="h-3.5 w-3.5 mr-1" /> Trust Score
+                            </Button>
                             <Button size="sm" variant="outline" className="text-amber-700 border-amber-300" onClick={() => resetWarnings(user)} disabled={actionLoading === `warn-${user.id}`}>
                               <RefreshCw className="h-3.5 w-3.5 mr-1" /> Reset Warns
                             </Button>
@@ -451,6 +484,54 @@ export default function AdminUsers() {
             <Button variant="outline" onClick={() => setFreezeReasonUser(null)}>Cancel</Button>
             <Button variant="destructive" onClick={handleFreezeWithReason} disabled={freezeWithReasonLoading}>
               {freezeWithReasonLoading ? "Suspending..." : "Suspend User"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Trust Score Dialog */}
+      <Dialog open={!!trustScoreUser} onOpenChange={(o) => { if (!o) { setTrustScoreUser(null); setTrustScoreValue(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Trust Score Set Karo — {trustScoreUser?.username}</DialogTitle>
+            <DialogDescription>
+              Current score: <strong>{trustScoreUser?.trustScore ?? 0}</strong> &nbsp;|&nbsp;
+              Range: 0 (worst) to 100 (best). &nbsp;
+              Score &le; -50 hone par account auto-freeze hota hai. Zero karne se fraud engine alert karega.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Naya Trust Score (0–100)</label>
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                value={trustScoreValue}
+                onChange={(e) => setTrustScoreValue(e.target.value)}
+                placeholder="e.g. 0"
+              />
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <Button size="sm" variant="outline" className="text-red-600 border-red-300" onClick={() => setTrustScoreValue("0")}>
+                Zero (0)
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setTrustScoreValue("50")}>
+                Neutral (50)
+              </Button>
+              <Button size="sm" variant="outline" className="text-green-600 border-green-300" onClick={() => setTrustScoreValue("100")}>
+                Max (100)
+              </Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setTrustScoreUser(null); setTrustScoreValue(""); }}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={handleSetTrustScore}
+              disabled={trustScoreLoading || trustScoreValue === ""}
+            >
+              {trustScoreLoading ? "Saving..." : "Set Trust Score"}
             </Button>
           </DialogFooter>
         </DialogContent>
