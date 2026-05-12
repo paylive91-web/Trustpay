@@ -5,7 +5,7 @@ import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 import { getAuthToken } from "./lib/auth";
 import { capturePWAInstallPrompt } from "./lib/pwa-install";
 
-setBaseUrl("https://trustpay-api.onrender.com");
+setBaseUrl("https://api.trustpayapp.in");
 setAuthTokenGetter(() => getAuthToken());
 capturePWAInstallPrompt();
 
