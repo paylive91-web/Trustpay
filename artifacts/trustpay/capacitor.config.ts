@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: "TrustPay",
   webDir: "dist/public",
   server: {
-    url: "https://trustpay-l0xq.onrender.com",
+    url: "https://trustpayapp.in",
     cleartext: false,
     androidScheme: "https",
   },
