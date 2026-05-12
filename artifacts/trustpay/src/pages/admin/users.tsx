@@ -63,8 +63,8 @@ export default function AdminUsers() {
   const handleSetTrustScore = async () => {
     if (!trustScoreUser) return;
     const score = parseInt(trustScoreValue);
-    if (isNaN(score) || score < 0 || score > 100) {
-      toast({ title: "0 se 100 ke beech value daalo", variant: "destructive" });
+    if (isNaN(score) || score < -100 || score > 100) {
+      toast({ title: "-100 se 100 ke beech value daalo", variant: "destructive" });
       return;
     }
     setTrustScoreLoading(true);
@@ -495,17 +495,20 @@ export default function AdminUsers() {
           <DialogHeader>
             <DialogTitle>Trust Score Set Karo — {trustScoreUser?.username}</DialogTitle>
             <DialogDescription>
-              Current score: <strong>{trustScoreUser?.trustScore ?? 0}</strong> &nbsp;|&nbsp;
-              Range: 0 (worst) to 100 (best). &nbsp;
-              Score &le; -50 hone par account auto-freeze hota hai. Zero karne se fraud engine alert karega.
+              Current score: <strong className={
+                (trustScoreUser?.trustScore ?? 0) <= -50 ? "text-red-600" :
+                (trustScoreUser?.trustScore ?? 0) < 0 ? "text-orange-500" : "text-green-700"
+              }>{trustScoreUser?.trustScore ?? 0}</strong>
+              &nbsp;|&nbsp; Range: -100 to 100 &nbsp;|&nbsp;
+              Score ≤ <strong>-50</strong> hone par account <strong>auto-freeze</strong> ho jaata hai (system rule).
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Naya Trust Score (0–100)</label>
+              <label className="text-sm font-medium">Naya Trust Score (-100 se 100)</label>
               <Input
                 type="number"
-                min={0}
+                min={-100}
                 max={100}
                 value={trustScoreValue}
                 onChange={(e) => setTrustScoreValue(e.target.value)}
@@ -513,16 +516,25 @@ export default function AdminUsers() {
               />
             </div>
             <div className="flex gap-2 flex-wrap">
-              <Button size="sm" variant="outline" className="text-red-600 border-red-300" onClick={() => setTrustScoreValue("0")}>
-                Zero (0)
+              <Button size="sm" variant="outline" className="text-red-700 border-red-400 bg-red-50" onClick={() => setTrustScoreValue("-50")}
+                title="Auto-freeze threshold — is se account freeze ho jaega">
+                -50 (Freeze)
+              </Button>
+              <Button size="sm" variant="outline" className="text-orange-600 border-orange-300" onClick={() => setTrustScoreValue("0")}>
+                0 (Reset)
               </Button>
               <Button size="sm" variant="outline" onClick={() => setTrustScoreValue("50")}>
-                Neutral (50)
+                50 (Half)
               </Button>
               <Button size="sm" variant="outline" className="text-green-600 border-green-300" onClick={() => setTrustScoreValue("100")}>
-                Max (100)
+                100 (Max)
               </Button>
             </div>
+            {parseInt(trustScoreValue) <= -50 && trustScoreValue !== "" && (
+              <p className="text-xs text-red-600 font-medium bg-red-50 border border-red-200 rounded px-2 py-1">
+                ⚠ Yeh value set karne par user ka account auto-freeze ho jaega.
+              </p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setTrustScoreUser(null); setTrustScoreValue(""); }}>Cancel</Button>
