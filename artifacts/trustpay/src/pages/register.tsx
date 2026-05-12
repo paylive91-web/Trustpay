@@ -128,7 +128,7 @@ export default function Register() {
   const [showInstallPopup, setShowInstallPopup] = useState(false);
   const [duplicate, setDuplicate] = useState<{ title: string; message: string } | null>(null);
 
-  const apkDownloadUrl = (brandSettings as any)?.apkDownloadUrl || "https://trustpay-l0xq.onrender.com";
+  const apkDownloadUrl = (brandSettings as any)?.apkDownloadUrl || "https://trustpayapp.in";
 
   useEffect(() => {
     if (user && !isUserLoading && !showInstallPopup) setLocation("/");
