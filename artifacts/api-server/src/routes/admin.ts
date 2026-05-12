@@ -1137,6 +1137,30 @@ router.post("/users/:id/trust", requireAdmin, async (req, res) => {
   res.json({ success: true });
 });
 
+// ── 6a. Trust score override (admin set to any value 0–100) ──────────────────
+router.post("/users/:id/set-trust-score", requireAdmin, async (req, res) => {
+  const id = parseInt(asString(req.params.id));
+  const adminId = (req as any).user.id;
+  const { score } = req.body || {};
+  const parsed = Number(score);
+  if (isNaN(parsed) || parsed < 0 || parsed > 100) {
+    res.status(400).json({ error: "score must be a number between 0 and 100" });
+    return;
+  }
+  const clamped = Math.round(parsed);
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id)).limit(1);
+  if (!user) { res.status(404).json({ error: "User not found" }); return; }
+  const oldScore = user.trustScore ?? 0;
+  await db.update(usersTable).set({ trustScore: clamped }).where(eq(usersTable.id, id));
+  await db.insert(trustEventsTable).values({
+    userId: id,
+    delta: clamped - oldScore,
+    reason: `Admin override: trust score set to ${clamped} (was ${oldScore}) by admin #${adminId}`,
+  });
+  await logAdminAction(adminId, "set_trust_score", "user", id, `trustScore changed from ${oldScore} → ${clamped}`);
+  res.json({ success: true, oldScore, newScore: clamped });
+});
+
 // ── 6. Fraud warning count reset ─────────────────────────────────────────────
 router.post("/users/:id/reset-fraud-warnings", requireAdmin, async (req, res) => {
   const id = parseInt(asString(req.params.id));
