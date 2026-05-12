@@ -7,4 +7,4 @@ services:
     startCommand: pnpm --filter @workspace/trustpay run serve
     envVars:
       - key: VITE_API_BASE_URL
-        value: https://trustpay-api.onrender.com/api
+        value: https://api.trustpayapp.in/api
