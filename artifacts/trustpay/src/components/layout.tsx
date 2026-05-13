@@ -4,6 +4,7 @@ import PaymentLockBanner from "./payment-lock-banner";
 import SellerAlertsPopup from "./seller-alerts-popup";
 import SellerOfflineDisputePopup from "./seller-offline-dispute-popup";
 import { getAuthToken } from "@/lib/auth";
+import { playLoudAlarm } from "@/lib/alarm";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,6 +12,20 @@ interface LayoutProps {
 }
 
 import { API_BASE } from "@/lib/api-config";
+
+// Listens for push messages from the service worker and plays alarm when app is open
+function usePushSound() {
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === "PUSH_RECEIVED" && event.data?.isPaymentAlert) {
+        playLoudAlarm();
+      }
+    };
+    navigator.serviceWorker.addEventListener("message", handler);
+    return () => navigator.serviceWorker.removeEventListener("message", handler);
+  }, []);
+}
 
 // Global heartbeat — fires every 30s on every authenticated screen so that
 // `lastSeenAt` stays fresh and buyers can submit proof while the seller is on
@@ -40,6 +55,7 @@ function useHeartbeat() {
 
 export default function Layout({ children, showBottomNav = true }: LayoutProps) {
   useHeartbeat();
+  usePushSound();
   return (
     <div className="min-h-[100dvh] w-full bg-muted/30 flex justify-center">
       <div className="w-full max-w-[430px] bg-background min-h-[100dvh] shadow-xl relative overflow-hidden">
