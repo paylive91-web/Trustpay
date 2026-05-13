@@ -221,7 +221,7 @@ export default function Sell() {
 
       <div className="p-4 space-y-4">
         {/* Premium matching hero */}
-        <Card className="overflow-hidden border-none shadow-2xl text-white" style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #4c1d95 35%, #7c3aed 65%, #c026d3 100%)" }}>
+        <Card className="overflow-hidden border-none shadow-2xl text-gray-900" style={{ background: "linear-gradient(135deg, #fff8f0 0%, #fef0dc 60%, #fde8c8 100%)" }}>
           <CardContent className="p-0">
             {/* Animated background grid */}
             <div className="relative overflow-hidden">
@@ -233,16 +233,16 @@ export default function Sell() {
                   <div>
                     {/* Top bar */}
                     <div className="flex items-center justify-between mb-5">
-                      <div className="flex items-center gap-2 bg-emerald-400/20 border border-emerald-400/40 rounded-full px-3 py-1">
+                      <div className="flex items-center gap-2 bg-emerald-100 border border-emerald-300 rounded-full px-3 py-1">
                         <span className="relative flex h-2.5 w-2.5">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
-                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
                         </span>
-                        <span className="text-xs font-black tracking-widest text-emerald-300 uppercase">You're Live</span>
+                        <span className="text-xs font-black tracking-widest text-emerald-700 uppercase">You're Live</span>
                       </div>
                       <div className="text-right">
-                        <div className="text-[10px] text-white/60 uppercase tracking-wider">Time left</div>
-                        <div className="font-mono text-xl font-black text-white">{fmtCountdown(remaining)}</div>
+                        <div className="text-[10px] text-gray-500 uppercase tracking-wider">Time left</div>
+                        <div className="font-mono text-xl font-black text-gray-900">{fmtCountdown(remaining)}</div>
                       </div>
                     </div>
 
@@ -392,21 +392,21 @@ export default function Sell() {
 
                     {/* Compact 4-col stats: Amount | Held | In Queue | Locked */}
                     <div className="grid grid-cols-4 gap-1.5 mb-3">
-                      <div className="rounded-xl bg-white/10 border border-white/10 p-2 text-center">
-                        <div className="text-[9px] uppercase tracking-wider text-white/55">Amount</div>
-                        <div className="text-sm font-black leading-tight mt-0.5">₹{balance.toFixed(0)}</div>
+                      <div className="rounded-xl bg-orange-100 border border-orange-200 p-2 text-center">
+                        <div className="text-[9px] uppercase tracking-wider text-gray-500">Amount</div>
+                        <div className="text-sm font-black leading-tight mt-0.5 text-gray-900">₹{balance.toFixed(0)}</div>
                       </div>
-                      <div className={`rounded-xl p-2 text-center border ${Number(heldBalance) > 0 ? "bg-amber-500/20 border-amber-400/40" : "bg-white/10 border-white/10"}`}>
-                        <div className={`text-[9px] uppercase tracking-wider ${Number(heldBalance) > 0 ? "text-amber-300" : "text-white/55"}`}>Held</div>
-                        <div className={`text-sm font-black leading-tight mt-0.5 ${Number(heldBalance) > 0 ? "text-amber-300" : ""}`}>₹{Number(heldBalance).toFixed(0)}</div>
+                      <div className={`rounded-xl p-2 text-center border ${Number(heldBalance) > 0 ? "bg-amber-100 border-amber-300" : "bg-orange-100 border-orange-200"}`}>
+                        <div className={`text-[9px] uppercase tracking-wider ${Number(heldBalance) > 0 ? "text-amber-700" : "text-gray-500"}`}>Held</div>
+                        <div className={`text-sm font-black leading-tight mt-0.5 ${Number(heldBalance) > 0 ? "text-amber-700" : "text-gray-900"}`}>₹{Number(heldBalance).toFixed(0)}</div>
                       </div>
-                      <div className="rounded-xl bg-white/10 border border-white/10 p-2 text-center">
-                        <div className="text-[9px] uppercase tracking-wider text-white/55">In Queue</div>
-                        <div className="text-sm font-black leading-tight mt-0.5">{matching?.available || 0}</div>
+                      <div className="rounded-xl bg-orange-100 border border-orange-200 p-2 text-center">
+                        <div className="text-[9px] uppercase tracking-wider text-gray-500">In Queue</div>
+                        <div className="text-sm font-black leading-tight mt-0.5 text-gray-900">{matching?.available || 0}</div>
                       </div>
-                      <div className={`rounded-xl p-2 text-center border ${(matching?.locked || 0) > 0 ? "bg-emerald-500/25 border-emerald-400/40" : "bg-white/10 border-white/10"}`}>
-                        <div className={`text-[9px] uppercase tracking-wider ${(matching?.locked || 0) > 0 ? "text-emerald-300" : "text-white/55"}`}>Locked 🔒</div>
-                        <div className={`text-sm font-black leading-tight mt-0.5 ${(matching?.locked || 0) > 0 ? "text-emerald-300" : ""}`}>{matching?.locked || 0}</div>
+                      <div className={`rounded-xl p-2 text-center border ${(matching?.locked || 0) > 0 ? "bg-emerald-100 border-emerald-300" : "bg-orange-100 border-orange-200"}`}>
+                        <div className={`text-[9px] uppercase tracking-wider ${(matching?.locked || 0) > 0 ? "text-emerald-700" : "text-gray-500"}`}>Locked 🔒</div>
+                        <div className={`text-sm font-black leading-tight mt-0.5 ${(matching?.locked || 0) > 0 ? "text-emerald-700" : "text-gray-900"}`}>{matching?.locked || 0}</div>
                       </div>
                     </div>
 
@@ -424,11 +424,11 @@ export default function Sell() {
                     )}
 
                     {/* Sell Reward row — always visible */}
-                    <div className="rounded-xl bg-emerald-500/15 border border-emerald-400/25 px-3 py-2 mb-3 flex items-center justify-between">
-                      <span className="text-xs text-emerald-200 flex items-center gap-1.5">
+                    <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 mb-3 flex items-center justify-between">
+                      <span className="text-xs text-emerald-700 flex items-center gap-1.5">
                         <Sparkles className="w-3 h-3" /> Sell Reward
                       </span>
-                      <span className="text-sm font-black text-emerald-300">
+                      <span className="text-sm font-black text-emerald-600">
                         ₹{(balance * sellRewardPct / 100).toFixed(2)}
                       </span>
                     </div>
@@ -457,12 +457,12 @@ export default function Sell() {
                         msg = "🔥 Stay online — a buyer could lock any second.";
                       }
                       const cls = tone === "rose"
-                        ? "bg-rose-500/20 border-rose-400/35 text-rose-100"
+                        ? "bg-rose-50 border-rose-200 text-rose-700"
                         : tone === "emerald"
-                        ? "bg-emerald-500/15 border-emerald-400/30 text-emerald-100"
+                        ? "bg-emerald-50 border-emerald-200 text-emerald-700"
                         : tone === "white"
-                        ? "bg-white/10 border-white/20 text-white/70"
-                        : "bg-amber-400/15 border-amber-400/25 text-amber-200";
+                        ? "bg-orange-50 border-orange-200 text-gray-500"
+                        : "bg-amber-50 border-amber-200 text-amber-700";
                       return (
                         <div className={`rounded-xl border px-3 py-2 mb-4 text-center ${cls}`}>
                           <span className="text-xs font-medium">{msg}</span>
@@ -474,45 +474,45 @@ export default function Sell() {
                   /* ── Idle state ── */
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2 text-white/60 text-xs uppercase tracking-widest">
+                      <div className="flex items-center gap-2 text-gray-500 text-xs uppercase tracking-widest">
                         <Sparkles className="w-3.5 h-3.5" /> Sell Matching
                       </div>
-                      <span className="text-xs bg-white/10 px-2.5 py-1 rounded-full text-white/60">Idle</span>
+                      <span className="text-xs bg-orange-100 px-2.5 py-1 rounded-full text-gray-500">Idle</span>
                     </div>
 
-                    <div className="text-3xl sm:text-4xl font-black tracking-tight leading-tight">
+                    <div className="text-3xl sm:text-4xl font-black tracking-tight leading-tight text-gray-900">
                       Turn your balance<br />
-                      <span className="text-fuchsia-300">into earnings.</span>
+                      <span className="text-orange-500">into earnings.</span>
                     </div>
-                    <p className="mt-2 text-sm text-white/75 leading-relaxed">
+                    <p className="mt-2 text-sm text-gray-600 leading-relaxed">
                       Go live for 15 minutes and let buyers pay you directly.
                     </p>
 
                     {/* Sell Reward — only the calculated amount */}
-                    <div className="mt-4 rounded-2xl bg-gradient-to-br from-emerald-400/20 via-white/10 to-emerald-300/15 border border-emerald-300/30 p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 text-xs text-emerald-200 uppercase tracking-wider">
+                    <div className="mt-4 rounded-2xl bg-emerald-50 border border-emerald-200 p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs text-emerald-700 uppercase tracking-wider">
                         <Sparkles className="w-3.5 h-3.5" /> Sell Reward
                       </div>
-                      <div className="text-2xl font-black text-emerald-300">
+                      <div className="text-2xl font-black text-emerald-600">
                         ₹{(balance * sellRewardPct / 100).toFixed(2)}
                       </div>
                     </div>
 
                     <div className="mt-4 grid grid-cols-3 gap-2">
-                      <div className="rounded-2xl bg-white/10 p-3 text-center">
-                        <Wallet className="w-4 h-4 mx-auto opacity-60 mb-1" />
-                        <div className="text-[10px] uppercase tracking-wider text-white/60">Balance</div>
-                        <div className="text-sm font-bold">₹{balance.toFixed(0)}</div>
+                      <div className="rounded-2xl bg-orange-100 border border-orange-200 p-3 text-center">
+                        <Wallet className="w-4 h-4 mx-auto text-gray-400 mb-1" />
+                        <div className="text-[10px] uppercase tracking-wider text-gray-500">Balance</div>
+                        <div className="text-sm font-bold text-gray-900">₹{balance.toFixed(0)}</div>
                       </div>
-                      <div className="rounded-2xl bg-white/10 p-3 text-center">
-                        <Clock className="w-4 h-4 mx-auto opacity-60 mb-1" />
-                        <div className="text-[10px] uppercase tracking-wider text-white/60">Held</div>
-                        <div className="text-sm font-bold">₹{Number(heldBalance).toFixed(0)}</div>
+                      <div className="rounded-2xl bg-orange-100 border border-orange-200 p-3 text-center">
+                        <Clock className="w-4 h-4 mx-auto text-gray-400 mb-1" />
+                        <div className="text-[10px] uppercase tracking-wider text-gray-500">Held</div>
+                        <div className="text-sm font-bold text-gray-900">₹{Number(heldBalance).toFixed(0)}</div>
                       </div>
-                      <div className="rounded-2xl bg-white/10 p-3 text-center">
-                        <ShieldCheck className="w-4 h-4 mx-auto opacity-60 mb-1" />
-                        <div className="text-[10px] uppercase tracking-wider text-white/60">Trust</div>
-                        <div className="text-sm font-bold">{trustScore}</div>
+                      <div className="rounded-2xl bg-orange-100 border border-orange-200 p-3 text-center">
+                        <ShieldCheck className="w-4 h-4 mx-auto text-gray-400 mb-1" />
+                        <div className="text-[10px] uppercase tracking-wider text-gray-500">Trust</div>
+                        <div className="text-sm font-bold text-gray-900">{trustScore}</div>
                       </div>
                     </div>
                   </div>
@@ -520,7 +520,7 @@ export default function Sell() {
 
                 <div className="mt-4">
                   {isMatching ? (
-                    <Button onClick={() => stopMut.mutate()} disabled={stopMut.isPending} className="w-full h-12 text-base font-bold rounded-2xl bg-white/15 hover:bg-white/25 border border-white/30 text-white shadow-lg backdrop-blur">
+                    <Button onClick={() => stopMut.mutate()} disabled={stopMut.isPending} className="w-full h-12 text-base font-bold rounded-2xl shadow-xl border border-orange-300/40 text-white hover:scale-[1.01] transition-transform" style={{ background: "linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%)" }}>
                       {stopMut.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <WifiOff className="w-4 h-4 mr-2" />}
                       Stop Matching
                     </Button>
