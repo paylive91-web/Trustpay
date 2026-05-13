@@ -6,35 +6,12 @@ import {
   AlertCircle, CheckCircle2, Clock, Banknote, Smartphone, Upload, Star, Info,
 } from "lucide-react";
 
-const BASE = import.meta.env.BASE_URL;
-
-function PrivacyImg({ src, overlays, alt }: {
-  src: string;
-  alt: string;
-  overlays?: { top: string; left: string; width: string; height: string }[];
-}) {
-  return (
-    <div className="relative w-full rounded-2xl overflow-hidden border border-slate-200 shadow-md bg-black">
-      <img src={src} alt={alt} className="w-full block" loading="lazy" />
-      {overlays?.map((o, i) => (
-        <div
-          key={i}
-          className="absolute bg-slate-800 rounded"
-          style={{ top: o.top, left: o.left, width: o.width, height: o.height }}
-        />
-      ))}
-    </div>
-  );
-}
-
 type BuyStep = {
   num: number;
   icon: React.ReactNode;
   title: string;
   desc: string;
   tip?: string;
-  img?: string;
-  overlays?: { top: string; left: string; width: string; height: string }[];
 };
 
 const BUY_STEPS: BuyStep[] = [
@@ -44,10 +21,6 @@ const BUY_STEPS: BuyStep[] = [
     title: "Home pe 'BUY' dabao",
     desc: "Home screen pe neela 'BUY' button dabao.",
     tip: "Make sure tumhara UPI ID linked hai — 'Manage' se dekh sakte ho.",
-    img: `${BASE}guide-buy-1-home.jpg`,
-    overlays: [
-      { top: "3.5%", left: "52%", width: "43%", height: "5.5%" },
-    ],
   },
   {
     num: 2,
@@ -55,7 +28,6 @@ const BUY_STEPS: BuyStep[] = [
     title: "Order chunno aur 'Buy' dabao",
     desc: "Available Orders mein se koi bhi order chuno aur 'Buy' button dabao. Amount, Income aur Quota sab dikh raha hai.",
     tip: "Online wale orders prefer karo — seller turant confirm karega.",
-    img: `${BASE}guide-buy-2-orders.jpg`,
   },
   {
     num: 3,
@@ -63,11 +35,6 @@ const BUY_STEPS: BuyStep[] = [
     title: "QR scan karo ya UPI ID copy karo",
     desc: "Order lock hone ke baad seller ka UPI ID milega. QR scan karo ya Copy button se ID copy karo — exactly itni hi amount bhejo jo screen pe dikh rahi hai.",
     tip: "Payment karte waqt UPI remark/note mein kuch mat likho.",
-    img: `${BASE}guide-buy-3-payment.jpg`,
-    overlays: [
-      { top: "67.5%", left: "2%", width: "67%", height: "5%" },
-      { top: "71%",  left: "2%", width: "55%", height: "4%" },
-    ],
   },
   {
     num: 4,
@@ -75,11 +42,6 @@ const BUY_STEPS: BuyStep[] = [
     title: "UTR daalo aur Screenshot upload karo",
     desc: "Payment ke baad apne UPI app se UTR number (12 digit) copy karo — isko 'UTR / Reference Number' field mein daalo. Phir payment ka screenshot upload karo.",
     tip: "UTR number GPay / PhonePe / Paytm ke transaction history mein milta hai.",
-    img: `${BASE}guide-buy-4-utr.jpg`,
-    overlays: [
-      { top: "7%", left: "2%", width: "67%", height: "5%" },
-      { top: "11%", left: "2%", width: "55%", height: "4%" },
-    ],
   },
   {
     num: 5,
@@ -87,10 +49,6 @@ const BUY_STEPS: BuyStep[] = [
     title: "Confirm karo aur 'Yes, Submit' dabao",
     desc: "Submit Payment Proof dabane pe ek confirmation popup aayega. Dhyan se padho aur 'Yes, Submit' dabao — sirf tab jab tumne actually payment kar di ho.",
     tip: "Fake UTR ya galat screenshot submit karne par -10 Trust penalty lagti hai.",
-    img: `${BASE}guide-buy-5-confirm.jpg`,
-    overlays: [
-      { top: "63%", left: "2%", width: "68%", height: "5%" },
-    ],
   },
   {
     num: 6,
@@ -98,19 +56,12 @@ const BUY_STEPS: BuyStep[] = [
     title: "Seller ka wait karo",
     desc: "Proof submit hone ke baad 'Payment submitted — waiting for seller' screen dikhegi. Seller 15 minute mein confirm karega — auto-confirm countdown bhi dikh raha hai.",
     tip: "Agar seller 15 minute mein confirm nahi karta, Dispute button activate ho jaayega.",
-    img: `${BASE}guide-buy-6-submitted.jpg`,
   },
   {
     num: 7,
     icon: <Star className="w-5 h-5 text-blue-500" />,
     title: "Confirmed! Orders mein dekho",
     desc: "Seller confirm karte hi tumhara order 'Confirmed' ho jaayega aur reward ke saath wallet mein amount aa jaayegi. My Orders mein sabkuch track kar sakte ho.",
-    img: `${BASE}guide-buy-7-orders.jpg`,
-    overlays: [
-      { top: "53%", left: "37%", width: "55%", height: "3.5%" },
-      { top: "66%", left: "37%", width: "55%", height: "3.5%" },
-      { top: "79%", left: "37%", width: "55%", height: "3.5%" },
-    ],
   },
 ];
 
@@ -213,11 +164,6 @@ function BuySection() {
               </div>
               <p className="text-sm text-gray-600 leading-relaxed pl-9">{step.desc}</p>
               {step.tip && <div className="pl-9"><TipBox tip={step.tip} color="bg-blue-50 text-blue-800" /></div>}
-              {step.img && (
-                <div className="pl-2 pr-0">
-                  <PrivacyImg src={step.img} alt={`Step ${step.num}`} overlays={step.overlays} />
-                </div>
-              )}
             </div>
           ))}
 
