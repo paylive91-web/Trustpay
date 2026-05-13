@@ -93,13 +93,13 @@ export default function NotificationPermissionGate() {
             </div>
             <div>
               <div className="text-[11px] font-bold uppercase tracking-widest text-orange-100">TrustPay</div>
-              <div className="text-[17px] font-extrabold text-white leading-tight">Enable Payment Notifications</div>
+              <div className="text-[17px] font-extrabold text-white leading-tight">Stay Updated on Payments</div>
             </div>
           </div>
         </div>
         <div className="bg-white px-5 py-4">
           <p className="text-[14px] text-slate-600 leading-relaxed mb-4">
-            Allow notifications to get instant alerts for payments, order updates, and disputes — even when the app is closed.
+            Allow notifications to receive instant payment alerts, order confirmations, and important updates directly on your phone.
           </p>
           <Button
             className="w-full h-12 rounded-2xl text-white font-bold text-[15px]"
