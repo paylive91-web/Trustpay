@@ -2,7 +2,6 @@ import React, { useEffect } from "react";
 import BottomNav from "./bottom-nav";
 import PaymentLockBanner from "./payment-lock-banner";
 import SellerOrderBanner from "./seller-order-banner";
-import SellerAlertsPopup from "./seller-alerts-popup";
 import SellerOfflineDisputePopup from "./seller-offline-dispute-popup";
 import { getAuthToken } from "@/lib/auth";
 
@@ -47,7 +46,6 @@ export default function Layout({ children, showBottomNav = true }: LayoutProps) 
         <div className={`min-h-[100dvh] overflow-y-auto ${showBottomNav ? "pb-28" : ""}`}>
           {children}
         </div>
-        <SellerAlertsPopup />
         <SellerOfflineDisputePopup />
         <PaymentLockBanner />
         <SellerOrderBanner />
