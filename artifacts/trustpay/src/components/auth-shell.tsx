@@ -50,16 +50,14 @@ export function AuthShell({
             {/* Brand block */}
             <div className="flex flex-col items-center mb-5">
               <div className="relative mb-3">
-                {/* Orange glow behind logo */}
-                <div className="absolute inset-0 rounded-[28px] bg-orange-400/30 blur-2xl scale-125 animate-pulse" />
-                <div className="absolute -inset-1 rounded-[30px] bg-gradient-to-br from-orange-200/50 to-blue-200/30 blur-md" />
-                <div className="relative rounded-[26px] p-[2px] bg-gradient-to-br from-orange-100 via-white to-blue-50 shadow-lg">
-                  <img
-                    src={logoUrl}
-                    alt={`${appName} Logo`}
-                    className="relative w-[68px] h-[68px] rounded-[24px] object-contain bg-white shadow-md"
-                  />
-                </div>
+                {/* Orange glow — no white box, logo transparent */}
+                <div className="absolute inset-0 rounded-full bg-orange-400/20 blur-2xl scale-125 animate-pulse" />
+                <img
+                  src={logoUrl}
+                  alt={`${appName} Logo`}
+                  className="relative w-[88px] h-[88px] object-contain"
+                  style={{ filter: "drop-shadow(0 6px 18px rgba(234,88,12,0.25))" }}
+                />
               </div>
               <div className="text-[26px] font-extrabold tracking-tight text-slate-900 drop-shadow-sm">
                 {appName}
