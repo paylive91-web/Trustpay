@@ -182,15 +182,18 @@ export default function SellerAlertsPopup() {
   if (lockedAlert && !current) {
     return (
       <div className="fixed bottom-20 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
-        <div className="pointer-events-auto w-full max-w-[440px] rounded-3xl overflow-hidden shadow-[0_12px_48px_rgba(234,88,12,0.35)] animate-in slide-in-from-bottom-4 duration-300">
-          <div className="bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0 animate-pulse">
-              <Lock className="w-5 h-5 text-white" />
+        <div className="pointer-events-auto w-full max-w-[440px] rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.35)] animate-in slide-in-from-bottom-4 duration-300">
+          {/* Rainbow top border */}
+          <div style={{ height: 3, background: "linear-gradient(90deg, #a78bfa, #38bdf8, #34d399, #fbbf24, #f97316)" }} />
+          <div className="px-4 py-3 flex items-center gap-3" style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #2d2a6e 60%, #1e3a5f 100%)" }}>
+            <div className="w-9 h-9 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center shrink-0">
+              <Lock className="w-4 h-4 text-amber-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[11px] font-bold uppercase tracking-widest text-orange-100">Order Locked</div>
-              <div className="text-[22px] font-extrabold text-white">₹{Number(lockedAlert.amount).toFixed(0)}</div>
+              <div className="text-[11px] font-semibold text-white/55 uppercase tracking-widest">Order Locked</div>
+              <div className="text-[17px] font-black text-white leading-tight">₹{Number(lockedAlert.amount).toFixed(0)}</div>
             </div>
+            <a href="/orders" className="text-xs font-bold bg-white text-slate-900 rounded-full px-3 py-1.5 shrink-0">Open</a>
           </div>
         </div>
       </div>
@@ -225,147 +228,101 @@ export default function SellerAlertsPopup() {
                   <BellRing className="h-6 w-6 shrink-0 animate-pulse" />
                 </div>
               </DialogHeader>
-              <div className="p-4 space-y-4">
-                {/* Verification banner — surfaces system OCR fraud-check
-                    result inline so the seller cannot miss it. Notifications
-                    in the bell tray were being ignored; this banner sits
-                    directly above the amount block where the eye lands first. */}
+              <div className="p-3 space-y-2.5">
+                {/* Verification banners — compact */}
                 {verification.kind === "flagged" && (
-                  <div
-                    role="alert"
-                    className="rounded-2xl border-2 border-red-400 bg-gradient-to-br from-red-50 to-rose-50 p-4 shadow-sm"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="rounded-full bg-red-100 p-2 shrink-0">
-                        <ShieldAlert className="h-5 w-5 text-red-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-black text-red-700 uppercase tracking-wide">
-                          System flagged this payment
-                        </div>
-                        <p className="text-[12px] text-red-700/90 mt-0.5 font-medium">
-                          Verify carefully in your bank app before confirming.
-                        </p>
-                        <ul className="mt-2 space-y-1.5">
-                          {verification.issues.map((issue, i) => (
-                            <li key={i} className="flex items-start gap-2 text-[13px] text-red-800 leading-snug">
-                              <span className="text-red-500 font-bold mt-0.5">•</span>
-                              <span>{issue}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                  <div role="alert" className="rounded-xl border border-red-300 bg-red-50 p-2.5 flex items-start gap-2">
+                    <ShieldAlert className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-black text-red-700 uppercase tracking-wide">Flagged — verify in bank app</div>
+                      <ul className="mt-1 space-y-0.5">
+                        {verification.issues.map((issue, i) => (
+                          <li key={i} className="text-[11px] text-red-800 leading-snug">• {issue}</li>
+                        ))}
+                      </ul>
                     </div>
                   </div>
                 )}
                 {verification.kind === "pending" && (
-                  <div role="status" aria-live="polite" className="rounded-2xl border border-sky-200 bg-sky-50 p-3 flex items-center gap-3">
-                    <Loader2 className="h-4 w-4 text-sky-600 animate-spin shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-semibold text-sky-800">
-                        System verification in progress
-                      </div>
-                      <p className="text-[11px] text-sky-700/80 leading-snug">
-                        Screenshot check chal raha hai. Aap abhi bhi YES dabaa sakte hain — payment bank mein check karein.
-                      </p>
-                    </div>
+                  <div role="status" className="rounded-xl border border-sky-200 bg-sky-50 p-2.5 flex items-center gap-2">
+                    <Loader2 className="h-3.5 w-3.5 text-sky-600 animate-spin shrink-0" />
+                    <div className="text-[11px] text-sky-800 font-medium">Verifying screenshot — check bank app before confirming</div>
                   </div>
                 )}
                 {verification.kind === "partial" && (
-                  <div role="status" aria-live="polite" className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-3 flex items-start gap-3">
-                    <Search className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
+                  <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-2.5 flex items-start gap-2">
+                    <Search className="h-3.5 w-3.5 text-amber-700 shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-bold text-amber-800">
-                        Could not auto-verify
-                      </div>
-                      <ul className="mt-1 space-y-0.5">
-                        {verification.notes.map((n, i) => (
-                          <li key={i} className="text-[12px] text-amber-800/90 leading-snug">• {n}</li>
-                        ))}
-                      </ul>
-                      <p className="text-[11px] text-amber-700 mt-1.5 font-medium">
-                        Match the amount and UTR manually before confirming.
-                      </p>
+                      <div className="text-[11px] font-bold text-amber-800">Could not auto-verify — match amount & UTR manually</div>
+                      {verification.notes.map((n, i) => (
+                        <div key={i} className="text-[10px] text-amber-800/90">• {n}</div>
+                      ))}
                     </div>
                   </div>
                 )}
                 {verification.kind === "clean" && (
-                  <div role="status" aria-live="polite" className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 flex items-center gap-3">
-                    <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-semibold text-emerald-800">
-                        System verified — amount and UTR match
-                      </div>
-                      <p className="text-[11px] text-emerald-700/80 leading-snug">
-                        Still confirm the credit in your bank app before pressing YES.
-                      </p>
-                    </div>
+                  <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 flex items-center gap-2">
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                    <div className="text-[11px] text-emerald-800 font-medium">Verified — amount & UTR match. Still check bank app.</div>
                   </div>
                 )}
-                <div className={`rounded-2xl p-4 ${isFlagged ? "bg-red-50/40 border border-red-200" : "bg-muted/50"}`}>
-                  <div className="text-sm text-muted-foreground">Amount</div>
-                  <div className="text-3xl font-black">₹{Number(current.amount).toFixed(2)}</div>
-                  {current.utrNumber && (
-                    <div className="text-sm font-mono font-semibold mt-2 bg-white border border-slate-200 rounded-xl px-3 py-2">
-                      UTR: {current.utrNumber}
-                    </div>
-                  )}
-                  {current.upiId && (
-                    <div className="text-sm mt-2 bg-white border border-slate-200 rounded-xl px-3 py-2 space-y-0.5">
-                      <div className="text-xs text-muted-foreground">Payment received on</div>
-                      <div className="font-semibold text-slate-800">{current.upiId}</div>
-                      <div className="text-xs text-orange-600 font-medium">
-                        {/ybl|ibl/i.test(current.upiId) ? "PhonePe" :
-                         /paytm/i.test(current.upiId) ? "Paytm" :
-                         /okaxis|okicici|oksbi|okhdfcbank|okbizaxis/i.test(current.upiId) ? "Google Pay" :
-                         /axisbank/i.test(current.upiId) ? "Axis Bank" :
-                         /hdfcbank/i.test(current.upiId) ? "HDFC Bank" :
-                         /sbi/i.test(current.upiId) ? "SBI" :
-                         "UPI"}
-                      </div>
-                    </div>
-                  )}
-                  <div className="text-xs text-orange-700 mt-2 font-medium">
-                    Auto-confirms in {fmtCountdown(remaining)}
+
+                {/* Amount + UTR + UPI in one compact block */}
+                <div className={`rounded-xl px-3 py-2.5 ${isFlagged ? "bg-red-50 border border-red-200" : "bg-muted/50"}`}>
+                  <div className="flex items-baseline justify-between">
+                    <div className="text-2xl font-black">₹{Number(current.amount).toFixed(2)}</div>
+                    <div className="text-xs text-orange-700 font-medium">Auto-confirms {fmtCountdown(remaining)}</div>
                   </div>
+                  {(current.utrNumber || current.upiId) && (
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {current.utrNumber && (
+                        <span className="text-xs font-mono bg-white border border-slate-200 rounded-lg px-2 py-1 font-semibold">UTR: {current.utrNumber}</span>
+                      )}
+                      {current.upiId && (
+                        <span className="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1">
+                          {current.upiId} · <span className="text-orange-600 font-semibold">
+                            {/ybl|ibl/i.test(current.upiId) ? "PhonePe" :
+                             /paytm/i.test(current.upiId) ? "Paytm" :
+                             /okaxis|okicici|oksbi|okhdfcbank|okbizaxis/i.test(current.upiId) ? "GPay" :
+                             /axisbank/i.test(current.upiId) ? "Axis" :
+                             /hdfcbank/i.test(current.upiId) ? "HDFC" :
+                             /sbi/i.test(current.upiId) ? "SBI" : "UPI"}
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div className="rounded-2xl border-2 border-dashed border-primary/40 bg-primary/5 p-4">
-                  <button
-                    type="button"
-                    onClick={() => openProof(current.screenshotUrl)}
-                    className="w-full text-left"
-                  >
-                    <div className="text-base font-black tracking-wide text-primary">VIEW PAYMENT PROOF</div>
-                    <div className="text-sm text-muted-foreground mt-1">Tap to open the buyer's screenshot in full screen.</div>
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 gap-2">
+
+                {/* Proof + action buttons */}
+                <button
+                  type="button"
+                  onClick={() => openProof(current.screenshotUrl)}
+                  className="w-full rounded-xl border border-dashed border-primary/40 bg-primary/5 px-3 py-2 text-left"
+                >
+                  <div className="text-xs font-black tracking-wide text-primary">VIEW PAYMENT PROOF →</div>
+                </button>
+
+                <div className="grid grid-cols-2 gap-2">
                   <Button
-                    className={`h-12 ${
-                      isFlagged
-                        ? "bg-amber-600 hover:bg-amber-700 ring-2 ring-red-300 ring-offset-2"
-                        : "bg-green-600 hover:bg-green-700"
-                    }`}
+                    className={`h-10 text-sm ${isFlagged ? "bg-amber-600 hover:bg-amber-700" : "bg-green-600 hover:bg-green-700"}`}
                     onClick={() => setShowHistoryWarning(true)}
                   >
-                    {isFlagged ? "YES — Confirm anyway" : "YES — Payment Received"}
+                    {isFlagged ? "Confirm anyway" : "YES — Received"}
                   </Button>
                   <Button
                     variant={isFlagged ? "destructive" : "outline"}
-                    className="h-11"
+                    className="h-10 text-sm"
                     onClick={() => setShowDisputeWarning(true)}
                   >
-                    NOT received — Open Dispute
+                    Dispute
                   </Button>
-                  {isFlagged && (
-                    <p className="text-[11px] text-center text-red-700 font-medium leading-snug">
-                      Confirm only if the credit is visible in your bank statement. False confirmations cannot be reversed.
-                    </p>
-                  )}
                 </div>
-                <div className="text-[11px] text-center text-muted-foreground">
-                  This popup will stay open until you confirm or dispute.
-                </div>
+                {isFlagged && (
+                  <p className="text-[10px] text-center text-red-700 font-medium leading-snug">
+                    Confirm only if credit is visible in your bank statement.
+                  </p>
+                )}
               </div>
           </>
         </DialogContent>
