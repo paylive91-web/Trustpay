@@ -9,11 +9,7 @@ self.addEventListener('push', (e) => {
   const title = data.title || '';
   const isPaymentAlert =
     title.includes('Confirm') ||
-    title.includes('Payment') ||
-    title.includes('locked') ||
-    title.includes('🔒') ||
     title.includes('🚨') ||
-    title.includes('✅') ||
     title.includes('ACTION REQUIRED');
 
   e.waitUntil(
