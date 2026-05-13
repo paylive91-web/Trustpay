@@ -60,7 +60,7 @@ export async function getMatchingDiagnostics(userId: number) {
   const chunkMin = isAdminSeller
     ? (parseInt(settings.adminChunkMin) || 5000)
     : (parseInt(settings.chunkMin) || 100);
-  const flatCommission = parseInt(settings.platformCommissionPerChunk) || 1;
+  const flatCommission = Math.max(0, parseInt(settings.platformCommissionPerChunk) || 0);
   const feeTiers = parseFeeTiers(settings.feeTiers);
   const maxTierFee = feeTiers.reduce((m, t) => Math.max(m, t.fee), flatCommission);
   // `balance` is already the seller's spendable amount — at lock time we move
@@ -150,10 +150,10 @@ async function regenerateChunksForUserInner(userId: number) {
   ]);
   let chunkMin = parseInt(settings.chunkMin) || 100;
   let chunkMax = parseInt(settings.chunkMax) || 50000;
-  const flatCommission = parseInt(settings.platformCommissionPerChunk) || 1;
+  const flatCommission = Math.max(0, parseInt(settings.platformCommissionPerChunk) || 0);
   const feeTiers = parseFeeTiers(settings.feeTiers);
   // Sweet-spot band: most chunks fall in this range so we maximize the
-  // per-chunk ₹1 platform fee while avoiding both tiny dust chunks and
+  // per-chunk platform fee while avoiding both tiny dust chunks and
   // oversized single chunks. Bias = probability a chunk is drawn from the
   // sweet band vs the full [chunkMin, chunkMax] tail range.
   const sweetMin = parseInt(settings.chunkSweetMin) || 300;
@@ -237,13 +237,21 @@ async function regenerateChunksForUserInner(userId: number) {
   const rows = chunks.map((gross) => {
     const upi = upis[rand(0, upis.length - 1)];
     const tierFee = feeForAmount(gross, feeTiers, flatCommission);
-    // Round buyer-facing amount DOWN to nearest ₹100 so the displayed
-    // order amount is always a clean hundred (e.g. ₹5000, not ₹4999).
-    // The difference is absorbed by the platform fee — seller's gross
-    // deduction stays the same.
-    const rawBuyerAmount = gross - tierFee;
-    const buyerAmount = Math.floor(rawBuyerAmount / 100) * 100;
-    const actualFee = gross - buyerAmount; // fee absorbs rounding gap
+    // When a fee is configured, round the buyer-facing amount DOWN to the
+    // nearest ₹100 for a clean display (e.g. ₹5000, not ₹4999) and let
+    // the platform fee absorb the rounding gap.
+    // When fee is zero, use the exact gross so no hidden "rounding fee"
+    // is charged to the seller.
+    let buyerAmount: number;
+    let actualFee: number;
+    if (tierFee > 0) {
+      const rawBuyerAmount = gross - tierFee;
+      buyerAmount = Math.floor(rawBuyerAmount / 100) * 100;
+      actualFee = gross - buyerAmount;
+    } else {
+      buyerAmount = gross;
+      actualFee = 0;
+    }
     return {
       userId,
       type: "withdrawal" as const,
