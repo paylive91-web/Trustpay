@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { API_BASE } from "@/lib/api-config";
 import { getAuthToken } from "@/lib/auth";
 
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
+function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = atob(base64);
-  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+  return new Uint8Array([...rawData].map((c) => c.charCodeAt(0)));
 }
 
 async function doSubscribe() {
