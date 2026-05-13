@@ -420,17 +420,21 @@ router.post("/submit/:id", requireAuth, async (req, res) => {
     userId: chunk.userId,
     kind: "payment_pending_confirmation",
     title: sellerWasOffline
-      ? `🚨 URGENT: Buyer paid ₹${chunk.amount} — confirm now!`
-      : `Buyer paid ₹${chunk.amount} — please confirm`,
+      ? `🚨 ACTION REQUIRED: Confirm ₹${chunk.amount} payment!`
+      : `✅ Confirm ₹${chunk.amount} Payment Now`,
     body: sellerWasOffline
-      ? `A buyer has submitted payment proof for order #${id} while you were away from the app. Open the app NOW and confirm the payment, otherwise the buyer can open a dispute in 15 minutes.`
-      : `A buyer has submitted payment proof for order #${id}. Please review the screenshot and UTR, then confirm or dispute.`,
+      ? `A buyer submitted payment proof while you were offline. You have 15 minutes to confirm — open the app NOW or the buyer can raise a dispute.`
+      : `A buyer has submitted payment proof for ₹${chunk.amount}. Open the app, review the screenshot and UTR, then tap CONFIRM PAYMENT.`,
     severity: "critical",
   }).catch(() => {});
   sendPushToUser(
     chunk.userId,
-    sellerWasOffline ? `🚨 Buyer paid ₹${chunk.amount} — confirm now!` : `Buyer paid ₹${chunk.amount}`,
-    sellerWasOffline ? "Payment received while offline. Open app and confirm NOW!" : "Payment proof submitted. Please review and confirm.",
+    sellerWasOffline
+      ? `🚨 Confirm ₹${chunk.amount} Payment — Act Now!`
+      : `✅ Confirm ₹${chunk.amount} Payment`,
+    sellerWasOffline
+      ? "Buyer paid while you were offline. Open app and confirm within 15 minutes to avoid a dispute."
+      : "Buyer has submitted payment proof. Open the app and confirm the payment now.",
     "/",
   ).catch(() => {});
 
