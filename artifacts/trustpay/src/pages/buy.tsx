@@ -350,6 +350,7 @@ function BuyModeTabs() {
 function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; user?: any }) {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const [, setLocation] = useLocation();
   const { data: settings } = useGetAppSettings();
   const [now, setNow] = useState(Date.now());
   const [utr, setUtr] = useState("");
@@ -382,7 +383,7 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
 
   const submitMut = useMutation({
     mutationFn: () => api(`/p2p/submit/${buy.id}`, { method: "POST", body: JSON.stringify({ utrNumber: utr, screenshotUrl, recordingUrl }) }),
-    onSuccess: () => { toast({ title: "Submitted! Seller will confirm." }); refetch(); },
+    onSuccess: () => { toast({ title: "Submitted! Seller will confirm." }); setLocation("/orders"); },
     onError: (e: any) => toast({ title: "Submit failed", description: e.message, variant: "destructive" }),
   });
 
