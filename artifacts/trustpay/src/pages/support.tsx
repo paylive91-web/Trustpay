@@ -8,7 +8,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { clearAuthToken } from "@/lib/auth";
 const logoPath = `${import.meta.env.BASE_URL}trustpay-logo.png`;
-import { Headset, LogOut, ChevronRight, Settings, FileText, Bell, Phone } from "lucide-react";
+import { Link } from "wouter";
+import { Headset, LogOut, ChevronRight, Settings, FileText, Bell, Phone, BookOpen } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function Support() {
@@ -65,6 +66,9 @@ export default function Support() {
         <Card className="border-none shadow-md overflow-hidden">
           <div className="divide-y divide-orange-50">
             <MenuItem icon={<Headset className="text-orange-500" />} label="Contact Support" onClick={handleContactSupport} />
+            <Link href="/how-to-use" className="block">
+              <MenuItem icon={<BookOpen className="text-green-500" />} label="How to Use TrustPay" />
+            </Link>
             <MenuItem icon={<FileText className="text-amber-500" />} label="Terms & Conditions" />
             <MenuItem icon={<Settings className="text-slate-500" />} label="Account Settings" />
             <MenuItem icon={<Bell className="text-violet-500" />} label="Notifications" />
