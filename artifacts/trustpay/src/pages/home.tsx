@@ -8,7 +8,7 @@ import NotificationsBell from "@/components/notifications-bell";
 const logoPath = `${import.meta.env.BASE_URL}trustpay-logo.png`;
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowDownCircle, ArrowUpCircle, ChevronRight, Coins, Download, IndianRupee, Link as LinkIcon, ShieldAlert, ShieldCheck, Sparkles, Wallet, TrendingUp, TrendingDown, AlertCircle, Award, Medal, Crown, Gem } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, ChevronRight, Coins, Download, IndianRupee, Link as LinkIcon, ShieldAlert, ShieldCheck, Sparkles, Wallet, TrendingUp, TrendingDown, AlertCircle, Award, Medal, Crown, Gem, BookOpen } from "lucide-react";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { Skeleton } from "@/components/ui/skeleton";
 import useEmblaCarousel from "embla-carousel-react";
@@ -326,6 +326,24 @@ export default function Home() {
             </div>
           </CardContent>
         </Card>
+
+        {/* ── How to Use Guide ── green tinted */}
+        <Link href="/how-to-use">
+          <Card className="border-none shadow-sm bg-green-50/70 hover:bg-green-50 transition-colors cursor-pointer">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-green-100 border border-green-200 p-2.5 rounded-xl">
+                  <BookOpen className="w-5 h-5 text-green-700" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-green-900">TrustPay Guide</h3>
+                  <p className="text-sm text-green-700/70">Buy, Sell aur Trust Score kaise kaam karta hai</p>
+                </div>
+              </div>
+              <ChevronRight className="h-5 w-5 text-green-400" />
+            </CardContent>
+          </Card>
+        </Link>
       </div>
     </Layout>
   );
