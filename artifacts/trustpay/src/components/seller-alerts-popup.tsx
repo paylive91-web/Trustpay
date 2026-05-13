@@ -243,12 +243,7 @@ export default function SellerAlertsPopup() {
                     </div>
                   </div>
                 )}
-                {verification.kind === "pending" && (
-                  <div role="status" className="rounded-xl border border-sky-200 bg-sky-50 p-2.5 flex items-center gap-2">
-                    <Loader2 className="h-3.5 w-3.5 text-sky-600 animate-spin shrink-0" />
-                    <div className="text-[11px] text-sky-800 font-medium">Verifying screenshot — check bank app before confirming</div>
-                  </div>
-                )}
+                {/* OCR pending — no spinner shown; seller should check bank app directly */}
                 {verification.kind === "partial" && (
                   <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-2.5 flex items-start gap-2">
                     <Search className="h-3.5 w-3.5 text-amber-700 shrink-0 mt-0.5" />
