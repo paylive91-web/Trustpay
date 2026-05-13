@@ -408,13 +408,12 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
       const url = await fileToDataUrl(f);
       if (kind === "shot") {
         setScreenshot(url);
+        setUploading(null);
         setScreenshotCheck({ checking: true });
-        try {
-          const res = await api("/p2p/check-screenshot", { method: "POST", body: JSON.stringify({ screenshotUrl: url }) });
-          setScreenshotCheck(res);
-        } catch {
-          setScreenshotCheck(null);
-        }
+        api("/p2p/check-screenshot", { method: "POST", body: JSON.stringify({ screenshotUrl: url }) })
+          .then((res: any) => setScreenshotCheck(res))
+          .catch(() => setScreenshotCheck(null));
+        return;
       } else {
         setRecording(url);
       }
