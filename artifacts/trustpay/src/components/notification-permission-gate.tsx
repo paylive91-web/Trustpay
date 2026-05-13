@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { API_BASE } from "@/lib/api-config";
 import { getAuthToken } from "@/lib/auth";
 
-const DISMISSED_KEY = "notif_gate_v3_dismissed_until";
+const PUSH_API = "https://api.trustpayapp.in";
+const DISMISSED_KEY = "notif_gate_v4_dismissed_until";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -13,47 +13,62 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   return new Uint8Array([...rawData].map((c) => c.charCodeAt(0)));
 }
 
-async function trySubscribe(): Promise<"ok" | "denied" | "error"> {
+async function saveSubscriptionToServer(sub: PushSubscription): Promise<boolean> {
+  const json = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
+  const token = getAuthToken();
+  if (!token) return false;
+  try {
+    const res = await fetch(`${PUSH_API}/push/subscribe`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        endpoint: json.endpoint,
+        p256dh: json.keys.p256dh,
+        auth: json.keys.auth,
+      }),
+    });
+    return res.ok;
+  } catch (e) {
+    console.error("[Push] Failed to save subscription:", e);
+    return false;
+  }
+}
+
+async function createAndSaveSubscription(): Promise<"ok" | "denied" | "error"> {
   if (!("PushManager" in window) || !("serviceWorker" in navigator)) return "error";
   try {
-    const perm = await Notification.requestPermission();
-    if (perm !== "granted") return "denied";
     const reg = await navigator.serviceWorker.ready;
+
+    const vapidRes = await fetch(`${PUSH_API}/push/vapid-public-key`);
+    if (!vapidRes.ok) { console.error("[Push] VAPID key fetch failed:", vapidRes.status); return "error"; }
+    const { key } = await vapidRes.json();
+    if (!key) { console.error("[Push] No VAPID key returned"); return "error"; }
+
     let sub = await reg.pushManager.getSubscription();
     if (!sub) {
-      const res = await fetch(`${API_BASE}/push/vapid-public-key`);
-      const { key } = await res.json();
-      if (!key) return "error";
-      sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(key) });
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(key),
+      });
     }
-    const json = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
-    const token = getAuthToken();
-    await fetch(`${API_BASE}/push/subscribe`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      body: JSON.stringify({ endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth }),
-    });
+
+    const saved = await saveSubscriptionToServer(sub);
+    if (!saved) console.warn("[Push] Subscription not saved (maybe not logged in yet)");
     return "ok";
-  } catch {
+  } catch (e) {
+    console.error("[Push] Subscription error:", e);
     return "error";
   }
 }
 
-async function silentlySubscribeIfGranted() {
-  if (!("PushManager" in window) || !("serviceWorker" in navigator)) return;
-  if (Notification.permission !== "granted") return;
-  try {
-    const reg = await navigator.serviceWorker.ready;
-    const existing = await reg.pushManager.getSubscription();
-    if (!existing) return;
-    const json = existing.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
-    const token = getAuthToken();
-    await fetch(`${API_BASE}/push/subscribe`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      body: JSON.stringify({ endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth }),
-    });
-  } catch {}
+async function trySubscribeWithPermission(): Promise<"ok" | "denied" | "error"> {
+  if (!("Notification" in window) || !("PushManager" in window)) return "error";
+  const perm = await Notification.requestPermission();
+  if (perm !== "granted") return "denied";
+  return createAndSaveSubscription();
 }
 
 export default function NotificationPermissionGate() {
@@ -63,19 +78,27 @@ export default function NotificationPermissionGate() {
   useEffect(() => {
     const t = setTimeout(async () => {
       if (!("Notification" in window) || !("PushManager" in window)) return;
+
       const perm = Notification.permission;
-      if (perm === "granted") { silentlySubscribeIfGranted(); return; }
+
+      if (perm === "granted") {
+        createAndSaveSubscription();
+        return;
+      }
+
       if (perm === "denied") return;
+
       const until = localStorage.getItem(DISMISSED_KEY);
       if (until && Date.now() < parseInt(until)) return;
+
       setShow(true);
-    }, 2000);
+    }, 2500);
     return () => clearTimeout(t);
   }, []);
 
   const handleAllow = async () => {
     setLoading(true);
-    await trySubscribe();
+    await trySubscribeWithPermission();
     setLoading(false);
     localStorage.setItem(DISMISSED_KEY, String(Date.now() + 30 * 24 * 60 * 60 * 1000));
     setShow(false);
