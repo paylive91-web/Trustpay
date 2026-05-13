@@ -185,6 +185,15 @@ export const smsActivePatternsTable = pgTable("sms_active_patterns", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const pushSubscriptionsTable = pgTable("push_subscriptions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => usersTable.id),
+  endpoint: text("endpoint").notNull().unique(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export type UserUpiIdRow = typeof userUpiIdsTable.$inferSelect;
 export type Dispute = typeof disputesTable.$inferSelect;
 export type FraudAlert = typeof fraudAlertsTable.$inferSelect;
