@@ -184,10 +184,10 @@ export async function settleConfirmedTrade(chunkOrderId: number, isAutoConfirm =
   }
 
   if (isAutoConfirm) {
-    await applyTrustDelta(buyerId, 1, "auto_confirm_win", chunkOrderId);
+    await applyTrustDelta(buyerId, 10, "auto_confirm_win", chunkOrderId);
     await applyTrustDelta(sellerId, -2, "late_confirm", chunkOrderId);
   } else {
-    await applyTrustDelta(buyerId, 1, "trade_success", chunkOrderId);
+    await applyTrustDelta(buyerId, 10, "trade_success", chunkOrderId);
     await applyTrustDelta(sellerId, 1, "trade_success", chunkOrderId);
   }
   await bumpSuccessfulTrade(buyerId);
