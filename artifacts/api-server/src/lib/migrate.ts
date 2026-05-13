@@ -502,6 +502,23 @@ export async function ensureSchema(): Promise<void> {
       logger.error({ err }, "usdt_orders bootstrap failed");
     }
 
+    // push_subscriptions — Web Push API subscriptions per user
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS push_subscriptions (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id),
+          endpoint TEXT NOT NULL UNIQUE,
+          p256dh TEXT NOT NULL,
+          auth TEXT NOT NULL,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        )
+      `);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS push_subscriptions_user_idx ON push_subscriptions(user_id)`);
+    } catch (err) {
+      logger.error({ err }, "push_subscriptions bootstrap failed");
+    }
+
     logger.info("ensureSchema OK");
   } catch (err) {
     logger.error({ err }, "ensureSchema failed");
