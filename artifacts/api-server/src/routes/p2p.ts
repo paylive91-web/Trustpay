@@ -333,13 +333,13 @@ router.post("/lock/:id", requireAuth, async (req, res) => {
     userId: sellerId,
     kind: "order_locked",
     title: `🔒 Order ₹${parseFloat(amount).toFixed(0)} locked`,
-    body: `Buyer ${u.username || `#${u.id}`} ne aapka order lock kiya. Abhi online rahein — payment aane wali hai.`,
+    body: `Buyer ${u.username || `#${u.id}`} has locked your order. Stay online — payment is on the way.`,
     severity: "info",
   }).catch(() => {});
   sendPushToUser(
     sellerId,
     `🔒 Order ₹${parseFloat(amount).toFixed(0)} locked`,
-    `Buyer ne aapka order lock kiya — payment ka wait karein.`,
+    `A buyer has locked your order. Stay online and wait for payment.`,
     "/",
   ).catch(() => {});
 
@@ -781,13 +781,13 @@ router.post("/cancel/:id", requireAuth, async (req, res) => {
     userId: chunk.userId,
     kind: "order_cancelled",
     title: `❌ Order ₹${parseFloat(chunk.amount).toFixed(0)} cancelled`,
-    body: `Buyer ne order cancel kar diya. Aapka amount wapas aa gaya.`,
+    body: `The buyer has cancelled the order. Your amount has been released back to your balance.`,
     severity: "info",
   }).catch(() => {});
   sendPushToUser(
     chunk.userId,
     `❌ Order ₹${parseFloat(chunk.amount).toFixed(0)} cancelled`,
-    `Buyer ne order cancel kar diya. Aapka amount wapas aa gaya.`,
+    `The buyer cancelled the order. Your amount has been released.`,
     "/",
   ).catch(() => {});
 });
