@@ -5,14 +5,33 @@ self.addEventListener('fetch', (e) => e.respondWith(fetch(e.request)));
 self.addEventListener('push', (e) => {
   let data = { title: 'TrustPay', body: '', url: '/' };
   try { data = { ...data, ...e.data.json() }; } catch {}
+
+  const title = data.title || '';
+  const isPaymentAlert =
+    title.includes('Confirm') ||
+    title.includes('Payment') ||
+    title.includes('locked') ||
+    title.includes('🔒') ||
+    title.includes('🚨') ||
+    title.includes('✅') ||
+    title.includes('ACTION REQUIRED');
+
   e.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: '/favicon.svg',
-      badge: '/favicon.svg',
-      vibrate: [200, 100, 200],
-      data: { url: data.url },
-    })
+    Promise.all([
+      self.registration.showNotification(data.title, {
+        body: data.body,
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        vibrate: isPaymentAlert ? [400, 100, 400, 100, 400] : [200, 100, 200],
+        data: { url: data.url },
+        requireInteraction: isPaymentAlert,
+      }),
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+        list.forEach((client) => {
+          client.postMessage({ type: 'PUSH_RECEIVED', isPaymentAlert, title: data.title });
+        });
+      }),
+    ])
   );
 });
 
