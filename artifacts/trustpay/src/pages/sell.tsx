@@ -525,7 +525,7 @@ export default function Sell() {
                       Stop Matching
                     </Button>
                   ) : (
-                    <Button onClick={() => startMut.mutate()} disabled={startMut.isPending || isFrozen} className="w-full h-13 text-base font-bold rounded-2xl shadow-xl border border-white/30 text-orange-900 hover:scale-[1.01] transition-transform" style={{ background: "linear-gradient(135deg, #fff 0%, #fed7aa 50%, #ffedd5 100%)" }}>
+                    <Button onClick={() => startMut.mutate()} disabled={startMut.isPending || isFrozen} className="w-full h-13 text-base font-bold rounded-2xl shadow-xl border border-orange-300/40 text-white hover:scale-[1.01] transition-transform" style={{ background: "linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%)" }}>
                       {startMut.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Radio className="w-4 h-4 mr-2" />}
                       Sell
                     </Button>
