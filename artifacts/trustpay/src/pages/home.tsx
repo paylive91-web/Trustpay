@@ -302,30 +302,6 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        {/* ── Rules preview ── orange + rose tinted panels */}
-        <Card className="border-none shadow-sm">
-          <CardContent className="p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold">Rules</h3>
-                <p className="text-sm text-muted-foreground">Buy and sell rules</p>
-              </div>
-              <Link href="/info">
-                <Button variant="outline" size="sm" className="rounded-full gap-1 border-orange-200 text-orange-700 hover:bg-orange-50">Open <ChevronRight className="h-4 w-4" /></Button>
-              </Link>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div className="rounded-2xl bg-orange-50 border border-orange-100 p-3">
-                <div className="text-xs font-semibold text-orange-700 mb-1">Buy Rules</div>
-                <div className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap">{buyRules}</div>
-              </div>
-              <div className="rounded-2xl bg-rose-50 border border-rose-100 p-3">
-                <div className="text-xs font-semibold text-rose-700 mb-1">Sell Rules</div>
-                <div className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap">{sellRules}</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* ── How to Use Guide ── green tinted */}
         <Link href="/how-to-use">
@@ -385,12 +361,14 @@ function HomeRewardCard({ settings }: { settings: any }) {
     <div className="space-y-2.5">
       {showUpi && (
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 border border-orange-200 p-4 shadow-sm">
+          <div className="absolute inset-0 pointer-events-none" style={{background:"linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.55) 50%,transparent 60%)",backgroundSize:"200% 100%",animation:"shine 2.8s ease-in-out infinite"}} />
+          <style>{`@keyframes shine{0%{background-position:200% 0}100%{background-position:-200% 0}}`}</style>
           <div className="absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-400 to-rose-400 text-white text-[10px] font-black tracking-wide shadow">
             <Sparkles className="h-2.5 w-2.5" /> HOT
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-md shrink-0">
-              <IndianRupee className="h-6 w-6 text-white" />
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-md shrink-0 overflow-hidden">
+              <img src={`${import.meta.env.BASE_URL}upi-logo.png`} alt="UPI" className="w-10 h-8 object-contain" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-[10px] uppercase tracking-[0.14em] font-bold text-orange-700/70">Buy Rupee</div>
@@ -412,12 +390,13 @@ function HomeRewardCard({ settings }: { settings: any }) {
 
       {showUsdt && (
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 ring-1 ring-amber-400/30 p-4 shadow-lg">
+          <div className="absolute inset-0 pointer-events-none" style={{background:"linear-gradient(105deg,transparent 38%,rgba(255,255,255,0.12) 50%,transparent 62%)",backgroundSize:"200% 100%",animation:"shine 2.8s ease-in-out infinite 0.5s"}} />
           <div className="absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-900 text-[10px] font-black tracking-wide shadow">
             <Sparkles className="h-2.5 w-2.5" /> POPULAR
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-md shrink-0">
-              <Coins className="h-6 w-6 text-slate-900" />
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-md shrink-0 overflow-hidden">
+              <img src={`${import.meta.env.BASE_URL}usdt-logo.png`} alt="USDT" className="w-10 h-10 object-contain" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-[10px] uppercase tracking-[0.14em] font-bold text-amber-300/70">Buy USDT</div>
