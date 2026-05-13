@@ -125,13 +125,20 @@ function ReviewCountdownDisplay({
 // Isolated countdown so the every-1s tick doesn't re-render the parent
 // payment form (which would dismiss the mobile keyboard while the user
 // is typing the TxID, and was the root cause of "kuch nahi likh pa rha").
-function CountdownPill({ expiresAt, totalWindowMs, totalCredit }: { expiresAt: string; totalWindowMs: number; totalCredit: number }) {
+function CountdownPill({ expiresAt, totalWindowMs, totalCredit, onExpire }: { expiresAt: string; totalWindowMs: number; totalCredit: number; onExpire?: () => void }) {
   const [now, setNow] = useState(Date.now());
+  const firedRef = useRef(false);
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
   const expiresMs = new Date(expiresAt).getTime() - now;
+  useEffect(() => {
+    if (expiresMs <= 0 && !firedRef.current) {
+      firedRef.current = true;
+      onExpire?.();
+    }
+  }, [expiresMs, onExpire]);
   const expired = expiresMs <= 0;
   const ringPct = totalWindowMs > 0 ? Math.max(0, Math.min(100, (expiresMs / totalWindowMs) * 100)) : 0;
   return (
@@ -430,6 +437,7 @@ export default function UsdtPayment() {
           expiresAt={order.expiresAt}
           totalWindowMs={totalWindowMs}
           totalCredit={order.totalCredit}
+          onExpire={() => qc.invalidateQueries({ queryKey: ["usdt-order", id] })}
         />
 
         {/* Send/Rate/Bonus inline */}
