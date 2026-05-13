@@ -237,12 +237,18 @@ async function regenerateChunksForUserInner(userId: number) {
   const rows = chunks.map((gross) => {
     const upi = upis[rand(0, upis.length - 1)];
     const tierFee = feeForAmount(gross, feeTiers, flatCommission);
-    const buyerAmount = gross - tierFee;
+    // Round buyer-facing amount DOWN to nearest ₹100 so the displayed
+    // order amount is always a clean hundred (e.g. ₹5000, not ₹4999).
+    // The difference is absorbed by the platform fee — seller's gross
+    // deduction stays the same.
+    const rawBuyerAmount = gross - tierFee;
+    const buyerAmount = Math.floor(rawBuyerAmount / 100) * 100;
+    const actualFee = gross - buyerAmount; // fee absorbs rounding gap
     return {
       userId,
       type: "withdrawal" as const,
       amount: String(buyerAmount),
-      feeAmount: String(tierFee),
+      feeAmount: String(actualFee),
       rewardPercent: "0",
       rewardAmount: "0",
       totalAmount: String(buyerAmount),
