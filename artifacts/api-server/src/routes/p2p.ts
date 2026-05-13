@@ -329,13 +329,6 @@ router.post("/lock/:id", requireAuth, async (req, res) => {
   // Notify seller that their order has been locked by a buyer
   const sellerId = upd[0].userId;
   const amount = upd[0].amount;
-  db.insert(userNotificationsTable).values({
-    userId: sellerId,
-    kind: "order_locked",
-    title: `🔒 Order ₹${parseFloat(amount).toFixed(0)} locked`,
-    body: `Buyer ${u.username || `#${u.id}`} has locked your order. Stay online — payment is on the way.`,
-    severity: "info",
-  }).catch(() => {});
   sendPushToUser(
     sellerId,
     `🔒 Order ₹${parseFloat(amount).toFixed(0)} locked`,
@@ -413,20 +406,7 @@ router.post("/submit/:id", requireAuth, async (req, res) => {
   const [updated] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
   res.json(f(updated));
 
-  // Immediate critical alert to seller — drives the loud alarm sound on
-  // their device. Sent regardless of OCR result so the seller wakes up
-  // even if they had switched apps.
-  await db.insert(userNotificationsTable).values({
-    userId: chunk.userId,
-    kind: "payment_pending_confirmation",
-    title: sellerWasOffline
-      ? `🚨 ACTION REQUIRED: Confirm ₹${chunk.amount} payment!`
-      : `✅ Confirm ₹${chunk.amount} Payment Now`,
-    body: sellerWasOffline
-      ? `A buyer submitted payment proof while you were offline. You have 15 minutes to confirm — open the app NOW or the buyer can raise a dispute.`
-      : `A buyer has submitted payment proof for ₹${chunk.amount}. Open the app, review the screenshot and UTR, then tap CONFIRM PAYMENT.`,
-    severity: "critical",
-  }).catch(() => {});
+  // Immediate critical push alert to seller — drives notification even when app is closed.
   sendPushToUser(
     chunk.userId,
     sellerWasOffline
@@ -485,23 +465,7 @@ router.post("/submit/:id", requireAuth, async (req, res) => {
         ? ["Buyer payment screenshot verified", `The buyer's payment proof for order #${id} has been verified by our system. Please review and confirm the payment.`]
         : ["Buyer screenshot flagged by system", `The payment screenshot for order #${id} was flagged by our automated system. Please review carefully before confirming.`];
 
-      // Send both notifications in parallel — they're independent inserts.
-      await Promise.all([
-        db.insert(userNotificationsTable).values({
-          userId: u.id,
-          kind: "ocr_result",
-          title: buyerNotifTitle,
-          body: buyerNotifBody,
-          severity: isClean ? "info" : "warn",
-        }),
-        db.insert(userNotificationsTable).values({
-          userId: chunk.userId,
-          kind: "ocr_result",
-          title: sellerNotifTitle,
-          body: sellerNotifBody,
-          severity: isClean ? "info" : "warn",
-        }),
-      ]);
+      // OCR result — web push only (no in-app bell)
     } catch (err) {
       // OCR failed — still flag the order as suspicious and notify both parties
       await db.update(ordersTable).set({ ocrStatus: "failed", updatedAt: new Date() }).where(eq(ordersTable.id, id)).catch(() => {});
@@ -515,23 +479,7 @@ router.post("/submit/:id", requireAuth, async (req, res) => {
         ocrUtr: null,
         ocrStatus: "unreadable",
       }).catch(() => {});
-      // Notify buyer and seller about the failure — in parallel.
-      await Promise.all([
-        db.insert(userNotificationsTable).values({
-          userId: u.id,
-          kind: "ocr_result",
-          title: "Payment proof flagged — please resubmit",
-          body: "We could not process your payment screenshot. Please resubmit a clearer image. Contact support if the problem persists.",
-          severity: "warn",
-        }).catch(() => {}),
-        db.insert(userNotificationsTable).values({
-          userId: chunk.userId,
-          kind: "ocr_result",
-          title: "Buyer screenshot flagged by system",
-          body: `The payment screenshot for order #${id} could not be verified by our system. Please review carefully before confirming.`,
-          severity: "warn",
-        }).catch(() => {}),
-      ]);
+      // OCR failed — web push only (no in-app bell)
     }
   })();
 });
@@ -701,21 +649,7 @@ router.post("/buyer-dispute/:id", requireAuth, async (req, res) => {
     res.status(500).json({ error: "Could not open dispute. Please try again or contact TrustPay." });
     return;
   }
-  // Notify both parties
-  await db.insert(userNotificationsTable).values({
-    userId: chunk.userId,
-    kind: "buyer_opened_dispute",
-    title: `⚠️ Buyer opened a dispute for order #${id}`,
-    body: `The buyer has opened a dispute because you did not confirm their payment of ₹${chunk.amount} within 15 minutes. Upload your bank statement and proof in the disputes section before the deadline, or admin will rule in the buyer's favor.`,
-    severity: "critical",
-  }).catch(() => {});
-  await db.insert(userNotificationsTable).values({
-    userId: u.id,
-    kind: "dispute_opened",
-    title: `Dispute opened for order #${id}`,
-    body: `Your dispute has been submitted to admin for review. Please keep your payment proof ready in case admin asks for more details.`,
-    severity: "info",
-  }).catch(() => {});
+  // Notify both parties via web push only (no in-app bell)
   // Telemetry: log how long the seller stayed offline
   await logAlert(chunk.userId, id, "seller_offline_dispute", "warn",
     `Buyer opened dispute. Seller last seen ${sellerLastSeen ? `${Math.round((Date.now() - sellerLastSeen) / 60000)} min ago` : "never"}, submission was ${Math.round(sinceSubmissionMs / 60000)} min ago.`).catch(() => {});
@@ -780,14 +714,7 @@ router.post("/cancel/:id", requireAuth, async (req, res) => {
   await checkAndApplyBuyerCooldown(u.id);
   res.json({ success: true });
 
-  // Notify seller that the buyer cancelled
-  db.insert(userNotificationsTable).values({
-    userId: chunk.userId,
-    kind: "order_cancelled",
-    title: `❌ Order ₹${parseFloat(chunk.amount).toFixed(0)} cancelled`,
-    body: `The buyer has cancelled the order. Your amount has been released back to your balance.`,
-    severity: "info",
-  }).catch(() => {});
+  // Notify seller that the buyer cancelled — web push only
   sendPushToUser(
     chunk.userId,
     `❌ Order ₹${parseFloat(chunk.amount).toFixed(0)} cancelled`,
