@@ -221,7 +221,7 @@ export default function Sell() {
 
       <div className="p-4 space-y-4">
         {/* Premium matching hero */}
-        <Card className="overflow-hidden border-none shadow-2xl text-white" style={{ background: "linear-gradient(135deg, #c2410c 0%, #ea580c 35%, #f97316 65%, #fb923c 100%)" }}>
+        <Card className="overflow-hidden border-none shadow-2xl text-white" style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #4c1d95 35%, #7c3aed 65%, #c026d3 100%)" }}>
           <CardContent className="p-0">
             {/* Animated background grid */}
             <div className="relative overflow-hidden">
@@ -482,7 +482,7 @@ export default function Sell() {
 
                     <div className="text-3xl sm:text-4xl font-black tracking-tight leading-tight">
                       Turn your balance<br />
-                      <span className="text-amber-200">into earnings.</span>
+                      <span className="text-fuchsia-300">into earnings.</span>
                     </div>
                     <p className="mt-2 text-sm text-white/75 leading-relaxed">
                       Go live for 15 minutes and let buyers pay you directly.
