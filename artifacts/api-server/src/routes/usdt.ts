@@ -345,6 +345,7 @@ router.get("/my-orders", async (req, res) => {
     cancelledAt: r.cancelled_at,
     createdAt: r.created_at,
     reviewSecondsRemaining: r.status === "submitted" ? computeReviewSecondsRemaining(r.submitted_at) : null,
+    reviewDeadlineAt: r.submitted_at ? new Date(new Date(r.submitted_at).getTime() + REVIEW_WINDOW_MS).toISOString() : null,
   })));
 });
 
@@ -401,6 +402,7 @@ router.get("/order/:id", async (req, res) => {
     cancelledAt: r.cancelled_at,
     createdAt: r.created_at,
     reviewSecondsRemaining: r.status === "submitted" ? computeReviewSecondsRemaining(r.submitted_at) : null,
+    reviewDeadlineAt: r.submitted_at ? new Date(new Date(r.submitted_at).getTime() + REVIEW_WINDOW_MS).toISOString() : null,
   });
 });
 
