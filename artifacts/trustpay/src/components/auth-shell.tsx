@@ -14,15 +14,8 @@ export function useBranding() {
 }
 
 /**
- * AuthShell — premium dark-mesh background + glass card wrapper used by
- * login / register / forgot-password. The wrapper guarantees the layout
- * fits a single mobile viewport (no scroll on ~700px screens) while still
- * feeling spacious on tablets/desktops.
- *
- * Why dark hero + white glass card: this is the proven premium fintech
- * pattern (CRED, Razorpay, Stripe). The dark mesh provides depth, the
- * floating orbs add motion, and the white glass card keeps the form area
- * highly readable.
+ * AuthShell — light orange+blue theme matching the home page.
+ * Used by login / register / forgot-password pages.
  */
 export function AuthShell({
   children,
@@ -34,44 +27,21 @@ export function AuthShell({
   const { appName, logoUrl } = useBranding();
   return (
     <Layout showBottomNav={false}>
-      <div className="relative min-h-[100svh] w-full overflow-hidden bg-[#0b0820] flex flex-col">
-        {/* Mesh gradient base — layered radial gradients build a rich, premium
-            backdrop that no single gradient can match. */}
-        <div
-          aria-hidden
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(1000px 700px at 10% -10%, rgba(99,102,241,0.55), transparent 60%)," +
-              "radial-gradient(900px 600px at 110% 10%, rgba(217,70,239,0.45), transparent 60%)," +
-              "radial-gradient(800px 600px at 50% 110%, rgba(56,189,248,0.35), transparent 60%)," +
-              "linear-gradient(180deg, #0b0820 0%, #120a30 50%, #0b0820 100%)",
-          }}
-        />
+      <div className="relative min-h-[100svh] w-full overflow-hidden flex flex-col"
+        style={{ background: "linear-gradient(160deg, #fff7ed 0%, #ffffff 45%, #eff6ff 100%)" }}>
 
-        {/* Floating orbs — slow, calming motion adds life without distracting */}
+        {/* Floating orbs — orange + blue matching home page accent */}
         <div aria-hidden className="absolute inset-0 pointer-events-none overflow-hidden">
-          <span className="absolute top-[12%] left-[8%] w-40 h-40 rounded-full bg-indigo-500/30 blur-3xl animate-[floatA_14s_ease-in-out_infinite]" />
-          <span className="absolute top-[55%] right-[6%] w-52 h-52 rounded-full bg-fuchsia-500/25 blur-3xl animate-[floatB_18s_ease-in-out_infinite]" />
-          <span className="absolute bottom-[8%] left-[20%] w-44 h-44 rounded-full bg-cyan-400/25 blur-3xl animate-[floatC_16s_ease-in-out_infinite]" />
+          <span className="absolute top-[6%] left-[5%] w-52 h-52 rounded-full bg-orange-300/20 blur-3xl animate-[floatA_14s_ease-in-out_infinite]" />
+          <span className="absolute top-[50%] right-[4%] w-60 h-60 rounded-full bg-blue-300/15 blur-3xl animate-[floatB_18s_ease-in-out_infinite]" />
+          <span className="absolute bottom-[6%] left-[15%] w-48 h-48 rounded-full bg-orange-200/20 blur-3xl animate-[floatC_16s_ease-in-out_infinite]" />
+          <span className="absolute top-[30%] left-[40%] w-36 h-36 rounded-full bg-amber-200/15 blur-2xl animate-[floatA_20s_ease-in-out_infinite_2s]" />
         </div>
 
-        {/* Subtle dot grid for premium texture */}
-        <div
-          aria-hidden
-          className="absolute inset-0 opacity-[0.07] pointer-events-none"
-          style={{
-            backgroundImage:
-              "radial-gradient(rgba(255,255,255,0.8) 1px, transparent 1px)",
-            backgroundSize: "22px 22px",
-          }}
-        />
-
-        {/* Inline animation keyframes — small enough to live with the shell */}
         <style>{`
-          @keyframes floatA { 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,-30px)} }
-          @keyframes floatB { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,40px)} }
-          @keyframes floatC { 0%,100%{transform:translate(0,0)} 50%{transform:translate(20px,-40px)} }
+          @keyframes floatA { 0%,100%{transform:translate(0,0)} 50%{transform:translate(30px,-24px)} }
+          @keyframes floatB { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-24px,32px)} }
+          @keyframes floatC { 0%,100%{transform:translate(0,0)} 50%{transform:translate(16px,-32px)} }
           @keyframes shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
         `}</style>
 
@@ -80,31 +50,31 @@ export function AuthShell({
             {/* Brand block */}
             <div className="flex flex-col items-center mb-5">
               <div className="relative mb-3">
-                {/* multi-ring glow stack — the soul of the premium look */}
-                <div className="absolute inset-0 rounded-[28px] bg-gradient-to-br from-indigo-400 via-violet-500 to-fuchsia-500 blur-2xl opacity-70 scale-125 animate-pulse" />
-                <div className="absolute -inset-1 rounded-[30px] bg-gradient-to-br from-indigo-300/60 via-violet-400/60 to-fuchsia-400/60 blur-md" />
-                <div className="relative rounded-[26px] p-[2px] bg-gradient-to-br from-white/40 via-white/20 to-white/5">
+                {/* Orange glow behind logo */}
+                <div className="absolute inset-0 rounded-[28px] bg-orange-400/30 blur-2xl scale-125 animate-pulse" />
+                <div className="absolute -inset-1 rounded-[30px] bg-gradient-to-br from-orange-200/50 to-blue-200/30 blur-md" />
+                <div className="relative rounded-[26px] p-[2px] bg-gradient-to-br from-orange-100 via-white to-blue-50 shadow-lg">
                   <img
                     src={logoUrl}
                     alt={`${appName} Logo`}
-                    className="relative w-[68px] h-[68px] rounded-[24px] object-contain bg-white shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
+                    className="relative w-[68px] h-[68px] rounded-[24px] object-contain bg-white shadow-md"
                   />
                 </div>
               </div>
-              <div className="text-[26px] font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-fuchsia-200 drop-shadow-sm">
+              <div className="text-[26px] font-extrabold tracking-tight text-slate-900 drop-shadow-sm">
                 {appName}
               </div>
-              <div className="mt-1 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 border border-white/15 backdrop-blur-md">
-                <ShieldCheck className="w-3 h-3 text-emerald-300" />
-                <span className="text-[10px] font-bold tracking-[0.16em] uppercase text-white/85">
+              <div className="mt-1.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-200">
+                <ShieldCheck className="w-3 h-3 text-orange-500" />
+                <span className="text-[10px] font-bold tracking-[0.16em] uppercase text-orange-600">
                   {badge}
                 </span>
               </div>
             </div>
 
-            {/* Glass card with gradient border */}
-            <div className="relative rounded-[28px] p-[1.5px] bg-gradient-to-br from-white/40 via-white/10 to-white/30 shadow-[0_30px_80px_-20px_rgba(99,66,237,0.55),0_10px_30px_-10px_rgba(217,70,239,0.35)]">
-              <div className="rounded-[26px] bg-white/95 backdrop-blur-2xl p-5">
+            {/* Card */}
+            <div className="relative rounded-[28px] p-[1.5px] bg-gradient-to-br from-orange-200/60 via-white/80 to-blue-200/40 shadow-[0_20px_60px_-10px_rgba(234,88,12,0.15),0_8px_24px_-6px_rgba(59,130,246,0.10)]">
+              <div className="rounded-[26px] bg-white/98 backdrop-blur-xl p-5">
                 {children}
               </div>
             </div>
@@ -115,11 +85,11 @@ export function AuthShell({
   );
 }
 
-/* ─── Premium reusable bits ──────────────────────────────────────────── */
+/* ─── Reusable UI bits ──────────────────────────────────────────── */
 
 export function PremiumInputWrap({ children }: { children: React.ReactNode }) {
   return (
-    <div className="group relative rounded-xl bg-slate-50/70 ring-1 ring-slate-200 transition focus-within:ring-2 focus-within:ring-indigo-500/40 focus-within:bg-white focus-within:shadow-[0_0_0_4px_rgba(99,102,241,0.08)]">
+    <div className="group relative rounded-xl bg-slate-50/80 ring-1 ring-slate-200 transition focus-within:ring-2 focus-within:ring-orange-400/50 focus-within:bg-white focus-within:shadow-[0_0_0_4px_rgba(249,115,22,0.08)]">
       {children}
     </div>
   );
@@ -157,15 +127,13 @@ export function PremiumButton({
       disabled={disabled}
       className="relative group w-full h-12 rounded-xl text-white font-bold tracking-wide overflow-hidden disabled:opacity-60 disabled:pointer-events-none active:scale-[0.99] transition"
       style={{
-        background:
-          "linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #c026d3 100%)",
-        boxShadow:
-          "0 14px 30px -10px rgba(124,58,237,0.55), 0 6px 12px -4px rgba(192,38,211,0.35), inset 0 1px 0 rgba(255,255,255,0.18)",
+        background: "linear-gradient(135deg, #f97316 0%, #ea580c 50%, #c2410c 100%)",
+        boxShadow: "0 12px 28px -8px rgba(234,88,12,0.50), 0 4px 10px -4px rgba(249,115,22,0.30), inset 0 1px 0 rgba(255,255,255,0.18)",
       }}
     >
       <span
         aria-hidden
-        className="absolute inset-y-0 -left-1/2 w-1/2 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-20deg] group-hover:animate-[shimmer_1.2s_ease-out]"
+        className="absolute inset-y-0 -left-1/2 w-1/2 bg-gradient-to-r from-transparent via-white/25 to-transparent skew-x-[-20deg] group-hover:animate-[shimmer_1.2s_ease-out]"
       />
       <span className="relative flex items-center justify-center gap-2">{children}</span>
     </button>
@@ -175,7 +143,7 @@ export function PremiumButton({
 export function TrustRow() {
   const items = [
     { dot: "bg-emerald-500", label: "256-bit Encrypted" },
-    { dot: "bg-indigo-500", label: "10K+ Traders" },
+    { dot: "bg-orange-500", label: "10K+ Traders" },
   ];
   return (
     <div className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
