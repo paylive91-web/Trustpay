@@ -38,10 +38,6 @@ export function WebSplashScreen({ onDone }: { onDone: () => void }) {
       }}
     >
       <style>{`
-        @keyframes splashProgress {
-          from { transform: scaleX(0); }
-          to   { transform: scaleX(1); }
-        }
         @keyframes floatIn {
           from { opacity: 0; transform: translateY(24px); }
           to   { opacity: 1; transform: translateY(0); }
@@ -58,6 +54,15 @@ export function WebSplashScreen({ onDone }: { onDone: () => void }) {
         @keyframes orbFloat {
           0%,100% { transform: translateY(0); }
           50% { transform: translateY(-18px); }
+        }
+        @keyframes logoShine {
+          0%   { left: -80%; }
+          50%  { left: 130%; }
+          100% { left: 130%; }
+        }
+        @keyframes dotBounce {
+          0%,80%,100% { transform: translateY(0); opacity: 0.4; }
+          40%         { transform: translateY(-10px); opacity: 1; }
         }
       `}</style>
 
@@ -91,7 +96,7 @@ export function WebSplashScreen({ onDone }: { onDone: () => void }) {
         animation: "floatIn 0.7s cubic-bezier(0.22,1,0.36,1) both",
       }}>
         {/* Logo — transparent, no white box */}
-        <div style={{ position: "relative", width: 148, height: 148, margin: "0 auto 20px" }}>
+        <div style={{ position: "relative", width: 148, height: 148, margin: "0 auto 20px", overflow: "hidden", borderRadius: "24px" }}>
           <div style={{
             position: "absolute", inset: -16,
             borderRadius: "50%",
@@ -112,6 +117,14 @@ export function WebSplashScreen({ onDone }: { onDone: () => void }) {
               filter: "drop-shadow(0 8px 24px rgba(234,88,12,0.22))",
             }}
           />
+          {/* Shine sweep over logo */}
+          <div style={{
+            position: "absolute", top: 0, bottom: 0,
+            width: "55%",
+            background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.52) 50%, transparent 70%)",
+            animation: "logoShine 2.6s ease-in-out infinite",
+            pointerEvents: "none",
+          }} />
         </div>
 
         {/* App name */}
@@ -140,22 +153,17 @@ export function WebSplashScreen({ onDone }: { onDone: () => void }) {
           Secure P2P UPI Trading
         </p>
 
-        {/* Progress bar */}
-        <div style={{
-          width: 120, height: 3.5,
-          borderRadius: 999,
-          background: "rgba(234,88,12,0.12)",
-          overflow: "hidden",
-          margin: "0 auto",
-        }}>
-          <div style={{
-            width: "100%", height: "100%",
-            borderRadius: 999,
-            background: "linear-gradient(90deg, #f97316, #ea580c, #fb923c)",
-            transformOrigin: "left center",
-            animation: "splashProgress 2.2s cubic-bezier(0.4,0,0.2,1) forwards",
-            boxShadow: "0 0 10px rgba(249,115,22,0.6)",
-          }} />
+        {/* Bouncing dots loader */}
+        <div style={{ display: "flex", gap: 10, justifyContent: "center", margin: "0 auto" }}>
+          {[0, 0.18, 0.36].map((delay, i) => (
+            <div key={i} style={{
+              width: 10, height: 10,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #f97316, #ea580c)",
+              boxShadow: "0 0 8px rgba(249,115,22,0.55)",
+              animation: `dotBounce 1.1s ease-in-out ${delay}s infinite`,
+            }} />
+          ))}
         </div>
       </div>
 
