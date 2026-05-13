@@ -238,7 +238,7 @@ export default function SellerAlertsPopup() {
                         System verification in progress
                       </div>
                       <p className="text-[11px] text-sky-700/80 leading-snug">
-                        We're checking the screenshot and UTR. Wait a few seconds for the result before confirming.
+                        Screenshot check chal raha hai. Aap abhi bhi YES dabaa sakte hain — payment bank mein check karein.
                       </p>
                     </div>
                   </div>
