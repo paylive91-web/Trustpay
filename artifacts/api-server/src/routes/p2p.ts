@@ -4,6 +4,7 @@ import { ordersTable, usersTable, disputesTable, tradePairBlocksTable, userNotif
 import { eq, and, sql, inArray, ne, or, gte, like } from "drizzle-orm";
 import { requireAuth } from "../lib/auth.js";
 import { getSettings } from "../lib/settings.js";
+import { sendPushToUser } from "../lib/webpush.js";
 import { regenerateChunksForUser, getMatchingDiagnostics } from "../lib/matching.js";
 import { settleConfirmedTrade } from "../lib/settle.js";
 import { applyTrustDelta } from "../lib/trust.js";
@@ -409,6 +410,12 @@ router.post("/submit/:id", requireAuth, async (req, res) => {
       : `A buyer has submitted payment proof for order #${id}. Please review the screenshot and UTR, then confirm or dispute.`,
     severity: "critical",
   }).catch(() => {});
+  sendPushToUser(
+    chunk.userId,
+    sellerWasOffline ? `🚨 Buyer paid ₹${chunk.amount} — confirm now!` : `Buyer paid ₹${chunk.amount}`,
+    sellerWasOffline ? "Payment received while offline. Open app and confirm NOW!" : "Payment proof submitted. Please review and confirm.",
+    "/",
+  ).catch(() => {});
 
   // Run OCR + image-hash fraud checks asynchronously — don't block the response.
   // Image hashing (Jimp pHash + ELA + EXIF on a 5MB base64 buffer) used to add
