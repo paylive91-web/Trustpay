@@ -180,9 +180,9 @@ export default function Register() {
         }
         throw new Error(msg);
       }
+      setShowInstallPopup(true);
       setAuthToken(data.token);
       toast({ title: "Account created!" });
-      setShowInstallPopup(true);
     } catch (err: any) {
       toast({ title: "Registration failed", description: err?.message || "Unknown error", variant: "destructive" });
     } finally {
