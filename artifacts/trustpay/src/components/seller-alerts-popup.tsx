@@ -19,6 +19,7 @@ type SellerAlert = {
   utrNumber?: string | null;
   screenshotUrl?: string | null;
   recordingUrl?: string | null;
+  upiId?: string | null;
   buyer?: { id?: number; username?: string } | null;
   confirmDeadline?: string | null;
   lockedAt?: string | null;
@@ -179,31 +180,17 @@ export default function SellerAlertsPopup() {
 
   // Show "order locked" popup when seller's order is locked but no payment submitted yet
   if (lockedAlert && !current) {
-    const lockedRemaining = lockedAlert.confirmDeadline
-      ? Math.max(0, new Date(lockedAlert.confirmDeadline).getTime() - now)
-      : 0;
     return (
       <div className="fixed bottom-20 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
-        <div className="pointer-events-auto w-full max-w-[440px] rounded-3xl overflow-hidden shadow-[0_12px_48px_rgba(99,102,241,0.35)] animate-in slide-in-from-bottom-4 duration-300">
-          <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-4 flex items-center gap-3">
+        <div className="pointer-events-auto w-full max-w-[440px] rounded-3xl overflow-hidden shadow-[0_12px_48px_rgba(234,88,12,0.35)] animate-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0 animate-pulse">
-              <BellRing className="w-5 h-5 text-white" />
+              <Lock className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[11px] font-bold uppercase tracking-widest text-indigo-200">Order Locked</div>
-              <div className="text-[16px] font-extrabold text-white">₹{Number(lockedAlert.amount).toFixed(0)} — Payment Aane Wali Hai</div>
+              <div className="text-[11px] font-bold uppercase tracking-widest text-orange-100">Order Locked</div>
+              <div className="text-[22px] font-extrabold text-white">₹{Number(lockedAlert.amount).toFixed(0)}</div>
             </div>
-          </div>
-          <div className="bg-white px-5 py-3 flex items-center justify-between">
-            <div className="space-y-0.5">
-              <div className="text-[13px] text-slate-600">Buyer: <span className="font-semibold text-slate-800">{lockedAlert.buyer?.username || `#${lockedAlert.buyer?.id}`}</span></div>
-              {lockedRemaining > 0 && (
-                <div className="text-[12px] text-indigo-600 font-semibold flex items-center gap-1">
-                  <Clock className="w-3 h-3" /> Buyer ke paas {fmtCountdown(lockedRemaining)} bacha hai
-                </div>
-              )}
-            </div>
-            <div className="text-[11px] text-slate-400 text-right">Online rahein<br />payment ka wait karein</div>
           </div>
         </div>
       </div>
@@ -318,12 +305,24 @@ export default function SellerAlertsPopup() {
                 <div className={`rounded-2xl p-4 ${isFlagged ? "bg-red-50/40 border border-red-200" : "bg-muted/50"}`}>
                   <div className="text-sm text-muted-foreground">Amount</div>
                   <div className="text-3xl font-black">₹{Number(current.amount).toFixed(2)}</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Buyer: {current.buyer?.username || `#${current.buyer?.id || current.id}`}
-                  </div>
                   {current.utrNumber && (
-                    <div className="text-xs mt-2">
-                      UTR: <span className="font-mono font-semibold">{current.utrNumber}</span>
+                    <div className="text-sm font-mono font-semibold mt-2 bg-white border border-slate-200 rounded-xl px-3 py-2">
+                      UTR: {current.utrNumber}
+                    </div>
+                  )}
+                  {current.upiId && (
+                    <div className="text-sm mt-2 bg-white border border-slate-200 rounded-xl px-3 py-2 space-y-0.5">
+                      <div className="text-xs text-muted-foreground">Payment received on</div>
+                      <div className="font-semibold text-slate-800">{current.upiId}</div>
+                      <div className="text-xs text-orange-600 font-medium">
+                        {/ybl|ibl/i.test(current.upiId) ? "PhonePe" :
+                         /paytm/i.test(current.upiId) ? "Paytm" :
+                         /okaxis|okicici|oksbi|okhdfcbank|okbizaxis/i.test(current.upiId) ? "Google Pay" :
+                         /axisbank/i.test(current.upiId) ? "Axis Bank" :
+                         /hdfcbank/i.test(current.upiId) ? "HDFC Bank" :
+                         /sbi/i.test(current.upiId) ? "SBI" :
+                         "UPI"}
+                      </div>
                     </div>
                   )}
                   <div className="text-xs text-orange-700 mt-2 font-medium">
