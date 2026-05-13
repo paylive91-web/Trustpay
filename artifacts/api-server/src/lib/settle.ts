@@ -184,11 +184,13 @@ export async function settleConfirmedTrade(chunkOrderId: number, isAutoConfirm =
   }
 
   if (isAutoConfirm) {
-    await applyTrustDelta(buyerId, 10, "auto_confirm_win", chunkOrderId);
-    await applyTrustDelta(sellerId, -2, "late_confirm", chunkOrderId);
+    // Seller was offline — buyer gets smaller reward, seller penalised
+    await applyTrustDelta(buyerId, 2, "seller_offline_autoconfirm", chunkOrderId);
+    await applyTrustDelta(sellerId, -2, "seller_offline_penalty", chunkOrderId);
   } else {
+    // Seller confirmed manually — buyer rewarded +10, seller no change
     await applyTrustDelta(buyerId, 10, "trade_success", chunkOrderId);
-    await applyTrustDelta(sellerId, 1, "trade_success", chunkOrderId);
+    // seller: 0 delta (no reward, no penalty for confirming)
   }
   await bumpSuccessfulTrade(buyerId);
   await bumpSuccessfulTrade(sellerId);
