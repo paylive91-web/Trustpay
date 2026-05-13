@@ -221,7 +221,7 @@ export default function Sell() {
 
       <div className="p-4 space-y-4">
         {/* Premium matching hero */}
-        <Card className="overflow-hidden border-none shadow-2xl text-white" style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #4c1d95 35%, #7c3aed 65%, #c026d3 100%)" }}>
+        <Card className="overflow-hidden border-none shadow-2xl text-white" style={{ background: "linear-gradient(135deg, #c2410c 0%, #ea580c 35%, #f97316 65%, #fb923c 100%)" }}>
           <CardContent className="p-0">
             {/* Animated background grid */}
             <div className="relative overflow-hidden">
@@ -482,7 +482,7 @@ export default function Sell() {
 
                     <div className="text-3xl sm:text-4xl font-black tracking-tight leading-tight">
                       Turn your balance<br />
-                      <span className="text-fuchsia-300">into earnings.</span>
+                      <span className="text-amber-200">into earnings.</span>
                     </div>
                     <p className="mt-2 text-sm text-white/75 leading-relaxed">
                       Go live for 15 minutes and let buyers pay you directly.
@@ -525,7 +525,7 @@ export default function Sell() {
                       Stop Matching
                     </Button>
                   ) : (
-                    <Button onClick={() => startMut.mutate()} disabled={startMut.isPending || isFrozen} className="w-full h-13 text-base font-bold rounded-2xl shadow-xl border border-white/30 text-violet-900 hover:scale-[1.01] transition-transform" style={{ background: "linear-gradient(135deg, #fff 0%, #e9d5ff 50%, #fdf4ff 100%)" }}>
+                    <Button onClick={() => startMut.mutate()} disabled={startMut.isPending || isFrozen} className="w-full h-13 text-base font-bold rounded-2xl shadow-xl border border-white/30 text-orange-900 hover:scale-[1.01] transition-transform" style={{ background: "linear-gradient(135deg, #fff 0%, #fed7aa 50%, #ffedd5 100%)" }}>
                       {startMut.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Radio className="w-4 h-4 mr-2" />}
                       Sell
                     </Button>
