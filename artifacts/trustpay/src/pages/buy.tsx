@@ -56,6 +56,23 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
+function compressImage(dataUrl: string, maxPx = 1280, quality = 0.72): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
 function fmtCountdown(ms: number) {
   if (ms <= 0) return "00:00";
   const m = Math.floor(ms / 60000);
@@ -406,8 +423,9 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
     }
     setUploading(kind);
     try {
-      const url = await fileToDataUrl(f);
+      const rawUrl = await fileToDataUrl(f);
       if (kind === "shot") {
+        const url = await compressImage(rawUrl);
         setScreenshot(url);
         setUploading(null);
         setScreenshotCheck({ checking: true });
@@ -416,7 +434,7 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
           .catch(() => setScreenshotCheck(null));
         return;
       } else {
-        setRecording(url);
+        setRecording(rawUrl);
       }
     } finally { setUploading(null); }
   }
