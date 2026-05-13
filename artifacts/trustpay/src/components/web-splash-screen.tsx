@@ -90,37 +90,28 @@ export function WebSplashScreen({ onDone }: { onDone: () => void }) {
         textAlign: "center",
         animation: "floatIn 0.7s cubic-bezier(0.22,1,0.36,1) both",
       }}>
-        {/* Logo glow ring */}
-        <div style={{ position: "relative", width: 124, height: 124, margin: "0 auto 24px" }}>
+        {/* Logo — transparent, no white box */}
+        <div style={{ position: "relative", width: 148, height: 148, margin: "0 auto 20px" }}>
           <div style={{
-            position: "absolute", inset: -10,
+            position: "absolute", inset: -16,
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(251,146,60,0.35) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(251,146,60,0.30) 0%, transparent 70%)",
             animation: "glowPulse 3.5s ease-in-out infinite",
           }} />
-          <div style={{
-            width: 124, height: 124,
-            borderRadius: 32,
-            background: "#ffffff",
-            border: "1.5px solid rgba(251,146,60,0.25)",
-            boxShadow: "0 16px 48px rgba(234,88,12,0.18), 0 4px 16px rgba(59,130,246,0.10)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            animation: "logoIn 0.85s cubic-bezier(0.22,1,0.36,1) both",
-            position: "relative",
-          }}>
-            <img
-              src={logoUrl}
-              alt={appName}
-              onLoad={() => setLogoReady(true)}
-              style={{
-                width: 84, height: 84,
-                objectFit: "contain",
-                borderRadius: 18,
-                opacity: logoReady ? 1 : 0,
-                transition: "opacity 0.3s ease",
-              }}
-            />
-          </div>
+          <img
+            src={logoUrl}
+            alt={appName}
+            onLoad={() => setLogoReady(true)}
+            style={{
+              width: 148, height: 148,
+              objectFit: "contain",
+              opacity: logoReady ? 1 : 0,
+              transition: "opacity 0.3s ease",
+              animation: "logoIn 0.85s cubic-bezier(0.22,1,0.36,1) both",
+              position: "relative",
+              filter: "drop-shadow(0 8px 24px rgba(234,88,12,0.22))",
+            }}
+          />
         </div>
 
         {/* App name */}
