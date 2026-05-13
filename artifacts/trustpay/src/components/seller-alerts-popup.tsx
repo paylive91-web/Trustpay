@@ -108,7 +108,11 @@ export default function SellerAlertsPopup() {
   const { data: alerts = [], refetch } = useQuery<SellerAlert[]>({
     queryKey: ["seller-alerts"],
     queryFn: () => api("/p2p/my-seller-alerts"),
-    refetchInterval: 4000,
+    refetchInterval: (q) => {
+      const data = q.state.data as SellerAlert[] | undefined;
+      const hasPendingOcr = data?.some((a) => a.ocrStatus === "pending" || !a.ocrStatus);
+      return hasPendingOcr ? 2000 : 4000;
+    },
     enabled: !!token,
   });
 
