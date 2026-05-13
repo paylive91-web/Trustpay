@@ -157,7 +157,8 @@ export default function Home() {
   const hasUpi = activeUpiList.length > 0;
   const displayName = user.phone || user.username;
   const trustScore = (user as any).trustScore ?? 0;
-  const isFrozen = (user as any).isFrozen;
+  const isAdmin = (user as any).role === "admin";
+  const isFrozen = (user as any).isFrozen && !isAdmin;
   const balance = Number((user as any)?.balance ?? 0);
   const buyRules = (settings as any)?.buyRules || "";
   const sellRules = (settings as any)?.sellRules || "";
