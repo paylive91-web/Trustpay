@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BellRing, Clock, AlertTriangle, Loader2, ShieldCheck, ShieldAlert, Search } from "lucide-react";
+import { BellRing, Clock, AlertTriangle, Loader2, ShieldCheck, ShieldAlert, Search, Lock } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 import { playAlarm } from "@/lib/alarm";
 import { useToast } from "@/hooks/use-toast";
@@ -121,12 +121,13 @@ export default function SellerAlertsPopup() {
     return () => clearInterval(t);
   }, []);
 
-  // Audible alarm whenever a brand-new alert id arrives. Tracking the highest
-  // id ensures the alarm fires once per arrival, not on every poll tick.
+  // Audible alarm only for payment_pending_confirmation — locked/cancel alerts are silent.
   const lastAlertIdRef = useRef<number>(0);
   useEffect(() => {
     if (!alerts || alerts.length === 0) return;
-    const maxId = Math.max(...alerts.map((a) => a.id));
+    const confirmAlerts = alerts.filter((a) => a.status === "pending_confirmation");
+    if (confirmAlerts.length === 0) return;
+    const maxId = Math.max(...confirmAlerts.map((a) => a.id));
     if (lastAlertIdRef.current === 0) {
       lastAlertIdRef.current = maxId;
       return;
@@ -172,7 +173,43 @@ export default function SellerAlertsPopup() {
     setProofViewer(url);
   };
 
-  const current = alerts.find((a) => a.status === "pending_confirmation") || null;
+  const pendingConfirm = alerts.find((a) => a.status === "pending_confirmation") || null;
+  const lockedAlert = !pendingConfirm ? (alerts.find((a) => a.status === "locked") || null) : null;
+  const current = pendingConfirm;
+
+  // Show "order locked" popup when seller's order is locked but no payment submitted yet
+  if (lockedAlert && !current) {
+    const lockedRemaining = lockedAlert.confirmDeadline
+      ? Math.max(0, new Date(lockedAlert.confirmDeadline).getTime() - now)
+      : 0;
+    return (
+      <div className="fixed bottom-20 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
+        <div className="pointer-events-auto w-full max-w-[440px] rounded-3xl overflow-hidden shadow-[0_12px_48px_rgba(99,102,241,0.35)] animate-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0 animate-pulse">
+              <BellRing className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[11px] font-bold uppercase tracking-widest text-indigo-200">Order Locked</div>
+              <div className="text-[16px] font-extrabold text-white">₹{Number(lockedAlert.amount).toFixed(0)} — Payment Aane Wali Hai</div>
+            </div>
+          </div>
+          <div className="bg-white px-5 py-3 flex items-center justify-between">
+            <div className="space-y-0.5">
+              <div className="text-[13px] text-slate-600">Buyer: <span className="font-semibold text-slate-800">{lockedAlert.buyer?.username || `#${lockedAlert.buyer?.id}`}</span></div>
+              {lockedRemaining > 0 && (
+                <div className="text-[12px] text-indigo-600 font-semibold flex items-center gap-1">
+                  <Clock className="w-3 h-3" /> Buyer ke paas {fmtCountdown(lockedRemaining)} bacha hai
+                </div>
+              )}
+            </div>
+            <div className="text-[11px] text-slate-400 text-right">Online rahein<br />payment ka wait karein</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!current) return null;
 
   const remaining = current.confirmDeadline
