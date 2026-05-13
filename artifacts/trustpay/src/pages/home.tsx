@@ -367,8 +367,8 @@ function HomeRewardCard({ settings }: { settings: any }) {
             <Sparkles className="h-2.5 w-2.5" /> HOT
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-md shrink-0 overflow-hidden">
-              <img src={`${import.meta.env.BASE_URL}upi-logo.png`} alt="UPI" className="w-10 h-8 object-contain" />
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-md shrink-0">
+              <IndianRupee className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-[10px] uppercase tracking-[0.14em] font-bold text-orange-700/70">Buy Rupee</div>
