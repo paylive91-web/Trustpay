@@ -11,10 +11,12 @@ export async function applyTrustDelta(userId: number, delta: number, reason: str
   await db.update(usersTable).set({
     trustScore: sql`LEAST(${usersTable.trustScore} + ${delta}, ${TRUST_MAX})`,
   }).where(eq(usersTable.id, userId));
-  // Apply freeze if threshold crossed
+  // Auto-freeze if threshold crossed downward, auto-unfreeze if score recovers
   const [u] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
   if (u && u.trustScore <= TRUST_FREEZE_THRESHOLD && !u.isFrozen) {
     await db.update(usersTable).set({ isFrozen: true }).where(eq(usersTable.id, userId));
+  } else if (u && u.trustScore > TRUST_FREEZE_THRESHOLD && u.isFrozen) {
+    await db.update(usersTable).set({ isFrozen: false, freezeReason: null }).where(eq(usersTable.id, userId));
   }
 }
 
