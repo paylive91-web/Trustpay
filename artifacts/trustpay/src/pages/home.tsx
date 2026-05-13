@@ -15,6 +15,7 @@ import useEmblaCarousel from "embla-carousel-react";
 import { useToast } from "@/hooks/use-toast";
 import { getAuthToken } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
+import { subscribeToPush } from "@/lib/push-subscribe";
 
 import { API_BASE, assetUrl } from "@/lib/api-config";
 
@@ -130,6 +131,12 @@ export default function Home() {
   useEffect(() => {
     if (isError) setLocation("/login");
   }, [isError, setLocation]);
+
+  useEffect(() => {
+    if (!user) return;
+    const token = getAuthToken();
+    if (token) subscribeToPush(token);
+  }, [user]);
 
   // Auto-advance banner carousel every 4 seconds
   useEffect(() => {
