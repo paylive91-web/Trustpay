@@ -14,6 +14,7 @@ import smsRouter from "./sms.js";
 import storageRouter from "./storage.js";
 import mediaRouter from "./media.js";
 import usdtRouter from "./usdt.js";
+import pushRouter from "./push.js";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use("/sms", smsRouter);
 router.use(storageRouter);
 router.use(mediaRouter);
 router.use("/usdt", usdtRouter);
+router.use("/push", pushRouter);
 
 export default router;
