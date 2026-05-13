@@ -342,12 +342,14 @@ export async function autoConfirmExpired() {
       sellerProofDeadline: sellerDeadline,
     });
 
-    // Seller penalty: -1 trust + notification
-    await applyTrustDelta(o.userId, -1, "seller_offline_dispute", o.id);
+    // Seller penalty: -2 trust; Buyer reward: +2 trust
+    await applyTrustDelta(o.userId, -2, "seller_offline_dispute", o.id);
+    await applyTrustDelta(o.lockedByUserId, 2, "seller_offline_buyer_bonus", o.id);
+
     await db.insert(userNotificationsTable).values({
       userId: o.userId,
       kind: "seller_offline_penalty",
-      title: "⚠️ -1 Trust — Order Dispute",
+      title: "⚠️ -2 Trust — Order Dispute",
       body: `Your order ₹${parseFloat(o.amount).toFixed(2)} went to dispute because you went offline during matching. Please stay online when an order is locked.`,
       severity: "warn",
     });
@@ -357,8 +359,8 @@ export async function autoConfirmExpired() {
     await db.insert(userNotificationsTable).values({
       userId: o.lockedByUserId,
       kind: "seller_offline_dispute_buyer",
-      title: "Seller Offline — Dispute Opened",
-      body: `The seller went offline, so your ₹${parseFloat(o.amount).toFixed(2)} order has been moved to dispute. Please upload your payment proof within 24 hours.`,
+      title: "Seller Offline — Dispute Opened (+2 Trust)",
+      body: `The seller went offline, so your ₹${parseFloat(o.amount).toFixed(2)} order has been moved to dispute. You earned +2 trust. Please upload your payment proof within 24 hours.`,
       severity: "info",
     });
     sendPushToUser(o.lockedByUserId, "Seller Offline — Action Needed", `Upload payment proof for ₹${parseFloat(o.amount).toFixed(2)} order within 24 hours.`, "/").catch(() => {});
