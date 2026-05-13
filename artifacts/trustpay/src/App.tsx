@@ -19,6 +19,7 @@ import Profile from "@/pages/profile";
 import Stats from "@/pages/stats";
 import Invite from "@/pages/invite";
 import Info from "@/pages/info";
+import HowToUse from "@/pages/how-to-use";
 import UpiManage from "@/pages/upi-manage";
 import UsdtDeposit from "@/pages/usdt-deposit";
 import UsdtPayment from "@/pages/usdt-payment";
@@ -61,6 +62,7 @@ function Router() {
       <Route path="/stats" component={Stats} />
       <Route path="/invite" component={Invite} />
       <Route path="/info" component={Info} />
+      <Route path="/how-to-use" component={HowToUse} />
       <Route path="/upi" component={UpiManage} />
       <Route path="/usdt-deposit" component={UsdtDeposit} />
       <Route path="/usdt-payment/:id" component={UsdtPayment} />
