@@ -386,7 +386,7 @@ router.post("/submit/:id", requireAuth, async (req, res) => {
 
   const utrIssues = await checkUtrFraud(utrClean, u.id, id);
   if (utrIssues.includes("fake_utr_repeated_digits")) {
-    await applyTrustDelta(u.id, -5, "fake_utr", id);
+    await applyTrustDelta(u.id, -10, "fake_utr", id);
     res.status(400).json({ error: "UTR rejected: looks fake" });
     return;
   }
