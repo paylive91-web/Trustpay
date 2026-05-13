@@ -326,6 +326,23 @@ router.post("/lock/:id", requireAuth, async (req, res) => {
     : [base];
   res.json(response);
 
+  // Notify seller that their order has been locked by a buyer
+  const sellerId = upd[0].userId;
+  const amount = upd[0].amount;
+  db.insert(userNotificationsTable).values({
+    userId: sellerId,
+    kind: "order_locked",
+    title: `🔒 Order ₹${parseFloat(amount).toFixed(0)} locked`,
+    body: `Buyer ${u.username || `#${u.id}`} ne aapka order lock kiya. Abhi online rahein — payment aane wali hai.`,
+    severity: "info",
+  }).catch(() => {});
+  sendPushToUser(
+    sellerId,
+    `🔒 Order ₹${parseFloat(amount).toFixed(0)} locked`,
+    `Buyer ne aapka order lock kiya — payment ka wait karein.`,
+    "/",
+  ).catch(() => {});
+
   } finally {
     chunkLockInProgress.delete(id);
   }
@@ -758,6 +775,21 @@ router.post("/cancel/:id", requireAuth, async (req, res) => {
 
   await checkAndApplyBuyerCooldown(u.id);
   res.json({ success: true });
+
+  // Notify seller that the buyer cancelled
+  db.insert(userNotificationsTable).values({
+    userId: chunk.userId,
+    kind: "order_cancelled",
+    title: `❌ Order ₹${parseFloat(chunk.amount).toFixed(0)} cancelled`,
+    body: `Buyer ne order cancel kar diya. Aapka amount wapas aa gaya.`,
+    severity: "info",
+  }).catch(() => {});
+  sendPushToUser(
+    chunk.userId,
+    `❌ Order ₹${parseFloat(chunk.amount).toFixed(0)} cancelled`,
+    `Buyer ne order cancel kar diya. Aapka amount wapas aa gaya.`,
+    "/",
+  ).catch(() => {});
 });
 
 router.get("/my-chunks", requireAuth, async (req, res) => {
