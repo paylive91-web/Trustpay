@@ -4,8 +4,8 @@
   "description": "Secure P2P UPI Trading Platform",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#1d4ed8",
+  "background_color": "#fff7ed",
+  "theme_color": "#f97316",
   "orientation": "portrait",
   "icons": [
     {
