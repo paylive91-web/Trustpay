@@ -31,6 +31,7 @@ type UsdtOrder = {
   expiresAt: string;
   createdAt: string;
   reviewSecondsRemaining: number | null;
+  reviewDeadlineAt: string | null;
 };
 
 async function api(path: string, opts: RequestInit = {}) {
@@ -66,6 +67,59 @@ function fmtCountdown(ms: number) {
   const m = Math.floor(ms / 60000);
   const s = Math.floor((ms % 60000) / 1000);
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+// Smooth review countdown for "submitted" status — uses absolute
+// reviewDeadlineAt timestamp so it ticks every second without freezing.
+// Falls back to reviewSecondsRemaining*1000 if deadline isn't available yet.
+function ReviewCountdownDisplay({
+  reviewDeadlineAt,
+  fallbackMs,
+}: {
+  reviewDeadlineAt: string | null;
+  fallbackMs: number;
+}) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const remainingMs = reviewDeadlineAt
+    ? Math.max(0, new Date(reviewDeadlineAt).getTime() - now)
+    : Math.max(0, fallbackMs);
+
+  const totalWindowMs = 15 * 60 * 1000;
+  const ringPct = Math.max(0, Math.min(100, (remainingMs / totalWindowMs) * 100));
+  const expired = remainingMs <= 0;
+
+  return (
+    <div className="inline-flex flex-col items-center gap-1">
+      <div className="relative w-28 h-28">
+        <svg className="w-28 h-28 -rotate-90" viewBox="0 0 112 112">
+          <circle cx="56" cy="56" r="48" stroke="rgba(255,255,255,0.1)" strokeWidth="6" fill="none" />
+          <circle
+            cx="56" cy="56" r="48"
+            stroke={expired ? "#ef4444" : "#fbbf24"}
+            strokeWidth="6"
+            fill="none"
+            strokeDasharray={`${2 * Math.PI * 48}`}
+            strokeDashoffset={`${2 * Math.PI * 48 * (1 - ringPct / 100)}`}
+            strokeLinecap="round"
+            style={{ transition: "stroke-dashoffset 1s linear" }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="font-mono font-black text-2xl text-amber-300 tabular-nums leading-none">
+            {fmtCountdown(remainingMs)}
+          </span>
+          <span className="text-[9px] uppercase tracking-widest text-amber-400/70 font-bold mt-0.5">
+            {expired ? "Expired" : "remaining"}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // Isolated countdown so the every-1s tick doesn't re-render the parent
@@ -286,8 +340,7 @@ export default function UsdtPayment() {
 
   // Submitted — within 15-min TrustPay review SLA
   if (order.status === "submitted") {
-    const reviewSec = Math.max(0, order.reviewSecondsRemaining ?? 0);
-    const reviewMs = reviewSec * 1000;
+    const fallbackMs = Math.max(0, (order.reviewSecondsRemaining ?? 0)) * 1000;
     return (
       <Layout>
         <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white">
@@ -296,15 +349,12 @@ export default function UsdtPayment() {
         </div>
         <div className="p-5 space-y-4">
           <div className="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-white shadow-xl text-center ring-1 ring-amber-400/30">
-            <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center mb-3 ring-2 ring-amber-300/40 shadow-lg">
-              <Clock className="h-10 w-10 text-slate-900" />
-            </div>
-            <h2 className="text-2xl font-black bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 bg-clip-text text-transparent">Order Pending</h2>
+            <ReviewCountdownDisplay
+              reviewDeadlineAt={order.reviewDeadlineAt}
+              fallbackMs={fallbackMs}
+            />
+            <h2 className="text-2xl font-black bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 bg-clip-text text-transparent mt-3">Order Pending</h2>
             <p className="text-slate-300 text-sm mt-1">TrustPay is verifying your TxID + screenshot</p>
-            <div className="mt-4 inline-flex items-baseline gap-1.5 text-3xl font-black font-mono text-amber-300">
-              {fmtCountdown(reviewMs)}
-              <span className="text-[11px] font-bold text-amber-400/70 uppercase tracking-wider">remaining</span>
-            </div>
             <div className="mt-2 text-[11px] text-slate-400">Order #{order.id}</div>
           </div>
           <Card className="border-slate-200">
