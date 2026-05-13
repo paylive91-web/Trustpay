@@ -2,6 +2,7 @@ import { db } from "@workspace/db";
 import { ordersTable, usersTable, userUpiIdsTable, disputesTable, transactionsTable, settingsTable, userNotificationsTable, trustEventsTable } from "@workspace/db";
 import { eq, and, sql, or } from "drizzle-orm";
 import { getSettings } from "./settings.js";
+import { sendPushToUser } from "./webpush.js";
 
 function rand(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -344,6 +345,7 @@ export async function autoConfirmExpired() {
       body: `Your order ₹${parseFloat(o.amount).toFixed(2)} went to dispute because you went offline during matching. Please stay online when an order is locked.`,
       severity: "warn",
     });
+    sendPushToUser(o.userId, "⚠️ Order Dispute — Stay Online", `Your ₹${parseFloat(o.amount).toFixed(2)} order went to dispute. Open app now.`, "/").catch(() => {});
 
     // Buyer notification — let them know they need to submit proof
     await db.insert(userNotificationsTable).values({
@@ -353,5 +355,6 @@ export async function autoConfirmExpired() {
       body: `The seller went offline, so your ₹${parseFloat(o.amount).toFixed(2)} order has been moved to dispute. Please upload your payment proof within 24 hours.`,
       severity: "info",
     });
+    sendPushToUser(o.lockedByUserId, "Seller Offline — Action Needed", `Upload payment proof for ₹${parseFloat(o.amount).toFixed(2)} order within 24 hours.`, "/").catch(() => {});
   }
 }
