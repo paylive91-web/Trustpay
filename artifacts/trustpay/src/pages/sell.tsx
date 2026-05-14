@@ -213,7 +213,7 @@ export default function Sell() {
               Account frozen — sells paused.{" "}
               <button
                 className="underline font-semibold"
-                onClick={() => window.open((settings as any)?.supportLink || "/support", "_blank")}
+                onClick={() => window.open((settings as any)?.telegramSupportUrl || (settings as any)?.telegramLink || "https://t.me/trustpay", "_blank")}
               >
                 Contact Support
               </button>
