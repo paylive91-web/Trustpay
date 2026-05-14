@@ -1008,10 +1008,42 @@ export default function AdminSettings() {
               <Bell className="w-4 h-4 mr-2" />
               {notifying ? "Sending..." : "Send to All Users"}
             </Button>
+            <TestPushButton />
           </CardContent>
         </Card>
       </div>
     </AdminLayout>
+  );
+}
+
+function TestPushButton() {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  async function handleTest() {
+    setLoading(true);
+    try {
+      const token = getAuthToken();
+      const res = await fetch(`${BASE}/api/admin/test-push`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      });
+      if (res.ok) {
+        toast({ title: "Test notification sent!", description: "Check your device for the push notification." });
+      } else {
+        const d = await res.json().catch(() => ({}));
+        toast({ title: "Failed to send", description: d.error || "Check VAPID keys and push subscription.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Network error", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }
+  return (
+    <Button variant="outline" onClick={handleTest} disabled={loading} className="w-full border-dashed border-blue-300 text-blue-700 hover:bg-blue-50">
+      <Bell className="w-4 h-4 mr-2" />
+      {loading ? "Sending..." : "Send Test Push to My Device"}
+    </Button>
   );
 }
 
