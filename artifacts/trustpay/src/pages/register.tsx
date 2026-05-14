@@ -19,18 +19,18 @@ function PWAInstallPopup({ onDownload, appName, logoUrl }: { onDownload: () => v
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-md" />
-      <div className="relative w-[min(92vw,400px)] rounded-[36px] overflow-hidden shadow-[0_40px_120px_rgba(21,112,192,0.55)] animate-in fade-in zoom-in-95 duration-300">
+      <div className="relative w-[min(92vw,400px)] rounded-[36px] overflow-hidden shadow-[0_40px_120px_rgba(234,88,12,0.45)] animate-in fade-in zoom-in-95 duration-300">
         <div className="absolute inset-0 rounded-[36px] ring-1 ring-inset ring-white/20 pointer-events-none z-10" />
-        <div className="relative bg-gradient-to-br from-[#0e4f8a] via-[#1570c0] to-[#1a9898] px-6 pt-10 pb-8 flex flex-col items-center overflow-hidden">
+        <div className="relative bg-gradient-to-br from-[#c2410c] via-[#ea580c] to-[#f97316] px-6 pt-10 pb-8 flex flex-col items-center overflow-hidden">
           <div className="absolute -top-10 -left-10 w-44 h-44 rounded-full bg-white/10 blur-3xl" />
-          <div className="absolute -bottom-6 -right-6 w-36 h-36 rounded-full bg-cyan-400/20 blur-2xl" />
+          <div className="absolute -bottom-6 -right-6 w-36 h-36 rounded-full bg-amber-300/20 blur-2xl" />
           <div className="relative mb-4">
-            <div className="absolute inset-0 rounded-[22px] bg-white/20 blur-md scale-110" />
-            <img src={logoUrl} alt={appName} className="relative w-20 h-20 rounded-[22px] object-contain shadow-xl ring-2 ring-white/30" />
+            <div className="absolute inset-0 rounded-full bg-orange-300/30 blur-2xl scale-125 animate-pulse" />
+            <img src={logoUrl} alt={appName} className="relative w-20 h-20 object-contain drop-shadow-xl" />
           </div>
-          <div className="flex gap-0.5 mb-2">{[...Array(5)].map((_, i) => <Star key={i} className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />)}</div>
+          <div className="flex gap-0.5 mb-2">{[...Array(5)].map((_, i) => <Star key={i} className="w-3.5 h-3.5 fill-amber-200 text-amber-200" />)}</div>
           <h2 className="text-[24px] font-extrabold text-white tracking-tight text-center drop-shadow">{appName}</h2>
-          <p className="mt-1 text-blue-100 text-[13px] text-center font-medium">Secure P2P UPI Trading</p>
+          <p className="mt-1 text-orange-100 text-[13px] text-center font-medium">Secure P2P UPI Trading</p>
         </div>
         <div className="bg-white px-6 pt-5 pb-6">
           {!downloaded ? (
@@ -39,9 +39,9 @@ function PWAInstallPopup({ onDownload, appName, logoUrl }: { onDownload: () => v
                 {[
                   { icon: <Zap className="w-4 h-4 text-amber-500" />, label: "Fast" },
                   { icon: <ShieldCheck className="w-4 h-4 text-emerald-500" />, label: "Secure" },
-                  { icon: <Download className="w-4 h-4 text-blue-500" />, label: "Free" },
+                  { icon: <Download className="w-4 h-4 text-orange-500" />, label: "Free" },
                 ].map((f) => (
-                  <div key={f.label} className="flex flex-col items-center gap-1.5 rounded-2xl bg-slate-50 border border-slate-100 py-3 px-2">
+                  <div key={f.label} className="flex flex-col items-center gap-1.5 rounded-2xl bg-orange-50 border border-orange-100 py-3 px-2">
                     {f.icon}
                     <span className="text-[11px] font-semibold text-slate-600">{f.label}</span>
                   </div>
@@ -53,7 +53,7 @@ function PWAInstallPopup({ onDownload, appName, logoUrl }: { onDownload: () => v
               <button
                 onClick={() => { onDownload(); setDownloaded(true); }}
                 className="w-full h-14 rounded-2xl flex items-center justify-center gap-2.5 font-bold text-[17px] text-white relative overflow-hidden active:scale-[0.97] transition-transform"
-                style={{ background: "linear-gradient(135deg, #1570c0 0%, #1363a7 50%, #1a9898 100%)", boxShadow: "0 8px 32px rgba(21,112,192,0.45)" }}
+                style={{ background: "linear-gradient(135deg, #f97316 0%, #ea580c 50%, #c2410c 100%)", boxShadow: "0 8px 32px rgba(234,88,12,0.50), 0 4px 10px -4px rgba(249,115,22,0.30), inset 0 1px 0 rgba(255,255,255,0.18)" }}
               >
                 <Download className="w-5 h-5" />
                 <span>Download APK</span>
@@ -67,7 +67,7 @@ function PWAInstallPopup({ onDownload, appName, logoUrl }: { onDownload: () => v
               <div className="text-center">
                 <p className="text-[17px] font-bold text-slate-800 mb-1">Download Started!</p>
                 <p className="text-[13px] text-slate-500 leading-relaxed">
-                  Install the APK, then open the app and <span className="font-semibold text-blue-600">Login</span> with your mobile number and password.
+                  Install the APK, then open the app and <span className="font-semibold text-orange-600">Login</span> with your mobile number and password.
                 </p>
               </div>
             </div>
