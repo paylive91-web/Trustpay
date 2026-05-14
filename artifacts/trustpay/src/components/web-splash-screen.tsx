@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useGetAppSettings } from "@workspace/api-client-react";
 import { assetUrl } from "@/lib/api-config";
 
@@ -11,14 +11,20 @@ export function WebSplashScreen({ onDone }: { onDone: () => void }) {
   const appName = (settings as any)?.appName || "TrustPay";
   const logoUrl = assetUrl((settings as any)?.appLogoUrl) || logoPath;
 
+  // Store latest onDone in a ref so the effect never re-runs when the
+  // parent re-renders and passes a new function reference.
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
+
   useEffect(() => {
     const fadeTimer = setTimeout(() => setFading(true), 2200);
-    const doneTimer = setTimeout(() => onDone(), 2800);
+    const doneTimer = setTimeout(() => onDoneRef.current(), 2800);
     return () => {
       clearTimeout(fadeTimer);
       clearTimeout(doneTimer);
     };
-  }, [onDone]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div
