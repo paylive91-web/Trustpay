@@ -312,11 +312,7 @@ export default function Buy() {
               <div className="text-xs text-muted-foreground">Swipe to browse more</div>
             </div>
             {queue.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center text-muted-foreground">
-                  <p className="text-sm">No orders available right now. Please wait — sellers are being matched continuously.</p>
-                </CardContent>
-              </Card>
+              <DecoyCarousel settings={settings} />
             ) : (
               <ChunkCarousel
                 queue={queue}
@@ -860,6 +856,168 @@ function ChunkCard({ chunk, onLock, disabled }: { chunk: any; onLock: () => void
         )}
       </CardContent>
     </Card>
+  );
+}
+
+// ── Decoy Orders (shown when no real sellers are online) ─────────────────────
+
+const DECOY_MESSAGES = [
+  "This order was just taken by another user.",
+  "Someone else grabbed this order before you.",
+  "Another buyer locked this order just now.",
+  "You were a second too late — order taken.",
+  "This slot was just filled by another buyer.",
+  "Order unavailable — picked up moments ago.",
+  "This order has already been claimed.",
+  "A buyer just locked this order ahead of you.",
+];
+
+function DecoyTakenDialog({ open, onClose, message }: { open: boolean; onClose: () => void; message: string }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-[340px] rounded-[28px] overflow-hidden shadow-[0_24px_80px_rgba(234,88,12,0.35)] animate-in fade-in zoom-in-95 duration-200">
+        <div className="bg-gradient-to-br from-[#c2410c] via-[#ea580c] to-[#f97316] px-5 pt-6 pb-5 flex flex-col items-center gap-2">
+          <div className="w-14 h-14 rounded-full bg-white/20 border border-white/30 flex items-center justify-center mb-1">
+            <AlertTriangle className="w-7 h-7 text-white" />
+          </div>
+          <div className="text-[11px] font-bold uppercase tracking-widest text-orange-100">Order Unavailable</div>
+          <div className="text-[20px] font-extrabold text-white text-center leading-tight">Order Already Taken</div>
+        </div>
+        <div className="bg-white px-5 pt-5 pb-5">
+          <p className="text-[15px] text-slate-700 text-center leading-relaxed font-medium">{message}</p>
+        </div>
+        <div className="bg-white px-5 pb-5 pt-0">
+          <button
+            onClick={onClose}
+            className="w-full h-12 rounded-2xl font-bold text-[15px] text-white active:scale-[0.98] transition-transform"
+            style={{ background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)", boxShadow: "0 6px 20px rgba(234,88,12,0.40)" }}
+          >
+            Browse Other Orders
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DecoyChunkCard({ chunk, onBuy }: { chunk: any; onBuy: () => void }) {
+  return (
+    <Card className="rounded-[22px] shadow-sm border border-border/60 bg-card h-full overflow-hidden">
+      <CardContent className="p-3 h-full flex flex-col justify-between">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-[23px] sm:text-[25px] font-black tracking-tight leading-none truncate">₹{chunk.amount}</span>
+          <span className="rounded-full bg-yellow-300 text-black text-[10px] font-bold px-3 py-1">UPI</span>
+          <span className="flex items-center gap-1 text-green-600 text-[11px]">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block animate-pulse" />
+            Online
+          </span>
+        </div>
+        <div className="flex items-center gap-2 mt-2 min-w-0">
+          <div className="flex-1 rounded-2xl bg-muted/50 p-3 min-w-0">
+            <div className="text-[11px] text-muted-foreground font-medium">Income</div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="text-[18px] font-black text-emerald-700 truncate">₹{chunk.rewardAmount}</div>
+              <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-500 whitespace-nowrap">{chunk.rewardPercent}%+6</span>
+            </div>
+          </div>
+          <div className="flex-1 rounded-2xl bg-muted/50 p-3 min-w-0">
+            <div className="text-[11px] text-muted-foreground font-medium">Quota</div>
+            <div className="text-[18px] font-black text-slate-900 truncate">+ {chunk.totalAmount}</div>
+          </div>
+          <button
+            onClick={onBuy}
+            className="w-28 h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-bold shrink-0 flex items-center justify-center shadow active:scale-95 transition-transform"
+          >
+            Buy
+          </button>
+        </div>
+        <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-1 leading-none">
+          <ShieldCheck className="h-3 w-3" />
+          Seller trust: <span className="text-green-600 font-semibold">100</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function DecoyCarousel({ settings }: { settings: any }) {
+  const [takenOpen, setTakenOpen] = useState(false);
+  const [takenMsg, setTakenMsg] = useState("");
+
+  const decoyChunks = React.useMemo(() => {
+    const rawAmounts: number[] = Array.isArray((settings as any)?.chunkAmounts)
+      ? (settings as any).chunkAmounts.map(Number).filter((n: number) => n > 0)
+      : [];
+    const amounts = rawAmounts.length > 0 ? rawAmounts : [500, 1000, 1500, 2000, 2500, 3000];
+    const rewardPct = Number((settings as any)?.rewardPercent ?? 4);
+    return amounts.slice(0, 6).map((amt, i) => {
+      const reward = Math.round(amt * rewardPct / 100) + 6;
+      return { id: -(i + 1), amount: amt, rewardAmount: reward, rewardPercent: rewardPct, totalAmount: amt + reward };
+    });
+  }, [settings]);
+
+  const TARGET = 24;
+  const displayQueue = React.useMemo(() => {
+    if (decoyChunks.length === 0) return [] as Array<{ chunk: any; key: string }>;
+    const repeats = Math.max(1, Math.ceil(TARGET / decoyChunks.length));
+    const out: Array<{ chunk: any; key: string }> = [];
+    for (let r = 0; r < repeats; r++) {
+      for (const c of decoyChunks) out.push({ chunk: c, key: `decoy-${c.id}-${r}` });
+    }
+    return out;
+  }, [decoyChunks]);
+
+  const [slots, setSlots] = useState<number[]>(() => displayQueue.map((_, i) => i));
+
+  useEffect(() => { setSlots(displayQueue.map((_, i) => i)); }, [displayQueue.length]);
+
+  const reshuffle = (prev: number[], swaps: number) => {
+    const next = [...prev];
+    if (next.length < 2) return next;
+    for (let s = 0; s < swaps; s++) {
+      const a = Math.floor(Math.random() * next.length);
+      let b = Math.floor(Math.random() * (next.length - 1));
+      if (b >= a) b += 1;
+      [next[a], next[b]] = [next[b], next[a]];
+    }
+    return next;
+  };
+
+  useEffect(() => {
+    if (displayQueue.length < 2) return;
+    const t = setTimeout(() => setSlots((prev) => reshuffle(prev, Math.max(2, Math.floor(prev.length / 2)))), 350);
+    return () => clearTimeout(t);
+  }, [displayQueue.length]);
+
+  useEffect(() => {
+    if (displayQueue.length < 2) return;
+    const timer = setInterval(() => setSlots((prev) => reshuffle(prev, Math.max(2, Math.floor(prev.length / 2)))), 1400);
+    return () => clearInterval(timer);
+  }, [displayQueue.length]);
+
+  function handleDecoyBuy() {
+    const msg = DECOY_MESSAGES[Math.floor(Math.random() * DECOY_MESSAGES.length)];
+    setTakenMsg(msg);
+    setTakenOpen(true);
+  }
+
+  return (
+    <>
+      <DecoyTakenDialog open={takenOpen} onClose={() => setTakenOpen(false)} message={takenMsg} />
+      <div style={{ position: "relative", height: displayQueue.length * CARD_H + (displayQueue.length - 1) * CARD_GAP }}>
+        {displayQueue.map(({ chunk, key }, idx) => {
+          const slot = slots[idx] ?? idx;
+          const topPx = slot * (CARD_H + CARD_GAP);
+          return (
+            <div key={key} style={{ position: "absolute", top: topPx, left: 0, right: 0, height: CARD_H, transition: "top 0.45s cubic-bezier(0.4, 0, 0.2, 1)" }}>
+              <DecoyChunkCard chunk={chunk} onBuy={handleDecoyBuy} />
+            </div>
+          );
+        })}
+      </div>
+    </>
   );
 }
 
