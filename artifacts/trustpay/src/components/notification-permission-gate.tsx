@@ -3,7 +3,7 @@ import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getAuthToken } from "@/lib/auth";
 
-const PUSH_API = "https://api.trustpayapp.in";
+const PUSH_API = "https://api.trustpayapp.in/api";
 const DISMISSED_KEY = "notif_gate_v4_dismissed_until";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
