@@ -303,7 +303,13 @@ function ContactSupportDialog({ dispute, supportUrl, onClose }: { dispute: MyDis
   const handleCopyMessage = async () => {
     try { await navigator.clipboard.writeText(message); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch {}
   };
-  const handleOpenSupport = async () => { await handleCopyMessage(); window.open(buildSupportLink(), "_blank", "noopener,noreferrer"); };
+  const handleOpenSupport = () => {
+    // Open Telegram synchronously inside the click handler so mobile browsers
+    // don't block the popup (window.open must not be behind an await).
+    window.open(buildSupportLink(), "_blank", "noopener,noreferrer");
+    // Copy message in background — non-blocking
+    handleCopyMessage();
+  };
 
   return (
     <Dialog open={!!dispute} onOpenChange={(o) => !o && onClose()}>
