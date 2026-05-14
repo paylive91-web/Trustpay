@@ -131,7 +131,9 @@ router.post("/register", async (req, res) => {
   // when the admin-configured limit is already reached. Skipped when the
   // client doesn't send a fingerprint (older clients) — their accounts
   // are still tracked through IP-based fraud alerts downstream.
-  if (deviceFingerprint && typeof deviceFingerprint === "string") {
+  // Can be disabled by admin via deviceLimitEnabled=false setting.
+  const deviceLimitEnabled = (await getSetting("deviceLimitEnabled")) !== "false";
+  if (deviceLimitEnabled && deviceFingerprint && typeof deviceFingerprint === "string") {
     try {
       const maxStr = await getSetting("maxRegistrationsPerDevice");
       const maxAllowed = Math.max(1, Math.floor(Number(maxStr) || 3));
