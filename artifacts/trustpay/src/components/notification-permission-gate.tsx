@@ -88,8 +88,12 @@ export default function NotificationPermissionGate() {
 
       if (perm === "denied") return;
 
-      const until = localStorage.getItem(DISMISSED_KEY);
-      if (until && Date.now() < parseInt(until)) return;
+      // In standalone PWA mode, always ask — browser localStorage dismiss should not block it
+      const isPwa = window.matchMedia("(display-mode: standalone)").matches || (navigator as any).standalone === true;
+      if (!isPwa) {
+        const until = localStorage.getItem(DISMISSED_KEY);
+        if (until && Date.now() < parseInt(until)) return;
+      }
 
       setShow(true);
     }, 2500);
