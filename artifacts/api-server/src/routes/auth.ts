@@ -101,7 +101,7 @@ router.post("/otp/verify", async (req, res) => {
 });
 
 router.post("/register", async (req, res) => {
-  const { phone, password, referralCode, deviceFingerprint } = req.body || {};
+  const { phone, password, referralCode, deviceFingerprint, verifiedToken } = req.body || {};
   if (!phone || !password) {
     res.status(400).json({ error: "Mobile number and password are required" });
     return;
@@ -112,6 +112,11 @@ router.post("/register", async (req, res) => {
   }
   if (password.length < 6) {
     res.status(400).json({ error: "Password must be at least 6 characters" });
+    return;
+  }
+  // OTP verification required before registration
+  if (!verifiedToken || !consumeVerifiedToken(String(verifiedToken), "register", String(phone))) {
+    res.status(400).json({ error: "Mobile number not verified. Please verify with OTP first." });
     return;
   }
 
