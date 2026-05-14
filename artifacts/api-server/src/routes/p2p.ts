@@ -534,6 +534,16 @@ router.post("/confirm/:id", requireAuth, async (req, res) => {
     db.update(imageHashesTable).set({ verifiedAt }).where(eq(imageHashesTable.orderId, id)),
   ]);
   res.json({ success: true });
+
+  // Notify buyer that their payment has been confirmed
+  if (chunk.lockedByUserId) {
+    sendPushToUser(
+      chunk.lockedByUserId,
+      `✅ Payment Confirmed — ₹${parseFloat(chunk.amount).toFixed(0)} Added`,
+      `Seller confirmed your payment. ₹${parseFloat(chunk.amount).toFixed(0)} has been credited to your TrustPay balance.`,
+      "/orders",
+    ).catch(() => {});
+  }
 });
 
 router.post("/dispute/:id", requireAuth, async (req, res) => {
@@ -578,6 +588,16 @@ router.post("/dispute/:id", requireAuth, async (req, res) => {
     return;
   }
   res.json({ success: true });
+
+  // Notify buyer that seller has opened a dispute
+  if (chunk.lockedByUserId) {
+    sendPushToUser(
+      chunk.lockedByUserId,
+      `⚠️ Dispute Opened on Your Order`,
+      `Seller reported not receiving your ₹${parseFloat(chunk.amount).toFixed(0)} payment. Upload your bank statement within 24 hours.`,
+      "/orders?tab=disputes",
+    ).catch(() => {});
+  }
 });
 
 // Buyer-initiated dispute: only allowed when buyer has submitted payment
