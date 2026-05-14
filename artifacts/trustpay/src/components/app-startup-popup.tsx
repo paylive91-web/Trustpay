@@ -107,16 +107,16 @@ export default function AppStartupPopup() {
       />
 
       {/* Dialog */}
-      <div className="relative w-[min(92vw,420px)] rounded-[32px] overflow-hidden shadow-[0_32px_100px_rgba(79,70,229,0.45)] animate-in fade-in zoom-in-95 duration-300">
+      <div className="relative w-[min(92vw,420px)] rounded-[32px] overflow-hidden shadow-[0_32px_100px_rgba(21,112,192,0.45)] animate-in fade-in zoom-in-95 duration-300">
 
         {/* Glow ring */}
         <div className="absolute inset-0 rounded-[32px] ring-1 ring-inset ring-white/20 pointer-events-none z-10" />
 
         {/* Header */}
-        <div className="relative bg-gradient-to-br from-[#4f46e5] via-[#6d28d9] to-[#7c3aed] px-5 pt-6 pb-5 overflow-hidden">
+        <div className="relative bg-gradient-to-br from-[#0e4f8a] via-[#1570c0] to-[#1a9898] px-5 pt-6 pb-5 overflow-hidden">
           {/* Decorative orbs */}
           <div className="absolute -top-6 -left-6 w-28 h-28 rounded-full bg-white/10 blur-2xl pointer-events-none" />
-          <div className="absolute -bottom-4 -right-4 w-24 h-24 rounded-full bg-indigo-400/20 blur-xl pointer-events-none" />
+          <div className="absolute -bottom-4 -right-4 w-24 h-24 rounded-full bg-cyan-400/20 blur-xl pointer-events-none" />
           {/* Shimmer line */}
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
 
@@ -129,7 +129,7 @@ export default function AppStartupPopup() {
             <X className="h-4 w-4" />
           </button>
 
-          <p className="text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-200 mb-1">
+          <p className="text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-100 mb-1">
             TrustPay
           </p>
           <h2 className="text-center text-[22px] font-extrabold tracking-tight text-white drop-shadow-sm">
@@ -176,7 +176,7 @@ export default function AppStartupPopup() {
               </Button>
               <Button
                 onClick={handleNext}
-                className="flex-1 h-12 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold shadow-lg shadow-indigo-500/30 hover:opacity-95 active:scale-[0.98] transition-all"
+                className="flex-1 h-12 rounded-2xl bg-gradient-to-r from-[#1570c0] to-[#1a9898] text-white font-bold shadow-lg shadow-blue-500/30 hover:opacity-95 active:scale-[0.98] transition-all"
               >
                 Next <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
@@ -184,7 +184,7 @@ export default function AppStartupPopup() {
           ) : (
             <Button
               onClick={handleNext}
-              className="w-full h-12 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-[16px] font-bold shadow-lg shadow-indigo-500/30 hover:opacity-95 active:scale-[0.98] transition-all"
+              className="w-full h-12 rounded-2xl bg-gradient-to-r from-[#1570c0] to-[#1a9898] text-white text-[16px] font-bold shadow-lg shadow-blue-500/30 hover:opacity-95 active:scale-[0.98] transition-all"
             >
               Got it
             </Button>
