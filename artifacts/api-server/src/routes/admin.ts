@@ -2011,4 +2011,16 @@ router.post("/usdt/reject/:id", requireAdmin, async (req, res): Promise<any> => 
   res.json({ ok: true });
 });
 
+router.post("/test-push", requireAdmin, async (req, res) => {
+  const adminUser = (req as any).user;
+  const { sendPushToUser } = await import("../lib/webpush.js");
+  await sendPushToUser(
+    adminUser.id,
+    "🔔 TrustPay Test Notification",
+    "Push notifications are working correctly on this device.",
+    "/",
+  );
+  res.json({ success: true });
+});
+
 export default router;
