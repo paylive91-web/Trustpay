@@ -163,6 +163,7 @@ export default function AdminSettings() {
   ]);
   const [sellRewardPercent, setSellRewardPercent] = useState<number>(0);
   const [maxRegistrationsPerDevice, setMaxRegistrationsPerDevice] = useState<number>(3);
+  const [deviceLimitEnabled, setDeviceLimitEnabled] = useState<boolean>(true);
   // Home page Rewards card (UPI + USDT highlight on the home screen)
   const [homeRewardCardEnabled, setHomeRewardCardEnabled] = useState<boolean>(true);
   const [homeRewardUpiTitle, setHomeRewardUpiTitle] = useState<string>("UPI REWARD UP TO 6%");
@@ -212,6 +213,8 @@ export default function AdminSettings() {
       }
       setSellRewardPercent(Number((settings as any).sellRewardPercent) || 0);
       setMaxRegistrationsPerDevice(Number((settings as any).maxRegistrationsPerDevice) || 3);
+      const dlRaw = (settings as any).deviceLimitEnabled;
+      setDeviceLimitEnabled(dlRaw === undefined ? true : dlRaw === true || dlRaw === "true");
       const enabledRaw = (settings as any).homeRewardCardEnabled;
       setHomeRewardCardEnabled(enabledRaw === undefined ? true : enabledRaw === true || enabledRaw === "true");
       setHomeRewardUpiTitle((settings as any).homeRewardUpiTitle || "UPI REWARD UP TO 6%");
@@ -342,6 +345,7 @@ export default function AdminSettings() {
       buyRewardTiers,
       sellRewardPercent,
       maxRegistrationsPerDevice,
+      deviceLimitEnabled,
       homeRewardCardEnabled,
       homeRewardUpiTitle,
       homeRewardUpiExampleAmount,
@@ -745,22 +749,40 @@ export default function AdminSettings() {
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">Max accounts allowed per device</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={50}
-                    step={1}
-                    value={maxRegistrationsPerDevice}
-                    onChange={(e) => setMaxRegistrationsPerDevice(Math.max(1, Math.min(50, parseInt(e.target.value) || 1)))}
-                    placeholder="3"
-                    className="max-w-[180px]"
-                    data-testid="input-max-registrations-per-device"
-                  />
-                  <p className="text-[11px] text-muted-foreground">
-                    Same device par jitne accounts ban sakte hain (default 3). Limit cross hone par registration block ho jayega.
-                  </p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium">Max accounts allowed per device</Label>
+                    <button
+                      type="button"
+                      onClick={() => setDeviceLimitEnabled((v) => !v)}
+                      className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${deviceLimitEnabled ? "bg-indigo-600" : "bg-slate-200"}`}
+                      data-testid="toggle-device-limit-enabled"
+                    >
+                      <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ${deviceLimitEnabled ? "translate-x-4" : "translate-x-0"}`} />
+                    </button>
+                  </div>
+                  {deviceLimitEnabled ? (
+                    <>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={50}
+                        step={1}
+                        value={maxRegistrationsPerDevice}
+                        onChange={(e) => setMaxRegistrationsPerDevice(Math.max(1, Math.min(50, parseInt(e.target.value) || 1)))}
+                        placeholder="3"
+                        className="max-w-[180px]"
+                        data-testid="input-max-registrations-per-device"
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        Same device par jitne accounts ban sakte hain (default 3). Limit cross hone par registration block ho jayega.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg px-3 py-2">
+                      Device limit <strong>OFF</strong> hai — koi bhi device se unlimited accounts ban sakte hain. OTP verification se security maintain hogi.
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
