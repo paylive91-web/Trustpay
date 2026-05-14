@@ -509,7 +509,6 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
           <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-orange-500" />
           <div>
             <div className="font-semibold">Warning ({warnCount}/3): Suspicious payment activity detected.</div>
-            <div className="text-xs mt-0.5">{warningsLeft} more warning{warningsLeft > 1 ? "s" : ""} will freeze your account. Please submit valid payment proof.</div>
           </div>
         </div>
       )}
