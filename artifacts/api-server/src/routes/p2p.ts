@@ -781,7 +781,7 @@ router.post("/start-matching", requireAuth, async (req, res) => {
     return;
   }
   const settings = await getSettings(["matchingSessionMinutes"]);
-  const isAdmin = u.role === "admin" || u.id === 1;
+  const isAdmin = u.role === "admin" || Number(u.id) === 1;
   const mins = isAdmin ? 1440 : (parseInt(settings.matchingSessionMinutes) || 15);
   const expires = new Date(Date.now() + mins * 60 * 1000);
   await db.update(usersTable).set({
