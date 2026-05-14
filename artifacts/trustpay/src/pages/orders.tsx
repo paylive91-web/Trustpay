@@ -284,8 +284,9 @@ function ContactSupportDialog({ dispute, supportUrl, onClose }: { dispute: MyDis
     `• Opened: ${openedAt}\n\n` +
     `Proof attached below.`;
   const buildSupportLink = () => {
-    const base = supportUrl.trim() || "https://t.me/trustpay";
-    try { return new URL(base).toString(); } catch { return base; }
+    let base = supportUrl.trim() || "https://t.me/trustpay";
+    if (base && !base.startsWith("http")) base = "https://" + base;
+    try { return new URL(base).toString(); } catch { return "https://t.me/trustpay"; }
   };
   const checklist = isBuyer
     ? [
