@@ -519,6 +519,7 @@ function fSettings(s: any) {
     broadcastNotification,
     // Device-based registration cap. Default 3 (matches lib/settings.ts).
     maxRegistrationsPerDevice: Math.max(1, Math.min(50, parseInt(s.maxRegistrationsPerDevice || "3"))),
+    deviceLimitEnabled: (s.deviceLimitEnabled ?? "true") === "true",
     // USDT (TRC-20) deposit settings — must be returned here, otherwise the
     // admin/usdt Settings tab reads `undefined` after refresh and resets all
     // controls back to their useState defaults even though save persisted.
@@ -643,6 +644,9 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
   if (b.maxRegistrationsPerDevice != null) {
     const n = Math.max(1, Math.min(50, Math.floor(Number(b.maxRegistrationsPerDevice) || 3)));
     scalarMap["maxRegistrationsPerDevice"] = String(n);
+  }
+  if (b.deviceLimitEnabled != null) {
+    scalarMap["deviceLimitEnabled"] = b.deviceLimitEnabled === true ? "true" : "false";
   }
   // USDT scalars (the addresses array is handled separately further below).
   addScalar("usdtEnabled", b.usdtEnabled === true ? "true" : b.usdtEnabled === false ? "false" : b.usdtEnabled);
