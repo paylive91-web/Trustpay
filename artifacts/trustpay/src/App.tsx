@@ -23,6 +23,7 @@ import UsdtDeposit from "@/pages/usdt-deposit";
 import UsdtPayment from "@/pages/usdt-payment";
 import UsdtHistory from "@/pages/usdt-history";
 import DailyRewardPage from "@/pages/daily-reward";
+import WeeklyRewardPage from "@/pages/weekly-reward";
 
 import AdminLogin from "@/pages/admin/login";
 import AdminDashboard from "@/pages/admin/dashboard";
@@ -67,6 +68,7 @@ function Router() {
       <Route path="/usdt-payment/:id" component={UsdtPayment} />
       <Route path="/usdt-history" component={UsdtHistory} />
       <Route path="/daily-reward" component={DailyRewardPage} />
+      <Route path="/weekly-reward" component={WeeklyRewardPage} />
 
       <Route path="/admin" component={AdminLogin} />
       <Route path="/admin/login" component={AdminLogin} />
