@@ -193,6 +193,24 @@ router.get("/queue", requireAuth, async (req, res) => {
     return { ...f(c, seller), rewardPercent: rp, rewardAmount: ra, totalAmount: parseFloat((a + ra).toFixed(2)) };
   }).filter(Boolean);
 
+  // Fake orders: inject decoy entries when no real (non-admin) sellers are online
+  const hasRealSeller = (enriched as any[]).some((c: any) => !adminIdSet.has(c.userId));
+  if (!hasRealSeller) {
+    const fakeSettings = await getSettings(["fakeOrdersConfig"]);
+    let fakeConfig: { username: string; amount: string }[] = [];
+    try { fakeConfig = JSON.parse(fakeSettings.fakeOrdersConfig || "[]"); } catch {}
+    const fakeItems = fakeConfig.map((fc: any, i: number) => {
+      const a = parseFloat(fc.amount) || 0;
+      const rp = a >= 2001 ? 3 : a >= 1001 ? 4 : 5;
+      const ra = parseFloat((a * rp / 100).toFixed(2));
+      return { id: 9999000 + i, type: "withdrawal", status: "available", amount: String(a), userId: 0,
+        username: fc.username, displayName: fc.username, isFake: true,
+        rewardPercent: rp, rewardAmount: ra, totalAmount: parseFloat((a + ra).toFixed(2)),
+        createdAt: new Date().toISOString(), upiId: null, upiName: null };
+    });
+    (enriched as any[]).push(...fakeItems);
+  }
+
   res.json(enriched);
 });
 
@@ -227,6 +245,12 @@ router.post("/lock/:id", requireAuth, async (req, res) => {
   }
 
   const id = parseInt(asString(req.params.id));
+
+  // Fake order guard — IDs 9999000+ are decoy display-only orders
+  if (id >= 9999000) {
+    res.status(400).json({ error: "Yeh order abhi kisi aur ne le liya. Doosra order try karo." });
+    return;
+  }
 
   // Mutex check: if another request is already processing this chunk, reject instantly
   if (chunkLockInProgress.has(id)) {
