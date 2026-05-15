@@ -86,6 +86,16 @@ export default function Invite() {
   if (isLoading) {
     return (
       <Layout>
+      <style>{`
+        @keyframes fadeSlideDown{0%{opacity:0;transform:translateY(-16px);}100%{opacity:1;transform:translateY(0);}}
+        @keyframes fadeSlideUp{0%{opacity:0;transform:translateY(16px);}100%{opacity:1;transform:translateY(0);}}
+        @keyframes shimmerOrange{0%{background-position:-200% 0;}100%{background-position:200% 0;}}
+        @keyframes floatIcon{0%,100%{transform:translateY(0) rotate(-5deg);}50%{transform:translateY(-8px) rotate(5deg);}}
+        .hero-anim{animation:fadeSlideDown .5s cubic-bezier(.22,1,.36,1) both;}
+        .cards-anim{animation:fadeSlideUp .5s cubic-bezier(.22,1,.36,1) .15s both;}
+        .float-icon{animation:floatIcon 2.5s ease-in-out infinite;}
+        .shimmer-share{background:linear-gradient(105deg,#ea580c 0%,#f97316 30%,#fdba74 50%,#f97316 70%,#ea580c 100%);background-size:200% 100%;animation:shimmerOrange 2s linear infinite;}
+      `}</style>
         <div className="p-4 space-y-4">
           <Skeleton className="h-40 w-full rounded-xl" />
           <Skeleton className="h-32 w-full rounded-xl" />
@@ -98,34 +108,34 @@ export default function Invite() {
   return (
     <Layout>
       {/* Hero — dark slate + amber (USDT page style) */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 pt-8 pb-20">
-        <div className="absolute -top-10 -right-10 w-40 h-40 bg-orange-500/10 rounded-full blur-2xl" />
-        <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-amber-500/10 rounded-full blur-2xl" />
+      <div className="relative overflow-hidden bg-gradient-to-br from-orange-500 via-orange-600 to-red-500 px-4 pt-8 pb-20 hero-anim">
+        <div className="absolute -top-10 -right-10 w-48 h-48 bg-white/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-yellow-200/10 rounded-full blur-3xl" />
 
         <div className="absolute top-4 right-4 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-orange-400 to-rose-400 text-white text-[10px] font-black shadow-lg">
           <Sparkles className="h-2.5 w-2.5" /> EARN UP TO 1%
         </div>
 
         <div className="relative flex flex-col items-center text-center">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center mb-3 shadow-lg ring-2 ring-orange-300/30">
+          <div className="w-16 h-16 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center mb-3 shadow-lg float-icon">
             <Gift className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-black text-white mb-1">Invite & Earn</h1>
-          <p className="text-slate-400 text-sm">Earn commissions when your friends deposit</p>
+          <p className="text-white/80 text-sm">Earn commissions when your friends deposit</p>
           <div className="mt-4 grid grid-cols-2 gap-3 w-full max-w-xs">
-            <div className="rounded-2xl bg-white/5 border border-white/10 p-3 text-center">
-              <div className="text-2xl font-black text-amber-300">1%</div>
+            <div className="rounded-2xl bg-white/20 border border-white/30 p-3 text-center">
+              <div className="text-2xl font-black text-yellow-100">1%</div>
               <div className="text-[11px] text-slate-400">Direct Invite (L1)</div>
             </div>
-            <div className="rounded-2xl bg-white/5 border border-white/10 p-3 text-center">
-              <div className="text-2xl font-black text-amber-300">0.1%</div>
+            <div className="rounded-2xl bg-white/20 border border-white/30 p-3 text-center">
+              <div className="text-2xl font-black text-yellow-100">0.1%</div>
               <div className="text-[11px] text-slate-400">2nd Level (L2)</div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="px-4 -mt-10 relative z-10 space-y-4 pb-6">
+      <div className="px-4 -mt-10 relative z-10 space-y-4 pb-6 cards-anim">
         {/* Earnings summary */}
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 p-4 shadow-md">
@@ -172,7 +182,7 @@ export default function Invite() {
             <Button type="button" variant="outline" onClick={handleCopyLink} className="rounded-xl border-orange-200 text-orange-700 hover:bg-orange-100">
               <Copy className="w-4 h-4 mr-2" /> Copy Link
             </Button>
-            <Button type="button" onClick={handleShare} className="rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white border-none shadow-md">
+            <Button type="button" onClick={handleShare} className="rounded-xl shimmer-share text-white border-none shadow-md">
               <Share2 className="w-4 h-4 mr-2" /> Share
             </Button>
           </div>
@@ -237,11 +247,11 @@ export default function Invite() {
                 </div>
               </div>
             </div>
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 ring-1 ring-amber-400/30 p-4">
-              <div className="text-[10px] text-amber-300/80 uppercase tracking-wide font-bold">
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 p-4 shadow-lg">
+              <div className="text-[10px] text-white/80 uppercase tracking-wide font-bold">
                 Current daily reward at {todayActiveCount} active users
               </div>
-              <div className="text-2xl font-black text-amber-300 mt-0.5">
+              <div className="text-2xl font-black text-white mt-0.5">
                 ₹{Number(currentDailyReward || 0).toFixed(2)}
               </div>
             </div>
