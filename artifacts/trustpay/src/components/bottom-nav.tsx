@@ -12,7 +12,7 @@ export default function BottomNav() {
     { href: "/", label: "Home", icon: Home },
     { href: "/orders", label: "Orders", icon: ListOrdered },
     { href: "/upi", label: "Connect", icon: Plus, center: true },
-    { href: "/invite", label: "Invite", icon: Gift },
+    { href: "/daily-reward", label: "Rewards", icon: Gift },
     { href: "/profile", label: "Me", icon: User },
   ];
 
