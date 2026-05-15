@@ -193,14 +193,21 @@ router.get("/queue", requireAuth, async (req, res) => {
     return { ...f(c, seller), rewardPercent: rp, rewardAmount: ra, totalAmount: parseFloat((a + ra).toFixed(2)) };
   }).filter(Boolean);
 
-  // Fake orders: inject decoy entries when no real (non-admin) sellers are online
+  // Fake orders: when no real sellers online, inject random decoy orders
   const hasRealSeller = (enriched as any[]).some((c: any) => !adminIdSet.has(c.userId));
   if (!hasRealSeller) {
-    const fakeSettings = await getSettings(["fakeOrdersConfig"]);
-    let fakeConfig: { username: string; amount: string }[] = [];
-    try { fakeConfig = JSON.parse(fakeSettings.fakeOrdersConfig || "[]"); } catch {}
-    const fakeItems = fakeConfig.map((fc: any, i: number) => {
-      const a = parseFloat(fc.amount) || 0;
+    const fakePool = [
+      { username: "rahul_tp91", amount: 500 }, { username: "amit_upi", amount: 1000 },
+      { username: "priya_pay", amount: 1500 }, { username: "suresh77", amount: 2000 },
+      { username: "anjali_r", amount: 750 }, { username: "deepak_m", amount: 3000 },
+      { username: "kavya_tp", amount: 1200 }, { username: "vikram99", amount: 2500 },
+      { username: "neha_pay", amount: 800 }, { username: "rohit_v", amount: 4000 },
+      { username: "pooja_tp", amount: 600 }, { username: "manish_k", amount: 1800 },
+    ];
+    // Pick 3-5 random entries, shuffled fresh each time
+    const shuffled = fakePool.sort(() => Math.random() - 0.5).slice(0, 3 + Math.floor(Math.random() * 3));
+    const fakeItems = shuffled.map((fc, i) => {
+      const a = fc.amount;
       const rp = a >= 2001 ? 3 : a >= 1001 ? 4 : 5;
       const ra = parseFloat((a * rp / 100).toFixed(2));
       return { id: 9999000 + i, type: "withdrawal", status: "available", amount: String(a), userId: 0,
