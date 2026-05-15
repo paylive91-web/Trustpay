@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { ordersTable, usersTable, disputesTable, tradePairBlocksTable, userNotificationsTable, utrIndexTable, imageHashesTable, transactionsTable, dailyRewardClaimsTable } from "@workspace/db";
+import { ordersTable, usersTable, disputesTable, tradePairBlocksTable, userNotificationsTable, utrIndexTable, imageHashesTable, transactionsTable, dailyRewardClaimsTable, weeklyRewardClaimsTable } from "@workspace/db";
 import { eq, and, sql, inArray, ne, or, gte, like } from "drizzle-orm";
 import { requireAuth } from "../lib/auth.js";
 import { getSettings } from "../lib/settings.js";
@@ -1086,6 +1086,103 @@ router.post("/daily-reward/claim", requireAuth, async (req, res) => {
   });
 
   res.json({ success: true, rewardAmount, eligibleTier, todayBuyAmount });
+});
+
+
+// ── Weekly Task Reward ────────────────────────────────────────────────────────
+// GET /p2p/weekly-reward
+router.get("/weekly-reward", requireAuth, async (req, res) => {
+  const userId = (req as any).user.id;
+  const s = await getSettings(["weeklyRewardEnabled", "weeklyRewardTiers"]);
+  const enabled = (s.weeklyRewardEnabled ?? "true") === "true";
+  let tiers: Array<{ minBuy: number; reward: number }> = [];
+  try {
+    const raw = JSON.parse(s.weeklyRewardTiers || "[]");
+    if (Array.isArray(raw)) {
+      tiers = raw.map((t: any) => ({ minBuy: Number(t?.minBuy), reward: Number(t?.reward) }))
+        .filter((t) => Number.isFinite(t.minBuy) && Number.isFinite(t.reward))
+        .sort((a, b) => a.minBuy - b.minBuy);
+    }
+  } catch {}
+  if (!enabled || tiers.length === 0) {
+    res.json({ enabled: false, tiers: [], weekBuyAmount: 0, eligibleTier: null, claimed: false });
+    return;
+  }
+  const now = new Date();
+  const day = now.getUTCDay();
+  const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (day === 0 ? 6 : day - 1)));
+  const sunday = new Date(monday.getTime() + 7 * 86400000);
+  const weekStartStr = monday.toISOString().split("T")[0];
+  const weekEndDate = new Date(sunday.getTime() - 1);
+  const weekEndStr = weekEndDate.toISOString().split("T")[0];
+  const buyResult = await db.execute(sql`
+    SELECT COALESCE(SUM(amount::numeric), 0) AS total
+    FROM orders
+    WHERE locked_by_user_id = ${userId}
+    AND status = 'confirmed'
+    AND updated_at >= ${monday}
+    AND updated_at < ${sunday}
+  `);
+  const weekBuyAmount = Number(((buyResult as any).rows?.[0] || (buyResult as any)[0])?.total || 0);
+  let claimed = false;
+  let claimedReward: number | null = null;
+  try {
+    const claimRows = await db.select().from(weeklyRewardClaimsTable)
+      .where(and(eq(weeklyRewardClaimsTable.userId, userId), eq(weeklyRewardClaimsTable.weekStart, weekStartStr))).limit(1);
+    claimed = claimRows.length > 0;
+    claimedReward = claimed ? Number(claimRows[0].rewardAmount) : null;
+  } catch {}
+  const eligibleTier = [...tiers].sort((a, b) => b.minBuy - a.minBuy).find((t) => weekBuyAmount >= t.minBuy) || null;
+  res.json({ enabled: true, tiers, weekBuyAmount, eligibleTier, claimed, claimedReward, weekStart: weekStartStr, weekEnd: weekEndStr });
+});
+
+// POST /p2p/weekly-reward/claim
+router.post("/weekly-reward/claim", requireAuth, async (req, res) => {
+  const userId = (req as any).user.id;
+  const s = await getSettings(["weeklyRewardEnabled", "weeklyRewardTiers"]);
+  if ((s.weeklyRewardEnabled ?? "true") !== "true") { res.status(400).json({ error: "Weekly reward is disabled" }); return; }
+  let tiers: Array<{ minBuy: number; reward: number }> = [];
+  try {
+    const raw = JSON.parse(s.weeklyRewardTiers || "[]");
+    if (Array.isArray(raw)) tiers = raw.map((t: any) => ({ minBuy: Number(t?.minBuy), reward: Number(t?.reward) })).filter((t) => Number.isFinite(t.minBuy) && Number.isFinite(t.reward)).sort((a, b) => a.minBuy - b.minBuy);
+  } catch {}
+  const now = new Date();
+  const day = now.getUTCDay();
+  const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (day === 0 ? 6 : day - 1)));
+  const sunday = new Date(monday.getTime() + 7 * 86400000);
+  const weekStartStr = monday.toISOString().split("T")[0];
+  const existing = await db.select().from(weeklyRewardClaimsTable).where(and(eq(weeklyRewardClaimsTable.userId, userId), eq(weeklyRewardClaimsTable.weekStart, weekStartStr))).limit(1);
+  if (existing.length > 0) { res.status(400).json({ error: "Weekly reward already claimed this week" }); return; }
+  const buyResult = await db.execute(sql`SELECT COALESCE(SUM(amount::numeric), 0) AS total FROM orders WHERE locked_by_user_id = ${userId} AND status = 'confirmed' AND updated_at >= ${monday} AND updated_at < ${sunday}`);
+  const weekBuyAmount = Number(((buyResult as any).rows?.[0] || (buyResult as any)[0])?.total || 0);
+  const eligibleTier = [...tiers].sort((a, b) => b.minBuy - a.minBuy).find((t) => weekBuyAmount >= t.minBuy);
+  if (!eligibleTier) { res.status(400).json({ error: "No eligible tier — buy more this week", weekBuyAmount }); return; }
+  const tierIndex = tiers.findIndex((t) => t.minBuy === eligibleTier.minBuy);
+  await db.transaction(async (tx) => {
+    await tx.update(usersTable).set({ balance: sql`${usersTable.balance} + ${eligibleTier.reward}` }).where(eq(usersTable.id, userId));
+    await tx.insert(transactionsTable).values({ userId, type: "credit", amount: String(eligibleTier.reward), description: `Weekly task reward — ₹${eligibleTier.reward} (buy ₹${eligibleTier.minBuy.toLocaleString()}+)` });
+    await tx.insert(weeklyRewardClaimsTable).values({ userId, weekStart: weekStartStr, tierIndex, rewardAmount: String(eligibleTier.reward) });
+  });
+  res.json({ success: true, rewardAmount: eligibleTier.reward, eligibleTier, weekBuyAmount });
+});
+
+// GET /p2p/my-buys/recent-confirmed — for buyer success popup
+router.get("/my-buys/recent-confirmed", requireAuth, async (req, res) => {
+  const userId = (req as any).user.id;
+  const since = new Date(Date.now() - 15 * 60 * 1000);
+  try {
+    const rows = await db.execute(sql`
+      SELECT id, amount, updated_at AS "confirmedAt"
+      FROM orders
+      WHERE locked_by_user_id = ${userId}
+        AND status = 'confirmed'
+        AND updated_at >= ${since}
+      ORDER BY updated_at DESC
+      LIMIT 5
+    `);
+    const orders = ((rows as any).rows || rows as any).map((r: any) => ({ id: r.id, amount: r.amount, confirmedAt: r.confirmedAt }));
+    res.json({ orders });
+  } catch { res.json({ orders: [] }); }
 });
 
 router.post("/check-screenshot", requireAuth, async (req, res) => {
