@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import BottomNav from "./bottom-nav";
 import PaymentLockBanner from "./payment-lock-banner";
 import SellerAlertsPopup from "./seller-alerts-popup";
+import BuyerSuccessPopup from "./buyer-success-popup";
 import SellerOfflineDisputePopup from "./seller-offline-dispute-popup";
 import { getAuthToken } from "@/lib/auth";
 import { playLoudAlarm } from "@/lib/alarm";
@@ -65,6 +66,7 @@ export default function Layout({ children, showBottomNav = true }: LayoutProps) 
         <SellerOfflineDisputePopup />
         <PaymentLockBanner />
         <SellerAlertsPopup />
+        <BuyerSuccessPopup />
         {showBottomNav && <BottomNav />}
       </div>
     </div>
