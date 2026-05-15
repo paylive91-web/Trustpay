@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db } from "@workspace/db";
-import { usersTable, referralsTable, ordersTable } from "@workspace/db";
+import { usersTable, referralsTable, ordersTable, transactionsTable } from "@workspace/db";
 import { eq, or, desc, and, sql, inArray } from "drizzle-orm";
 import { signToken, requireAuth, formatUser } from "../lib/auth.js";
 import { recordDeviceFingerprint, checkAccountFraud, checkReferralSelfLoop } from "../lib/fraud.js";
@@ -194,6 +194,26 @@ router.post("/register", async (req, res) => {
     await checkReferralSelfLoop(referredById, user.id);
   }
   await checkAccountFraud(user.id, ip, ua);
+
+  // Credit signup bonus if configured
+  try {
+    const bonusStr = await getSetting("signupBonus");
+    const bonusAmount = parseFloat(bonusStr || "0");
+    if (bonusAmount > 0) {
+      await db.update(usersTable).set({
+        balance: sql`${usersTable.balance} + ${bonusAmount}`,
+      }).where(eq(usersTable.id, user.id));
+      await db.insert(transactionsTable).values({
+        userId: user.id,
+        type: "credit",
+        amount: String(bonusAmount),
+        description: `Welcome bonus — ₹${bonusAmount} joining reward`,
+      });
+      user.balance = String((Number(user.balance) + bonusAmount).toFixed(2));
+    }
+  } catch (err) {
+    req.log.warn({ err }, "signup bonus credit failed; user created successfully");
+  }
 
   const token = signToken(user.id, user.role);
   res.json({ user: formatUser(user), token });
