@@ -203,9 +203,17 @@ router.get("/queue", requireAuth, async (req, res) => {
       { username: "kavya_tp", amount: 1200 }, { username: "vikram99", amount: 2500 },
       { username: "neha_pay", amount: 800 }, { username: "rohit_v", amount: 4000 },
       { username: "pooja_tp", amount: 600 }, { username: "manish_k", amount: 1800 },
+      { username: "saurabh_r", amount: 900 }, { username: "divya_pay", amount: 2200 },
+      { username: "arjun_tp", amount: 1300 }, { username: "sneha_v", amount: 3500 },
+      { username: "karan_upi", amount: 700 }, { username: "rekha_m", amount: 1600 },
+      { username: "tarun_99", amount: 2800 }, { username: "nisha_pay", amount: 400 },
+      { username: "gaurav_tp", amount: 5000 }, { username: "preeti_r", amount: 1100 },
+      { username: "akash_upi", amount: 650 }, { username: "shweta_k", amount: 4500 },
+      { username: "mohit_v", amount: 950 }, { username: "kajal_tp", amount: 2100 },
+      { username: "ravi_pay", amount: 1400 }, { username: "simran_r", amount: 3200 },
     ];
-    // Pick 3-5 random entries, shuffled fresh each time
-    const shuffled = fakePool.sort(() => Math.random() - 0.5).slice(0, 3 + Math.floor(Math.random() * 3));
+    // Show 10-14 random entries, shuffled fresh each time
+    const shuffled = fakePool.sort(() => Math.random() - 0.5).slice(0, 10 + Math.floor(Math.random() * 5));
     const fakeItems = shuffled.map((fc, i) => {
       const a = fc.amount;
       const rp = a >= 2001 ? 3 : a >= 1001 ? 4 : 5;
@@ -255,7 +263,7 @@ router.post("/lock/:id", requireAuth, async (req, res) => {
 
   // Fake order guard — IDs 9999000+ are decoy display-only orders
   if (id >= 9999000) {
-    res.status(400).json({ error: "Yeh order abhi kisi aur ne le liya. Doosra order try karo." });
+    res.status(400).json({ error: "Yeh order abhi le liya gaya, doosra try karo." });
     return;
   }
 
