@@ -1002,16 +1002,23 @@ router.get("/daily-reward", requireAuth, async (req, res) => {
   `);
   const todayBuyAmount = Number(((buyResult as any).rows?.[0] || (buyResult as any)[0])?.total || 0);
 
-  const claimRows = await db.select()
-    .from(dailyRewardClaimsTable)
-    .where(and(eq(dailyRewardClaimsTable.userId, userId), eq(dailyRewardClaimsTable.claimDate, todayStr)))
-    .limit(1);
-  const claimed = claimRows.length > 0;
+  let claimed = false;
+  let claimedReward: number | null = null;
+  try {
+    const claimRows = await db.select()
+      .from(dailyRewardClaimsTable)
+      .where(and(eq(dailyRewardClaimsTable.userId, userId), eq(dailyRewardClaimsTable.claimDate, todayStr)))
+      .limit(1);
+    claimed = claimRows.length > 0;
+    claimedReward = claimed ? Number(claimRows[0].rewardAmount) : null;
+  } catch {
+    // daily_reward_claims table may not exist yet — treat as unclaimed
+  }
 
   const sortedDesc = [...tiers].sort((a, b) => b.minBuy - a.minBuy);
   const eligibleTier = sortedDesc.find((t) => todayBuyAmount >= t.minBuy) || null;
 
-  res.json({ enabled: true, tiers, todayBuyAmount, eligibleTier, claimed, claimedReward: claimed ? Number(claimRows[0].rewardAmount) : null });
+  res.json({ enabled: true, tiers, todayBuyAmount, eligibleTier, claimed, claimedReward });
 });
 
 // POST /p2p/daily-reward/claim — claim today's reward
