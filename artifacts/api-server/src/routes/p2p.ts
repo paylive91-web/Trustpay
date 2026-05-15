@@ -267,10 +267,11 @@ router.post("/lock/:id", requireAuth, async (req, res) => {
     res.status(403).json({ error: "This trade pair is blocked by TrustPay" });
     return;
   }
-  // Seller must be online — reject lock if seller went offline
-  const [sellerNow] = await db.select({ lastSeenAt: usersTable.lastSeenAt, matchingExpiresAt: usersTable.matchingExpiresAt })
+  // Seller must be online — reject lock if seller went offline (admin exempt)
+  const [sellerNow] = await db.select({ lastSeenAt: usersTable.lastSeenAt, matchingExpiresAt: usersTable.matchingExpiresAt, role: usersTable.role })
     .from(usersTable).where(eq(usersTable.id, chunk.userId)).limit(1);
-  const sellerOffline = !sellerNow?.lastSeenAt || Date.now() - new Date(sellerNow.lastSeenAt).getTime() > 2 * 60 * 1000;
+  const sellerIsAdmin = sellerNow?.role === "admin";
+  const sellerOffline = !sellerIsAdmin && (!sellerNow?.lastSeenAt || Date.now() - new Date(sellerNow.lastSeenAt).getTime() > 2 * 60 * 1000);
   const sellerMatchingGone = !sellerNow?.matchingExpiresAt || new Date(sellerNow.matchingExpiresAt).getTime() < Date.now();
   if (sellerOffline || sellerMatchingGone) {
     // Cancel this chunk so it's cleaned up
@@ -803,7 +804,9 @@ router.post("/start-matching", requireAuth, async (req, res) => {
   const settings = await getSettings(["matchingSessionMinutes"]);
   const isAdmin = u.role === "admin" || Number(u.id) === 1;
   const mins = isAdmin ? 1440 : (parseInt(settings.matchingSessionMinutes) || 15);
-  const expires = new Date(Date.now() + mins * 60 * 1000);
+  const expires = isAdmin
+    ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+    : new Date(Date.now() + mins * 60 * 1000);
   await db.update(usersTable).set({
     matchingExpiresAt: expires,
     autoSellEnabled: true,
@@ -836,7 +839,8 @@ router.get("/matching-status", requireAuth, async (req, res) => {
   const u = (req as any).user;
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, u.id)).limit(1);
   const expiresAt = user?.matchingExpiresAt || null;
-  const isOnline = !!user?.lastSeenAt && Date.now() - new Date(user.lastSeenAt).getTime() < 2 * 60 * 1000;
+  const isAdminUser = user?.role === "admin" || Number(user?.id) === 1;
+  const isOnline = isAdminUser || (!!user?.lastSeenAt && Date.now() - new Date(user.lastSeenAt).getTime() < 2 * 60 * 1000);
   const isActive = !!expiresAt && new Date(expiresAt).getTime() > Date.now() && isOnline;
   // Self-heal: while matching is active, opportunistically regenerate chunks
   // on every status poll. The function is internally idempotent — it only
