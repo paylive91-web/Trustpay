@@ -121,6 +121,10 @@ interface DailyRewardTier {
   minBuy: number;
   reward: number;
 }
+interface WeeklyRewardTier {
+  minBuy: number;
+  reward: number;
+}
 
 export default function AdminSettings() {
   const { toast } = useToast();
@@ -186,6 +190,15 @@ export default function AdminSettings() {
     { minBuy: 50000, reward: 300 },
   ]);
 
+  const [weeklyRewardEnabled, setWeeklyRewardEnabled] = useState<boolean>(true);
+  const [weeklyRewardTiers, setWeeklyRewardTiers] = useState<WeeklyRewardTier[]>([
+    { minBuy: 50000,   reward: 300 },
+    { minBuy: 100000,  reward: 1000 },
+    { minBuy: 300000,  reward: 3000 },
+    { minBuy: 500000,  reward: 5000 },
+    { minBuy: 1000000, reward: 10000 },
+  ]);
+
   // SMS Auto Delete UI removed — cleanup now runs system-wide, automatically,
   // every 6 hours via the learning auto-cleanup job (server-side). No manual
   // toggle or "Run Cleanup" button is needed.
@@ -244,6 +257,12 @@ export default function AdminSettings() {
       if (Array.isArray(drTiersRaw) && drTiersRaw.length > 0) {
         setDailyRewardTiers(drTiersRaw.map((t: any) => ({ minBuy: Number(t.minBuy) || 0, reward: Number(t.reward) || 0 })));
       }
+      const wrEnabled = (settings as any).weeklyRewardEnabled;
+      setWeeklyRewardEnabled(wrEnabled === undefined ? true : wrEnabled === true || wrEnabled === "true");
+      const wrTiersRaw = (settings as any).weeklyRewardTiers;
+      if (Array.isArray(wrTiersRaw) && wrTiersRaw.length > 0) {
+        setWeeklyRewardTiers(wrTiersRaw.map((t: any) => ({ minBuy: Number(t.minBuy) || 0, reward: Number(t.reward) || 0 })));
+      }
       setAdminPassword("");
     }
   }, [settings]);
@@ -301,6 +320,15 @@ export default function AdminSettings() {
   const removeDailyRewardTier = (i: number) => setDailyRewardTiers((prev) => prev.filter((_, idx) => idx !== i));
   const updateDailyRewardTier = (i: number, field: keyof DailyRewardTier, val: number) =>
     setDailyRewardTiers((prev) => prev.map((t, idx) => idx === i ? { ...t, [field]: val } : t));
+
+  const addWeeklyRewardTier = () => setWeeklyRewardTiers((prev) => {
+    const last = prev[prev.length - 1];
+    const minBuy = last ? last.minBuy * 2 : 50000;
+    return [...prev, { minBuy, reward: 500 }];
+  });
+  const removeWeeklyRewardTier = (i: number) => setWeeklyRewardTiers((prev) => prev.filter((_, idx) => idx !== i));
+  const updateWeeklyRewardTier = (i: number, field: keyof WeeklyRewardTier, val: number) =>
+    setWeeklyRewardTiers((prev) => prev.map((t, idx) => idx === i ? { ...t, [field]: val } : t));
 
   const addFeeTier = () => setFeeTiers((prev) => {
     // Default the new tier just after the last one to make it easy to extend
@@ -386,6 +414,8 @@ export default function AdminSettings() {
       signupBonus,
       dailyRewardEnabled,
       dailyRewardTiers,
+      weeklyRewardEnabled,
+      weeklyRewardTiers,
     };
     if (adminPassword) payload.adminPassword = adminPassword;
     updateSettingsMut.mutate({ data: payload });
@@ -981,6 +1011,63 @@ export default function AdminSettings() {
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">User claims the highest tier where their total confirmed buys today ≥ Min Buy. Reward is credited to their wallet once per day.</p>
+                </div>
+              </CardContent>
+            </Card>
+
+
+            {/* Weekly Task Reward */}
+            <Card className="border-violet-100 bg-violet-50/30">
+              <CardHeader>
+                <CardTitle className="text-violet-800 flex items-center gap-2">
+                  <Target className="w-5 h-5" />
+                  Weekly Task Reward
+                </CardTitle>
+                <CardDescription>
+                  Users earn a weekly reward by completing buy trades over Mon–Sun. Highest tier where weekly buy total ≥ minBuy is credited once per week.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between rounded-lg border border-violet-200 bg-white px-4 py-3">
+                  <div>
+                    <div className="font-medium text-sm">Weekly Reward Enabled</div>
+                    <div className="text-xs text-muted-foreground">Show weekly reward card on home screen</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setWeeklyRewardEnabled((v) => !v)}
+                    className={`relative w-11 h-6 rounded-full transition-colors ${weeklyRewardEnabled ? "bg-violet-500" : "bg-slate-300"}`}
+                  >
+                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${weeklyRewardEnabled ? "translate-x-5" : "translate-x-0.5"}`} />
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Reward Tiers</Label>
+                    <Button type="button" size="sm" variant="outline" onClick={addWeeklyRewardTier} className="gap-1 text-violet-700 border-violet-200 hover:bg-violet-50">
+                      <Plus className="w-3 h-3" /> Add Tier
+                    </Button>
+                  </div>
+                  <div className="rounded-lg border border-violet-200 overflow-hidden">
+                    <div className="grid grid-cols-[1fr_1fr_auto] text-xs font-medium bg-violet-50 px-3 py-2 gap-2 border-b border-violet-100">
+                      <span>Min Weekly Buy (₹)</span><span>Reward (₹)</span><span />
+                    </div>
+                    {weeklyRewardTiers.map((t, i) => (
+                      <div key={i} className="grid grid-cols-[1fr_1fr_auto] px-3 py-2 gap-2 items-center border-b border-violet-50 last:border-0">
+                        <Input type="number" min={0} step={1000} value={t.minBuy}
+                          onChange={(e) => updateWeeklyRewardTier(i, "minBuy", Number(e.target.value) || 0)} className="h-8 text-sm" />
+                        <Input type="number" min={0} step={10} value={t.reward}
+                          onChange={(e) => updateWeeklyRewardTier(i, "reward", Number(e.target.value) || 0)} className="h-8 text-sm" />
+                        <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-red-400 hover:text-red-600 hover:bg-red-50" onClick={() => removeWeeklyRewardTier(i)}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                    {weeklyRewardTiers.length === 0 && (
+                      <div className="px-3 py-4 text-center text-sm text-muted-foreground">No tiers — weekly reward card will be hidden</div>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">User claims the highest tier where their total confirmed buys this week ≥ Min Buy. Once per week (resets Monday).</p>
                 </div>
               </CardContent>
             </Card>
