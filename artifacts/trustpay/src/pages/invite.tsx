@@ -30,6 +30,18 @@ export default function Invite() {
     enabled: !!user,
   });
   const totalEarnings = inviteEarnings + inviteEarningsL2;
+  const { data: weeklyStats } = useQuery<{ weekTotal: number; users: Array<{ id: number; name: string; weekBuy: number }>; weekStart: string }>({
+    queryKey: ["invite-weekly-stats"],
+    queryFn: async () => {
+      const token = getAuthToken();
+      const res = await fetch(`${API_BASE}/p2p/invite-weekly-stats`, {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      });
+      return res.json();
+    },
+    enabled: !!user,
+    staleTime: 60_000,
+  });
   const { data: appSettings } = useGetAppSettings();
   const agentTiers = Array.isArray((appSettings as any)?.agentTiers) ? (appSettings as any).agentTiers : [];
   const todayActiveCount = invitees.filter((u: any) => Number(u.todayDeposits || 0) > 0).length;
@@ -277,6 +289,64 @@ export default function Invite() {
                 })
               )}
             </div>
+          </CardContent>
+        </Card>
+
+
+        {/* Weekly Statistics */}
+        <Card className="border-none shadow-md overflow-hidden">
+          <CardContent className="p-4">
+            <style>{`
+              @keyframes countIn{0%{opacity:0;transform:scale(.85);}60%{transform:scale(1.05);}100%{opacity:1;transform:scale(1);}}
+              @keyframes barGrow{0%{width:0%;}100%{width:var(--bar-w);}}
+              .count-in{animation:countIn .5s cubic-bezier(.34,1.56,.64,1) both;}
+            `}</style>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow">
+                  <TrendingUp className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <div className="text-sm font-black text-slate-900">Weekly Statistics</div>
+                  <div className="text-[10px] text-muted-foreground">Invited users' buy total this week</div>
+                </div>
+              </div>
+              {weeklyStats?.weekStart && (
+                <div className="text-[10px] text-violet-600 bg-violet-50 rounded-full px-2 py-0.5 font-semibold">
+                  From {weeklyStats.weekStart}
+                </div>
+              )}
+            </div>
+            <div className="rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 p-4 mb-3 shadow-md">
+              <div className="text-[10px] text-white/70 uppercase tracking-wider font-bold mb-1">Total This Week</div>
+              <div className="text-3xl font-black text-white count-in">
+                ₹{Number(weeklyStats?.weekTotal || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+              </div>
+              <div className="text-[11px] text-white/70 mt-1">{weeklyStats?.users?.length || 0} invited user{(weeklyStats?.users?.length || 0) !== 1 ? "s" : ""} tracked</div>
+            </div>
+            {weeklyStats?.users && weeklyStats.users.length > 0 ? (
+              <div className="space-y-2">
+                {weeklyStats.users.map((u, i) => {
+                  const pct = weeklyStats.weekTotal > 0 ? Math.round((u.weekBuy / weeklyStats.weekTotal) * 100) : 0;
+                  return (
+                    <div key={u.id} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center text-white text-[9px] font-black shrink-0">{i+1}</div>
+                          <span className="font-medium text-slate-700 truncate max-w-[120px]">{u.name}</span>
+                        </div>
+                        <span className="font-black text-violet-700">₹{Number(u.weekBuy).toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-violet-100 overflow-hidden">
+                        <div className="h-full rounded-full bg-gradient-to-r from-violet-400 to-purple-500 transition-all duration-700" style={{ width: pct + "%" }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-4 text-sm text-muted-foreground">No buy activity from invited users this week yet.</div>
+            )}
           </CardContent>
         </Card>
 
