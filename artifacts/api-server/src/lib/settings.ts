@@ -146,6 +146,14 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   // dailyRewardTiers: JSON array of {minBuy, reward} — user claims the
   // highest tier where their total confirmed buy amount today >= minBuy.
   dailyRewardEnabled: "true",
+  weeklyRewardEnabled: "true",
+  weeklyRewardTiers: JSON.stringify([
+    { minBuy: 50000,   reward: 300 },
+    { minBuy: 100000,  reward: 1000 },
+    { minBuy: 300000,  reward: 3000 },
+    { minBuy: 500000,  reward: 5000 },
+    { minBuy: 1000000, reward: 10000 },
+  ]),
   dailyRewardTiers: JSON.stringify([
     { minBuy: 2000, reward: 20 },
     { minBuy: 5000, reward: 50 },
