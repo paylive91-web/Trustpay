@@ -8,7 +8,7 @@ import NotificationsBell from "@/components/notifications-bell";
 const logoPath = `${import.meta.env.BASE_URL}trustpay-logo.png`;
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowDownCircle, ArrowUpCircle, ChevronRight, Coins, Download, IndianRupee, Link as LinkIcon, ShieldAlert, ShieldCheck, Sparkles, Wallet, TrendingUp, TrendingDown, AlertCircle, Award, Medal, Crown, Gem, BookOpen } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, ChevronRight, Coins, Download, IndianRupee, Link as LinkIcon, ShieldAlert, ShieldCheck, Sparkles, Wallet, TrendingUp, TrendingDown, AlertCircle, Award, Medal, Crown, Gem, BookOpen, Gift, CheckCircle2, Calendar, Loader2, Target } from "lucide-react";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { Skeleton } from "@/components/ui/skeleton";
 import useEmblaCarousel from "embla-carousel-react";
@@ -287,6 +287,7 @@ export default function Home() {
 
         <DisputePauseBanner />
         <HomeRewardCard settings={settings} />
+        <DailyRewardCard />
         <LiveOrdersSection />
 
         {/* ── Sell Queue quick link ── amber tinted */}
@@ -482,6 +483,135 @@ function AgentTierBadge({ level, tiers }: AgentTierBadgeProps) {
       <div className="text-[10px] font-semibold uppercase tracking-wide bg-white/15 rounded-full px-2.5 py-1 backdrop-blur-sm border border-white/20 whitespace-nowrap">
         Level {level}
       </div>
+    </div>
+  );
+}
+
+// ── Daily Task Reward Card ────────────────────────────────────────────────────
+function DailyRewardCard() {
+  const { toast } = useToast();
+  const [claiming, setClaiming] = useState(false);
+
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ["daily-reward"],
+    queryFn: () => api("/p2p/daily-reward"),
+    retry: false,
+    refetchOnWindowFocus: true,
+    staleTime: 30_000,
+  });
+
+  if (isLoading) return null;
+  if (!data?.enabled || !Array.isArray(data?.tiers) || data.tiers.length === 0) return null;
+
+  const tiers: Array<{ minBuy: number; reward: number }> = data.tiers;
+  const todayBuyAmount: number = Number(data.todayBuyAmount || 0);
+  const eligibleTier: { minBuy: number; reward: number } | null = data.eligibleTier || null;
+  const claimed: boolean = !!data.claimed;
+  const claimedReward: number | null = data.claimedReward ?? null;
+
+  const nextTier = tiers.find((t) => todayBuyAmount < t.minBuy);
+  const remaining = nextTier ? nextTier.minBuy - todayBuyAmount : 0;
+  const topTier = tiers[tiers.length - 1];
+  const progressMax = topTier.minBuy;
+  const progressPct = Math.min(100, (todayBuyAmount / progressMax) * 100);
+
+  const fmtINR = (n: number) => "₹" + n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
+
+  const handleClaim = async () => {
+    if (claiming) return;
+    setClaiming(true);
+    try {
+      const res = await api("/p2p/daily-reward/claim", { method: "POST" });
+      toast({ title: `✅ ₹${res.rewardAmount} reward credited!`, description: "Daily task reward added to your wallet." });
+      refetch();
+    } catch (err: any) {
+      toast({ title: "Cannot claim", description: err?.message || "Try again later", variant: "destructive" });
+    } finally {
+      setClaiming(false);
+    }
+  };
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 border border-amber-200 p-4 shadow-sm">
+      {/* shine */}
+      <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.5) 50%,transparent 60%)", backgroundSize: "200% 100%", animation: "shine 3.2s ease-in-out infinite 1s" }} />
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md shrink-0">
+            <Gift className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.14em] font-bold text-amber-700/70">Every Day</div>
+            <div className="text-base font-black text-slate-900 leading-tight">Daily Task Reward</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-100 border border-amber-200 rounded-full px-2.5 py-1">
+          <Calendar className="h-3 w-3" />
+          Today
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="mb-3">
+        <div className="flex items-center justify-between text-[11px] text-amber-800/80 mb-1.5">
+          <span>Today's Buys: <span className="font-bold text-slate-900">{fmtINR(todayBuyAmount)}</span></span>
+          {nextTier && !claimed && (
+            <span className="text-amber-600">{fmtINR(remaining)} more → {fmtINR(nextTier.reward)} bonus</span>
+          )}
+        </div>
+        <div className="h-2 rounded-full bg-amber-200/60 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-500"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Tier milestones */}
+      <div className="flex gap-1.5 mb-3 flex-wrap">
+        {tiers.map((t, i) => {
+          const reached = todayBuyAmount >= t.minBuy;
+          const isEligible = eligibleTier?.minBuy === t.minBuy;
+          return (
+            <div
+              key={i}
+              className={`flex-1 min-w-[70px] rounded-xl border text-center py-2 px-1.5 transition-all ${
+                reached
+                  ? "bg-amber-400/20 border-amber-400 text-amber-900"
+                  : "bg-white/60 border-amber-100 text-slate-500"
+              } ${isEligible && !claimed ? "ring-2 ring-amber-500 ring-offset-1" : ""}`}
+            >
+              <div className="text-[10px] font-semibold">{fmtINR(t.minBuy)}+</div>
+              <div className={`text-[13px] font-black ${reached ? "text-orange-600" : "text-slate-400"}`}>+{fmtINR(t.reward)}</div>
+              {reached && <CheckCircle2 className="w-3 h-3 text-amber-500 mx-auto mt-0.5" />}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Claim button / status */}
+      {claimed ? (
+        <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold">
+          <CheckCircle2 className="h-4 w-4" />
+          {claimedReward != null ? `₹${claimedReward} Claimed Today` : "Reward Claimed Today"}
+        </div>
+      ) : eligibleTier ? (
+        <Button
+          className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold shadow-md h-11"
+          onClick={handleClaim}
+          disabled={claiming}
+        >
+          {claiming ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Gift className="h-4 w-4 mr-2" />}
+          {claiming ? "Claiming..." : `Claim ₹${eligibleTier.reward} Reward`}
+        </Button>
+      ) : (
+        <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/60 border border-amber-100 text-amber-700/70 text-sm">
+          <Target className="h-4 w-4" />
+          Buy {fmtINR(tiers[0]?.minBuy || 0)}+ today to unlock reward
+        </div>
+      )}
     </div>
   );
 }
