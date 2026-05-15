@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { getAdminGetSettingsQueryKey, getGetAppSettingsQueryKey } from "@workspace/api-client-react";
 import { getAuthToken } from "@/lib/auth";
-import { Plus, Trash2, Bell, Upload, Award, Info, Gift, Target } from "lucide-react";
+import { Plus, Trash2, Bell, Upload, Award, Info, Gift, Target, Ghost } from "lucide-react";
 
 import { BASE_ORIGIN as BASE, assetUrl } from "@/lib/api-config";
 
@@ -126,6 +126,11 @@ interface WeeklyRewardTier {
   reward: number;
 }
 
+interface FakeOrder {
+  username: string;
+  amount: string;
+}
+
 export default function AdminSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -199,6 +204,10 @@ export default function AdminSettings() {
     { minBuy: 1000000, reward: 10000 },
   ]);
 
+  const [fakeOrders, setFakeOrders] = useState<FakeOrder[]>([]);
+  const [fakeOrderUsername, setFakeOrderUsername] = useState("");
+  const [fakeOrderAmount, setFakeOrderAmount] = useState("");
+
   // SMS Auto Delete UI removed — cleanup now runs system-wide, automatically,
   // every 6 hours via the learning auto-cleanup job (server-side). No manual
   // toggle or "Run Cleanup" button is needed.
@@ -250,6 +259,8 @@ export default function AdminSettings() {
       setHomeRewardUpiExampleAmount(Number((settings as any).homeRewardUpiExampleAmount) || 10000);
       setHomeRewardUpiExampleBonus(Number((settings as any).homeRewardUpiExampleBonus) || 300);
       setHomeRewardUsdtTitle((settings as any).homeRewardUsdtTitle || "USDT REWARD");
+      const foRaw = (settings as any).fakeOrdersConfig;
+      setFakeOrders(Array.isArray(foRaw) ? foRaw : []);
       setSignupBonus(Number((settings as any).signupBonus ?? 51));
       const drEnabled = (settings as any).dailyRewardEnabled;
       setDailyRewardEnabled(drEnabled === undefined ? true : drEnabled === true || drEnabled === "true");
@@ -416,6 +427,7 @@ export default function AdminSettings() {
       dailyRewardTiers,
       weeklyRewardEnabled,
       weeklyRewardTiers,
+      fakeOrdersConfig: fakeOrders,
     };
     if (adminPassword) payload.adminPassword = adminPassword;
     updateSettingsMut.mutate({ data: payload });
