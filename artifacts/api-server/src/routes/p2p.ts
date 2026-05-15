@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { ordersTable, usersTable, disputesTable, tradePairBlocksTable, userNotificationsTable, utrIndexTable, imageHashesTable, transactionsTable } from "@workspace/db";
+import { ordersTable, usersTable, disputesTable, tradePairBlocksTable, userNotificationsTable, utrIndexTable, imageHashesTable, transactionsTable, dailyRewardClaimsTable } from "@workspace/db";
 import { eq, and, sql, inArray, ne, or, gte, like } from "drizzle-orm";
 import { requireAuth } from "../lib/auth.js";
 import { getSettings } from "../lib/settings.js";
@@ -965,6 +965,120 @@ router.get("/my-stats", requireAuth, async (req, res) => {
     buyOrders,
     sellOrders,
   });
+});
+
+// ── Daily Task Reward ─────────────────────────────────────────────────────────
+// GET /p2p/daily-reward — returns today's buy progress + eligible tier + claimed status
+router.get("/daily-reward", requireAuth, async (req, res) => {
+  const userId = (req as any).user.id;
+  const s = await getSettings(["dailyRewardEnabled", "dailyRewardTiers"]);
+  const enabled = (s.dailyRewardEnabled ?? "true") === "true";
+
+  let tiers: Array<{ minBuy: number; reward: number }> = [];
+  try {
+    const raw = JSON.parse(s.dailyRewardTiers || "[]");
+    if (Array.isArray(raw)) {
+      tiers = raw.map((t: any) => ({ minBuy: Number(t?.minBuy), reward: Number(t?.reward) }))
+        .filter((t) => Number.isFinite(t.minBuy) && Number.isFinite(t.reward))
+        .sort((a, b) => a.minBuy - b.minBuy);
+    }
+  } catch {}
+
+  if (!enabled || tiers.length === 0) {
+    res.json({ enabled: false, tiers: [], todayBuyAmount: 0, eligibleTier: null, claimed: false });
+    return;
+  }
+
+  const now = new Date();
+  const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const todayStr = todayStart.toISOString().split("T")[0];
+
+  const buyResult = await db.execute(sql`
+    SELECT COALESCE(SUM(amount::numeric), 0) AS total
+    FROM orders
+    WHERE locked_by_user_id = ${userId}
+    AND status = 'confirmed'
+    AND updated_at >= ${todayStart}
+  `);
+  const todayBuyAmount = Number(((buyResult as any).rows?.[0] || (buyResult as any)[0])?.total || 0);
+
+  const claimRows = await db.select()
+    .from(dailyRewardClaimsTable)
+    .where(and(eq(dailyRewardClaimsTable.userId, userId), eq(dailyRewardClaimsTable.claimDate, todayStr)))
+    .limit(1);
+  const claimed = claimRows.length > 0;
+
+  const sortedDesc = [...tiers].sort((a, b) => b.minBuy - a.minBuy);
+  const eligibleTier = sortedDesc.find((t) => todayBuyAmount >= t.minBuy) || null;
+
+  res.json({ enabled: true, tiers, todayBuyAmount, eligibleTier, claimed, claimedReward: claimed ? Number(claimRows[0].rewardAmount) : null });
+});
+
+// POST /p2p/daily-reward/claim — claim today's reward
+router.post("/daily-reward/claim", requireAuth, async (req, res) => {
+  const userId = (req as any).user.id;
+  const s = await getSettings(["dailyRewardEnabled", "dailyRewardTiers"]);
+  const enabled = (s.dailyRewardEnabled ?? "true") === "true";
+  if (!enabled) { res.status(400).json({ error: "Daily reward is currently disabled" }); return; }
+
+  let tiers: Array<{ minBuy: number; reward: number }> = [];
+  try {
+    const raw = JSON.parse(s.dailyRewardTiers || "[]");
+    if (Array.isArray(raw)) {
+      tiers = raw.map((t: any) => ({ minBuy: Number(t?.minBuy), reward: Number(t?.reward) }))
+        .filter((t) => Number.isFinite(t.minBuy) && Number.isFinite(t.reward))
+        .sort((a, b) => a.minBuy - b.minBuy);
+    }
+  } catch {}
+
+  const now = new Date();
+  const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const todayStr = todayStart.toISOString().split("T")[0];
+
+  const existing = await db.select()
+    .from(dailyRewardClaimsTable)
+    .where(and(eq(dailyRewardClaimsTable.userId, userId), eq(dailyRewardClaimsTable.claimDate, todayStr)))
+    .limit(1);
+  if (existing.length > 0) { res.status(400).json({ error: "Daily reward already claimed for today" }); return; }
+
+  const buyResult = await db.execute(sql`
+    SELECT COALESCE(SUM(amount::numeric), 0) AS total
+    FROM orders
+    WHERE locked_by_user_id = ${userId}
+    AND status = 'confirmed'
+    AND updated_at >= ${todayStart}
+  `);
+  const todayBuyAmount = Number(((buyResult as any).rows?.[0] || (buyResult as any)[0])?.total || 0);
+
+  const sortedDesc = [...tiers].sort((a, b) => b.minBuy - a.minBuy);
+  const eligibleTier = sortedDesc.find((t) => todayBuyAmount >= t.minBuy);
+  if (!eligibleTier) {
+    res.status(400).json({ error: "No eligible tier — complete more buy trades first", todayBuyAmount });
+    return;
+  }
+
+  const tierIndex = tiers.findIndex((t) => t.minBuy === eligibleTier.minBuy);
+  const rewardAmount = eligibleTier.reward;
+
+  await db.transaction(async (tx) => {
+    await tx.update(usersTable).set({
+      balance: sql`${usersTable.balance} + ${rewardAmount}`,
+    }).where(eq(usersTable.id, userId));
+    await tx.insert(transactionsTable).values({
+      userId,
+      type: "credit",
+      amount: String(rewardAmount),
+      description: `Daily task reward — ₹${rewardAmount} (buy ₹${eligibleTier.minBuy.toLocaleString()}+)`,
+    });
+    await tx.insert(dailyRewardClaimsTable).values({
+      userId,
+      claimDate: todayStr,
+      tierIndex,
+      rewardAmount: String(rewardAmount),
+    });
+  });
+
+  res.json({ success: true, rewardAmount, eligibleTier, todayBuyAmount });
 });
 
 router.post("/check-screenshot", requireAuth, async (req, res) => {
