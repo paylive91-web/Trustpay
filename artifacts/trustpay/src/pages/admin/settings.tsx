@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { getAdminGetSettingsQueryKey, getGetAppSettingsQueryKey } from "@workspace/api-client-react";
 import { getAuthToken } from "@/lib/auth";
-import { Plus, Trash2, Bell, Upload, Award, Info } from "lucide-react";
+import { Plus, Trash2, Bell, Upload, Award, Info, Gift, Target } from "lucide-react";
 
 import { BASE_ORIGIN as BASE, assetUrl } from "@/lib/api-config";
 
@@ -117,6 +117,11 @@ interface BuyRewardTier {
   reward: number;
 }
 
+interface DailyRewardTier {
+  minBuy: number;
+  reward: number;
+}
+
 export default function AdminSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -170,6 +175,17 @@ export default function AdminSettings() {
   const [homeRewardUpiExampleAmount, setHomeRewardUpiExampleAmount] = useState<number>(10000);
   const [homeRewardUpiExampleBonus, setHomeRewardUpiExampleBonus] = useState<number>(300);
   const [homeRewardUsdtTitle, setHomeRewardUsdtTitle] = useState<string>("USDT REWARD");
+  // Signup bonus + daily reward
+  const [signupBonus, setSignupBonus] = useState<number>(51);
+  const [dailyRewardEnabled, setDailyRewardEnabled] = useState<boolean>(true);
+  const [dailyRewardTiers, setDailyRewardTiers] = useState<DailyRewardTier[]>([
+    { minBuy: 2000, reward: 20 },
+    { minBuy: 5000, reward: 50 },
+    { minBuy: 10000, reward: 100 },
+    { minBuy: 20000, reward: 200 },
+    { minBuy: 50000, reward: 300 },
+  ]);
+
   // SMS Auto Delete UI removed — cleanup now runs system-wide, automatically,
   // every 6 hours via the learning auto-cleanup job (server-side). No manual
   // toggle or "Run Cleanup" button is needed.
@@ -221,6 +237,13 @@ export default function AdminSettings() {
       setHomeRewardUpiExampleAmount(Number((settings as any).homeRewardUpiExampleAmount) || 10000);
       setHomeRewardUpiExampleBonus(Number((settings as any).homeRewardUpiExampleBonus) || 300);
       setHomeRewardUsdtTitle((settings as any).homeRewardUsdtTitle || "USDT REWARD");
+      setSignupBonus(Number((settings as any).signupBonus ?? 51));
+      const drEnabled = (settings as any).dailyRewardEnabled;
+      setDailyRewardEnabled(drEnabled === undefined ? true : drEnabled === true || drEnabled === "true");
+      const drTiersRaw = (settings as any).dailyRewardTiers;
+      if (Array.isArray(drTiersRaw) && drTiersRaw.length > 0) {
+        setDailyRewardTiers(drTiersRaw.map((t: any) => ({ minBuy: Number(t.minBuy) || 0, reward: Number(t.reward) || 0 })));
+      }
       setAdminPassword("");
     }
   }, [settings]);
@@ -269,6 +292,15 @@ export default function AdminSettings() {
   const removeBuyRewardTier = (i: number) => setBuyRewardTiers((prev) => prev.filter((_, idx) => idx !== i));
   const updateBuyRewardTier = (i: number, field: keyof BuyRewardTier, val: number) =>
     setBuyRewardTiers((prev) => prev.map((t, idx) => idx === i ? { ...t, [field]: val } : t));
+
+  const addDailyRewardTier = () => setDailyRewardTiers((prev) => {
+    const last = prev[prev.length - 1];
+    const minBuy = last ? last.minBuy * 2 : 2000;
+    return [...prev, { minBuy, reward: 50 }];
+  });
+  const removeDailyRewardTier = (i: number) => setDailyRewardTiers((prev) => prev.filter((_, idx) => idx !== i));
+  const updateDailyRewardTier = (i: number, field: keyof DailyRewardTier, val: number) =>
+    setDailyRewardTiers((prev) => prev.map((t, idx) => idx === i ? { ...t, [field]: val } : t));
 
   const addFeeTier = () => setFeeTiers((prev) => {
     // Default the new tier just after the last one to make it easy to extend
@@ -351,6 +383,9 @@ export default function AdminSettings() {
       homeRewardUpiExampleAmount,
       homeRewardUpiExampleBonus,
       homeRewardUsdtTitle,
+      signupBonus,
+      dailyRewardEnabled,
+      dailyRewardTiers,
     };
     if (adminPassword) payload.adminPassword = adminPassword;
     updateSettingsMut.mutate({ data: payload });
@@ -850,6 +885,103 @@ export default function AdminSettings() {
                 <Button type="button" variant="outline" onClick={addAgentTier} className="w-full" data-testid="button-add-agent-tier">
                   <Plus className="w-4 h-4 mr-2" /> Add Agent Tier
                 </Button>
+              </CardContent>
+            </Card>
+
+            {/* Welcome Bonus */}
+            <Card className="border-emerald-100 bg-emerald-50/30">
+              <CardHeader>
+                <CardTitle className="text-emerald-800 flex items-center gap-2">
+                  <Gift className="w-5 h-5" />
+                  Welcome Bonus (New User)
+                </CardTitle>
+                <CardDescription>
+                  Amount credited to every new user's wallet on first registration. Set to 0 to disable.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Signup Bonus Amount (₹)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={10000}
+                    step={1}
+                    value={signupBonus}
+                    onChange={(e) => setSignupBonus(Number(e.target.value) || 0)}
+                    placeholder="51"
+                    data-testid="input-signup-bonus"
+                  />
+                  <p className="text-xs text-muted-foreground">Default: ₹51. Set to 0 to disable welcome bonus.</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Daily Task Reward */}
+            <Card className="border-amber-100 bg-amber-50/30">
+              <CardHeader>
+                <CardTitle className="text-amber-800 flex items-center gap-2">
+                  <Target className="w-5 h-5" />
+                  Daily Task Reward
+                </CardTitle>
+                <CardDescription>
+                  Users earn a daily reward by completing buy trades. The highest tier where today's buy total &ge; minBuy is credited once per day.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-white px-4 py-3">
+                  <div>
+                    <div className="font-medium text-sm">Daily Reward Enabled</div>
+                    <div className="text-xs text-muted-foreground">Show daily reward card on home screen</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setDailyRewardEnabled((v) => !v)}
+                    className={`relative w-11 h-6 rounded-full transition-colors ${dailyRewardEnabled ? "bg-amber-500" : "bg-slate-300"}`}
+                    data-testid="toggle-daily-reward"
+                  >
+                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${dailyRewardEnabled ? "translate-x-5" : "translate-x-0.5"}`} />
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Reward Tiers</Label>
+                    <Button type="button" size="sm" variant="outline" onClick={addDailyRewardTier} className="gap-1 text-amber-700 border-amber-200 hover:bg-amber-50">
+                      <Plus className="w-3 h-3" /> Add Tier
+                    </Button>
+                  </div>
+                  <div className="rounded-lg border border-amber-200 overflow-hidden">
+                    <div className="grid grid-cols-[1fr_1fr_auto] text-xs font-medium bg-amber-50 px-3 py-2 gap-2 border-b border-amber-100">
+                      <span>Min Buy (₹)</span>
+                      <span>Reward (₹)</span>
+                      <span />
+                    </div>
+                    {dailyRewardTiers.map((t, i) => (
+                      <div key={i} className="grid grid-cols-[1fr_1fr_auto] px-3 py-2 gap-2 items-center border-b border-amber-50 last:border-0">
+                        <Input
+                          type="number" min={0} step={100}
+                          value={t.minBuy}
+                          onChange={(e) => updateDailyRewardTier(i, "minBuy", Number(e.target.value) || 0)}
+                          className="h-8 text-sm"
+                        />
+                        <Input
+                          type="number" min={0} step={1}
+                          value={t.reward}
+                          onChange={(e) => updateDailyRewardTier(i, "reward", Number(e.target.value) || 0)}
+                          className="h-8 text-sm"
+                        />
+                        <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-red-400 hover:text-red-600 hover:bg-red-50" onClick={() => removeDailyRewardTier(i)}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                    {dailyRewardTiers.length === 0 && (
+                      <div className="px-3 py-4 text-center text-sm text-muted-foreground">No tiers — daily reward card will be hidden</div>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">User claims the highest tier where their total confirmed buys today ≥ Min Buy. Reward is credited to their wallet once per day.</p>
+                </div>
               </CardContent>
             </Card>
 
