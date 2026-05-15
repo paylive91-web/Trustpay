@@ -205,6 +205,16 @@ export const dailyRewardClaimsTable = pgTable("daily_reward_claims", {
 
 export type DailyRewardClaim = typeof dailyRewardClaimsTable.$inferSelect;
 
+export const weeklyRewardClaimsTable = pgTable("weekly_reward_claims", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => usersTable.id),
+  weekStart: date("week_start").notNull(),
+  tierIndex: integer("tier_index").notNull(),
+  rewardAmount: numeric("reward_amount", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+export type WeeklyRewardClaim = typeof weeklyRewardClaimsTable.$inferSelect;
+
 export type UserUpiIdRow = typeof userUpiIdsTable.$inferSelect;
 export type Dispute = typeof disputesTable.$inferSelect;
 export type FraudAlert = typeof fraudAlertsTable.$inferSelect;
