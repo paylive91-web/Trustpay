@@ -263,7 +263,7 @@ router.post("/lock/:id", requireAuth, async (req, res) => {
 
   // Fake order guard — IDs 9999000+ are decoy display-only orders
   if (id >= 9999000) {
-    res.status(400).json({ error: "Yeh order abhi le liya gaya, doosra try karo." });
+    res.status(400).json({ error: "This order has already been taken. Please try another." });
     return;
   }
 
