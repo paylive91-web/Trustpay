@@ -547,10 +547,12 @@ function DailyRewardCard() {
             <div className="text-base font-black text-slate-900 leading-tight">Daily Task Reward</div>
           </div>
         </div>
-        <div className="flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-100 border border-amber-200 rounded-full px-2.5 py-1">
-          <Calendar className="h-3 w-3" />
-          Today
-        </div>
+        <Link href="/daily-reward">
+          <div className="flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-100 border border-amber-200 rounded-full px-2.5 py-1 hover:bg-amber-200 transition-colors cursor-pointer">
+            <Calendar className="h-3 w-3" />
+            View All →
+          </div>
+        </Link>
       </div>
 
       {/* Progress bar */}
