@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, timestamp, boolean, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, timestamp, boolean, pgEnum, date, numeric } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
 import { ordersTable } from "./orders";
 
@@ -193,6 +193,17 @@ export const pushSubscriptionsTable = pgTable("push_subscriptions", {
   auth: text("auth").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+export const dailyRewardClaimsTable = pgTable("daily_reward_claims", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => usersTable.id),
+  claimDate: date("claim_date").notNull(),
+  tierIndex: integer("tier_index").notNull(),
+  rewardAmount: numeric("reward_amount", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type DailyRewardClaim = typeof dailyRewardClaimsTable.$inferSelect;
 
 export type UserUpiIdRow = typeof userUpiIdsTable.$inferSelect;
 export type Dispute = typeof disputesTable.$inferSelect;
