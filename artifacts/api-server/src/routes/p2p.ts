@@ -184,8 +184,10 @@ router.get("/queue", requireAuth, async (req, res) => {
   // seller's queue and force them to click "Sell" again.
   const enriched = chunks.map((c) => {
     const seller = sellerMap.get(c.userId);
-    const isOffline = !seller?.lastSeenAt || Date.now() - new Date(seller.lastSeenAt).getTime() > 2 * 60 * 1000;
-    const matchingExpired = !seller?.matchingExpiresAt || new Date(seller.matchingExpiresAt).getTime() < Date.now();
+    const isAdminSeller = adminIdSet.has(c.userId);
+    // Admin sellers are never considered offline — their matching runs 24/7
+    const isOffline = !isAdminSeller && (!seller?.lastSeenAt || Date.now() - new Date(seller.lastSeenAt).getTime() > 2 * 60 * 1000);
+    const matchingExpired = !isAdminSeller && (!seller?.matchingExpiresAt || new Date(seller.matchingExpiresAt).getTime() < Date.now());
     if (isOffline || matchingExpired) return null;
     const a = parseFloat(c.amount);
     const rp = a >= 2001 ? 3 : a >= 1001 ? 4 : 5;
@@ -193,8 +195,9 @@ router.get("/queue", requireAuth, async (req, res) => {
     return { ...f(c, seller), rewardPercent: rp, rewardAmount: ra, totalAmount: parseFloat((a + ra).toFixed(2)) };
   }).filter(Boolean);
 
-  // Fake orders: when no real sellers online, inject random decoy orders
-  const hasRealSeller = (enriched as any[]).some((c: any) => !adminIdSet.has(c.userId));
+  // Decoy orders: when no real non-admin sellers online, inject random fake entries
+  // alongside admin's real orders so queue always looks active
+  const hasRealSeller = (enriched as any[]).some((c: any) => !adminIdSet.has((c as any).sellerId));
   if (!hasRealSeller) {
     const fakePool = [
       { username: "rahul_tp91", amount: 500 }, { username: "amit_upi", amount: 1000 },
@@ -212,16 +215,24 @@ router.get("/queue", requireAuth, async (req, res) => {
       { username: "mohit_v", amount: 950 }, { username: "kajal_tp", amount: 2100 },
       { username: "ravi_pay", amount: 1400 }, { username: "simran_r", amount: 3200 },
     ];
-    // Show 10-14 random entries, shuffled fresh each time
-    const shuffled = fakePool.sort(() => Math.random() - 0.5).slice(0, 10 + Math.floor(Math.random() * 5));
+    const now = new Date().toISOString();
+    const shuffled = fakePool.sort(() => Math.random() - 0.5).slice(0, 6 + Math.floor(Math.random() * 2));
     const fakeItems = shuffled.map((fc, i) => {
       const a = fc.amount;
-      const rp = a >= 2001 ? 3 : a >= 1001 ? 4 : 5;
-      const ra = parseFloat((a * rp / 100).toFixed(2));
-      return { id: 9999000 + i, type: "withdrawal", status: "available", amount: String(a), userId: 0,
-        username: fc.username, displayName: fc.username, isFake: true,
-        rewardPercent: rp, rewardAmount: ra, totalAmount: parseFloat((a + ra).toFixed(2)),
-        createdAt: new Date().toISOString(), upiId: null, upiName: null };
+      const { rewardPercent: rp, rewardAmount: ra } = rewardForAmount(a);
+      return {
+        id: 9999000 + i, sellerId: 9999000 + i,
+        amount: a, rewardPercent: rp, rewardAmount: ra,
+        sellRewardAmount: 0, sellRewardPercent: 0,
+        totalAmount: parseFloat((a + ra).toFixed(2)),
+        status: "available", upiId: null, upiName: null, holderName: null,
+        lockedAt: null, lockedByUserId: null, confirmDeadline: null,
+        submittedAt: null, utrNumber: null, screenshotUrl: null, recordingUrl: null,
+        ocrStatus: null, ocrAmount: null, ocrUtr: null, ocrAmountMatch: null, ocrUtrMatch: null,
+        createdAt: now, updatedAt: now, qrImageUrl: undefined,
+        seller: { id: 9999000 + i, username: fc.username, trustScore: 60 + Math.floor(Math.random() * 40), lastSeenAt: now },
+        isFake: true,
+      };
     });
     (enriched as any[]).push(...fakeItems);
   }
