@@ -241,7 +241,7 @@ export default function Home() {
               <div className="flex items-center justify-between mb-4 gap-3">
                 <div>
                   <div className="text-muted-foreground text-sm">My Total Assets</div>
-                  <div className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">₹ {balance.toFixed(2)}</div>
+                  <div className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">₹ {balance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 </div>
                 <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center flex-shrink-0 shadow-md">
                   <Wallet className="h-6 w-6 text-white" />
@@ -255,18 +255,24 @@ export default function Home() {
 
             <div className="p-4 sm:p-5 pt-0">
               <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-                <Link href="/buy" className="w-full">
-                  <Button className="w-full min-h-12 sm:min-h-13 text-base rounded-2xl shadow-md bg-primary hover:bg-primary/90 text-primary-foreground">
-                    <ArrowDownCircle className="mr-2 h-5 w-5" />
-                    BUY
-                  </Button>
-                </Link>
-                <Link href="/sell" className="w-full">
-                  <Button className="w-full min-h-12 sm:min-h-13 text-base rounded-2xl shadow-md bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white border-none">
-                    <ArrowUpCircle className="mr-2 h-5 w-5" />
-                    SELL
-                  </Button>
-                </Link>
+                <div className="relative overflow-hidden rounded-2xl w-full">
+                  <Link href="/buy" className="w-full block">
+                    <Button className="w-full min-h-12 sm:min-h-13 text-base rounded-2xl shadow-md bg-primary hover:bg-primary/90 text-primary-foreground">
+                      <ArrowDownCircle className="mr-2 h-5 w-5" />
+                      BUY
+                    </Button>
+                  </Link>
+                  <div className="absolute inset-0 pointer-events-none rounded-2xl" style={{background:"linear-gradient(105deg,transparent 35%,rgba(255,255,255,0.45) 50%,transparent 65%)",backgroundSize:"200% 100%",animation:"shine 2.4s ease-in-out infinite"}} />
+                </div>
+                <div className="relative overflow-hidden rounded-2xl w-full">
+                  <Link href="/sell" className="w-full block">
+                    <Button className="w-full min-h-12 sm:min-h-13 text-base rounded-2xl shadow-md bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white border-none">
+                      <ArrowUpCircle className="mr-2 h-5 w-5" />
+                      SELL
+                    </Button>
+                  </Link>
+                  <div className="absolute inset-0 pointer-events-none rounded-2xl" style={{background:"linear-gradient(105deg,transparent 35%,rgba(255,255,255,0.32) 50%,transparent 65%)",backgroundSize:"200% 100%",animation:"shine 2.4s ease-in-out infinite 0.7s"}} />
+                </div>
               </div>
               {hasUpi ? (
                 <div className="mt-3 rounded-2xl bg-emerald-50 border border-emerald-100 px-3 py-2 text-[11px] sm:text-xs text-emerald-700 flex items-center justify-between gap-2">
