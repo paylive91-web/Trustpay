@@ -12,7 +12,7 @@ import { getAdminGetUsersQueryKey } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Trash2, Pencil, ShieldOff, ShieldCheck, Star, RefreshCw, BlocksIcon, Info, Gauge } from "lucide-react";
+import { Trash2, Pencil, ShieldOff, ShieldCheck, Star, RefreshCw, BlocksIcon, Info, Gauge, Wallet } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 
 import { API_BASE } from "@/lib/api-config";
@@ -325,64 +325,57 @@ export default function AdminUsers() {
                         </TableCell>
                         <TableCell className="text-xs font-mono">{user.referralCode || "-"}</TableCell>
                         <TableCell className="text-sm">
-                          {user.createdAt ? format(new Date(user.createdAt), "MMM dd, yyyy") : "-"}
+                          {user.createdAt ? (
+                          <div>
+                            <div className="font-medium">{format(new Date(user.createdAt), "dd MMM yyyy")}</div>
+                            <div className="text-[10px] text-muted-foreground">{format(new Date(user.createdAt), "hh:mm a")}</div>
+                          </div>
+                        ) : "-"}
                         </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1 flex-wrap">
-                            <Button size="sm" variant="outline" onClick={() => openRename(user)}>
-                              <Pencil className="h-3.5 w-3.5 mr-1" /> Rename
-                            </Button>
+                        <TableCell>
+                          <div className="flex items-center gap-1 flex-nowrap">
+                            <button title="Rename" onClick={() => openRename(user)} className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
                             {user.isFrozen ? (
-                              <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => setUnsuspendUser(user)}>
-                                <ShieldCheck className="h-3.5 w-3.5 mr-1" /> Unsuspend
-                              </Button>
+                              <button title="Unsuspend" onClick={() => setUnsuspendUser(user)} className="w-8 h-8 flex items-center justify-center rounded-lg border border-green-200 hover:bg-green-50 text-green-600 transition-colors">
+                                <ShieldCheck className="h-3.5 w-3.5" />
+                              </button>
                             ) : (
-                              <Button size="sm" variant="secondary" onClick={() => { setFreezeReasonUser(user); setFreezeReason(""); }}>
-                                <ShieldOff className="h-3.5 w-3.5 mr-1" /> Suspend
-                              </Button>
+                              <button title="Suspend" onClick={() => { setFreezeReasonUser(user); setFreezeReason(""); }} className="w-8 h-8 flex items-center justify-center rounded-lg border border-orange-200 hover:bg-orange-50 text-orange-600 transition-colors">
+                                <ShieldOff className="h-3.5 w-3.5" />
+                              </button>
                             )}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className={user.isTrusted ? "text-amber-600 border-amber-300" : "text-teal-600 border-teal-300"}
+                            <button
+                              title={user.isTrusted ? "Remove Trust" : "Mark Trusted"}
                               onClick={() => markTrusted(user, !user.isTrusted)}
                               disabled={actionLoading === `trust-${user.id}`}
-                              title={user.isTrusted ? "Remove trusted status" : "Mark as trusted user"}
+                              className={`w-8 h-8 flex items-center justify-center rounded-lg border transition-colors ${user.isTrusted ? "border-amber-300 hover:bg-amber-50 text-amber-500" : "border-teal-200 hover:bg-teal-50 text-teal-600"}`}
                             >
-                              <Star className={`h-3.5 w-3.5 mr-1 ${user.isTrusted ? "fill-amber-400" : ""}`} />
-                              {user.isTrusted ? "Untrust" : "Trust"}
-                            </Button>
-                            <Button size="sm" variant="outline" className="text-violet-600 border-violet-300" onClick={() => setBlockUser(user)}>
-                              <BlocksIcon className="h-3.5 w-3.5 mr-1" /> Block Trade
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-orange-600 border-orange-300"
-                              onClick={() => { setTrustScoreUser(user); setTrustScoreValue(String(user.trustScore ?? 0)); }}
-                              title="Trust Score adjust karo"
-                            >
-                              <Gauge className="h-3.5 w-3.5 mr-1" /> Trust Score
-                            </Button>
-                            <Button size="sm" variant="outline" className="text-amber-700 border-amber-300" onClick={() => resetWarnings(user)} disabled={actionLoading === `warn-${user.id}`}>
-                              <RefreshCw className="h-3.5 w-3.5 mr-1" /> Reset Warns
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={() => openEdit(user)}>
-                              Edit Balance
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
+                              <Star className={`h-3.5 w-3.5 ${user.isTrusted ? "fill-amber-400" : ""}`} />
+                            </button>
+                            <button title="Block Trade" onClick={() => setBlockUser(user)} className="w-8 h-8 flex items-center justify-center rounded-lg border border-violet-200 hover:bg-violet-50 text-violet-600 transition-colors">
+                              <BlocksIcon className="h-3.5 w-3.5" />
+                            </button>
+                            <button title="Trust Score" onClick={() => { setTrustScoreUser(user); setTrustScoreValue(String(user.trustScore ?? 0)); }} className="w-8 h-8 flex items-center justify-center rounded-lg border border-orange-200 hover:bg-orange-50 text-orange-600 transition-colors">
+                              <Gauge className="h-3.5 w-3.5" />
+                            </button>
+                            <button title="Reset Warnings" onClick={() => resetWarnings(user)} disabled={actionLoading === `warn-${user.id}`} className="w-8 h-8 flex items-center justify-center rounded-lg border border-amber-200 hover:bg-amber-50 text-amber-600 transition-colors">
+                              <RefreshCw className="h-3.5 w-3.5" />
+                            </button>
+                            <button title="Edit Balance" onClick={() => openEdit(user)} className="w-8 h-8 flex items-center justify-center rounded-lg border border-blue-200 hover:bg-blue-50 text-blue-600 transition-colors">
+                              <Wallet className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              title="Delete User"
                               onClick={() => {
-                                if (user.role === "admin") {
-                                  toast({ title: "Admin users cannot be deleted", variant: "destructive" });
-                                  return;
-                                }
+                                if (user.role === "admin") { toast({ title: "Admin users cannot be deleted", variant: "destructive" }); return; }
                                 setDeleteUser(user);
                               }}
+                              className="w-8 h-8 flex items-center justify-center rounded-lg border border-red-200 hover:bg-red-50 text-red-500 transition-colors"
                             >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
                           </div>
                         </TableCell>
                       </TableRow>
