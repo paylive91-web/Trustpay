@@ -22,6 +22,7 @@ import UpiManage from "@/pages/upi-manage";
 import UsdtDeposit from "@/pages/usdt-deposit";
 import UsdtPayment from "@/pages/usdt-payment";
 import UsdtHistory from "@/pages/usdt-history";
+import DailyRewardPage from "@/pages/daily-reward";
 
 import AdminLogin from "@/pages/admin/login";
 import AdminDashboard from "@/pages/admin/dashboard";
@@ -65,6 +66,7 @@ function Router() {
       <Route path="/usdt-deposit" component={UsdtDeposit} />
       <Route path="/usdt-payment/:id" component={UsdtPayment} />
       <Route path="/usdt-history" component={UsdtHistory} />
+      <Route path="/daily-reward" component={DailyRewardPage} />
 
       <Route path="/admin" component={AdminLogin} />
       <Route path="/admin/login" component={AdminLogin} />
