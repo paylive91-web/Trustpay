@@ -1185,6 +1185,42 @@ router.get("/my-buys/recent-confirmed", requireAuth, async (req, res) => {
   } catch { res.json({ orders: [] }); }
 });
 
+
+// GET /p2p/invite-weekly-stats — weekly buy totals for invited users
+router.get("/invite-weekly-stats", requireAuth, async (req, res) => {
+  const userId = (req as any).user.id;
+  const now = new Date();
+  const day = now.getUTCDay();
+  const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (day === 0 ? 6 : day - 1)));
+  const sunday = new Date(monday.getTime() + 7 * 86400000);
+  try {
+    const invitedUsers = await db.select({ id: usersTable.id, displayName: usersTable.displayName, phone: usersTable.phone })
+      .from(usersTable).where(eq(usersTable.referredBy, userId));
+    if (invitedUsers.length === 0) { res.json({ weekTotal: 0, users: [], weekStart: monday.toISOString().split("T")[0] }); return; }
+    const ids = invitedUsers.map((u) => u.id);
+    const rows = await db.execute(sql`
+      SELECT locked_by_user_id AS uid, COALESCE(SUM(amount::numeric), 0) AS total
+      FROM orders
+      WHERE locked_by_user_id = ANY(${ids})
+        AND status = 'confirmed'
+        AND updated_at >= ${monday}
+        AND updated_at < ${sunday}
+      GROUP BY locked_by_user_id
+    `);
+    const buyMap: Record<number, number> = {};
+    ((rows as any).rows || rows as any).forEach((r: any) => { buyMap[r.uid] = Number(r.total); });
+    const users = invitedUsers.map((u) => ({
+      id: u.id,
+      name: (u.displayName || u.phone || "User").slice(0, 20),
+      weekBuy: buyMap[u.id] || 0,
+    })).sort((a, b) => b.weekBuy - a.weekBuy);
+    const weekTotal = users.reduce((s, u) => s + u.weekBuy, 0);
+    res.json({ weekTotal, users, weekStart: monday.toISOString().split("T")[0] });
+  } catch (e: any) {
+    res.json({ weekTotal: 0, users: [], weekStart: monday.toISOString().split("T")[0] });
+  }
+});
+
 router.post("/check-screenshot", requireAuth, async (req, res) => {
   const { screenshotUrl } = req.body || {};
   if (!screenshotUrl || screenshotUrl.length < 100) {
