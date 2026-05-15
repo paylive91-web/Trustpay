@@ -300,7 +300,6 @@ function ContactSupportDialog({ dispute, supportUrl, onClose }: { dispute: MyDis
         { icon: Video, label: "Video Recording", hint: "Open Play Store → search the app the buyer paid from → open it → show your transaction history" },
       ];
   const [copied, setCopied] = useState(false);
-  const [showMessage, setShowMessage] = useState(false);
   const handleCopyMessage = async () => {
     try { await navigator.clipboard.writeText(message); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch {}
   };
@@ -368,18 +367,15 @@ function ContactSupportDialog({ dispute, supportUrl, onClose }: { dispute: MyDis
             </div>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white">
-            <button type="button" onClick={() => setShowMessage((v) => !v)} className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-slate-50 rounded-xl transition-colors">
-              <span className="text-[12px] font-medium text-slate-700">{showMessage ? "Hide pre-filled message" : "Show pre-filled message"}</span>
-              {showMessage ? <ChevronUp className="h-4 w-4 text-slate-500" /> : <ChevronDown className="h-4 w-4 text-slate-500" />}
-            </button>
-            {showMessage && (
-              <div className="px-3 pb-3 pt-1 border-t border-slate-100">
-                <pre className="text-[11px] text-slate-700 whitespace-pre-wrap font-sans leading-snug max-h-32 overflow-y-auto bg-slate-50 rounded-lg p-2.5 border border-slate-100">{message}</pre>
-                <button onClick={handleCopyMessage} className="mt-2 w-full flex items-center justify-center gap-1.5 text-[12px] font-semibold text-orange-700 hover:text-orange-900 py-1.5">
-                  <CopyIcon className="h-3.5 w-3.5" />{copied ? "Copied!" : "Copy message"}
-                </button>
-              </div>
-            )}
+            <div className="px-3 py-2.5 border-b border-slate-100">
+              <span className="text-[12px] font-medium text-slate-700">Pre-filled message</span>
+            </div>
+            <div className="px-3 pb-3 pt-2">
+              <pre className="text-[11px] text-slate-700 whitespace-pre-wrap font-sans leading-snug max-h-32 overflow-y-auto bg-slate-50 rounded-lg p-2.5 border border-slate-100">{message}</pre>
+              <button onClick={handleCopyMessage} className="mt-2 w-full flex items-center justify-center gap-1.5 text-[12px] font-semibold text-orange-700 hover:text-orange-900 py-1.5">
+                <CopyIcon className="h-3.5 w-3.5" />{copied ? "Copied!" : "Copy message"}
+              </button>
+            </div>
           </div>
           <button onClick={onClose} className="w-full text-xs text-muted-foreground hover:text-slate-700 py-1">Cancel</button>
         </div>
