@@ -278,6 +278,9 @@ export default function Invite() {
             ) : (
               <div className="text-center py-5 text-sm text-slate-400">No buy activity from invited users this week yet.</div>
             )}
+            <div className="mt-3 rounded-xl bg-blue-50 border border-blue-100 px-3 py-2 text-[11px] text-blue-700 leading-snug">
+              <span className="font-semibold">For Agents:</span> To claim your weekly reward, please contact support.
+            </div>
           </div>
         </div>
 
