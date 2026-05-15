@@ -303,21 +303,21 @@ export default function Invite() {
             `}</style>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow">
                   <TrendingUp className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <div className="text-sm font-black text-slate-900">Weekly Statistics</div>
+                  <div className="text-sm font-black text-slate-900">Weekly Invite Buy Tracker</div>
                   <div className="text-[10px] text-muted-foreground">Invited users' buy total this week</div>
                 </div>
               </div>
               {weeklyStats?.weekStart && (
-                <div className="text-[10px] text-violet-600 bg-violet-50 rounded-full px-2 py-0.5 font-semibold">
+                <div className="text-[10px] text-orange-600 bg-orange-50 rounded-full px-2 py-0.5 font-semibold">
                   From {weeklyStats.weekStart}
                 </div>
               )}
             </div>
-            <div className="rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 p-4 mb-3 shadow-md">
+            <div className="rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 p-4 mb-3 shadow-md">
               <div className="text-[10px] text-white/70 uppercase tracking-wider font-bold mb-1">Total This Week</div>
               <div className="text-3xl font-black text-white count-in">
                 ₹{Number(weeklyStats?.weekTotal || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
@@ -335,10 +335,10 @@ export default function Invite() {
                           <div className="w-6 h-6 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center text-white text-[9px] font-black shrink-0">{i+1}</div>
                           <span className="font-medium text-slate-700 truncate max-w-[120px]">{u.name}</span>
                         </div>
-                        <span className="font-black text-violet-700">₹{Number(u.weekBuy).toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>
+                        <span className="font-black text-orange-700">₹{Number(u.weekBuy).toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>
                       </div>
-                      <div className="h-1.5 rounded-full bg-violet-100 overflow-hidden">
-                        <div className="h-full rounded-full bg-gradient-to-r from-violet-400 to-purple-500 transition-all duration-700" style={{ width: pct + "%" }} />
+                      <div className="h-1.5 rounded-full bg-orange-100 overflow-hidden">
+                        <div className="h-full rounded-full bg-gradient-to-r from-orange-400 to-red-500 transition-all duration-700" style={{ width: pct + "%" }} />
                       </div>
                     </div>
                   );
