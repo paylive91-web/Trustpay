@@ -545,6 +545,22 @@ function fSettings(s: any) {
         return [];
       }
     })(),
+    // Signup bonus
+    signupBonus: parseFloat(s.signupBonus || "51"),
+    // Daily task reward
+    dailyRewardEnabled: (s.dailyRewardEnabled ?? "true") === "true",
+    dailyRewardTiers: (() => {
+      try {
+        const raw = JSON.parse(s.dailyRewardTiers || "[]");
+        if (Array.isArray(raw)) {
+          return raw.map((t: any) => ({
+            minBuy: Number(t?.minBuy),
+            reward: Number(t?.reward),
+          })).filter((t) => Number.isFinite(t.minBuy) && Number.isFinite(t.reward));
+        }
+      } catch {}
+      return [];
+    })(),
   };
 }
 
@@ -639,6 +655,18 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
     scalarMap["homeRewardUpiExampleBonus"] = String(Math.min(10_000_000, Math.floor(n)));
   }
   addScalar("smsAutoDeleteEnabled", b.smsAutoDeleteEnabled);
+  // Signup bonus
+  if (b.signupBonus != null) {
+    const n = parseFloat(String(b.signupBonus));
+    if (!Number.isFinite(n) || n < 0) {
+      return res.status(400).json({ error: "Signup bonus must be a non-negative number" });
+    }
+    scalarMap["signupBonus"] = String(Math.min(10000, n));
+  }
+  // Daily reward enable/disable
+  if (b.dailyRewardEnabled != null) {
+    scalarMap["dailyRewardEnabled"] = (b.dailyRewardEnabled === true || b.dailyRewardEnabled === "true") ? "true" : "false";
+  }
   // Device-based registration cap. Floor 1, ceiling 50 — anything above
   // that is effectively "unlimited" and not worth a knob.
   if (b.maxRegistrationsPerDevice != null) {
@@ -744,6 +772,21 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
       }
     }
     await setSetting("agentTiers", JSON.stringify(cleanedAgent));
+  }
+  if (Array.isArray(b.dailyRewardTiers)) {
+    const cleanedDailyTiers: Array<{ minBuy: number; reward: number }> = [];
+    for (const t of b.dailyRewardTiers) {
+      const minBuy = Number(t?.minBuy), reward = Number(t?.reward);
+      if (!Number.isFinite(minBuy) || !Number.isFinite(reward)) {
+        return res.status(400).json({ error: "Each daily reward tier needs numeric minBuy and reward" });
+      }
+      if (minBuy < 0 || reward < 0) {
+        return res.status(400).json({ error: "Daily reward tier values cannot be negative" });
+      }
+      cleanedDailyTiers.push({ minBuy: Math.floor(minBuy), reward: Math.max(0, reward) });
+    }
+    cleanedDailyTiers.sort((a, b) => a.minBuy - b.minBuy);
+    await setSetting("dailyRewardTiers", JSON.stringify(cleanedDailyTiers));
   }
   if (b.adminPassword) {
     const hash = await bcrypt.hash(b.adminPassword, 10);
