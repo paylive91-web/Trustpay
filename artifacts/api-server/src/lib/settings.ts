@@ -131,6 +131,28 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   homeRewardUpiExampleAmount: "10000",
   homeRewardUpiExampleBonus: "300",
   homeRewardUsdtTitle: "USDT REWARD",
+
+  // -------------------------------------------------------------------------
+  // New User Signup Bonus
+  // -------------------------------------------------------------------------
+  // Amount credited to new user's wallet on first registration.
+  // Set to "0" to disable. Admin-configurable via admin panel.
+  signupBonus: "51",
+
+  // -------------------------------------------------------------------------
+  // Daily Task Reward
+  // -------------------------------------------------------------------------
+  // Master switch + tiers for the daily buy reward card on the home screen.
+  // dailyRewardTiers: JSON array of {minBuy, reward} — user claims the
+  // highest tier where their total confirmed buy amount today >= minBuy.
+  dailyRewardEnabled: "true",
+  dailyRewardTiers: JSON.stringify([
+    { minBuy: 2000, reward: 20 },
+    { minBuy: 5000, reward: 50 },
+    { minBuy: 10000, reward: 100 },
+    { minBuy: 20000, reward: 200 },
+    { minBuy: 50000, reward: 300 },
+  ]),
 };
 
 export async function getSetting(key: string): Promise<string> {
