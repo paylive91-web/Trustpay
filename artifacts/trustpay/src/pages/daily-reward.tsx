@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,8 @@ const fmtINR = (n: number) => "₹" + n.toLocaleString("en-IN", { maximumFractio
 export default function DailyRewardPage() {
   const { toast } = useToast();
   const [claiming, setClaiming] = useState(false);
+
+  useEffect(() => { window.scrollTo(0, 0); }, []);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["daily-reward"],
