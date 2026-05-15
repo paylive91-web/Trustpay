@@ -3,9 +3,9 @@ import Layout from "@/components/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  CheckCircle2, Target, Calendar, Loader2,
-  ChevronLeft, Sparkles, TrendingUp, Info, Trophy,
-  Flame, Zap, Star,
+  Target, CheckCircle2, Loader2,
+  ChevronLeft, Sparkles, TrendingUp, Info,
+  Star, Zap, Calendar, Flame,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -28,7 +28,14 @@ async function api(path: string, opts: RequestInit = {}) {
   return data;
 }
 
-const fmtINR = (n: number) => "₹" + n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
+const fmtINR = (n: number) =>
+  n >= 100000
+    ? "₹" + (n / 100000).toFixed(n % 100000 === 0 ? 0 : 1) + "L"
+    : n >= 1000
+    ? "₹" + (n / 1000).toFixed(n % 1000 === 0 ? 0 : 1) + "k"
+    : "₹" + n;
+
+const fmtINRFull = (n: number) => "₹" + n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 
 export default function DailyRewardPage() {
   const { toast } = useToast();
@@ -49,7 +56,7 @@ export default function DailyRewardPage() {
     setClaiming(true);
     try {
       const res = await api("/p2p/daily-reward/claim", { method: "POST" });
-      toast({ title: `🎁 ₹${res.rewardAmount} reward credited!`, description: "Added to your TrustPay wallet." });
+      toast({ title: `🔥 ₹${res.rewardAmount} daily reward credited!`, description: "Added to your TrustPay wallet." });
       refetch();
     } catch (err: any) {
       toast({ title: "Cannot claim", description: err?.message || "Try again later", variant: "destructive" });
@@ -63,6 +70,7 @@ export default function DailyRewardPage() {
   const eligibleTier = data?.eligibleTier || null;
   const claimed: boolean = !!data?.claimed;
   const claimedReward: number | null = data?.claimedReward ?? null;
+
   const nextTier = tiers.find((t) => todayBuyAmount < t.minBuy);
   const topTier = tiers[tiers.length - 1];
   const progressMax = topTier?.minBuy || 1;
@@ -73,7 +81,7 @@ export default function DailyRewardPage() {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+          <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
         </div>
       </Layout>
     );
@@ -82,13 +90,13 @@ export default function DailyRewardPage() {
   return (
     <Layout>
       <style>{`
-        @keyframes slideDown {
-          0%{opacity:0;transform:translateY(-16px);}
-          100%{opacity:1;transform:translateY(0);}
+        @keyframes floatUp {
+          0%,100%{transform:translateY(0);}
+          50%{transform:translateY(-10px);}
         }
-        @keyframes fadeUp {
-          0%{opacity:0;transform:translateY(14px);}
-          100%{opacity:1;transform:translateY(0);}
+        @keyframes pulseRing {
+          0%{transform:scale(1);opacity:.5;}
+          100%{transform:scale(1.8);opacity:0;}
         }
         @keyframes shimmerBar {
           0%{background-position:-200% 0;}
@@ -98,35 +106,27 @@ export default function DailyRewardPage() {
           0%{background-position:200% 0;}
           100%{background-position:-200% 0;}
         }
-        @keyframes countUp {
-          0%{opacity:0;transform:scale(.8);}
-          60%{transform:scale(1.06);}
-          100%{opacity:1;transform:scale(1);}
+        @keyframes fadeSlideIn {
+          0%{opacity:0;transform:translateY(12px);}
+          100%{opacity:1;transform:translateY(0);}
         }
         @keyframes sparkle {
-          0%,100%{opacity:1;transform:scale(1) rotate(0deg);}
-          50%{opacity:.5;transform:scale(.7) rotate(20deg);}
+          0%,100%{opacity:1;transform:scale(1);}
+          50%{opacity:.4;transform:scale(.7);}
         }
-        @keyframes glowPulse {
-          0%,100%{box-shadow:0 0 0 0 rgba(251,146,60,.4);}
-          50%{box-shadow:0 0 0 8px rgba(251,146,60,.0);}
-        }
-        .slide-down{animation:slideDown .45s cubic-bezier(.22,1,.36,1) both;}
-        .fade-up{animation:fadeUp .45s cubic-bezier(.22,1,.36,1) both;}
-        .fade-up-2{animation:fadeUp .45s cubic-bezier(.22,1,.36,1) .1s both;}
-        .fade-up-3{animation:fadeUp .45s cubic-bezier(.22,1,.36,1) .2s both;}
-        .fade-up-4{animation:fadeUp .45s cubic-bezier(.22,1,.36,1) .3s both;}
-        .shimmer-bar{background:linear-gradient(90deg,#fbbf24 0%,#f97316 35%,#fef3c7 50%,#f97316 65%,#fbbf24 100%);background-size:200% 100%;animation:shimmerBar 1.8s linear infinite;}
-        .shimmer-btn{background:linear-gradient(105deg,#f59e0b 0%,#f97316 30%,#fbbf24 50%,#f97316 70%,#f59e0b 100%);background-size:200% 100%;animation:shimmerBtn 2s linear infinite;}
-        .count-up{animation:countUp .5s cubic-bezier(.34,1.56,.64,1) both;}
-        .sparkle-1{animation:sparkle 2s ease-in-out infinite;}
-        .sparkle-2{animation:sparkle 2s ease-in-out infinite .5s;}
-        .sparkle-3{animation:sparkle 2s ease-in-out infinite 1s;}
-        .glow-pulse{animation:glowPulse 2s ease-in-out infinite;}
+        .float-up{animation:floatUp 3s ease-in-out infinite;}
+        .pulse-ring{animation:pulseRing 2s ease-out infinite;}
+        .pulse-ring-2{animation:pulseRing 2s ease-out infinite .5s;}
+        .shimmer-bar{background:linear-gradient(90deg,#ea580c 0%,#f97316 35%,#fed7aa 50%,#f97316 65%,#ea580c 100%);background-size:200% 100%;animation:shimmerBar 1.8s linear infinite;}
+        .shimmer-btn{background:linear-gradient(105deg,#ea580c 0%,#f97316 30%,#fdba74 50%,#f97316 70%,#ea580c 100%);background-size:200% 100%;animation:shimmerBtn 2s linear infinite;}
+        .fade-in{animation:fadeSlideIn .4s ease both;}
+        .sparkle-star{animation:sparkle 1.5s ease-in-out infinite;}
+        .sparkle-star-2{animation:sparkle 1.5s ease-in-out infinite .4s;}
+        .sparkle-star-3{animation:sparkle 1.5s ease-in-out infinite .8s;}
       `}</style>
 
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-4 pb-2 slide-down">
+      <div className="flex items-center gap-3 px-4 pt-4 pb-2">
         <Link href="/">
           <button className="p-2 rounded-xl hover:bg-muted transition-colors">
             <ChevronLeft className="h-5 w-5 text-slate-600" />
@@ -136,7 +136,7 @@ export default function DailyRewardPage() {
           <h1 className="text-lg font-black text-slate-900">Daily Task Reward</h1>
           <p className="text-[11px] text-muted-foreground">Buy more today, earn more bonus</p>
         </div>
-        <div className="ml-auto flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-100 rounded-full px-3 py-1 shrink-0">
+        <div className="ml-auto flex items-center gap-1 text-[11px] font-semibold text-orange-700 bg-orange-100 rounded-full px-3 py-1 shrink-0">
           <Calendar className="h-3 w-3" />
           Today
         </div>
@@ -144,78 +144,89 @@ export default function DailyRewardPage() {
 
       <div className="px-4 pb-28 space-y-4">
 
-        {/* Hero Stats Card */}
-        <div className="relative overflow-hidden rounded-3xl p-5 fade-up" style={{ background: "linear-gradient(135deg,#f59e0b,#ea580c,#dc2626)" }}>
-          <div className="absolute top-3 right-3 opacity-30">
-            <Star className="w-5 h-5 text-white sparkle-1 fill-white" />
-          </div>
-          <div className="absolute top-8 right-10 opacity-20">
-            <Zap className="w-3 h-3 text-white sparkle-2 fill-white" />
-          </div>
-          <div className="absolute bottom-4 right-5 opacity-20">
-            <Star className="w-4 h-4 text-white sparkle-3 fill-white" />
+        {/* Hero Target */}
+        <div className="relative flex flex-col items-center py-8 overflow-hidden">
+          <div className="absolute w-4 h-4 top-6 left-10 text-orange-300 sparkle-star"><Star className="w-4 h-4 fill-orange-300" /></div>
+          <div className="absolute w-3 h-3 top-10 right-12 text-amber-300 sparkle-star-2"><Zap className="w-3 h-3 fill-amber-300" /></div>
+          <div className="absolute w-3 h-3 top-4 right-24 text-orange-200 sparkle-star-3"><Star className="w-3 h-3 fill-orange-200" /></div>
+
+          <div className="relative flex items-center justify-center">
+            <div className="absolute w-32 h-32 rounded-full bg-orange-300/20 pulse-ring" />
+            <div className="absolute w-24 h-24 rounded-full bg-orange-400/25 pulse-ring-2" />
+            <div
+              className="relative w-24 h-24 rounded-3xl flex items-center justify-center shadow-2xl float-up"
+              style={{ background: "linear-gradient(135deg,#ea580c,#f97316,#dc2626)", boxShadow: "0 12px 40px rgba(234,88,12,.5), 0 0 0 4px rgba(253,186,116,.3)" }}
+            >
+              <Target className="h-12 w-12 text-white drop-shadow-lg" strokeWidth={1.8} />
+              {claimed && (
+                <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg border-2 border-white">
+                  <CheckCircle2 className="h-4 w-4 text-white" />
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="mb-3">
-            <div className="text-white/70 text-[11px] uppercase tracking-widest font-bold mb-1">Today's Buy Total</div>
-            <div className="text-4xl font-black text-white count-up">{fmtINR(todayBuyAmount)}</div>
-            {nextTier && !claimed && (
-              <div className="text-white/80 text-sm mt-1">
-                {fmtINR(remaining)} more → <span className="font-bold text-yellow-200">+{fmtINR(nextTier.reward)} bonus</span>
-              </div>
-            )}
-            {claimed && <div className="text-yellow-200 text-sm mt-1 font-bold">✅ Reward claimed today!</div>}
-            {!nextTier && !claimed && tiers.length > 0 && (
-              <div className="text-yellow-200 text-sm mt-1 font-bold">🏆 Top tier reached!</div>
-            )}
-          </div>
-
-          {/* Progress bar */}
-          <div className="space-y-1">
-            <div className="h-2.5 rounded-full bg-white/20 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-white/80 transition-all duration-700"
-                style={{ width: `${Math.max(progressPct, progressPct > 0 ? 3 : 0)}%` }}
-              />
+          <div className="mt-5 text-center px-4 fade-in">
+            <div className="text-2xl font-black text-slate-900 leading-tight">
+              {claimed
+                ? `₹${claimedReward?.toLocaleString("en-IN")} Claimed! 🎉`
+                : eligibleTier
+                ? `₹${eligibleTier.reward.toLocaleString("en-IN")} Ready! 🔥`
+                : tiers.length > 0
+                ? `Buy ${fmtINR(tiers[0].minBuy)}+ Today`
+                : "Daily Rewards"}
             </div>
-            <div className="flex justify-between text-[10px] text-white/60">
-              <span>₹0</span>
-              <span>{fmtINR(progressMax)}</span>
-            </div>
+            <p className="text-sm text-muted-foreground mt-1.5">
+              {claimed
+                ? "Great job! Reward added to wallet. Come back tomorrow!"
+                : eligibleTier
+                ? "You've crossed a milestone — claim your daily reward!"
+                : "Complete buy trades today to unlock your bonus."}
+            </p>
           </div>
         </div>
 
-        {/* Status Banner */}
-        {claimed && (
-          <div className="fade-up-2 flex items-center gap-3 p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
-              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+        {/* Progress Card */}
+        <Card className="border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 shadow-md overflow-hidden">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-orange-600" />
+                <span className="text-sm font-bold text-slate-800">Today's Buys</span>
+              </div>
+              <span className="text-lg font-black text-orange-700">{fmtINRFull(todayBuyAmount)}</span>
             </div>
-            <div>
-              <div className="text-sm font-black text-emerald-700">₹{claimedReward} added to wallet!</div>
-              <div className="text-xs text-emerald-600 mt-0.5">Come back tomorrow for a fresh reward 🎉</div>
+            <div className="space-y-1.5">
+              <div className="h-3.5 rounded-full bg-orange-200/60 overflow-hidden">
+                <div
+                  className="h-full rounded-full shimmer-bar transition-all duration-700"
+                  style={{ width: `${Math.max(progressPct, progressPct > 0 ? 3 : 0)}%` }}
+                />
+              </div>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-orange-700/60">₹0</span>
+                {nextTier && !claimed ? (
+                  <span className="text-orange-700 font-semibold">
+                    {fmtINRFull(remaining)} more → <span className="font-black">+{fmtINRFull(nextTier.reward)}</span>
+                  </span>
+                ) : claimed ? (
+                  <span className="text-emerald-600 font-semibold">✅ Claimed today</span>
+                ) : (
+                  <span className="text-emerald-600 font-semibold">🔥 Top tier reached!</span>
+                )}
+                <span className="text-orange-700/60">{fmtINR(progressMax)}</span>
+              </div>
             </div>
-          </div>
-        )}
-        {!claimed && eligibleTier && (
-          <div className="fade-up-2 flex items-center gap-3 p-4 rounded-2xl bg-amber-50 border-2 border-amber-400">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0 glow-pulse">
-              <Flame className="h-5 w-5 text-amber-600" />
-            </div>
-            <div className="flex-1">
-              <div className="text-sm font-black text-amber-800">₹{eligibleTier.reward} reward unlocked!</div>
-              <div className="text-xs text-amber-700 mt-0.5">Claim it now before midnight reset</div>
-            </div>
-          </div>
-        )}
+          </CardContent>
+        </Card>
 
         {/* Tier Milestones */}
-        <div className="fade-up-3">
+        <div>
           <div className="flex items-center gap-2 mb-3">
-            <Trophy className="h-4 w-4 text-amber-600" />
-            <span className="text-sm font-bold text-slate-800">Reward Milestones</span>
+            <Flame className="h-4 w-4 text-orange-600" />
+            <span className="text-sm font-bold text-slate-800">Daily Milestones</span>
           </div>
-          <div className="grid grid-cols-1 gap-2">
+          <div className="grid grid-cols-1 gap-2.5">
             {tiers.map((t, i) => {
               const reached = todayBuyAmount >= t.minBuy;
               const isNext = !reached && (i === 0 || todayBuyAmount >= tiers[i - 1]?.minBuy);
@@ -223,34 +234,34 @@ export default function DailyRewardPage() {
               return (
                 <div
                   key={i}
-                  className={`relative rounded-2xl border p-3.5 flex items-center justify-between transition-all
-                    ${reached ? "bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300 shadow-sm" : "bg-white border-slate-100"}
-                    ${isEligible && !claimed ? "ring-2 ring-amber-500 ring-offset-1" : ""}
+                  className={`relative rounded-2xl border p-4 flex items-center justify-between transition-all
+                    ${reached ? "bg-gradient-to-r from-orange-50 to-amber-50 border-orange-300 shadow-md" : isNext ? "bg-white border-orange-200 shadow-sm" : "bg-white/60 border-slate-100"}
+                    ${isEligible && !claimed ? "ring-2 ring-orange-500 ring-offset-2" : ""}
                   `}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg
-                      ${reached ? "bg-gradient-to-br from-amber-400 to-orange-500 shadow" : "bg-slate-100"}`}>
-                      {reached ? "🔥" : isNext ? "🎯" : "○"}
+                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl shadow
+                      ${reached ? "bg-gradient-to-br from-orange-500 to-red-500" : isNext ? "bg-orange-50 border border-orange-200" : "bg-muted"}`}>
+                      {reached ? "🔥" : isNext ? "🎯" : "⭕"}
                     </div>
                     <div>
-                      <div className={`text-sm font-bold ${reached ? "text-slate-900" : "text-slate-400"}`}>
-                        {fmtINR(t.minBuy)}+ today
+                      <div className={`text-sm font-bold ${reached ? "text-slate-900" : "text-slate-500"}`}>
+                        Buy {fmtINRFull(t.minBuy)}+
                       </div>
-                      <div className="text-[11px] text-muted-foreground">
-                        {reached ? "Milestone reached" : isNext ? "Next target" : "Locked"}
+                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                        {reached ? "✅ Milestone crossed" : isNext ? "Next target" : "Locked"}
                       </div>
                     </div>
                   </div>
-                  <div className="text-right shrink-0 flex items-center gap-2">
-                    <div className={`text-lg font-black ${reached ? "text-orange-600" : "text-slate-300"}`}>
-                      +{fmtINR(t.reward)}
+                  <div className="text-right shrink-0">
+                    <div className={`text-xl font-black ${reached ? "text-orange-600" : "text-slate-300"}`}>
+                      +{fmtINRFull(t.reward)}
                     </div>
-                    {reached && <CheckCircle2 className="h-4 w-4 text-amber-500" />}
+                    <div className="text-[10px] text-muted-foreground">bonus</div>
                   </div>
                   {isEligible && !claimed && (
-                    <div className="absolute -top-1.5 right-3 bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow">
-                      CLAIM NOW
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-red-500 text-white text-[9px] font-black px-3 py-0.5 rounded-full shadow-md">
+                      ✨ CLAIM NOW
                     </div>
                   )}
                 </div>
@@ -259,9 +270,17 @@ export default function DailyRewardPage() {
           </div>
         </div>
 
-        {/* Claim Button */}
-        <div className="pt-1 fade-up-4">
-          {!claimed && eligibleTier && (
+        {/* Claim / Status */}
+        <div className="pt-1">
+          {claimed ? (
+            <div className="flex flex-col items-center gap-3 py-6 rounded-2xl bg-gradient-to-br from-emerald-50 to-green-50 border border-emerald-200 shadow-sm">
+              <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center">
+                <CheckCircle2 className="h-7 w-7 text-emerald-500" />
+              </div>
+              <div className="text-lg font-black text-emerald-700">₹{claimedReward?.toLocaleString("en-IN")} Added to Wallet!</div>
+              <div className="text-xs text-emerald-600">Resets at midnight. Trade more tomorrow! 🚀</div>
+            </div>
+          ) : eligibleTier ? (
             <button
               className="w-full h-14 rounded-2xl text-white font-black text-lg shadow-xl shimmer-btn flex items-center justify-center gap-2 disabled:opacity-60 transition-all active:scale-95"
               onClick={handleClaim}
@@ -269,17 +288,16 @@ export default function DailyRewardPage() {
             >
               {claiming
                 ? <><Loader2 className="h-5 w-5 animate-spin" /> Claiming...</>
-                : <><Zap className="h-5 w-5" /> Claim ₹{eligibleTier.reward} Now!</>}
+                : <><Flame className="h-5 w-5" /> Claim ₹{eligibleTier.reward.toLocaleString("en-IN")} Reward!</>}
             </button>
-          )}
-          {!claimed && !eligibleTier && (
-            <div className="flex flex-col items-center gap-3 py-5 rounded-2xl bg-muted/40 border border-amber-100">
-              <Target className="h-7 w-7 text-amber-400" />
+          ) : (
+            <div className="flex flex-col items-center gap-3 py-6 rounded-2xl bg-muted/40 border border-orange-100">
+              <Target className="h-8 w-8 text-orange-400" />
               <div className="text-sm font-semibold text-slate-700 text-center">
-                Buy {fmtINR(tiers[0]?.minBuy || 2000)}+ to unlock your first reward
+                Buy {fmtINRFull(tiers[0]?.minBuy || 2000)}+ today to unlock first reward
               </div>
               <Link href="/buy">
-                <Button size="sm" className="rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white border-none shadow">
+                <Button size="sm" className="rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white border-none shadow">
                   <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Start Buying
                 </Button>
               </Link>
@@ -288,7 +306,7 @@ export default function DailyRewardPage() {
         </div>
 
         {/* How it works */}
-        <Card className="border-slate-100 shadow-sm fade-up-4">
+        <Card className="border-slate-100 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">
               <Info className="h-4 w-4 text-blue-500" />
