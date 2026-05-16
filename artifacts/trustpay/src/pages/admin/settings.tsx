@@ -417,7 +417,10 @@ export default function AdminSettings() {
       upiId,
       upiName,
       multipleUpiIds: multipleUpiIds.filter((u) => u.upiId.trim()),
-      announcements: announcements.filter((a) => a.message.trim()),
+      // Keep any announcement with content in ANY of: title, message, or
+        // image. Previously this dropped image-only announcements (no text)
+        // which made image uploads silently disappear after Save+refresh.
+        announcements: announcements.filter((a) => (a.title || "").trim() || (a.message || "").trim() || (a.imageUrl || "").trim()),
       popupMessage,
       popupImageUrl,
       appName,
