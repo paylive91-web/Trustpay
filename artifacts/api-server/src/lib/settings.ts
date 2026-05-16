@@ -241,21 +241,35 @@ export async function setSetting(key: string, value: string): Promise<void> {
 }
 
 export async function setSettings(entries: Record<string, string>): Promise<void> {
-  const pairs = Object.entries(entries).filter(([, v]) => v != null);
-  if (pairs.length === 0) return;
-  try {
-    await db.insert(settingsTable)
-      .values(pairs.map(([key, value]) => ({ key, value })))
-      .onConflictDoUpdate({
-        target: settingsTable.key,
-        set: {
-          value: sql`excluded.value`,
-          updatedAt: sql`now()`,
-        },
-      });
+    const pairs = Object.entries(entries).filter(([, v]) => v != null);
+    if (pairs.length === 0) return;
+    // Save one-at-a-time instead of a single batch upsert. A batch upsert is
+    // all-or-nothing: if ONE value triggers a driver/connection failure (e.g.
+    // a long inline data: URL in announcements bumping past a pg parameter
+    // size limit), every other setting in the same call is silently dropped
+    // too. Per-key upserts isolate failures so unrelated settings still
+    // persist, and any genuine failure surfaces to the caller instead of
+    // being swallowed — letting the route return 5xx and the UI show an
+    // actual error toast instead of a misleading green "Saved".
+    const failed: Array<{ key: string; err: unknown }> = [];
+    for (const [key, value] of pairs) {
+      try {
+        await db.insert(settingsTable)
+          .values({ key, value })
+          .onConflictDoUpdate({
+            target: settingsTable.key,
+            set: { value: sql`excluded.value`, updatedAt: sql`now()` },
+          });
+      } catch (err) {
+        console.error(`[setSettings] failed to save key="${key}" (valueLen=${value?.length ?? 0}):`, err);
+        failed.push({ key, err });
+      }
+    }
     invalidateSettingsCache();
-  } catch (err) {
-    console.error("[setSettings] failed to save settings:", err);
-    return;
+    if (failed.length > 0) {
+      const keys = failed.map((f) => f.key).join(", ");
+      const firstErr = failed[0].err;
+      const msg = firstErr instanceof Error ? firstErr.message : String(firstErr);
+      throw new Error(`Failed to save ${failed.length} setting(s): ${keys}. First error: ${msg}`);
+    }
   }
-}
