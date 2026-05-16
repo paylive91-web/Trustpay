@@ -1357,82 +1357,34 @@ router.post("/disputes/:id/extend-deadline", requireAdmin, async (req, res) => {
   res.json({ success: true, buyerProofDeadline: newBuyerDeadline, sellerProofDeadline: newSellerDeadline });
 });
 
-// Image upload — uploads to object storage when available, falls back to base64 data URL
-router.post("/upload-image", requireAdmin, async (req, res) => {
-  const { dataUrl, kind } = req.body || {};
-  if (!dataUrl || typeof dataUrl !== "string") {
-    res.status(400).json({ error: "dataUrl required" });
-    return;
-  }
-  const mimeMatch = dataUrl.match(/^data:image\/(png|jpeg|jpg|gif|webp);base64,/i);
-  if (!mimeMatch) {
-    res.status(400).json({ error: "Only PNG/JPEG/GIF/WEBP images supported" });
-    return;
-  }
-  const sizeBytes = Math.ceil((dataUrl.length - dataUrl.indexOf(",") - 1) * 3 / 4);
-  if (sizeBytes > 20 * 1024 * 1024) {
-    res.status(400).json({ error: `Image must be under 20 MB (got ${(sizeBytes / 1024 / 1024).toFixed(1)} MB)` });
-    return;
-  }
-
-  // Try uploading to object storage (available in Replit environment)
-  const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
-  if (privateObjectDir) {
-    try {
-      const { objectStorageClient } = await import("../lib/objectStorage.js");
-      const rawExt = mimeMatch[1].toLowerCase();
-      const ext = rawExt === "jpeg" ? "jpg" : rawExt;
-      const mime = `image/${rawExt === "jpg" ? "jpeg" : rawExt}`;
-      const base64Data = dataUrl.substring(dataUrl.indexOf(",") + 1);
-      const buffer = Buffer.from(base64Data, "base64");
-      const uuid = randomUUID();
-      const dirParts = privateObjectDir.split("/").filter(Boolean);
-      const bucketName = dirParts[0];
-      const dirPath = dirParts.slice(1).join("/");
-      const objectName = `${dirPath}/uploads/admin-img-${uuid}.${ext}`;
-      await objectStorageClient.bucket(bucketName).file(objectName).save(buffer, {
-        resumable: false,
-        metadata: { contentType: mime },
-      });
-      // IMPORTANT: store as a RELATIVE path, not an absolute URL.
-      // The Replit dev domain (and any preview host) changes between sessions,
-      // and the deployed app lives on a different host (e.g. *.onrender.com).
-      // If we hard-code the upload-time host here, every banner breaks the
-      // moment the user views the app from a different origin. Browsers
-      // resolve relative `src` against the current page origin, so a path
-      // like "/api/storage/objects/uploads/..." Just Works on every host.
-      const url = `/api/storage/objects/uploads/admin-img-${uuid}.${ext}`;
-      res.json({ url, kind: kind || "image", sizeBytes });
+// Image upload — returns the (already client-side compressed) image as a
+  // data URL so it inlines straight into settings JSON. We deliberately avoid
+  // object storage / a separate media_blobs table here because:
+  //   1. Object storage isn't reliably available on every deploy (Render etc),
+  //      and a URL like /api/storage/objects/... 404s when the file isn't there.
+  //   2. media_blobs table isn't in the Drizzle schema → INSERT throws on prod.
+  // The client already resizes to ≤1600px JPEG q=0.85, so a typical photo
+  // becomes ~300-600 KB — well within the 10 MB body limit even with several
+  // banners + announcements configured.
+  router.post("/upload-image", requireAdmin, async (req, res) => {
+    const { dataUrl, kind } = req.body || {};
+    if (!dataUrl || typeof dataUrl !== "string") {
+      res.status(400).json({ error: "dataUrl required" });
       return;
-    } catch (uploadErr) {
-      req.log.warn({ err: uploadErr }, "Object storage upload failed, falling back to base64");
     }
-  }
-
-  // Fallback: store the image in the media_blobs table and return a short
-  // /api/media/:id URL. This keeps settings.value tiny so subsequent
-  // Save Changes payloads stay well under the 10MB body limit even when
-  // multiple banners are configured.
-  try {
-    const rawExt = mimeMatch[1].toLowerCase();
-    const mime = `image/${rawExt === "jpg" ? "jpeg" : rawExt}`;
-    const base64Data = dataUrl.substring(dataUrl.indexOf(",") + 1);
-    const buffer = Buffer.from(base64Data, "base64");
-    const ins: any = await db.execute(sql`
-      INSERT INTO media_blobs (mime, data, size_bytes)
-      VALUES (${mime}, ${buffer}, ${buffer.length})
-      RETURNING id
-    `);
-    const newId = (ins.rows?.[0] || ins[0])?.id;
-    if (!newId) throw new Error("media_blobs insert returned no id");
-    res.json({ url: `/api/media/${newId}`, kind: kind || "image", sizeBytes });
-    return;
-  } catch (dbErr) {
-    req.log.error({ err: dbErr }, "media_blobs insert failed; returning data URL");
-    // Last-resort fallback: original data URL behaviour
+    const mimeMatch = dataUrl.match(/^data:image\/(png|jpeg|jpg|gif|webp);base64,/i);
+    if (!mimeMatch) {
+      res.status(400).json({ error: "Only PNG/JPEG/GIF/WEBP images supported" });
+      return;
+    }
+    const sizeBytes = Math.ceil((dataUrl.length - dataUrl.indexOf(",") - 1) * 3 / 4);
+    if (sizeBytes > 5 * 1024 * 1024) {
+      // 5 MB safeguard — client compression keeps real photos well under 1 MB.
+      res.status(400).json({ error: `Image must be under 5 MB after compression (got ${(sizeBytes / 1024 / 1024).toFixed(1)} MB)` });
+      return;
+    }
     res.json({ url: dataUrl, kind: kind || "image", sizeBytes });
-  }
-});
+  });
 
 // ── SMS Safe Learning ────────────────────────────────────────────────────────
 
