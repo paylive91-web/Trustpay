@@ -52,7 +52,18 @@ export default function AppStartupPopup() {
     const announcements = (settings as any)?.announcements;
     if (announcements?.length) {
       announcements.forEach((ann: any) => {
-        if (ann.message) items.push({ title: ann.title || "Announcement", message: ann.message, imageUrl: assetUrl(ann.imageUrl) });
+        // Show announcement if it has ANY content — message, title, or image.
+          // Earlier this required ann.message, so image-only announcements
+          // (e.g. a promo banner with no caption) were silently skipped.
+          const hasContent =
+            (ann?.message && String(ann.message).trim()) ||
+            (ann?.title && String(ann.title).trim()) ||
+            (ann?.imageUrl && String(ann.imageUrl).trim());
+          if (hasContent) items.push({
+            title: ann.title || "Announcement",
+            message: ann.message || "",
+            imageUrl: assetUrl(ann.imageUrl),
+          });
       });
     } else if (settings?.popupMessage) {
       items.push({ title: "Announcement", message: settings.popupMessage, imageUrl: assetUrl((settings as any)?.popupImageUrl) });
