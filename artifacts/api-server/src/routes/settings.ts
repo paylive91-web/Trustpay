@@ -85,7 +85,32 @@ router.get("/app", async (req, res) => {
     usdtEnabled: (s.usdtEnabled ?? "false") === "true",
     usdtRatePerUnit: parseFloat(s.usdtRatePerUnit || "0"),
     usdtBonusPercent: parseFloat(s.usdtBonusPercent || "0"),
-  });
+      // Weekly + daily task reward — exposed to user app so home screen
+      // cards (DailyTaskCard / WeeklyTaskCard) can render admin-configured
+      // tiers without a separate fetch.
+      weeklyRewardEnabled: (s.weeklyRewardEnabled ?? "true") === "true",
+      weeklyRewardTiers: (() => {
+        try {
+          const raw = JSON.parse(s.weeklyRewardTiers || "[]");
+          if (Array.isArray(raw)) {
+            return raw.map((t: any) => ({ minBuy: Number(t?.minBuy), reward: Number(t?.reward) }))
+              .filter((t) => Number.isFinite(t.minBuy) && Number.isFinite(t.reward));
+          }
+        } catch {}
+        return [];
+      })(),
+      dailyRewardEnabled: (s.dailyRewardEnabled ?? "true") === "true",
+      dailyRewardTiers: (() => {
+        try {
+          const raw = JSON.parse(s.dailyRewardTiers || "[]");
+          if (Array.isArray(raw)) {
+            return raw.map((t: any) => ({ minBuy: Number(t?.minBuy), reward: Number(t?.reward) }))
+              .filter((t) => Number.isFinite(t.minBuy) && Number.isFinite(t.reward));
+          }
+        } catch {}
+        return [];
+      })(),
+    });
 });
 
 export default router;

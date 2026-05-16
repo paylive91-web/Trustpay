@@ -561,10 +561,27 @@ function fSettings(s: any) {
       } catch {}
       return [];
     })(),
-  };
-}
+      // Weekly task reward — mirrors daily exactly. Without these fields the
+      // admin panel could SET weekly tiers (UI sent them) but GET response
+      // had no weekly fields, so the form rendered empty on refresh and it
+      // looked like "save bhi ho gaya phir gayab".
+      weeklyRewardEnabled: (s.weeklyRewardEnabled ?? "true") === "true",
+      weeklyRewardTiers: (() => {
+        try {
+          const raw = JSON.parse(s.weeklyRewardTiers || "[]");
+          if (Array.isArray(raw)) {
+            return raw.map((t: any) => ({
+              minBuy: Number(t?.minBuy),
+              reward: Number(t?.reward),
+            })).filter((t) => Number.isFinite(t.minBuy) && Number.isFinite(t.reward));
+          }
+        } catch {}
+        return [];
+      })(),
+    };
+  }
 
-router.get("/settings", requireAdmin, async (_req, res) => {
+  router.get("/settings", requireAdmin, async (_req, res) => {
   res.json(fSettings(await getAllSettings()));
 });
 
@@ -667,6 +684,10 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
   if (b.dailyRewardEnabled != null) {
     scalarMap["dailyRewardEnabled"] = (b.dailyRewardEnabled === true || b.dailyRewardEnabled === "true") ? "true" : "false";
   }
+    // Weekly reward enable/disable — same semantics as daily.
+    if (b.weeklyRewardEnabled != null) {
+      scalarMap["weeklyRewardEnabled"] = (b.weeklyRewardEnabled === true || b.weeklyRewardEnabled === "true") ? "true" : "false";
+    }
   // Device-based registration cap. Floor 1, ceiling 50 — anything above
   // that is effectively "unlimited" and not worth a knob.
   if (b.maxRegistrationsPerDevice != null) {
@@ -788,6 +809,21 @@ router.put("/settings", requireAdmin, async (req, res): Promise<any> => {
     cleanedDailyTiers.sort((a, b) => a.minBuy - b.minBuy);
     await setSetting("dailyRewardTiers", JSON.stringify(cleanedDailyTiers));
   }
+    if (Array.isArray(b.weeklyRewardTiers)) {
+      const cleanedWeeklyTiers: Array<{ minBuy: number; reward: number }> = [];
+      for (const t of b.weeklyRewardTiers) {
+        const minBuy = Number(t?.minBuy), reward = Number(t?.reward);
+        if (!Number.isFinite(minBuy) || !Number.isFinite(reward)) {
+          return res.status(400).json({ error: "Each weekly reward tier needs numeric minBuy and reward" });
+        }
+        if (minBuy < 0 || reward < 0) {
+          return res.status(400).json({ error: "Weekly reward tier values cannot be negative" });
+        }
+        cleanedWeeklyTiers.push({ minBuy: Math.floor(minBuy), reward: Math.max(0, reward) });
+      }
+      cleanedWeeklyTiers.sort((a, b) => a.minBuy - b.minBuy);
+      await setSetting("weeklyRewardTiers", JSON.stringify(cleanedWeeklyTiers));
+    }
   if (b.adminPassword) {
     const hash = await bcrypt.hash(b.adminPassword, 10);
     await setSetting("adminPasswordHash", hash);
