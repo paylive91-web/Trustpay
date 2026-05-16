@@ -25,6 +25,35 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
+  // Resize + compress any image to fit safely under server upload limits.
+  // Keeps aspect ratio, max 1600px on longest side, JPEG quality 0.85.
+  async function compressImage(file: File, maxDim = 1600, quality = 0.85): Promise<string> {
+    if (!file.type.startsWith("image/") || file.type === "image/gif" || file.type === "image/svg+xml") {
+      return fileToDataUrl(file);
+    }
+    const dataUrl = await fileToDataUrl(file);
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = reject;
+      im.src = dataUrl;
+    });
+    let { width: w, height: h } = img;
+    if (w > maxDim || h > maxDim) {
+      const ratio = Math.min(maxDim / w, maxDim / h);
+      w = Math.round(w * ratio);
+      h = Math.round(h * ratio);
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return dataUrl;
+    ctx.drawImage(img, 0, 0, w, h);
+    const out = canvas.toDataURL("image/jpeg", quality);
+    return out.length < dataUrl.length ? out : dataUrl;
+  }
+
 function ImagePicker({ value, onChange, label }: { value: string; onChange: (v: string) => void; label?: string }) {
   const { toast } = useToast();
   const uploadMut = useAdminUploadImage();
@@ -32,12 +61,13 @@ function ImagePicker({ value, onChange, label }: { value: string; onChange: (v: 
   const onPick = async (file: File | null) => {
     if (!file) return;
     const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
-    if (file.size > 20 * 1024 * 1024) {
-      toast({ title: `Image too large (${sizeMb} MB)`, description: "Maximum 20 MB. Please pick a smaller image.", variant: "destructive" });
+    if (file.size > 50 * 1024 * 1024) {
+      toast({ title: `Image too large (${sizeMb} MB)`, description: "Maximum 50 MB. Please pick a smaller image.", variant: "destructive" });
       return;
     }
     try {
-      const dataUrl = await fileToDataUrl(file);
+      // Auto-resize/compress so any phone photo fits safely under the server upload limit.
+      const dataUrl = await compressImage(file);
       const d = await uploadMut.mutateAsync({ data: { dataUrl } });
       onChange(d.url);
       toast({ title: "Image uploaded" });
