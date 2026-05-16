@@ -280,6 +280,7 @@ function ContactSupportDialog({ dispute, supportUrl, onClose }: { dispute: MyDis
     `I need help with my dispute.\n\n` +
     `• Dispute #${dispute.id}\n` +
     `• Order #${orderId ?? "—"}\n` +
+    `• Side: ${isBuyer ? "Buyer" : "Seller"}\n` +
     `• Amount: ₹${amount}\n` +
     `• Opened: ${openedAt}\n\n` +
     `Proof attached below.`;
