@@ -153,35 +153,6 @@ export default function Home() {
           <Skeleton className="h-40 w-full rounded-xl" />
         </div>
   
-        {/* Sell Guide popup — shown when user taps SELL on home. Bare image
-            (no white card), floating close X, "Got it" pill that navigates
-            to /sell. Visually matches the image-only AppStartupPopup. */}
-        {sellGuideOpen && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center px-3">
-            <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={() => setSellGuideOpen(false)} />
-            <div className="relative w-[min(94vw,460px)] flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-300">
-              <button
-                type="button"
-                onClick={() => setSellGuideOpen(false)}
-                aria-label="Close"
-                className="absolute -top-2 -right-2 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/85 active:scale-95"
-              >
-                <X className="h-4 w-4" />
-              </button>
-              <img
-                src={`${import.meta.env.BASE_URL}sell-guide.jpg`}
-                alt="Sell Guide — Sell Kaise Kare"
-                className="w-full h-auto max-h-[80vh] object-contain rounded-2xl shadow-2xl"
-              />
-              <Button
-                onClick={() => { setSellGuideOpen(false); setLocation("/sell"); }}
-                className="h-11 px-8 rounded-full bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white text-[15px] font-bold shadow-lg shadow-orange-500/40 hover:opacity-95 active:scale-[0.98] transition-all"
-              >
-                Got it
-              </Button>
-            </div>
-          </div>
-        )}
       </Layout>
     );
   }
@@ -367,6 +338,35 @@ export default function Home() {
           </Card>
         </Link>
       </div>
+        {/* Sell Guide popup — shown when user taps SELL on home. Bare image
+            (no white card), floating close X, "Got it" pill that navigates
+            to /sell. Visually matches the image-only AppStartupPopup. */}
+        {sellGuideOpen && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center px-3">
+            <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={() => setSellGuideOpen(false)} />
+            <div className="relative w-[min(94vw,460px)] flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-300">
+              <button
+                type="button"
+                onClick={() => setSellGuideOpen(false)}
+                aria-label="Close"
+                className="absolute -top-2 -right-2 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/85 active:scale-95"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <img
+                src={`${import.meta.env.BASE_URL}sell-guide.jpg`}
+                alt="Sell Guide — Sell Kaise Kare"
+                className="w-full h-auto max-h-[80vh] object-contain rounded-2xl shadow-2xl"
+              />
+              <Button
+                onClick={() => { setSellGuideOpen(false); setLocation("/sell"); }}
+                className="h-11 px-8 rounded-full bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white text-[15px] font-bold shadow-lg shadow-orange-500/40 hover:opacity-95 active:scale-[0.98] transition-all"
+              >
+                Got it
+              </Button>
+            </div>
+          </div>
+        )}
     </Layout>
   );
 }
