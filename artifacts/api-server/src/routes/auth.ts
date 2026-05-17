@@ -74,14 +74,16 @@ router.post("/otp/send", async (req, res) => {
       return;
     }
   }
-  const result = await issueOtp({ phone: String(phone), purpose, ip: clientIp(req) });
+  const { channel: requestedChannel } = (req.body || {}) as { channel?: string };
+    const channel = requestedChannel === "whatsapp" ? "whatsapp" : "sms";
+    const result = await issueOtp({ phone: String(phone), purpose, ip: clientIp(req), channel });
     if (!result.ok) {
       res.status(result.status).json({ error: result.error });
       return;
     }
     const msg = result.channel === "whatsapp"
-      ? "SMS nahi gaya — OTP aapke WhatsApp pe bhej diya gaya hai"
-      : "OTP sent to your mobile number";
+      ? "OTP sent on WhatsApp. Please check your WhatsApp."
+      : "OTP sent to your mobile number.";
     res.json({ success: true, channel: result.channel, message: msg });
 });
 

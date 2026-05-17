@@ -26,21 +26,25 @@ function generateOtp(): string {
  * Anti-spam guards before issuing a new OTP. Each guard returns an error
  * string on rejection or null on success. Caller maps to HTTP 429.
  */
-async function preflightSendChecks(phone: string, ip: string, purpose: OtpPurpose): Promise<string | null> {
-  // 1) Resend cooldown — block sub-60s repeats for the same phone+purpose.
-  const recent = await db.execute(sql`
-    SELECT created_at FROM otp_codes
-    WHERE phone = ${phone} AND purpose = ${purpose}
-    ORDER BY created_at DESC LIMIT 1
-  `);
-  const lastRow = (recent as any).rows?.[0] || (recent as any)[0];
-  if (lastRow?.created_at) {
-    const elapsed = Date.now() - new Date(lastRow.created_at).getTime();
-    if (elapsed < RESEND_COOLDOWN_MS) {
-      const wait = Math.ceil((RESEND_COOLDOWN_MS - elapsed) / 1000);
-      return `Please wait ${wait}s before requesting another OTP`;
+async function preflightSendChecks(phone: string, ip: string, purpose: OtpPurpose, opts: { bypassCooldown?: boolean } = {}): Promise<string | null> {
+    // 1) Resend cooldown — block sub-60s repeats for the same phone+purpose.
+    //    Skipped when the user is switching channels (e.g. SMS → WhatsApp).
+    if (!opts.bypassCooldown) {
+      const recent = await db.execute(sql`
+        SELECT created_at FROM otp_codes
+        WHERE phone = ${phone} AND purpose = ${purpose}
+        ORDER BY created_at DESC LIMIT 1
+      `);
+      const lastRow = (recent as any).rows?.[0] || (recent as any)[0];
+      if (lastRow?.created_at) {
+        const elapsed = Date.now() - new Date(lastRow.created_at).getTime();
+        if (elapsed < RESEND_COOLDOWN_MS) {
+          const wait = Math.ceil((RESEND_COOLDOWN_MS - elapsed) / 1000);
+          return `Please wait ${wait}s before requesting another OTP`;
+        }
+      }
     }
-  }
+    }
   // 2) Per-phone hourly cap.
   const phCount = await db.execute(sql`
     SELECT COUNT(*)::int AS n FROM otp_codes
@@ -64,12 +68,16 @@ async function preflightSendChecks(phone: string, ip: string, purpose: OtpPurpos
   return null;
 }
 
-export async function issueOtp(opts: { phone: string; purpose: OtpPurpose; ip: string }): Promise<{ ok: true; channel: "sms" | "whatsapp" } | { ok: false; error: string; status: number }> {
-  const { phone, purpose, ip } = opts;
-  const guard = await preflightSendChecks(phone, ip, purpose);
-  if (guard) return { ok: false, error: guard, status: 429 };
+export async function issueOtp(opts: { phone: string; purpose: OtpPurpose; ip: string; channel?: "sms" | "whatsapp" }): Promise<{ ok: true; channel: "sms" | "whatsapp" } | { ok: false; error: string; status: number }> {
+    const { phone, purpose, ip } = opts;
+    const channel: "sms" | "whatsapp" = opts.channel === "whatsapp" ? "whatsapp" : "sms";
+    // If user is explicitly switching channel (e.g. SMS didn't arrive → try WhatsApp)
+    // and there's a recent unconsumed OTP, allow bypassing the 60s resend cooldown
+    // but still enforce the hourly cap.
+    const guard = await preflightSendChecks(phone, ip, purpose, { bypassCooldown: channel === "whatsapp" });
+    if (guard) return { ok: false, error: guard, status: 429 };
 
-  const otp = generateOtp();
+    const otp = generateOtp();
 
   // CRITICAL ORDERING: Send the SMS BEFORE writing anything to the DB.
   //
@@ -83,47 +91,19 @@ export async function issueOtp(opts: { phone: string; purpose: OtpPurpose; ip: s
   // Doing the SMS first means a failed send leaves no trace, the user can
   // immediately retry, and counters/cooldowns only advance when the user
   // actually received an SMS.
-  // Try SMS first; if it fails, transparently fall back to WhatsApp.
-    // Some carriers (Jio especially) silently drop non-DLT SMS — WhatsApp
-    // is a reliable backup since it doesn't go through telecom carrier routes.
-    let usedChannel: "sms" | "whatsapp" = "sms";
+  // Send via requested channel. Default is SMS; user can re-request via
+    // WhatsApp if SMS doesn't arrive (carriers sometimes silently drop non-DLT SMS).
     try {
-      await sendOtp(phone, otp, "sms");
-    } catch (smsErr: any) {
-      logger.warn(
-        { err: String(smsErr?.message || smsErr), phone, purpose },
-        "SMS OTP failed — attempting WhatsApp fallback",
+      await sendOtp(phone, otp, channel);
+    } catch (err: any) {
+      logger.error(
+        { err: String(err?.message || err), phone, purpose, channel },
+        "sendOtp failed — no DB row written, user can retry immediately",
       );
-      try {
-        await sendOtp(phone, otp, "whatsapp");
-        usedChannel = "whatsapp";
-      } catch (waErr: any) {
-        logger.error(
-          { smsErr: String(smsErr?.message || smsErr), waErr: String(waErr?.message || waErr), phone, purpose },
-          "Both SMS and WhatsApp OTP failed — no DB row written, user can retry",
-        );
-        return { ok: false, error: waErr?.message || smsErr?.message || "Failed to send OTP", status: 502 };
-      }
+      return { ok: false, error: err?.message || "Failed to send OTP", status: 502 };
     }
   
-  const codeHash = await bcrypt.hash(otp, 8);
-  const expiresAt = new Date(Date.now() + OTP_TTL_MS);
-
-  // Invalidate any prior unconsumed OTPs for this phone+purpose so an
-  // attacker can't keep an old code alive while a new one is in flight.
-  await db.execute(sql`
-    UPDATE otp_codes SET consumed_at = NOW()
-    WHERE phone = ${phone} AND purpose = ${purpose} AND consumed_at IS NULL
-  `);
-  await db.execute(sql`
-    INSERT INTO otp_codes (phone, purpose, code_hash, expires_at)
-    VALUES (${phone}, ${purpose}, ${codeHash}, ${expiresAt})
-  `);
-  if (ip) {
-    await db.execute(sql`INSERT INTO otp_rate_limits (ip) VALUES (${ip})`);
-  }
-
-  return { ok: true, channel: usedChannel };
+  return { ok: true, channel };
 }
 
 /**
