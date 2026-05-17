@@ -8,7 +8,7 @@ import NotificationsBell from "@/components/notifications-bell";
 const logoPath = `${import.meta.env.BASE_URL}trustpay-logo.png`;
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowDownCircle, ArrowUpCircle, ChevronRight, Coins, Download, IndianRupee, Link as LinkIcon, ShieldAlert, ShieldCheck, Sparkles, Wallet, TrendingUp, TrendingDown, AlertCircle, Award, Medal, Crown, Gem, BookOpen, Gift, CheckCircle2, Calendar, Target, Trophy, ChevronRight } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, ChevronRight, Coins, Download, IndianRupee, Link as LinkIcon, ShieldAlert, ShieldCheck, Sparkles, Wallet, TrendingUp, TrendingDown, AlertCircle, Award, Medal, Crown, Gem, BookOpen, Gift, CheckCircle2, Calendar, Target, Trophy, ChevronRight, X } from "lucide-react";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { Skeleton } from "@/components/ui/skeleton";
 import useEmblaCarousel from "embla-carousel-react";
@@ -115,6 +115,10 @@ function LiveOrdersSection() {
 
 export default function Home() {
   const [, setLocation] = useLocation();
+    // Sell Guide popup: when user taps SELL on home, show the sell-guide
+    // image (Sell Kaise Kare). On "Got it" we navigate to /sell. Matches
+    // the bare-image style used in AppStartupPopup for image-only announcements.
+    const [sellGuideOpen, setSellGuideOpen] = useState(false);
   const { data: user, isLoading, isError } = useGetMe({ query: { queryKey: ["me"], retry: false } });
   const { data: settings } = useGetAppSettings();
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
@@ -148,6 +152,36 @@ export default function Home() {
           <Skeleton className="h-32 w-full rounded-xl" />
           <Skeleton className="h-40 w-full rounded-xl" />
         </div>
+  
+        {/* Sell Guide popup — shown when user taps SELL on home. Bare image
+            (no white card), floating close X, "Got it" pill that navigates
+            to /sell. Visually matches the image-only AppStartupPopup. */}
+        {sellGuideOpen && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center px-3">
+            <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={() => setSellGuideOpen(false)} />
+            <div className="relative w-[min(94vw,460px)] flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-300">
+              <button
+                type="button"
+                onClick={() => setSellGuideOpen(false)}
+                aria-label="Close"
+                className="absolute -top-2 -right-2 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/85 active:scale-95"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <img
+                src={`${import.meta.env.BASE_URL}sell-guide.jpg`}
+                alt="Sell Guide — Sell Kaise Kare"
+                className="w-full h-auto max-h-[80vh] object-contain rounded-2xl shadow-2xl"
+              />
+              <Button
+                onClick={() => { setSellGuideOpen(false); setLocation("/sell"); }}
+                className="h-11 px-8 rounded-full bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white text-[15px] font-bold shadow-lg shadow-orange-500/40 hover:opacity-95 active:scale-[0.98] transition-all"
+              >
+                Got it
+              </Button>
+            </div>
+          </div>
+        )}
       </Layout>
     );
   }
@@ -265,14 +299,18 @@ export default function Home() {
                   <div className="absolute inset-0 pointer-events-none rounded-2xl" style={{background:"linear-gradient(105deg,transparent 35%,rgba(255,255,255,0.45) 50%,transparent 65%)",backgroundSize:"200% 100%",animation:"shine 2.4s ease-in-out infinite"}} />
                 </div>
                 <div className="relative overflow-hidden rounded-2xl w-full">
-                  <Link href="/sell" className="w-full block">
-                    <Button className="w-full min-h-12 sm:min-h-13 text-base rounded-2xl shadow-md bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white border-none">
+                    {/* SELL: opens the Sell Guide popup first (one image + Got it). */}
+                    {/* On Got it, we navigate to /sell. Replaces the previous */}
+                    {/* direct Link so users always see the guide before selling. */}
+                    <Button
+                      onClick={() => setSellGuideOpen(true)}
+                      className="w-full min-h-12 sm:min-h-13 text-base rounded-2xl shadow-md bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white border-none"
+                    >
                       <ArrowUpCircle className="mr-2 h-5 w-5" />
                       SELL
                     </Button>
-                  </Link>
-                  <div className="absolute inset-0 pointer-events-none rounded-2xl" style={{background:"linear-gradient(105deg,transparent 35%,rgba(255,255,255,0.32) 50%,transparent 65%)",backgroundSize:"200% 100%",animation:"shine 2.4s ease-in-out infinite 0.7s"}} />
-                </div>
+                    <div className="absolute inset-0 pointer-events-none rounded-2xl" style={{background:"linear-gradient(105deg,transparent 35%,rgba(255,255,255,0.32) 50%,transparent 65%)",backgroundSize:"200% 100%",animation:"shine 2.4s ease-in-out infinite 0.7s"}} />
+                  </div>
               </div>
               {hasUpi ? (
                 <div className="mt-3 rounded-2xl bg-emerald-50 border border-emerald-100 px-3 py-2 text-[11px] sm:text-xs text-emerald-700 flex items-center justify-between gap-2">
