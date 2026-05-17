@@ -59,11 +59,19 @@ export default function AppStartupPopup() {
             (ann?.message && String(ann.message).trim()) ||
             (ann?.title && String(ann.title).trim()) ||
             (ann?.imageUrl && String(ann.imageUrl).trim());
-          if (hasContent) items.push({
-            title: ann.title || "Announcement",
-            message: ann.message || "",
-            imageUrl: assetUrl(ann.imageUrl),
-          });
+          // Image-only detection: announcement has an image but no real
+            // title or message text. These render as a bare image (no white
+            // card wrapper, no orange header) with a floating close X and a
+            // small pill button — see image-only render branch below.
+            const hasRealTitle = !!(ann?.title && String(ann.title).trim());
+            const hasRealMessage = !!(ann?.message && String(ann.message).trim());
+            const isImageOnly = !!(ann?.imageUrl && String(ann.imageUrl).trim()) && !hasRealTitle && !hasRealMessage;
+            if (hasContent) items.push({
+              title: ann.title || "Announcement",
+              message: ann.message || "",
+              imageUrl: assetUrl(ann.imageUrl),
+              isImageOnly,
+            });
       });
     } else if (settings?.popupMessage) {
       items.push({ title: "Announcement", message: settings.popupMessage, imageUrl: assetUrl((settings as any)?.popupImageUrl) });
@@ -109,7 +117,53 @@ export default function AppStartupPopup() {
   if (!annOpen || queue.length === 0) return null;
   const currentAnn = queue[currentIndex];
 
-  return (
+    // Image-only render: no orange header, no white card, no padding wrapper.
+    // Just the image itself with a floating close X (top-right) and a small
+    // pill button below ("Got it" or "Next") so the carousel still works.
+    if (currentAnn?.isImageOnly && currentAnn?.imageUrl) {
+      const isLast = currentIndex >= queue.length - 1;
+      return (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center px-3">
+          <div
+            className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+            onClick={handleSkipAll}
+          />
+          <div className="relative w-[min(94vw,460px)] flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-300">
+            <button
+              type="button"
+              onClick={handleSkipAll}
+              aria-label="Close"
+              className="absolute -top-2 -right-2 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/85 active:scale-95"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <img
+              src={currentAnn.imageUrl}
+              alt="Announcement"
+              className="w-full h-auto max-h-[80vh] object-contain rounded-2xl shadow-2xl"
+            />
+            {queue.length > 1 && (
+              <div className="flex justify-center gap-1.5">
+                {queue.map((_: any, i: number) => (
+                  <div
+                    key={i}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${i === currentIndex ? "w-5 bg-white" : "w-1.5 bg-white/40"}`}
+                  />
+                ))}
+              </div>
+            )}
+            <Button
+              onClick={handleNext}
+              className="h-11 px-8 rounded-full bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white text-[15px] font-bold shadow-lg shadow-orange-500/40 hover:opacity-95 active:scale-[0.98] transition-all"
+            >
+              {isLast ? "Got it" : (<>Next <ChevronRight className="w-4 h-4 ml-1 inline" /></>)}
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
       {/* Backdrop */}
       <div

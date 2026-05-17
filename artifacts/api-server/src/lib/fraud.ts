@@ -493,20 +493,14 @@ export async function checkAndApplyBuyerCooldown(buyerId: number): Promise<void>
   const failCount = (u.buyerFailedLockCount ?? 0) + 1;
   const startedAt = u.buyerCooldownStartedAt;
 
-  // If 2 days have passed since first cooldown and they're still failing → freeze
-  const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
-  if (startedAt && Date.now() - new Date(startedAt).getTime() >= TWO_DAYS_MS) {
-    await db.update(usersTable).set({
-      isFrozen: true,
-      freezeReason: "Repeated order lock/release without payment over 2 days",
-      buyerFailedLockCount: failCount,
-    }).where(eq(usersTable.id, buyerId));
-    await logAlert(buyerId, null, "balance_drain_attempt", "critical",
-      `Account frozen: buyer locked & released orders without payment over 2+ days (level ${level})`);
-    return;
-  }
+  // POLICY: account is NEVER auto-frozen for repeated lock/release. Buyers
+    // who abuse the lock flow are punished ONLY with a progressive cooldown
+    // timer (1h → 2h → 4h → ...). Admin may still freeze manually if needed.
+    // The 2-day "balance_drain" freeze block was removed here, and the cooldown
+    // logAlert below is downgraded from "critical" to "info" so it cannot trip
+    // the 3-strikes auto-freeze in logAlert().
 
-  const { chances, hours } = cooldownLevelEntry(level);
+      const { chances, hours } = cooldownLevelEntry(level);
 
   if (failCount >= chances) {
     // Threshold hit — apply cooldown, move to next level
@@ -518,7 +512,7 @@ export async function checkAndApplyBuyerCooldown(buyerId: number): Promise<void>
       buyerFailedLockCount: 0,
       buyerCooldownStartedAt: startedAt ?? new Date(),
     }).where(eq(usersTable.id, buyerId));
-    await logAlert(buyerId, null, "balance_drain_attempt", "critical",
+    await logAlert(buyerId, null, "balance_drain_attempt", "info",
       `Buyer cooldown L${nextLevel}: ${hours}h ban after ${failCount} failed locks`);
   } else {
     // Still within allowed chances — just increment counter
