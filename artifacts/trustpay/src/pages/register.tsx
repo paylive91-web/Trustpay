@@ -14,7 +14,7 @@ import {
 import { API_BASE } from "@/lib/api-config";
 import { AuthShell, PremiumInputWrap, PremiumButton, TrustRow, useBranding } from "@/components/auth-shell";
 
-function PWAInstallPopup({ onDownload, appName, logoUrl }: { onDownload: () => void; appName: string; logoUrl: string }) {
+function PWAInstallPopup({ onDownload, onContinue, appName, logoUrl }: { onDownload: () => void; onContinue: () => void; appName: string; logoUrl: string }) {
   const [downloaded, setDownloaded] = useState(false);
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
@@ -60,18 +60,28 @@ function PWAInstallPopup({ onDownload, appName, logoUrl }: { onDownload: () => v
               </button>
             </>
           ) : (
-            <div className="flex flex-col items-center py-4 gap-4">
-              <div className="w-16 h-16 rounded-full bg-emerald-50 border-2 border-emerald-200 flex items-center justify-center">
-                <ShieldCheck className="w-8 h-8 text-emerald-500" />
+              <div className="flex flex-col items-center py-4 gap-4">
+                <div className="w-16 h-16 rounded-full bg-emerald-50 border-2 border-emerald-200 flex items-center justify-center">
+                  <ShieldCheck className="w-8 h-8 text-emerald-500" />
+                </div>
+                <div className="text-center">
+                  <p className="text-[17px] font-bold text-slate-800 mb-1">Download Started!</p>
+                  <p className="text-[13px] text-slate-500 leading-relaxed">
+                    APK install hone ke baad mobile me <span className="font-semibold text-orange-600">app</span> automatically aa jayegi.
+                    Tab tak aap website pe bhi continue kar sakte hain.
+                  </p>
+                </div>
+                {/* Continue to website: dismiss popup and unlock the web app for the user. */}
+                {/* They're already authenticated (token saved), so they land on home logged-in. */}
+                <button
+                  onClick={onContinue}
+                  className="w-full h-12 rounded-2xl flex items-center justify-center gap-2 font-bold text-[15px] text-white active:scale-[0.97] transition-transform"
+                  style={{ background: "linear-gradient(135deg, #f97316 0%, #ea580c 50%, #c2410c 100%)", boxShadow: "0 6px 20px rgba(234,88,12,0.40)" }}
+                >
+                  Continue to Website
+                </button>
               </div>
-              <div className="text-center">
-                <p className="text-[17px] font-bold text-slate-800 mb-1">Download Started!</p>
-                <p className="text-[13px] text-slate-500 leading-relaxed">
-                  Install the APK, then open the app and <span className="font-semibold text-orange-600">Login</span> with your mobile number and password.
-                </p>
-              </div>
-            </div>
-          )}
+            )}
         </div>
       </div>
     </div>
@@ -312,14 +322,20 @@ export default function Register() {
   return (
     <>
       {showInstallPopup && (
-        <PWAInstallPopup appName={appName} logoUrl={logoUrl}
-          onDownload={async () => {
-            const prompt = (window as any).__pwaPrompt;
-            if (prompt) await prompt.prompt();
-            else if (apkDownloadUrl) window.open(apkDownloadUrl, "_blank");
-          }}
-        />
-      )}
+          <PWAInstallPopup appName={appName} logoUrl={logoUrl}
+            onDownload={async () => {
+              const prompt = (window as any).__pwaPrompt;
+              if (prompt) await prompt.prompt();
+              else if (apkDownloadUrl) window.open(apkDownloadUrl, "_blank");
+            }}
+            onContinue={() => {
+              // User has triggered the download; unlock the web app.
+              // They're authenticated already, so we send them straight to home.
+              setShowInstallPopup(false);
+              setLocation("/");
+            }}
+          />
+        )}
       {duplicate && (
         <DuplicateDialog title={duplicate.title} message={duplicate.message}
           onClose={() => setDuplicate(null)}
