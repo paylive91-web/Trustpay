@@ -64,7 +64,7 @@ async function preflightSendChecks(phone: string, ip: string, purpose: OtpPurpos
   return null;
 }
 
-export async function issueOtp(opts: { phone: string; purpose: OtpPurpose; ip: string }): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
+export async function issueOtp(opts: { phone: string; purpose: OtpPurpose; ip: string }): Promise<{ ok: true; channel: "sms" | "whatsapp" } | { ok: false; error: string; status: number }> {
   const { phone, purpose, ip } = opts;
   const guard = await preflightSendChecks(phone, ip, purpose);
   if (guard) return { ok: false, error: guard, status: 429 };
@@ -83,16 +83,29 @@ export async function issueOtp(opts: { phone: string; purpose: OtpPurpose; ip: s
   // Doing the SMS first means a failed send leaves no trace, the user can
   // immediately retry, and counters/cooldowns only advance when the user
   // actually received an SMS.
-  try {
-    await sendOtp(phone, otp);
-  } catch (err: any) {
-    logger.error(
-      { err: String(err?.message || err), phone, purpose },
-      "sendOtp failed — no DB row written, user can retry immediately",
-    );
-    return { ok: false, error: err?.message || "Failed to send OTP", status: 502 };
-  }
-
+  // Try SMS first; if it fails, transparently fall back to WhatsApp.
+    // Some carriers (Jio especially) silently drop non-DLT SMS — WhatsApp
+    // is a reliable backup since it doesn't go through telecom carrier routes.
+    let usedChannel: "sms" | "whatsapp" = "sms";
+    try {
+      await sendOtp(phone, otp, "sms");
+    } catch (smsErr: any) {
+      logger.warn(
+        { err: String(smsErr?.message || smsErr), phone, purpose },
+        "SMS OTP failed — attempting WhatsApp fallback",
+      );
+      try {
+        await sendOtp(phone, otp, "whatsapp");
+        usedChannel = "whatsapp";
+      } catch (waErr: any) {
+        logger.error(
+          { smsErr: String(smsErr?.message || smsErr), waErr: String(waErr?.message || waErr), phone, purpose },
+          "Both SMS and WhatsApp OTP failed — no DB row written, user can retry",
+        );
+        return { ok: false, error: waErr?.message || smsErr?.message || "Failed to send OTP", status: 502 };
+      }
+    }
+  
   const codeHash = await bcrypt.hash(otp, 8);
   const expiresAt = new Date(Date.now() + OTP_TTL_MS);
 
@@ -110,7 +123,7 @@ export async function issueOtp(opts: { phone: string; purpose: OtpPurpose; ip: s
     await db.execute(sql`INSERT INTO otp_rate_limits (ip) VALUES (${ip})`);
   }
 
-  return { ok: true };
+  return { ok: true, channel: usedChannel };
 }
 
 /**
