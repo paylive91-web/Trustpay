@@ -452,17 +452,7 @@ export default function Register() {
                 <button type="button" onClick={() => { setOtpSent(false); setOtp(""); }} className="text-[11px] text-indigo-500 hover:text-indigo-700 font-medium">Change number</button>
               </div>
               <OtpBoxes value={otp} onChange={setOtp} />
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-slate-400">OTP valid for 5 minutes</span>
-                {secs > 0 ? (
-                  <span className="text-slate-400">Resend in {secs}s</span>
-                ) : (
-                  <button type="button" onClick={handleResend} disabled={loading}
-                    className="text-indigo-600 font-semibold flex items-center gap-1 hover:text-indigo-800">
-                    <RefreshCw className="w-3 h-3" /> Resend OTP
-                  </button>
-                )}
-              </div>
+              <div className="text-[11px] text-slate-400">OTP valid for 5 minutes</div>
                 <div className="pt-2 border-t border-indigo-100">
                   <button type="button" onClick={handleWhatsAppOtp} disabled={loading}
                     className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[12px] font-semibold transition-colors">
