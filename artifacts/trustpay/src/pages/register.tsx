@@ -324,9 +324,27 @@ export default function Register() {
       {showInstallPopup && (
           <PWAInstallPopup appName={appName} logoUrl={logoUrl}
             onDownload={async () => {
+              // iOS Safari doesn't support beforeinstallprompt, and our APK is
+              // Android-only. So on iPhone/iPad we skip the download entirely
+              // and just unlock the web app — user can later use Safari's
+              // Share → "Add to Home Screen" to get a PWA icon themselves.
+              const ua = (typeof navigator !== "undefined" && navigator.userAgent) || "";
+              const isIOS = /iPad|iPhone|iPod/.test(ua)
+                || (ua.includes("Mac") && (navigator as any).maxTouchPoints > 1);
               const prompt = (window as any).__pwaPrompt;
-              if (prompt) await prompt.prompt();
-              else if (apkDownloadUrl) window.open(apkDownloadUrl, "_blank");
+              if (prompt) {
+                // Android Chrome / supported browser → fire native PWA install.
+                await prompt.prompt();
+                return;
+              }
+              if (isIOS) {
+                // No native install possible on iOS — send them straight to home.
+                setShowInstallPopup(false);
+                setLocation("/");
+                return;
+              }
+              // Android (no PWA prompt yet) → APK download.
+              if (apkDownloadUrl) window.open(apkDownloadUrl, "_blank");
             }}
             onContinue={() => {
               // User has triggered the download; unlock the web app.
