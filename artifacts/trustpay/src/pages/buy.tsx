@@ -594,6 +594,11 @@ function ActiveBuyCard({ buy, refetch, user }: { buy: any; refetch: () => void; 
             </Button>
           </div>
 
+            <div className="rounded-xl bg-blue-50 border border-blue-100 px-3 py-2 text-[12px] leading-snug text-blue-900">
+              <div>You can pay from any UPI app — you just need to enter the UTR and upload the payment screenshot.</div>
+              <div className="text-blue-700/80 mt-0.5">किसी भी UPI ऐप से payment कर सकते हैं — बस UTR और payment screenshot upload करना होगा।</div>
+            </div>
+
 
           {expired ? (
             <Button variant="destructive" className="w-full" onClick={() => cancelMut.mutate()}>
